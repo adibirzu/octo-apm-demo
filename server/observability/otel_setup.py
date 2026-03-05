@@ -45,10 +45,6 @@ def init_otel(app=None, sync_engine=None):
     trace.set_tracer_provider(provider)
     _tracer = trace.get_tracer("enterprise-crm-portal", "1.0.0")
 
-    # Auto-instrument FastAPI
-    if app is not None:
-        FastAPIInstrumentor.instrument_app(app)
-
     # Auto-instrument SQLAlchemy (sync engine for instrumentation hooks)
     if sync_engine is not None:
         SQLAlchemyInstrumentor().instrument(engine=sync_engine)

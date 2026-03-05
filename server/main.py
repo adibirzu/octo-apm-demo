@@ -40,14 +40,14 @@ from server.modules.simulation import router as simulation_router
 logger = logging.getLogger(__name__)
 
 
+# ── Pre-initialize OTel provider + exporters (before app creation) ────
+_sync_engine = create_engine(cfg.database_sync_url) if cfg.database_sync_url else None
+init_otel(sync_engine=_sync_engine)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup and shutdown."""
-    # Create sync engine for SQLAlchemy instrumentation
-    sync_engine = create_engine(cfg.database_sync_url) if cfg.database_sync_url else None
-
-    # Initialize OpenTelemetry
-    init_otel(app=app, sync_engine=sync_engine)
     logger.info("Enterprise CRM Portal starting — APM: %s, RUM: %s, Logging: %s",
                 cfg.apm_configured, cfg.rum_configured, cfg.logging_configured)
     push_log("INFO", "Enterprise CRM Portal started", **{
@@ -66,6 +66,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Instrument FastAPI BEFORE adding custom middleware (must happen before startup)
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+FastAPIInstrumentor.instrument_app(app)
 
 # ── Middleware (order matters — outermost first) ─────────────────
 app.add_middleware(CORSMiddleware,
