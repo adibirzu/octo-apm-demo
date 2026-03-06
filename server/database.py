@@ -508,3 +508,4 @@ def seed_data():
 
     except Exception as e:
         logger.error("Failed to seed database: %s", e)
+        raise

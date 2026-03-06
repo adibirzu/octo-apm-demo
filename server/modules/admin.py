@@ -43,7 +43,7 @@ async def list_audit_logs():
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.audit_logs") as db_span:
                 result = await db.execute(
-                    text("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100")
+                    text("SELECT * FROM audit_logs ORDER BY created_at DESC FETCH FIRST 100 ROWS ONLY")
                 )
                 logs = [dict(r) for r in result.mappings().all()]
                 db_span.set_attribute("db.row_count", len(logs))
@@ -76,3 +76,15 @@ async def get_config(request: Request):
             "apm_private_key": cfg.oci_apm_private_datakey,
             "splunk_token": cfg.splunk_hec_token,
         }
+
+
+@router.post("/seed")
+async def trigger_seed():
+    """Manually trigger database seeding (for troubleshooting)."""
+    import traceback
+    from server.database import seed_data
+    try:
+        seed_data()
+        return {"status": "seeded"}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
