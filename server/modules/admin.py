@@ -81,7 +81,7 @@ async def get_config(request: Request):
 
 def _guard_mutation(request: Request) -> dict:
     admin_user = _require_admin(request)
-    if cfg.environment == "production":
+    if cfg.environment == "production" or cfg.app_runtime == "oke":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrative data reset is disabled in production",
