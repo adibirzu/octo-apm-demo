@@ -1,0 +1,7 @@
+title = "octo-drone-shop gitleaks config"
+
+[allowlist]
+description = "Allow generated non-secret artifacts"
+paths = [
+  '''^\.playwright-cli/''',
+]

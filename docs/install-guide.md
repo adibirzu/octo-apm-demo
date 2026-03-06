@@ -20,9 +20,24 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+Install local Git hooks (recommended):
+
+```bash
+./scripts/setup-hooks.sh
+```
+
+This enables a pre-commit `gitleaks` scan of staged changes.
+
 ## 3. Local smoke test (ATP only)
 
 This repository is ATP-only. `docker-compose.yml` expects Oracle ATP inputs and a wallet mount.
+
+Prepare local environment file:
+
+```bash
+cp .env.local.example .env.local
+# edit .env.local with your local values
+```
 
 ```bash
 docker compose up --build

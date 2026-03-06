@@ -128,6 +128,7 @@ async def place_order(
     customer: dict[str, Any],
     items: list[dict[str, Any]],
     shipping_address: str,
+    payment_method: str = "credit_card",
     notes: str = "",
     coupon_code: str = "",
     session_id: str = "",
@@ -141,13 +142,15 @@ async def place_order(
 
     await db.execute(
         text(
-            "INSERT INTO orders (customer_id, total, status, notes, shipping_address) "
-            "VALUES (:customer_id, :total, :status, :notes, :shipping_address)"
+            "INSERT INTO orders (customer_id, total, status, payment_method, payment_status, notes, shipping_address) "
+            "VALUES (:customer_id, :total, :status, :payment_method, :payment_status, :notes, :shipping_address)"
         ),
         {
             "customer_id": customer["id"],
             "total": total,
             "status": "processing",
+            "payment_method": payment_method,
+            "payment_status": "completed" if payment_method in ["credit_card", "crypto"] else "pending",
             "notes": notes or f"Source={source}; Coupon={coupon_code or 'none'}",
             "shipping_address": shipping_address,
         },

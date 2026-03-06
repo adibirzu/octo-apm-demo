@@ -363,10 +363,26 @@
                     <input name="company" placeholder="Company">
                     <input name="customer_phone" placeholder="Phone">
                     <textarea name="shipping_address" placeholder="Shipping address" required></textarea>
+                    <select name="payment_method" required>
+                        <option value="" disabled selected>Select Payment Method</option>
+                        <option value="credit_card">Credit Card</option>
+                        <option value="crypto">Cryptocurrency</option>
+                        <option value="bank_transfer">Bank Transfer (Net 30)</option>
+                    </select>
                     <input name="coupon_code" placeholder="Coupon code (optional)">
                     <button class="btn" type="submit">Persist Order in Backend</button>
                 </form>
                 <div class="helper" id="checkoutStatus">Every checkout creates order, order items, shipment, audit log, and traces.</div>
+            </div>
+
+            <div class="panel">
+                <div class="section-title">
+                    <h3>Authorized Dealers</h3>
+                    <span class="chip" id="shopCount">0 locs</span>
+                </div>
+                <div class="cart-list" id="shopList">
+                    <div class="helper">Loading dealer locations from ATP...</div>
+                </div>
             </div>
 
             <div class="panel">
@@ -679,6 +695,30 @@ async function loadCrmCustomers(refresh = false) {
     renderCrmCustomers(payload.customers || [], payload.sync || {});
 }
 
+async function loadShops() {
+    try {
+        const response = await fetch('/api/shop/locations');
+        const payload = await response.json();
+        const shops = payload.shops || [];
+        document.getElementById('shopCount').textContent = `${shops.length} locs`;
+        const list = document.getElementById('shopList');
+        if (!shops.length) {
+            list.innerHTML = '<div class="helper">No dealer locations found.</div>';
+            return;
+        }
+        list.innerHTML = shops.map(shop => `
+            <div class="crm-customer">
+                <div>
+                    <strong>${escapeHtml(shop.name)}</strong>
+                    <div class="helper">${escapeHtml(shop.address)}</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error("Failed to load shops", error);
+    }
+}
+
 document.getElementById('searchInput').addEventListener('input', applyFilters);
 document.getElementById('sortSelect').addEventListener('change', applyFilters);
 document.getElementById('assistantFocus').addEventListener('change', () => {});
@@ -705,6 +745,7 @@ document.getElementById('trackBtn').addEventListener('click', async () => {
         await Promise.all([
             loadStorefront(),
             loadCart(),
+            loadShops(),
             loadCrmCustomers(false).catch(() => {}),
             trackPageView().catch(() => {}),
         ]);

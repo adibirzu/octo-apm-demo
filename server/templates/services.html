@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="shell">
+    <div class="row">
+        <!-- Main Service Catalog Column -->
+        <div class="col" style="flex: 2;">
+            <div class="storefront-grid" id="serviceGrid">
+                <div class="helper">Initializing Service Integration...</div>
+            </div>
+        </div>
+
+        <!-- Ticket Management Sidebar -->
+        <div class="col" style="flex: 1;">
+            <div class="panel">
+                <div class="section-title">
+                    <h3>Open a Support Ticket</h3>
+                    <span class="chip">CRM Linked</span>
+                </div>
+                
+                <form class="checkout-form" id="ticketForm">
+                    <input type="hidden" id="customerId" value="1"> <!-- Default customer for demo -->
+                    <input name="title" id="ticketTitle" placeholder="Brief issue description" required>
+                    <select name="priority" id="ticketPriority" required>
+                        <option value="" disabled selected>Select Priority</option>
+                        <option value="low">Low - Routine Maintenance</option>
+                        <option value="medium">Medium - Non-Critical Issue</option>
+                        <option value="high">High - Grounded Aircraft</option>
+                    </select>
+                    <textarea name="content" id="ticketContent" placeholder="Provide detailed information regarding your request..." required></textarea>
+                    
+                    <button class="btn" type="submit" style="width: 100%;">Submit Ticket</button>
+                    <div id="ticketFormStatus" class="helper" style="margin-top: 10px; text-align: center;"></div>
+                </form>
+            </div>
+
+            <div class="panel">
+                <div class="section-title">
+                    <h3>Your Active Tickets</h3>
+                    <span class="chip" id="ticketCount">0 items</span>
+                </div>
+                <div class="cart-list" id="ticketList">
+                    <div class="helper">Loading tickets from ATP...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Escape HTML function to prevent XSS
+    const escapeHtml = (unsafe) => {
+        return (unsafe || '').toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    };
+
+    /**
+     * Load the Service Catalog from the backend
+     */
+    async function loadServiceCatalog() {
+        try {
+            const response = await fetch('/api/services/catalog');
+            if (!response.ok) throw new Error("Catalog load failed.");
+            const payload = await response.json();
+            const services = payload.services || [];
+            
+            const grid = document.getElementById('serviceGrid');
+            if (services.length === 0) {
+                grid.innerHTML = '<div class="helper">No services available.</div>';
+                return;
+            }
+
+            grid.innerHTML = services.map(s => `
+                <div class="card product-card">
+                    <div class="eyebrow">${escapeHtml(s.category)}</div>
+                    <h3>${escapeHtml(s.name)}</h3>
+                    <p style="margin-top: 12px; font-size: 0.85rem; color: var(--muted); flex-grow: 1;">
+                        ${escapeHtml(s.description)}
+                    </p>
+                    <div class="price-row" style="margin-top: 18px;">
+                        <span class="price">$${s.price.toFixed(2)}</span>
+                        <button class="btn btn-outline" onclick="prefetchService('${escapeHtml(s.name)}')">Book</button>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (err) {
+            document.getElementById('serviceGrid').innerHTML = `<div class="helper">Failed to load services: ${err.message}</div>`;
+        }
+    }
+
+    /**
+     * Prefill the ticket form when a user clicks 'Book' on a service
+     */
+    function prefetchService(serviceName) {
+        document.getElementById('ticketTitle').value = `Request: ${serviceName}`;
+        document.getElementById('ticketContent').value = `I would like to schedule the following service: ${serviceName}.\n\nPlease let me know the availability.`;
+        document.getElementById('ticketPriority').value = 'low';
+        
+        // Scroll to form (specifically for mobile views)
+        document.getElementById('ticketForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    /**
+     * Load open tickets for the current simulated customer
+     */
+    async function loadTickets() {
+        try {
+            const customerId = document.getElementById('customerId').value;
+            const response = await fetch(`/api/services/tickets?customer_id=${customerId}`);
+            if (!response.ok) throw new Error("Tickets load failed.");
+            const payload = await response.json();
+            const tickets = payload.tickets || [];
+            
+            document.getElementById('ticketCount').textContent = `${tickets.length} items`;
+            const list = document.getElementById('ticketList');
+            
+            if (tickets.length === 0) {
+                list.innerHTML = '<div class="helper">No active tickets.</div>';
+                return;
+            }
+
+            list.innerHTML = tickets.map(t => {
+                const priorityColor = t.priority === 'high' ? 'var(--rose)' : (t.priority === 'medium' ? 'var(--amber)' : 'var(--ok)');
+                return `
+                <div class="crm-customer" style="flex-direction: column; align-items: flex-start;">
+                    <div style="display: flex; justify-content: space-between; width: 100%;">
+                        <strong>${escapeHtml(t.title)}</strong>
+                        <span style="color: ${priorityColor}; font-size: 0.8rem; text-transform: uppercase;">${escapeHtml(t.priority)}</span>
+                    </div>
+                    
+                    <div style="margin-top: 8px; font-size: 0.8rem; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; width: 100%;">
+                        ${t.messages && t.messages.length > 0 ? 
+                            `<em>${escapeHtml(t.messages[t.messages.length - 1].sender_type)}:</em> ${escapeHtml(t.messages[t.messages.length - 1].content)}` 
+                            : 'No messages yet.'}
+                    </div>
+                    <div class="helper" style="margin-top: 6px;">Status: ${escapeHtml(t.status)} | Created: ${new Date(t.created_at).toLocaleDateString()}</div>
+                </div>
+            `}).join('');
+
+        } catch (err) {
+            document.getElementById('ticketList').innerHTML = `<div class="helper">Failed to load tickets: ${err.message}</div>`;
+        }
+    }
+
+    /**
+     * Handle Ticket Submission
+     */
+    document.getElementById('ticketForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const statusDiv = document.getElementById('ticketFormStatus');
+        statusDiv.style.color = "var(--ink)";
+        statusDiv.textContent = "Submitting ticket to Oracle ATP...";
+
+        const payload = {
+            customer_id: parseInt(document.getElementById('customerId').value),
+            title: document.getElementById('ticketTitle').value,
+            priority: document.getElementById('ticketPriority').value,
+            content: document.getElementById('ticketContent').value
+        };
+
+        try {
+            const response = await fetch('/api/services/tickets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Failed to create ticket.");
+            
+            statusDiv.style.color = "var(--ok)";
+            statusDiv.textContent = "Ticket successfully created. CRM Notified.";
+            
+            // Re-load list and clear form
+            e.target.reset();
+            await loadTickets();
+            
+            setTimeout(() => { statusDiv.textContent = ""; }, 4000);
+        } catch (err) {
+            statusDiv.style.color = "var(--rose)";
+            statusDiv.textContent = `Error: ${err.message}`;
+        }
+    });
+
+    // Initialize module on load
+    (async function init() {
+        await Promise.all([
+            loadServiceCatalog(),
+            loadTickets(),
+        ]);
+    })();
+</script>
+{% endblock %}

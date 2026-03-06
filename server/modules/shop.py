@@ -150,6 +150,7 @@ async def checkout(payload: dict, request: Request):
                 customer=customer,
                 items=items,
                 shipping_address=payload.get("shipping_address", "ATP-backed fulfilment queue"),
+                payment_method=payload.get("payment_method", "credit_card"),
                 notes=payload.get("notes", ""),
                 coupon_code=payload.get("coupon_code", ""),
                 session_id=session_id,
@@ -222,6 +223,20 @@ async def get_wallet(username: str = ""):
             "currency": "USD",
             "order_count": int(wallet["order_count"] or 0),
         }
+
+
+@router.get("/locations")
+async def dealer_shops():
+    """Fetch authorized dealer locations."""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("shop.locations") as span:
+        async with get_db() as db:
+            result = await db.execute(
+                text("SELECT id, name, address, coordinates, contact_email, contact_phone FROM shops WHERE is_active = 1")
+            )
+            shops = [dict(row) for row in result.mappings().all()]
+            span.set_attribute("shop.locations_count", len(shops))
+            return {"shops": shops}
 
 
 @router.get("/assistant/history/{session_id}")

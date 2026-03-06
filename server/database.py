@@ -227,6 +227,41 @@ LEGACY_MUSHOP_SKUS = {
 
 SEED_PRODUCTS = [*DRONE_CATALOG_PRODUCTS, *ADDITIONAL_PRODUCTS]
 
+SEED_SERVICES = [
+    {
+        "name": "Annual Fleet Maintenance",
+        "sku": "SRV-001",
+        "description": "Comprehensive 100-point inspection and preventative maintenance for enterprise drone fleets.",
+        "price": 2500.00,
+        "category": "Maintenance",
+        "image_url": "",
+    },
+    {
+        "name": "Lidar Calibration & Alignment",
+        "sku": "SRV-002",
+        "description": "High-precision calibration for Zenmuse and Phase One Lidar payloads.",
+        "price": 850.00,
+        "category": "Calibration",
+        "image_url": "",
+    },
+    {
+        "name": "Advanced Pilot Training (BVLOS)",
+        "sku": "SRV-003",
+        "description": "5-day immersive tactical and BVLOS flight training course.",
+        "price": 4500.00,
+        "category": "Training",
+        "image_url": "",
+    },
+    {
+        "name": "Emergency Repair Diagnostic",
+        "sku": "SRV-004",
+        "description": "24-hour turnaround diagnostic service for grounded aircraft.",
+        "price": 300.00,
+        "category": "Maintenance",
+        "image_url": "",
+    },
+]
+
 SEED_USERS = [
     {
         "username": "admin",
@@ -436,6 +471,45 @@ class Warehouse(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class Service(Base):
+    __tablename__ = "services"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    name = Column(String(200), nullable=False)
+    sku = Column(String(50), unique=True, nullable=False)
+    description = Column(Text)
+    price = Column(Float, nullable=False)
+    category = Column(String(100))
+    image_url = Column(String(500))
+    is_active = Column(Integer, default=1)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class Ticket(Base):
+    __tablename__ = "tickets"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"))
+    title = Column(String(200), nullable=False)
+    status = Column(String(50), default="open")
+    priority = Column(String(50), default="medium")
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    customer = relationship("Customer")
+    product = relationship("Product")
+    service = relationship("Service")
+
+
+class TicketMessage(Base):
+    __tablename__ = "ticket_messages"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    ticket_id = Column(Integer, ForeignKey("tickets.id"))
+    sender_type = Column(String(50), nullable=False)  # 'customer' or 'agent'
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+    ticket = relationship("Ticket")
+
+
 class Campaign(Base):
     __tablename__ = "campaigns"
     id = Column(Integer, Identity(always=False), primary_key=True)
@@ -617,6 +691,9 @@ def seed_data():
             session.add_all(Product(**product) for product in SEED_PRODUCTS)
             session.flush()
 
+            session.add_all(Service(**service) for service in SEED_SERVICES)
+            session.flush()
+
             # Customers (8) — drone industry buyers
             customers = [
                 Customer(name="Alpine Aerial Surveys", email="ops@alpineaerial.ch", phone="+41-44-555-0101",
@@ -651,6 +728,24 @@ def seed_data():
                 Order(customer_id=8, total=5298.00, status="shipped", shipping_address="Aker Brygge 12, 0250 Oslo, Norway"),
             ]
             session.add_all(orders)
+            session.flush()
+
+            tickets = [
+                Ticket(customer_id=1, title='Aegis Quadcopter Gimbal Drift', status='open', priority='high', product_id=1, service_id=None),
+                Ticket(customer_id=2, title='Inquiry: Advanced Pilot Training Availability', status='open', priority='medium', product_id=None, service_id=3),
+                Ticket(customer_id=4, title='Hercules HL-600 Motor Grinding Noise', status='in_progress', priority='high', product_id=2, service_id=4),
+            ]
+            session.add_all(tickets)
+            session.flush()
+
+            ticket_messages = [
+                TicketMessage(ticket_id=1, sender_type='customer', content='The thermal payload on our Aegis drone is slowly drifting downwards during sustained flight.'),
+                TicketMessage(ticket_id=1, sender_type='agent', content='We have received your report. Can you verify if the firmware was updated to v2.4.1 before the flight?'),
+                TicketMessage(ticket_id=2, sender_type='customer', content='When is the next BVLOS training course scheduled in the EU?'),
+                TicketMessage(ticket_id=3, sender_type='customer', content='Motor 4 on the Hercules is making a grinding noise at high RPMs.'),
+                TicketMessage(ticket_id=3, sender_type='agent', content='Please ground the aircraft immediately. We are dispatching a replacement motor via overnight shipping.'),
+            ]
+            session.add_all(ticket_messages)
             session.flush()
 
             # Order Items — referencing new drone products

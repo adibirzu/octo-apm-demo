@@ -36,6 +36,7 @@ from server.modules.shop import router as shop_router
 from server.modules.simulation import router as simulation_router
 from server.modules.dashboard import router as dashboard_router
 from server.modules.integrations import router as integrations_router
+from server.modules.services import router as services_router
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,7 @@ app.include_router(shop_router)
 app.include_router(simulation_router)
 app.include_router(dashboard_router)
 app.include_router(integrations_router)
+app.include_router(services_router)
 
 
 # ── Health & readiness ────────────────────────────────────────
@@ -205,6 +207,11 @@ async def index(request: Request):
 @app.get("/shop", response_class=HTMLResponse)
 async def shop_page(request: Request):
     return _render_page(request, "shop", "Drone Shop", module="shop")
+
+
+@app.get("/services", response_class=HTMLResponse)
+async def services_page(request: Request):
+    return _render_page(request, "services", "Services & Support", module="services")
 
 
 @app.get("/catalogue", response_class=HTMLResponse)
