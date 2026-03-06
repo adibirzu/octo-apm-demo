@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mushop-portal
+  namespace: default
+  labels:
+    app: mushop-portal
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mushop-portal
+  template:
+    metadata:
+      labels:
+        app: mushop-portal
+    spec:
+      containers:
+        - name: app
+          image: ${OCIR_REPO}/mushop-portal:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://mushop:mushop@mushop-postgres:5432/mushop"
+            - name: DATABASE_SYNC_URL
+              value: "postgresql://mushop:mushop@mushop-postgres:5432/mushop"
+            - name: APP_NAME
+              value: "mushop-cloudnative"
+            - name: APP_RUNTIME
+              value: "oke"
+            - name: OCI_APM_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: mushop-apm
+                  key: endpoint
+                  optional: true
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: mushop-apm
+                  key: private-key
+                  optional: true
+            - name: OCI_APM_PUBLIC_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: mushop-apm
+                  key: public-key
+                  optional: true
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: mushop
+            - name: POSTGRES_USER
+              value: mushop
+            - name: POSTGRES_PASSWORD
+              value: mushop
+          volumeMounts:
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "mushop", "-d", "mushop"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: init-sql
+          configMap:
+            name: mushop-db-init
+        - name: pgdata
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mushop-portal
+  namespace: default
+  labels:
+    app: mushop-portal
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: mushop-portal
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mushop-postgres
+  namespace: default
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: mushop-portal
