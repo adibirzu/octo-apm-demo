@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 style="margin-bottom: 16px;">{{ title }}</h2>
+
+<div class="card">
+    <h3>{{ module|title }} Module</h3>
+    <div id="content-area" style="color:var(--text-secondary)">Loading...</div>
+</div>
+
+<div class="card">
+    <h3>API Endpoints</h3>
+    <div id="endpoints" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+</div>
+
+<div class="card">
+    <h3>Data</h3>
+    <table>
+        <thead id="data-head"><tr><th>Loading...</th></tr></thead>
+        <tbody id="data-body"></tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const MODULE = "{{ module }}";
+const ENDPOINTS = {
+    shop:       { list: '/api/shop/featured', label: 'Featured Products', key: 'products',
+                  extra: ['/api/shop/coupon/apply', '/api/shop/checkout', '/api/shop/wallet', '/api/shop/captcha'] },
+    catalogue:  { list: '/api/products', label: 'Products', key: 'products',
+                  extra: ['/api/categories', '/api/products/1/reviews'] },
+    orders:     { list: '/api/orders', label: 'Orders', key: 'orders',
+                  extra: ['/api/cart', '/api/cart/add'] },
+    shipping:   { list: '/api/shipping', label: 'Shipments', key: 'shipments',
+                  extra: ['/api/shipping/warehouses', '/api/shipping/by-region?region=eu-central-1'] },
+    campaigns:  { list: '/api/campaigns', label: 'Campaigns', key: 'campaigns',
+                  extra: ['/api/campaigns/1/leads'] },
+    analytics:  { list: '/api/analytics/overview', label: 'Analytics Overview', key: null,
+                  extra: ['/api/analytics/geo', '/api/analytics/funnel'] },
+    admin:      { list: '/api/admin/users', label: 'Users', key: 'users',
+                  extra: ['/api/admin/audit-logs', '/api/admin/config'] },
+};
+
+async function load() {
+    const cfg = ENDPOINTS[MODULE];
+    if (!cfg) { document.getElementById('content-area').textContent = 'Unknown module: ' + MODULE; return; }
+
+    // Show endpoint links
+    const allUrls = [cfg.list, ...(cfg.extra || [])];
+    document.getElementById('endpoints').innerHTML = allUrls.map(u =>
+        `<a class="btn btn-outline" href="${u}" target="_blank">${u}</a>`
+    ).join('');
+
+    // Load data
+    try {
+        const r = await fetch(cfg.list);
+        const d = await r.json();
+        const items = cfg.key ? (d[cfg.key] || []) : [d];
+        document.getElementById('content-area').textContent = `${cfg.label}: ${items.length} item(s)`;
+
+        if (items.length > 0) {
+            const keys = Object.keys(items[0]).slice(0, 6);
+            document.getElementById('data-head').innerHTML = '<tr>' + keys.map(k => `<th>${k}</th>`).join('') + '</tr>';
+            document.getElementById('data-body').innerHTML = items.slice(0, 20).map(item =>
+                '<tr>' + keys.map(k => {
+                    let v = item[k];
+                    if (v === null || v === undefined) v = '';
+                    if (typeof v === 'object') v = JSON.stringify(v).substring(0, 60);
+                    return `<td>${String(v).substring(0, 80)}</td>`;
+                }).join('') + '</tr>'
+            ).join('');
+        } else {
+            document.getElementById('data-head').innerHTML = '<tr><th>No data</th></tr>';
+            document.getElementById('data-body').innerHTML = '';
+        }
+    } catch(e) {
+        document.getElementById('content-area').innerHTML = '<span class="badge badge-err">Error loading data</span> ' + e.message;
+    }
+}
+load();
+</script>
+{% endblock %}

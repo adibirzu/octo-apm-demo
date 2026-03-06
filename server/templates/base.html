@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} — MuShop Cloud Native</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #202124;
+            --text-secondary: #5f6368;
+            --border: #dadce0;
+            --success: #34a853;
+            --warning: #fbbc04;
+            --danger: #ea4335;
+            --info: #4285f4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+        nav {
+            background: var(--primary); color: #fff; padding: 0 24px;
+            display: flex; align-items: center; height: 56px; gap: 32px;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        nav .brand { font-size: 20px; font-weight: 600; letter-spacing: -0.5px; }
+        nav a { color: rgba(255,255,255,.85); text-decoration: none; font-size: 14px; padding: 8px 0; }
+        nav a:hover { color: #fff; }
+        nav a.active { color: #fff; border-bottom: 2px solid #fff; }
+        .container { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+        .card {
+            background: var(--card-bg); border-radius: 8px; padding: 20px;
+            border: 1px solid var(--border); margin-bottom: 16px;
+        }
+        .card h3 { font-size: 14px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 0.5px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .stat { text-align: center; }
+        .stat .value { font-size: 32px; font-weight: 700; color: var(--primary); }
+        .stat .label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 12px;
+            font-size: 12px; font-weight: 500;
+        }
+        .badge-ok { background: #e6f4ea; color: var(--success); }
+        .badge-warn { background: #fef7e0; color: #f9a825; }
+        .badge-err { background: #fce8e6; color: var(--danger); }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; }
+        .btn {
+            display: inline-block; padding: 8px 16px; border-radius: 4px;
+            background: var(--primary); color: #fff; border: none; cursor: pointer;
+            font-size: 14px; text-decoration: none;
+        }
+        .btn:hover { background: var(--primary-dark); }
+        .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-outline:hover { background: rgba(26,115,232,.08); }
+        footer { text-align: center; padding: 24px; color: var(--text-secondary); font-size: 13px; }
+        {% if rum_configured %}
+        /* RUM beacon loads here */
+        {% endif %}
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav>
+        <span class="brand">MuShop</span>
+        <a href="/" {% if module == 'dashboard' or not module %}class="active"{% endif %}>Dashboard</a>
+        <a href="/shop" {% if module == 'shop' %}class="active"{% endif %}>Shop</a>
+        <a href="/catalogue" {% if module == 'catalogue' %}class="active"{% endif %}>Catalogue</a>
+        <a href="/orders-page" {% if module == 'orders' %}class="active"{% endif %}>Orders</a>
+        <a href="/shipping-page" {% if module == 'shipping' %}class="active"{% endif %}>Shipping</a>
+        <a href="/campaigns-page" {% if module == 'campaigns' %}class="active"{% endif %}>Campaigns</a>
+        <a href="/analytics-page" {% if module == 'analytics' %}class="active"{% endif %}>Analytics</a>
+        <a href="/admin-page" {% if module == 'admin' %}class="active"{% endif %}>Admin</a>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    <footer>
+        MuShop Cloud Native Portal &mdash; {{ app_name }}
+        {% if rum_configured %} | RUM Active{% endif %}
+    </footer>
+    {% if rum_configured and rum_endpoint %}
+    <script>
+        // OCI APM RUM — Browser JS agent
+        (function() {
+            var rumEndpoint = "{{ rum_endpoint }}";
+            var rumKey = "{{ rum_public_key }}";
+            if (rumEndpoint && rumKey) {
+                var s = document.createElement('script');
+                s.src = rumEndpoint + '/static/jsagent/apmrum.min.js';
+                s.setAttribute('data-key', rumKey);
+                s.setAttribute('data-endpoint', rumEndpoint);
+                s.setAttribute('data-urn', 'mushop-cloudnative');
+                document.head.appendChild(s);
+            }
+        })();
+    </script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

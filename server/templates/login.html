@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:400px;margin:60px auto;">
+    <div class="card">
+        <h3>Login</h3>
+        <form id="login-form" style="margin-top:12px;">
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:4px;">Username</label>
+                <input type="text" id="username" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;" value="admin">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:4px;">Password</label>
+                <input type="password" id="password" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;" value="admin123">
+            </div>
+            <button type="submit" class="btn" style="width:100%;">Sign In</button>
+        </form>
+        <div id="result" style="margin-top:12px;font-size:14px;"></div>
+        <p style="margin-top:16px;font-size:12px;color:var(--text-secondary);">
+            Default: admin / admin123 (deliberately weak for demo)
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    try {
+        const r = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username, password })
+        });
+        const d = await r.json();
+        const el = document.getElementById('result');
+        if (d.status === 'success') {
+            el.innerHTML = '<span class="badge badge-ok">Login successful</span> Token: <code>' + d.token + '</code>';
+        } else {
+            el.innerHTML = '<span class="badge badge-err">' + (d.error || 'Login failed') + '</span>';
+        }
+    } catch(e) {
+        document.getElementById('result').innerHTML = '<span class="badge badge-err">Error: ' + e.message + '</span>';
+    }
+});
+</script>
+{% endblock %}

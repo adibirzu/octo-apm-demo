@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 style="margin-bottom: 16px;">Dashboard</h2>
+
+<div class="grid" id="stats">
+    <div class="card stat"><div class="value" id="s-customers">—</div><div class="label">Customers</div></div>
+    <div class="card stat"><div class="value" id="s-orders">—</div><div class="label">Orders</div></div>
+    <div class="card stat"><div class="value" id="s-revenue">—</div><div class="label">Revenue</div></div>
+    <div class="card stat"><div class="value" id="s-products">—</div><div class="label">Products</div></div>
+</div>
+
+<div class="card">
+    <h3>Quick Actions</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a class="btn btn-outline" href="/api/dashboard/slow-query" target="_blank">Trigger Slow Query</a>
+        <a class="btn btn-outline" href="/api/dashboard/n-plus-one" target="_blank">N+1 Demo</a>
+        <a class="btn btn-outline" href="/api/dashboard/error-demo" target="_blank">Error Demo</a>
+        <a class="btn btn-outline" href="/api/integrations/status" target="_blank">Integration Status</a>
+        <a class="btn btn-outline" href="/api/modules" target="_blank">Module Graph</a>
+        <a class="btn btn-outline" href="/health" target="_blank">Health Check</a>
+        <a class="btn btn-outline" href="/ready" target="_blank">Readiness</a>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Recent Orders</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Status</th><th>Total</th><th>Created</th></tr></thead>
+        <tbody id="orders-body"><tr><td colspan="4">Loading...</td></tr></tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Integration Health</h3>
+    <div id="integration-health" style="color:var(--text-secondary)">Checking CRM connectivity...</div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function load() {
+    try {
+        const r = await fetch('/api/dashboard/summary');
+        const d = await r.json();
+        document.getElementById('s-customers').textContent = d.customers || 0;
+        document.getElementById('s-orders').textContent = d.orders || 0;
+        document.getElementById('s-revenue').textContent = '$' + (d.revenue || 0).toLocaleString();
+        document.getElementById('s-products').textContent = d.products || 0;
+    } catch(e) { console.error('Dashboard load failed', e); }
+
+    try {
+        const r2 = await fetch('/api/orders');
+        const d2 = await r2.json();
+        const orders = d2.orders || [];
+        const tbody = document.getElementById('orders-body');
+        if (orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-secondary)">No orders yet</td></tr>';
+        } else {
+            tbody.innerHTML = orders.slice(0, 10).map(o =>
+                `<tr><td>#${o.id}</td><td><span class="badge ${o.status==='completed'?'badge-ok':'badge-warn'}">${o.status}</span></td><td>$${o.total}</td><td>${o.created_at||''}</td></tr>`
+            ).join('');
+        }
+    } catch(e) {}
+
+    try {
+        const r3 = await fetch('/api/integrations/crm/health');
+        const d3 = await r3.json();
+        const el = document.getElementById('integration-health');
+        if (d3.status === 'healthy') {
+            el.innerHTML = '<span class="badge badge-ok">CRM Connected</span> ' + (d3.crm_url || '');
+        } else if (d3.crm_configured === false || d3.status === 'not_configured') {
+            el.innerHTML = '<span class="badge badge-warn">CRM Not Configured</span>';
+        } else {
+            el.innerHTML = '<span class="badge badge-err">' + d3.status + '</span> ' + (d3.error || '');
+        }
+    } catch(e) {
+        document.getElementById('integration-health').innerHTML = '<span class="badge badge-err">Error</span>';
+    }
+}
+load();
+</script>
+{% endblock %}
