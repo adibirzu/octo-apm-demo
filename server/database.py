@@ -33,7 +33,9 @@ _engine_kwargs = {
 
 if cfg.use_oracle:
     import oracledb
-    oracledb.init_oracle_client()  # thin mode if no Instant Client
+    # Use thin mode (pure-Python, no Oracle Instant Client needed)
+    oracledb.defaults.config_dir = cfg.oracle_wallet_dir or ""
+    oracledb.defaults.fetch_lobs = False
 
     _connect_args = {}
     if cfg.oracle_wallet_dir:
