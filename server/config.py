@@ -27,6 +27,9 @@ class Config:
     pg_url = os.getenv("DATABASE_URL", "")
     database_sync_url = os.getenv("DATABASE_SYNC_URL", "")
 
+    # ── Cross-service integration ──
+    enterprise_crm_url = os.getenv("ENTERPRISE_CRM_URL", "")  # e.g. http://enterprise-crm:8080
+
     # ── MuShop backend (original oci-cloudnative) ──
     mushop_backend_url = os.getenv("MUSHOP_BACKEND_URL", "")  # e.g. http://mushop-api:8080
 

@@ -35,6 +35,7 @@ from server.modules.admin import router as admin_router
 from server.modules.shop import router as shop_router
 from server.modules.simulation import router as simulation_router
 from server.modules.dashboard import router as dashboard_router
+from server.modules.integrations import router as integrations_router
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,7 @@ app.include_router(admin_router)
 app.include_router(shop_router)
 app.include_router(simulation_router)
 app.include_router(dashboard_router)
+app.include_router(integrations_router)
 
 
 # ── Health & readiness ────────────────────────────────────────
@@ -155,9 +157,12 @@ async def list_modules():
              "related_to": ["orders", "catalogue", "customers"]},
             {"name": "simulation", "label": "Simulation", "endpoints": 5,
              "related_to": ["dashboard"]},
+            {"name": "integrations", "label": "Integrations", "endpoints": 5,
+             "related_to": ["orders", "customers", "enterprise-crm-portal"],
+             "cross_service": True},
         ],
-        "total_modules": 9,
-        "total_endpoints": 45,
+        "total_modules": 10,
+        "total_endpoints": 50,
     }
 
 

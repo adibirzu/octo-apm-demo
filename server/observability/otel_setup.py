@@ -2,6 +2,8 @@
 
 Uses OCI APM OTLP endpoint. Service name is configurable via OTEL_SERVICE_NAME
 to ensure unique trace identification across APM domains.
+
+Instruments: FastAPI (auto), SQLAlchemy (auto), httpx (auto), logging (auto).
 """
 
 import logging
@@ -44,13 +46,23 @@ def init_otel(service_name: str = "mushop-cloudnative",
 
     trace.set_tracer_provider(_tracer_provider)
 
-    # Instrument SQLAlchemy if sync engine provided
+    # Auto-instrument SQLAlchemy (sync engine for query-level spans)
     if sync_engine:
         try:
             from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
             SQLAlchemyInstrumentor().instrument(engine=sync_engine)
+            logger.info("SQLAlchemy instrumented (sync engine)")
         except Exception:
             pass
+
+    # Auto-instrument httpx — injects W3C traceparent on all outbound HTTP calls
+    # This is critical for distributed tracing between MuShop and CRM
+    try:
+        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+        HTTPXClientInstrumentor().instrument()
+        logger.info("httpx instrumented (distributed trace propagation enabled)")
+    except Exception:
+        pass
 
     # Inject trace context into Python logging (for log correlation)
     try:
