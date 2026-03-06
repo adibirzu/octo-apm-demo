@@ -22,7 +22,7 @@ async def featured_products():
         async with get_db() as db:
             result = await db.execute(
                 text("SELECT id, name, description, price, image_url, category "
-                     "FROM products WHERE is_active = 1 ORDER BY price DESC LIMIT 8")
+                     "FROM products WHERE is_active = 1 ORDER BY price DESC FETCH FIRST 8 ROWS ONLY")
             )
             products = [dict(r) for r in result.mappings().all()]
             span.set_attribute("shop.featured_count", len(products))

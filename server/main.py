@@ -152,7 +152,7 @@ async def list_modules():
              "related_to": ["orders", "shop", "reviews"]},
             {"name": "orders", "label": "Orders", "endpoints": 6,
              "related_to": ["catalogue", "shipping", "customers"]},
-            {"name": "shop", "label": "Shop", "endpoints": 8,
+            {"name": "shop", "label": "Drone Shop", "endpoints": 8,
              "related_to": ["catalogue", "orders", "coupons", "wallet"]},
             {"name": "shipping", "label": "Shipping", "endpoints": 5,
              "related_to": ["orders", "warehouses", "analytics"]},
@@ -197,7 +197,7 @@ async def index(request: Request):
 
 @app.get("/shop", response_class=HTMLResponse)
 async def shop_page(request: Request):
-    return _render_page(request, "page", "Shop", module="shop")
+    return _render_page(request, "page", "Drone Shop", module="shop")
 
 
 @app.get("/catalogue", response_class=HTMLResponse)

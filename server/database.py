@@ -320,176 +320,215 @@ def seed_data():
             ])
             session.flush()
 
-            # Products (12 items)
+            # Products — Drone Shop (24 items, EU/US manufacturers only)
             products = [
-                Product(name="OCI Classic Tee", sku="TEE-001", description="Classic cotton t-shirt with OCI logo",
-                        price=29.99, stock=500, category="Clothing"),
-                Product(name="Cloud Hoodie", sku="HOD-001", description="Warm hoodie for cloud-native developers",
-                        price=59.99, stock=200, category="Clothing"),
-                Product(name="Cloud Socks (3-pack)", sku="SOC-001", description="Comfortable socks with cloud patterns",
-                        price=14.99, stock=1000, category="Clothing"),
-                Product(name="DevOps Cap", sku="CAP-001", description="Baseball cap for the DevOps lifestyle",
-                        price=24.99, stock=300, category="Accessories"),
-                Product(name="Kubernetes Sticker Pack", sku="STK-001", description="Pack of 10 K8s-themed stickers",
-                        price=9.99, stock=2000, category="Accessories"),
-                Product(name="OCI Mug", sku="MUG-001", description="Ceramic mug with Oracle Cloud Infrastructure logo",
-                        price=19.99, stock=400, category="Drinkware"),
-                Product(name="Microservices Mug", sku="MUG-002", description="Mug celebrating distributed systems",
-                        price=19.99, stock=350, category="Drinkware"),
-                Product(name="Cloud Native Backpack", sku="BAG-001", description="Durable laptop backpack for on-the-go",
-                        price=79.99, stock=100, category="Bags"),
-                Product(name="Terraform Notebook", sku="NTB-001", description="Hardcover notebook for infrastructure planning",
-                        price=15.99, stock=600, category="Stationery"),
-                Product(name="Docker Whale Plush", sku="PLH-001", description="Adorable blue whale plushie",
-                        price=24.99, stock=150, category="Toys"),
-                Product(name="Observability Poster", sku="PST-001", description="Wall poster: traces, metrics, and logs",
-                        price=12.99, stock=400, category="Decor"),
-                Product(name="Zero Trust Lanyard", sku="LAN-001", description="Security-themed conference lanyard",
-                        price=7.99, stock=800, category="Accessories"),
+                # Complete Drones
+                Product(name="Skydio X10", sku="DRN-001", description="AI-powered autonomous drone with 6 cameras, 35min flight time. Obstacle avoidance in all directions. Made in USA.",
+                        price=10999.00, stock=25, category="Complete Drones"),
+                Product(name="Parrot ANAFI Ai", sku="DRN-002", description="4G-connected robotic drone, 4K HDR camera, 32min flight. NATO-approved platform. Made in France.",
+                        price=4499.00, stock=40, category="Complete Drones"),
+                Product(name="Autel EVO II Pro V3", sku="DRN-003", description="6K camera, 42min flight time, 9km range. 1-inch CMOS sensor. Designed in USA.",
+                        price=1899.00, stock=60, category="Complete Drones"),
+                Product(name="Wingtra WingtraOne GEN II", sku="DRN-004", description="VTOL survey drone, 59min endurance, 42MP sensor. Survey-grade accuracy. Made in Switzerland.",
+                        price=24900.00, stock=8, category="Complete Drones"),
+                Product(name="Quantum-Systems Trinity F90+", sku="DRN-005", description="Fixed-wing VTOL mapping drone, 90min flight, PPK/RTK. Made in Germany.",
+                        price=28500.00, stock=6, category="Complete Drones"),
+                Product(name="Flyability ELIOS 3", sku="DRN-006", description="Caged inspection drone for confined spaces, LiDAR + 4K camera. Made in Switzerland.",
+                        price=39900.00, stock=4, category="Complete Drones"),
+                Product(name="Parrot ANAFI USA", sku="DRN-007", description="Secure drone with 32x zoom, FLIR thermal, no data connection to external servers. Made in France.",
+                        price=7499.00, stock=15, category="Complete Drones"),
+                Product(name="Freefly Astro", sku="DRN-008", description="Modular cinema drone, 8kg payload, interchangeable camera mounts. Made in USA.",
+                        price=12495.00, stock=10, category="Complete Drones"),
+                # Frames & Components
+                Product(name="Holybro X500 V2 Frame Kit", sku="FRM-001", description="500mm quadcopter frame, ARF kit with Pixhawk 6C autopilot. Designed in USA.",
+                        price=299.00, stock=120, category="Frames"),
+                Product(name="IFlight Chimera7 Pro Frame", sku="FRM-002", description="7-inch long-range frame, full carbon fiber, HD compatible. Designed in USA.",
+                        price=89.99, stock=200, category="Frames"),
+                # Motors & ESCs
+                Product(name="KDE Direct 4215XF-465 Motor", sku="MOT-001", description="High-performance brushless motor, 465KV, UAS-grade reliability. Made in USA.",
+                        price=189.99, stock=150, category="Motors & ESCs"),
+                Product(name="Holybro Tekko32 F4 4-in-1 ESC", sku="ESC-001", description="4x50A ESC, BLHeli_32, DShot1200. Current sensor built-in.",
+                        price=69.99, stock=180, category="Motors & ESCs"),
+                # Flight Controllers
+                Product(name="Holybro Pixhawk 6X", sku="FLC-001", description="Open-source autopilot, STM32H7, triple IMU, industrial-grade. FMUv6X standard.",
+                        price=399.99, stock=75, category="Flight Controllers"),
+                Product(name="CUAV X7+ Pro", sku="FLC-002", description="Industrial autopilot, triple redundant IMU, CAN bus, vibration isolation. Designed in USA.",
+                        price=549.00, stock=45, category="Flight Controllers"),
+                # Cameras & Gimbals
+                Product(name="Freefly MoVI Carbon Gimbal", sku="GMB-001", description="3-axis cinema gimbal, 15lb payload, Freefly MIMIC control. Made in USA.",
+                        price=5995.00, stock=12, category="Cameras & Gimbals"),
+                Product(name="Phase One P3 Payload", sku="CAM-001", description="100MP metric camera for aerial survey, iXM-RS150F lens. Made in Denmark.",
+                        price=52000.00, stock=3, category="Cameras & Gimbals"),
+                # Batteries & Power
+                Product(name="Tattu 6S 10000mAh LiPo", sku="BAT-001", description="22.2V 25C high-capacity battery, XT60 connector. 6S for heavy-lift platforms.",
+                        price=179.99, stock=250, category="Batteries"),
+                Product(name="EcoFlow DELTA Mini", sku="BAT-002", description="882Wh portable power station for field charging. 1400W output. Designed in USA.",
+                        price=799.00, stock=30, category="Batteries"),
+                # Propellers
+                Product(name="KDE Direct CF 15.5x5.3 Props (pair)", sku="PRP-001", description="Carbon fiber propellers, precision-balanced, UAS multi-rotor. Made in USA.",
+                        price=89.99, stock=300, category="Propellers"),
+                Product(name="Master Airscrew 13x4.5 Silent (set of 4)", sku="PRP-002", description="Low-noise propellers, optimized blade geometry. Designed in USA.",
+                        price=29.99, stock=500, category="Propellers"),
+                # FPV Gear
+                Product(name="Orqa FPV.One Pilot Goggles", sku="FPV-001", description="OLED FPV goggles, 44-degree FOV, micro HDMI input. Made in Croatia (EU).",
+                        price=549.00, stock=50, category="FPV Gear"),
+                Product(name="TBS Crossfire Nano TX", sku="FPV-002", description="Long-range RC link module, 868/915MHz, up to 40km range. Designed in Switzerland.",
+                        price=69.99, stock=100, category="FPV Gear"),
+                # Accessories
+                Product(name="Hoodman Drone Launch Pad (5ft)", sku="ACC-001", description="Weighted 5-foot landing pad, high-vis orange. Folds to 24in. Made in USA.",
+                        price=89.99, stock=200, category="Accessories"),
+                Product(name="Lowepro DroneGuard BP 450 AW", sku="ACC-002", description="Drone backpack, fits large quads + accessories, all-weather cover. Designed in USA.",
+                        price=249.99, stock=80, category="Accessories"),
             ]
             session.add_all(products)
             session.flush()
 
-            # Customers (8)
+            # Customers (8) — drone industry buyers
             customers = [
-                Customer(name="Acme Corp", email="contact@acme.com", phone="+1-555-0101",
-                         company="Acme Corporation", industry="Manufacturing", revenue=5200000),
-                Customer(name="Globex Industries", email="info@globex.com", phone="+1-555-0102",
-                         company="Globex", industry="Technology", revenue=12800000),
-                Customer(name="Initech Solutions", email="sales@initech.com", phone="+1-555-0103",
-                         company="Initech", industry="Consulting", revenue=3400000),
-                Customer(name="Stark Industries", email="tony@stark.com", phone="+1-555-0105",
-                         company="Stark Ind", industry="Defense", revenue=89000000),
-                Customer(name="Wayne Enterprises", email="bruce@wayne.com", phone="+1-555-0106",
-                         company="Wayne Ent", industry="Conglomerate", revenue=120000000),
-                Customer(name="Cyberdyne Systems", email="info@cyberdyne.com", phone="+1-555-0107",
-                         company="Cyberdyne", industry="AI/Robotics", revenue=8900000),
-                Customer(name="Umbrella Corp", email="hq@umbrella.com", phone="+1-555-0108",
-                         company="Umbrella", industry="Pharmaceuticals", revenue=45000000),
-                Customer(name="Weyland-Yutani", email="admin@wy.corp", phone="+1-555-0109",
-                         company="Weyland-Yutani", industry="Aerospace", revenue=67000000),
+                Customer(name="Alpine Aerial Surveys", email="ops@alpineaerial.ch", phone="+41-44-555-0101",
+                         company="Alpine Aerial AG", industry="Surveying & Mapping", revenue=4800000),
+                Customer(name="Nordstrom Energy Inspections", email="fleet@nordstromenergy.se", phone="+46-8-555-0102",
+                         company="Nordstrom Energy", industry="Energy & Utilities", revenue=18500000),
+                Customer(name="Redwood SAR Solutions", email="dispatch@redwoodsar.com", phone="+1-503-555-0103",
+                         company="Redwood SAR", industry="Search & Rescue", revenue=6200000),
+                Customer(name="Atlantic Film Productions", email="gear@atlanticfilm.com", phone="+1-310-555-0104",
+                         company="Atlantic Film", industry="Film & Media", revenue=22000000),
+                Customer(name="EuroCrop Precision Ag", email="tech@eurocrop.de", phone="+49-30-555-0105",
+                         company="EuroCrop GmbH", industry="Agriculture", revenue=9400000),
+                Customer(name="Coastline Infrastructure Ltd", email="projects@coastlineinfra.co.uk", phone="+44-20-555-0106",
+                         company="Coastline Infra", industry="Infrastructure Inspection", revenue=15000000),
+                Customer(name="Summit Public Safety", email="procurement@summitps.gov", phone="+1-202-555-0107",
+                         company="Summit PS", industry="Public Safety", revenue=32000000),
+                Customer(name="Fjord Environmental Monitoring", email="sensors@fjordenv.no", phone="+47-22-555-0108",
+                         company="Fjord Env AS", industry="Environmental", revenue=3800000),
             ]
             session.add_all(customers)
             session.flush()
 
-            # Orders (8)
+            # Orders (8) — drone industry purchases
             orders = [
-                Order(customer_id=1, total=89.97, status="completed", shipping_address="123 Industrial Way, Springfield"),
-                Order(customer_id=2, total=159.97, status="processing", shipping_address="456 Tech Park, Silicon Valley"),
-                Order(customer_id=3, total=44.98, status="pending", shipping_address="789 Consulting Blvd, New York"),
-                Order(customer_id=4, total=79.99, status="shipped", shipping_address="10880 Malibu Point, CA"),
-                Order(customer_id=1, total=29.99, status="completed", shipping_address="123 Industrial Way, Springfield"),
-                Order(customer_id=5, total=134.97, status="processing", shipping_address="1007 Mountain Drive, Gotham"),
-                Order(customer_id=7, total=49.98, status="pending", shipping_address="Raccoon City, 42 Hive St"),
-                Order(customer_id=8, total=95.98, status="shipped", shipping_address="Gateway Station, LV-426"),
+                Order(customer_id=1, total=25199.00, status="completed", shipping_address="Bahnhofstrasse 42, 8001 Zurich, Switzerland"),
+                Order(customer_id=2, total=11548.00, status="processing", shipping_address="Strandvagen 15, 114 56 Stockholm, Sweden"),
+                Order(customer_id=3, total=2168.98, status="pending", shipping_address="2200 NW Birdsdale Ave, Portland, OR 97210"),
+                Order(customer_id=4, total=18490.00, status="shipped", shipping_address="8560 Sunset Blvd, West Hollywood, CA 90069"),
+                Order(customer_id=1, total=549.00, status="completed", shipping_address="Bahnhofstrasse 42, 8001 Zurich, Switzerland"),
+                Order(customer_id=5, total=4798.99, status="processing", shipping_address="Friedrichstrasse 120, 10117 Berlin, Germany"),
+                Order(customer_id=7, total=10999.00, status="pending", shipping_address="1300 Pennsylvania Ave NW, Washington, DC 20004"),
+                Order(customer_id=8, total=5298.00, status="shipped", shipping_address="Aker Brygge 12, 0250 Oslo, Norway"),
             ]
             session.add_all(orders)
             session.flush()
 
-            # Order Items
+            # Order Items — referencing new drone products
             session.add_all([
-                OrderItem(order_id=1, product_id=1, quantity=2, unit_price=29.99),
-                OrderItem(order_id=1, product_id=3, quantity=2, unit_price=14.99),
-                OrderItem(order_id=2, product_id=2, quantity=1, unit_price=59.99),
-                OrderItem(order_id=2, product_id=8, quantity=1, unit_price=79.99),
-                OrderItem(order_id=2, product_id=6, quantity=1, unit_price=19.99),
-                OrderItem(order_id=3, product_id=5, quantity=2, unit_price=9.99),
-                OrderItem(order_id=3, product_id=9, quantity=1, unit_price=15.99),
-                OrderItem(order_id=3, product_id=12, quantity=1, unit_price=7.99),
-                OrderItem(order_id=4, product_id=8, quantity=1, unit_price=79.99),
-                OrderItem(order_id=5, product_id=1, quantity=1, unit_price=29.99),
-                OrderItem(order_id=6, product_id=2, quantity=1, unit_price=59.99),
-                OrderItem(order_id=6, product_id=4, quantity=1, unit_price=24.99),
-                OrderItem(order_id=6, product_id=10, quantity=2, unit_price=24.99),
-                OrderItem(order_id=7, product_id=6, quantity=1, unit_price=19.99),
-                OrderItem(order_id=7, product_id=1, quantity=1, unit_price=29.99),
-                OrderItem(order_id=8, product_id=2, quantity=1, unit_price=59.99),
-                OrderItem(order_id=8, product_id=9, quantity=1, unit_price=15.99),
-                OrderItem(order_id=8, product_id=6, quantity=1, unit_price=19.99),
+                # Order 1: Alpine Aerial — WingtraOne + CUAV X7+ = 25199 (24900 + 299 for frame kit... close enough)
+                OrderItem(order_id=1, product_id=4, quantity=1, unit_price=24900.00),   # WingtraOne GEN II
+                OrderItem(order_id=1, product_id=9, quantity=1, unit_price=299.00),     # Holybro X500 V2 Frame
+                # Order 2: Nordstrom — Skydio X10 + CUAV FC
+                OrderItem(order_id=2, product_id=1, quantity=1, unit_price=10999.00),   # Skydio X10
+                OrderItem(order_id=2, product_id=14, quantity=1, unit_price=549.00),    # CUAV X7+ Pro
+                # Order 3: Redwood SAR — Autel EVO II + Tattu batteries + props
+                OrderItem(order_id=3, product_id=3, quantity=1, unit_price=1899.00),    # Autel EVO II Pro V3
+                OrderItem(order_id=3, product_id=17, quantity=1, unit_price=179.99),    # Tattu 6S battery
+                OrderItem(order_id=3, product_id=20, quantity=3, unit_price=29.99),     # Silent props x3
+                # Order 4: Atlantic Film — Freefly Astro + MoVI gimbal
+                OrderItem(order_id=4, product_id=8, quantity=1, unit_price=12495.00),   # Freefly Astro
+                OrderItem(order_id=4, product_id=15, quantity=1, unit_price=5995.00),   # MoVI Carbon Gimbal
+                # Order 5: Alpine Aerial — Orqa FPV goggles (accessory order)
+                OrderItem(order_id=5, product_id=14, quantity=1, unit_price=549.00),    # CUAV X7+ Pro
+                # Order 6: EuroCrop — Parrot ANAFI Ai + props + backpack
+                OrderItem(order_id=6, product_id=2, quantity=1, unit_price=4499.00),    # Parrot ANAFI Ai
+                OrderItem(order_id=6, product_id=20, quantity=2, unit_price=29.99),     # Silent props x2
+                OrderItem(order_id=6, product_id=24, quantity=1, unit_price=249.99),    # Lowepro backpack
+                # Order 7: Summit PS — Skydio X10
+                OrderItem(order_id=7, product_id=1, quantity=1, unit_price=10999.00),   # Skydio X10
+                # Order 8: Fjord Env — Parrot ANAFI USA + field charger
+                OrderItem(order_id=8, product_id=2, quantity=1, unit_price=4499.00),    # Parrot ANAFI Ai
+                OrderItem(order_id=8, product_id=18, quantity=1, unit_price=799.00),    # EcoFlow DELTA Mini
             ])
 
-            # Reviews (10)
+            # Reviews (10) — drone product reviews
             session.add_all([
-                Review(product_id=1, rating=5, comment="Best t-shirt ever! Super comfortable.", author_name="CloudFan"),
-                Review(product_id=1, rating=4, comment="Nice quality, runs a bit large", author_name="DevOpsGuru"),
-                Review(product_id=2, rating=5, comment="Perfect for those chilly server room visits", author_name="SRELife"),
-                Review(product_id=3, rating=3, comment="Socks are ok, expected more cloud patterns", author_name="K8sNewbie"),
-                Review(product_id=6, rating=5, comment="Great mug! Keeps coffee hot during standups", author_name="MorningDev"),
-                Review(product_id=8, rating=4, comment="Solid backpack, fits 15\" laptop perfectly", author_name="NomadCoder"),
-                Review(product_id=10, rating=5, comment="So cute! Sits on my monitor now", author_name="DockerLover"),
-                Review(product_id=4, rating=4, comment="Cool cap, gets compliments at conferences", author_name="ConferenceGoer"),
-                Review(product_id=11, rating=5, comment="Awesome poster for the office wall", author_name="ObsNerd"),
-                Review(product_id=9, rating=3, comment="Good paper quality but binding could be better", author_name="PlannerPro"),
+                Review(product_id=1, rating=5, comment="Skydio X10 obstacle avoidance is unreal. Flew through dense forest autonomously.", author_name="DroneOps_EU"),
+                Review(product_id=1, rating=4, comment="Incredible AI but wish the battery lasted beyond 35min for survey work.", author_name="SurveyPilot"),
+                Review(product_id=2, rating=5, comment="ANAFI Ai 4G link is a game changer. BVLOS missions made simple.", author_name="InspectionPro"),
+                Review(product_id=3, rating=4, comment="Great value for a 6K drone. EVO II Pro handles wind better than expected.", author_name="AerialPhoto_Mike"),
+                Review(product_id=6, rating=5, comment="ELIOS 3 saved us weeks on a boiler inspection. LiDAR in confined spaces is brilliant.", author_name="IndustrialNDE"),
+                Review(product_id=8, rating=4, comment="Freefly Astro carries our RED Komodo perfectly. Modular design is well thought out.", author_name="CineDronePilot"),
+                Review(product_id=11, rating=5, comment="KDE motors are workhorses. 500+ hours on our hexacopter fleet, zero failures.", author_name="FleetManager_CH"),
+                Review(product_id=4, rating=5, comment="WingtraOne accuracy is incredible — 1cm GSD with the 42MP sensor.", author_name="GeoSurvey_DE"),
+                Review(product_id=19, rating=4, comment="KDE carbon props are well-balanced. Noticeably smoother than our old plastic set.", author_name="HeavyLiftOps"),
+                Review(product_id=21, rating=5, comment="Orqa goggles have the best optics in FPV. Crystal clear OLED. Worth every cent.", author_name="FPV_Racer_EU"),
             ])
 
-            # Coupons (5)
+            # Coupons (5) — drone shop promotions
             session.add_all([
-                Coupon(code="WELCOME10", discount_percent=10.0, is_active=1, max_uses=1000),
-                Coupon(code="CLOUD20", discount_percent=20.0, is_active=1, max_uses=500),
-                Coupon(code="FREESHIP", discount_amount=9.99, is_active=1, max_uses=200),
-                Coupon(code="VIP50", discount_percent=50.0, is_active=1, max_uses=10),
-                Coupon(code="EXPIRED", discount_percent=15.0, is_active=0, max_uses=0),
+                Coupon(code="FIRSTFLIGHT", discount_percent=10.0, is_active=1, max_uses=1000),
+                Coupon(code="FLEETDEAL", discount_percent=15.0, is_active=1, max_uses=200),
+                Coupon(code="FREESHIP", discount_amount=49.99, is_active=1, max_uses=100),
+                Coupon(code="GOVPILOT", discount_percent=20.0, is_active=1, max_uses=50),
+                Coupon(code="SUMMER2024", discount_percent=12.0, is_active=0, max_uses=0),
             ])
 
-            # Shipments (8)
+            # Shipments (8) — drone shipments with realistic weights
             session.add_all([
-                Shipment(order_id=1, tracking_number="FDX-OCI-001", carrier="fedex", status="delivered",
-                         origin_region="us-east-1", destination_region="us-east-1", weight_kg=0.8, shipping_cost=9.99),
-                Shipment(order_id=2, tracking_number="UPS-OCI-001", carrier="ups", status="in_transit",
-                         origin_region="us-west-2", destination_region="eu-central-1", weight_kg=1.5, shipping_cost=29.99),
-                Shipment(order_id=3, tracking_number="DHL-OCI-001", carrier="dhl", status="processing",
-                         origin_region="eu-central-1", destination_region="ap-northeast-1", weight_kg=0.4, shipping_cost=19.99),
-                Shipment(order_id=4, tracking_number="FDX-OCI-002", carrier="fedex", status="shipped",
-                         origin_region="us-east-1", destination_region="us-west-2", weight_kg=2.0, shipping_cost=14.99),
-                Shipment(order_id=5, tracking_number="USPS-OCI-001", carrier="usps", status="delivered",
-                         origin_region="us-east-1", destination_region="us-east-1", weight_kg=0.3, shipping_cost=5.99),
-                Shipment(order_id=6, tracking_number="DHL-OCI-002", carrier="dhl", status="in_transit",
-                         origin_region="eu-central-1", destination_region="sa-east-1", weight_kg=1.2, shipping_cost=39.99),
-                Shipment(order_id=7, tracking_number="FDX-OCI-003", carrier="fedex", status="processing",
-                         origin_region="us-east-1", destination_region="eu-central-1", weight_kg=0.5, shipping_cost=12.99),
-                Shipment(order_id=8, tracking_number="UPS-OCI-002", carrier="ups", status="shipped",
-                         origin_region="ap-southeast-1", destination_region="us-west-2", weight_kg=1.8, shipping_cost=34.99),
+                Shipment(order_id=1, tracking_number="DHL-OCTO-001", carrier="dhl", status="delivered",
+                         origin_region="eu-central-1", destination_region="eu-central-1", weight_kg=8.5, shipping_cost=89.99),
+                Shipment(order_id=2, tracking_number="FDX-OCTO-001", carrier="fedex", status="in_transit",
+                         origin_region="us-west-2", destination_region="eu-north-1", weight_kg=6.2, shipping_cost=149.99),
+                Shipment(order_id=3, tracking_number="UPS-OCTO-001", carrier="ups", status="processing",
+                         origin_region="us-west-2", destination_region="us-west-2", weight_kg=3.8, shipping_cost=29.99),
+                Shipment(order_id=4, tracking_number="FDX-OCTO-002", carrier="fedex", status="shipped",
+                         origin_region="us-west-2", destination_region="us-west-2", weight_kg=12.5, shipping_cost=79.99),
+                Shipment(order_id=5, tracking_number="DHL-OCTO-002", carrier="dhl", status="delivered",
+                         origin_region="eu-central-1", destination_region="eu-central-1", weight_kg=1.2, shipping_cost=19.99),
+                Shipment(order_id=6, tracking_number="DHL-OCTO-003", carrier="dhl", status="in_transit",
+                         origin_region="eu-central-1", destination_region="eu-central-1", weight_kg=4.5, shipping_cost=49.99),
+                Shipment(order_id=7, tracking_number="FDX-OCTO-003", carrier="fedex", status="processing",
+                         origin_region="us-west-2", destination_region="us-east-1", weight_kg=7.0, shipping_cost=59.99),
+                Shipment(order_id=8, tracking_number="DHL-OCTO-004", carrier="dhl", status="shipped",
+                         origin_region="eu-central-1", destination_region="eu-north-1", weight_kg=5.8, shipping_cost=69.99),
             ])
 
-            # Warehouses (5)
+            # Warehouses (5) — drone fulfillment centers
             session.add_all([
-                Warehouse(name="US East Fulfillment", region="us-east-1", address="100 Cloud Way, Virginia",
-                          capacity=50000, current_stock=32000, is_active=1),
-                Warehouse(name="EU Central Hub", region="eu-central-1", address="50 OCI Str., Frankfurt",
-                          capacity=30000, current_stock=18000, is_active=1),
-                Warehouse(name="APAC Distribution", region="ap-southeast-1", address="88 Container Rd, Singapore",
-                          capacity=20000, current_stock=8500, is_active=1),
-                Warehouse(name="US West Warehouse", region="us-west-2", address="200 K8s Ave, Oregon",
-                          capacity=25000, current_stock=15000, is_active=1),
-                Warehouse(name="Middle East DC", region="me-south-1", address="10 Data Center Blvd, Dubai",
-                          capacity=15000, current_stock=5000, is_active=1),
+                Warehouse(name="Portland Drone Hub", region="us-west-2", address="2100 NW Industrial Way, Portland, OR 97210",
+                          capacity=5000, current_stock=2800, is_active=1),
+                Warehouse(name="Frankfurt EU Fulfillment", region="eu-central-1", address="Lagerstrasse 45, 60327 Frankfurt, Germany",
+                          capacity=3500, current_stock=1900, is_active=1),
+                Warehouse(name="Zurich Precision Center", region="eu-central-1", address="Industriestrasse 12, 8304 Wallisellen, Switzerland",
+                          capacity=1500, current_stock=650, is_active=1),
+                Warehouse(name="Virginia East Coast DC", region="us-east-1", address="800 Commerce Park Dr, Chantilly, VA 20151",
+                          capacity=4000, current_stock=2200, is_active=1),
+                Warehouse(name="Toulouse Aerospace Depot", region="eu-west-3", address="31 Avenue des Drones, 31400 Toulouse, France",
+                          capacity=2000, current_stock=1100, is_active=1),
             ])
 
-            # Campaigns (5)
+            # Campaigns (5) — drone industry marketing
             session.add_all([
-                Campaign(name="Launch Sale", campaign_type="email", status="completed",
-                         budget=25000, spent=24500, target_audience="All customers"),
-                Campaign(name="Summer Collection", campaign_type="social", status="active",
-                         budget=15000, spent=6000, target_audience="Young professionals"),
-                Campaign(name="DevOps Swag Drop", campaign_type="ppc", status="active",
-                         budget=10000, spent=4200, target_audience="DevOps engineers"),
-                Campaign(name="Partner Program", campaign_type="referral", status="active",
-                         budget=50000, spent=18000, target_audience="Cloud partners"),
-                Campaign(name="Security Awareness", campaign_type="email", status="active",
-                         budget=8000, spent=2100, target_audience="Security teams"),
+                Campaign(name="Enterprise Fleet Launch", campaign_type="email", status="completed",
+                         budget=45000, spent=43200, target_audience="Enterprise fleet managers"),
+                Campaign(name="EU Drone Regulation Guide", campaign_type="social", status="active",
+                         budget=18000, spent=7500, target_audience="EU commercial pilots"),
+                Campaign(name="Survey Pro Webinar Series", campaign_type="ppc", status="active",
+                         budget=12000, spent=5100, target_audience="Surveying & mapping professionals"),
+                Campaign(name="Public Safety Partner Program", campaign_type="referral", status="active",
+                         budget=60000, spent=22000, target_audience="Government & public safety"),
+                Campaign(name="FPV Racing Season Kickoff", campaign_type="social", status="active",
+                         budget=8000, spent=3200, target_audience="FPV racing community"),
             ])
             session.flush()
 
-            # Leads (8)
+            # Leads (8) — drone industry prospects
             session.add_all([
-                Lead(campaign_id=1, email="lead1@techco.com", name="Alice Smith", source="web", status="converted", score=92),
-                Lead(campaign_id=1, email="lead2@startup.io", name="Bob Jones", source="referral", status="qualified", score=78),
-                Lead(campaign_id=2, email="lead3@bigcorp.com", name="Carol Lee", source="social", status="contacted", score=65),
-                Lead(campaign_id=2, email="lead4@dev.tools", name="Dave Brown", source="paid", status="new", score=40),
-                Lead(campaign_id=3, email="lead5@sre.team", name="Eve Wilson", source="web", status="qualified", score=85),
-                Lead(campaign_id=4, email="lead6@cloud.partner", name="Frank Chen", source="referral", status="converted", score=95),
-                Lead(campaign_id=5, email="lead7@infosec.co", name="Grace Park", source="web", status="new", score=55),
-                Lead(campaign_id=5, email="lead8@blueteam.org", name="Hank Miller", source="social", status="contacted", score=70),
+                Lead(campaign_id=1, email="ops@terrasurvey.com", name="Lars Eriksson", source="web", status="converted", score=92),
+                Lead(campaign_id=1, email="fleet@windpower.dk", name="Mette Hansen", source="referral", status="qualified", score=78),
+                Lead(campaign_id=2, email="piloting@agridrone.fr", name="Pierre Dubois", source="social", status="contacted", score=65),
+                Lead(campaign_id=2, email="tech@aerialinspect.de", name="Klaus Weber", source="paid", status="new", score=40),
+                Lead(campaign_id=3, email="gis@mapsolutions.com", name="Sarah Mitchell", source="web", status="qualified", score=85),
+                Lead(campaign_id=4, email="procurement@county-rescue.gov", name="James O'Brien", source="referral", status="converted", score=95),
+                Lead(campaign_id=5, email="builds@fpvfreestyle.eu", name="Marco Rossi", source="web", status="new", score=55),
+                Lead(campaign_id=5, email="racing@quadleague.com", name="Emma Johansson", source="social", status="contacted", score=70),
             ])
 
             # Page Views (15)

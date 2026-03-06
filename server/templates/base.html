@@ -6,29 +6,32 @@
     <title>{{ title }} — OCTO-CRM-APM</title>
     <style>
         :root {
-            --primary: #1a73e8;
-            --primary-dark: #1557b0;
-            --bg: #f8f9fa;
+            --primary: #1a2a3a;
+            --primary-dark: #0f1c28;
+            --accent: #6ec6d0;
+            --accent-dark: #4ba8b3;
+            --bg: #f0f4f7;
             --card-bg: #ffffff;
-            --text: #202124;
-            --text-secondary: #5f6368;
-            --border: #dadce0;
+            --text: #1a2a3a;
+            --text-secondary: #5f6f7f;
+            --border: #d0dae0;
             --success: #34a853;
             --warning: #fbbc04;
             --danger: #ea4335;
-            --info: #4285f4;
+            --info: #6ec6d0;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
         nav {
             background: var(--primary); color: #fff; padding: 0 24px;
-            display: flex; align-items: center; height: 56px; gap: 32px;
-            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            display: flex; align-items: center; height: 56px; gap: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.2);
         }
-        nav .brand { font-size: 20px; font-weight: 600; letter-spacing: -0.5px; }
-        nav a { color: rgba(255,255,255,.85); text-decoration: none; font-size: 14px; padding: 8px 0; }
-        nav a:hover { color: #fff; }
-        nav a.active { color: #fff; border-bottom: 2px solid #fff; }
+        nav .brand-area { display: flex; align-items: center; gap: 10px; margin-right: 16px; }
+        nav .brand { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
+        nav a { color: rgba(255,255,255,.75); text-decoration: none; font-size: 13px; padding: 8px 0; transition: color .15s; }
+        nav a:hover { color: var(--accent); }
+        nav a.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
         .container { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
         .card {
             background: var(--card-bg); border-radius: 8px; padding: 20px;
@@ -37,7 +40,7 @@
         .card h3 { font-size: 14px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px; letter-spacing: 0.5px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
         .stat { text-align: center; }
-        .stat .value { font-size: 32px; font-weight: 700; color: var(--primary); }
+        .stat .value { font-size: 32px; font-weight: 700; color: var(--accent-dark); }
         .stat .label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
         .badge {
             display: inline-block; padding: 2px 8px; border-radius: 12px;
@@ -51,13 +54,16 @@
         th { font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; }
         .btn {
             display: inline-block; padding: 8px 16px; border-radius: 4px;
-            background: var(--primary); color: #fff; border: none; cursor: pointer;
+            background: var(--accent-dark); color: #fff; border: none; cursor: pointer;
             font-size: 14px; text-decoration: none;
         }
-        .btn:hover { background: var(--primary-dark); }
-        .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
-        .btn-outline:hover { background: rgba(26,115,232,.08); }
-        footer { text-align: center; padding: 24px; color: var(--text-secondary); font-size: 13px; }
+        .btn:hover { background: var(--accent); }
+        .btn-outline { background: transparent; color: var(--accent-dark); border: 1px solid var(--accent-dark); }
+        .btn-outline:hover { background: rgba(110,198,208,.1); }
+        footer {
+            text-align: center; padding: 24px; color: var(--text-secondary); font-size: 13px;
+            border-top: 1px solid var(--border); margin-top: 32px;
+        }
         {% if rum_configured %}
         /* RUM beacon loads here */
         {% endif %}
@@ -66,10 +72,12 @@
 </head>
 <body>
     <nav>
-        <img src="/static/img/octo-logo.svg" alt="OCTO" style="height:36px;margin-right:4px;vertical-align:middle;">
-        <span class="brand">OCTO-CRM-APM</span>
+        <div class="brand-area">
+            <img src="/static/img/octo-icon.svg" alt="OCTO" style="height:36px;">
+            <span class="brand">OCTO-CRM-APM</span>
+        </div>
         <a href="/" {% if module == 'dashboard' or not module %}class="active"{% endif %}>Dashboard</a>
-        <a href="/shop" {% if module == 'shop' %}class="active"{% endif %}>Shop</a>
+        <a href="/shop" {% if module == 'shop' %}class="active"{% endif %}>Drone Shop</a>
         <a href="/catalogue" {% if module == 'catalogue' %}class="active"{% endif %}>Catalogue</a>
         <a href="/orders-page" {% if module == 'orders' %}class="active"{% endif %}>Orders</a>
         <a href="/shipping-page" {% if module == 'shipping' %}class="active"{% endif %}>Shipping</a>

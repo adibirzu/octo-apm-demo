@@ -1,74 +1,101 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" width="400" height="480">
   <defs>
-    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a73e8;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#0d47a1;stop-opacity:1"/>
-    </linearGradient>
-    <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#e8b4f8;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#ce93d8;stop-opacity:1"/>
-    </linearGradient>
-    <linearGradient id="octoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#7c4dff;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#5c23d4;stop-opacity:1"/>
-    </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+    <style>
+      .octo-fill { fill: #6ec6d0; }
+      .octo-stroke { fill: none; stroke: #6ec6d0; stroke-width: 3; }
+      .octo-text { fill: #6ec6d0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-weight: 700; letter-spacing: 6px; }
+      .product-text { fill: #8ad4dc; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-weight: 400; letter-spacing: 2px; font-size: 14px; }
+    </style>
   </defs>
 
-  <!-- Shield background -->
-  <path d="M100 10 L175 40 L175 100 C175 145 140 170 100 185 C60 170 25 145 25 100 L25 40 Z"
-        fill="url(#shieldGrad)" stroke="#0d47a1" stroke-width="2" opacity="0.9"/>
-  <path d="M100 18 L168 44 L168 100 C168 140 136 163 100 177 C64 163 32 140 32 100 L32 44 Z"
-        fill="#1565c0" stroke="none" opacity="0.3"/>
+  <!-- Hexagonal shield outline -->
+  <path d="M200 28 L268 60 L268 128 L200 160 L132 128 L132 60 Z"
+        class="octo-stroke" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- Brain with circuit pattern inside shield -->
+  <g transform="translate(200,94)" class="octo-fill">
+    <!-- Brain left hemisphere -->
+    <path d="M-22,-24 C-22,-34 -14,-40 -6,-40 C0,-40 4,-36 4,-30
+             C4,-36 8,-38 12,-38 C18,-38 22,-34 22,-28
+             C22,-22 18,-16 14,-14 C18,-12 22,-8 22,-2
+             C22,6 16,10 10,10 C6,10 2,8 0,4
+             C-2,8 -6,10 -10,10 C-16,10 -22,6 -22,-2
+             C-22,-8 -18,-14 -14,-16 C-18,-18 -22,-22 -22,-24 Z"
+          opacity="0.9"/>
+    <!-- Circuit traces -->
+    <line x1="0" y1="-30" x2="0" y2="10" stroke="#1a2a3a" stroke-width="1.5" opacity="0.6"/>
+    <line x1="-14" y1="-16" x2="14" y2="-16" stroke="#1a2a3a" stroke-width="1.5" opacity="0.6"/>
+    <circle cx="0" cy="-24" r="2.5" fill="#1a2a3a" opacity="0.7"/>
+    <circle cx="0" cy="-8" r="2.5" fill="#1a2a3a" opacity="0.7"/>
+    <circle cx="-10" cy="-16" r="2" fill="#1a2a3a" opacity="0.7"/>
+    <circle cx="10" cy="-16" r="2" fill="#1a2a3a" opacity="0.7"/>
+    <circle cx="0" cy="4" r="2" fill="#1a2a3a" opacity="0.7"/>
+    <!-- Circuit branches -->
+    <line x1="0" y1="-24" x2="-10" y2="-30" stroke="#1a2a3a" stroke-width="1" opacity="0.5"/>
+    <line x1="0" y1="-24" x2="10" y2="-30" stroke="#1a2a3a" stroke-width="1" opacity="0.5"/>
+    <line x1="0" y1="-8" x2="-8" y2="-4" stroke="#1a2a3a" stroke-width="1" opacity="0.5"/>
+    <line x1="0" y1="-8" x2="8" y2="-4" stroke="#1a2a3a" stroke-width="1" opacity="0.5"/>
+    <circle cx="-10" cy="-30" r="1.5" fill="#1a2a3a" opacity="0.6"/>
+    <circle cx="10" cy="-30" r="1.5" fill="#1a2a3a" opacity="0.6"/>
+  </g>
 
   <!-- Octopus head (dome) -->
-  <ellipse cx="100" cy="72" rx="42" ry="38" fill="url(#octoGrad)" filter="url(#glow)"/>
-  <ellipse cx="100" cy="72" rx="36" ry="32" fill="#9c27b0" opacity="0.4"/>
-
-  <!-- Brain pattern on head -->
-  <path d="M78 62 Q85 55 92 62 Q99 55 106 62 Q113 55 120 62"
-        fill="none" stroke="url(#brainGrad)" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M82 72 Q90 65 98 72 Q106 65 114 72"
-        fill="none" stroke="url(#brainGrad)" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M86 82 Q94 75 102 82 Q110 75 118 82"
-        fill="none" stroke="url(#brainGrad)" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="200" cy="210" rx="62" ry="52" class="octo-fill"/>
 
   <!-- Eyes -->
-  <ellipse cx="86" cy="70" rx="8" ry="9" fill="#ffffff"/>
-  <ellipse cx="114" cy="70" rx="8" ry="9" fill="#ffffff"/>
-  <circle cx="88" cy="69" r="4" fill="#1a237e"/>
-  <circle cx="116" cy="69" r="4" fill="#1a237e"/>
-  <circle cx="89.5" cy="67.5" r="1.5" fill="#ffffff"/>
-  <circle cx="117.5" cy="67.5" r="1.5" fill="#ffffff"/>
+  <path d="M175,200 L185,194 L193,200 L185,202 Z" fill="#1a2a3a"/>
+  <path d="M207,200 L215,194 L225,200 L215,202 Z" fill="#1a2a3a"/>
 
-  <!-- Tentacles (8 total, curving outward) -->
-  <!-- Left tentacles -->
-  <path d="M68 95 Q45 110 35 135 Q30 148 38 152" fill="none" stroke="#7c4dff" stroke-width="5" stroke-linecap="round"/>
-  <path d="M62 100 Q50 125 55 150 Q58 162 65 158" fill="none" stroke="#9c27b0" stroke-width="4.5" stroke-linecap="round"/>
-  <path d="M72 102 Q62 130 68 155 Q72 168 78 162" fill="none" stroke="#7c4dff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M80 105 Q75 130 78 148 Q80 158 86 155" fill="none" stroke="#9c27b0" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Tentacle 1 — far left -->
+  <path d="M155,245 Q110,270 80,310 Q55,345 45,370 Q35,395 55,400 Q65,395 60,380 Q55,365 65,345 Q75,325 95,305"
+        class="octo-fill" opacity="0.95"/>
+  <!-- Suction cups -->
+  <ellipse cx="58" cy="388" rx="5" ry="3" fill="#1a2a3a" opacity="0.3"/>
+  <ellipse cx="52" cy="374" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
+  <ellipse cx="56" cy="360" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
 
-  <!-- Right tentacles -->
-  <path d="M132 95 Q155 110 165 135 Q170 148 162 152" fill="none" stroke="#7c4dff" stroke-width="5" stroke-linecap="round"/>
-  <path d="M138 100 Q150 125 145 150 Q142 162 135 158" fill="none" stroke="#9c27b0" stroke-width="4.5" stroke-linecap="round"/>
-  <path d="M128 102 Q138 130 132 155 Q128 168 122 162" fill="none" stroke="#7c4dff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M120 105 Q125 130 122 148 Q120 158 114 155" fill="none" stroke="#9c27b0" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Tentacle 2 — left -->
+  <path d="M162,252 Q130,285 115,320 Q100,355 100,380 Q100,405 120,400 Q130,395 125,375 Q120,355 125,335"
+        class="octo-fill" opacity="0.95"/>
+  <ellipse cx="112" cy="392" rx="5" ry="3" fill="#1a2a3a" opacity="0.3"/>
+  <ellipse cx="105" cy="378" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
 
-  <!-- Suction cups on outer tentacles -->
-  <circle cx="36" cy="148" r="3" fill="#b388ff" opacity="0.7"/>
-  <circle cx="42" cy="138" r="2.5" fill="#b388ff" opacity="0.5"/>
-  <circle cx="164" cy="148" r="3" fill="#b388ff" opacity="0.7"/>
-  <circle cx="158" cy="138" r="2.5" fill="#b388ff" opacity="0.5"/>
+  <!-- Tentacle 3 — center-left -->
+  <path d="M172,258 Q155,295 150,330 Q145,365 150,390 Q155,410 170,405 Q178,398 172,378 Q168,358 170,338"
+        class="octo-fill" opacity="0.95"/>
+  <ellipse cx="162" cy="400" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
+  <ellipse cx="155" cy="385" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
 
-  <!-- Shield lock/security icon on chest -->
-  <rect x="93" y="90" width="14" height="10" rx="2" fill="#ffd600" opacity="0.9"/>
-  <path d="M96 90 L96 86 Q96 82 100 82 Q104 82 104 86 L104 90"
-        fill="none" stroke="#ffd600" stroke-width="2" opacity="0.9"/>
+  <!-- Tentacle 4 — inner-left -->
+  <path d="M185,262 Q180,300 182,335 Q184,365 188,385 Q192,400 200,395 Q205,388 198,370 Q194,352 194,335"
+        class="octo-fill" opacity="0.95"/>
 
-  <!-- App name -->
-  <text x="100" y="205" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif"
-        font-size="16" font-weight="700" fill="#ffffff" letter-spacing="1">OCTO-CRM-APM</text>
+  <!-- Tentacle 5 — inner-right -->
+  <path d="M215,262 Q220,300 218,335 Q216,365 212,385 Q208,400 200,395 Q195,388 202,370 Q206,352 206,335"
+        class="octo-fill" opacity="0.95"/>
+
+  <!-- Tentacle 6 — center-right -->
+  <path d="M228,258 Q245,295 250,330 Q255,365 250,390 Q245,410 230,405 Q222,398 228,378 Q232,358 230,338"
+        class="octo-fill" opacity="0.95"/>
+  <ellipse cx="238" cy="400" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
+  <ellipse cx="245" cy="385" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
+
+  <!-- Tentacle 7 — right -->
+  <path d="M238,252 Q270,285 285,320 Q300,355 300,380 Q300,405 280,400 Q270,395 275,375 Q280,355 275,335"
+        class="octo-fill" opacity="0.95"/>
+  <ellipse cx="288" cy="392" rx="5" ry="3" fill="#1a2a3a" opacity="0.3"/>
+  <ellipse cx="295" cy="378" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
+
+  <!-- Tentacle 8 — far right -->
+  <path d="M245,245 Q290,270 320,310 Q345,345 355,370 Q365,395 345,400 Q335,395 340,380 Q345,365 335,345 Q325,325 305,305"
+        class="octo-fill" opacity="0.95"/>
+  <ellipse cx="342" cy="388" rx="5" ry="3" fill="#1a2a3a" opacity="0.3"/>
+  <ellipse cx="348" cy="374" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
+  <ellipse cx="344" cy="360" rx="4" ry="2.5" fill="#1a2a3a" opacity="0.25"/>
+
+  <!-- OCTO text -->
+  <text x="200" y="440" text-anchor="middle" class="octo-text" font-size="42">OCTO</text>
+
+  <!-- Product name -->
+  <text x="200" y="465" text-anchor="middle" class="product-text">OCTO-CRM-APM</text>
 </svg>
