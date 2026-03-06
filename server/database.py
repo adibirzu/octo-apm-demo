@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, Text, DateTime, ForeignKey,
-    create_engine, text, inspect,
+    Identity, create_engine, text, inspect,
 )
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
@@ -79,7 +79,7 @@ async def get_db():
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     username = Column(String(100), unique=True, nullable=False)
     email = Column(String(200), unique=True, nullable=False)
     password_hash = Column(String(300), nullable=False)
@@ -91,7 +91,7 @@ class User(Base):
 
 class Product(Base):
     __tablename__ = "products"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
     sku = Column(String(50), unique=True, nullable=False)
     description = Column(Text)
@@ -105,7 +105,7 @@ class Product(Base):
 
 class Customer(Base):
     __tablename__ = "customers"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
     email = Column(String(200), unique=True, nullable=False)
     phone = Column(String(50))
@@ -119,7 +119,7 @@ class Customer(Base):
 
 class Order(Base):
     __tablename__ = "orders"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     customer_id = Column(Integer, ForeignKey("customers.id"))
     total = Column(Float, nullable=False)
     status = Column(String(50), default="pending")
@@ -131,7 +131,7 @@ class Order(Base):
 
 class OrderItem(Base):
     __tablename__ = "order_items"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     product_id = Column(Integer, ForeignKey("products.id"))
     quantity = Column(Integer, nullable=False)
@@ -142,7 +142,7 @@ class OrderItem(Base):
 
 class CartItem(Base):
     __tablename__ = "cart_items"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     session_id = Column(String(64), nullable=False, index=True)
     product_id = Column(Integer, ForeignKey("products.id"))
     quantity = Column(Integer, default=1)
@@ -152,7 +152,7 @@ class CartItem(Base):
 
 class Review(Base):
     __tablename__ = "reviews"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     product_id = Column(Integer, ForeignKey("products.id"))
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
     rating = Column(Integer, nullable=False)
@@ -164,7 +164,7 @@ class Review(Base):
 
 class Coupon(Base):
     __tablename__ = "coupons"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     code = Column(String(50), unique=True, nullable=False)
     discount_percent = Column(Float, default=0.0)
     discount_amount = Column(Float, default=0.0)
@@ -176,7 +176,7 @@ class Coupon(Base):
 
 class Shipment(Base):
     __tablename__ = "shipments"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     tracking_number = Column(String(100))
     carrier = Column(String(100))
@@ -192,7 +192,7 @@ class Shipment(Base):
 
 class Warehouse(Base):
     __tablename__ = "warehouses"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
     region = Column(String(50), nullable=False)
     address = Column(Text)
@@ -204,7 +204,7 @@ class Warehouse(Base):
 
 class Campaign(Base):
     __tablename__ = "campaigns"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
     campaign_type = Column(String(50), default="email")
     status = Column(String(50), default="draft")
@@ -219,7 +219,7 @@ class Campaign(Base):
 
 class Lead(Base):
     __tablename__ = "leads"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     campaign_id = Column(Integer, ForeignKey("campaigns.id"))
     email = Column(String(200), nullable=False)
     name = Column(String(200))
@@ -233,7 +233,7 @@ class Lead(Base):
 
 class PageView(Base):
     __tablename__ = "page_views"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     page = Column(String(200), nullable=False)
     visitor_ip = Column(String(50))
     visitor_region = Column(String(50))
@@ -246,7 +246,7 @@ class PageView(Base):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     user_id = Column(Integer)
     action = Column(String(100), nullable=False)
     resource = Column(String(200))
@@ -259,11 +259,28 @@ class AuditLog(Base):
 # ── Database Initialization ──────────────────────────────────────
 
 def init_tables():
-    """Create all tables if they don't exist (works with both PG and Oracle)."""
+    """Create all tables if they don't exist (works with both PG and Oracle).
+
+    If tables exist but are empty and missing Identity columns (Oracle),
+    drops and recreates them with proper Identity columns.
+    """
     if sync_engine is None:
         logger.warning("No sync engine — skipping table creation")
         return
     try:
+        insp = inspect(sync_engine)
+        existing_tables = insp.get_table_names()
+
+        if cfg.use_oracle and "users" in existing_tables:
+            # Check if users table is empty — if so, drop all and recreate
+            # (fixes tables created without IDENTITY columns)
+            from sqlalchemy.orm import Session
+            with Session(sync_engine) as session:
+                count = session.execute(text("SELECT COUNT(*) FROM users")).scalar()
+                if count == 0:
+                    logger.info("Oracle tables exist but are empty — dropping for Identity column fix")
+                    Base.metadata.drop_all(sync_engine)
+
         Base.metadata.create_all(sync_engine, checkfirst=True)
         logger.info("Database tables created/verified (backend: %s)",
                      "oracle" if cfg.use_oracle else "postgresql")
