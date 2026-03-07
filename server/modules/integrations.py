@@ -12,11 +12,15 @@ Endpoints:
   GET  /api/integrations/status
 """
 
-import os
 import logging
+import os
+import time
 
 import httpx
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
+from sqlalchemy import text
+
+from server.database import get_db
 from server.observability.otel_setup import get_tracer
 from server.observability.logging_sdk import push_log
 
@@ -24,10 +28,247 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
 CRM_BASE_URL = os.getenv("ENTERPRISE_CRM_URL", "")
+CRM_SYNC_STATE = {
+    "last_sync_ts": 0.0,
+    "last_count": 0,
+    "last_error": "",
+}
 
 
 def _crm_url() -> str:
     return CRM_BASE_URL or os.getenv("C27_CRM_URL", "")
+
+
+def _sync_state_payload() -> dict:
+    return {
+        "last_sync_epoch": CRM_SYNC_STATE["last_sync_ts"] or None,
+        "last_count": CRM_SYNC_STATE["last_count"],
+        "last_error": CRM_SYNC_STATE["last_error"] or None,
+    }
+
+
+def _normalize_customer(raw: dict) -> dict | None:
+    email = (
+        raw.get("email")
+        or raw.get("email_address")
+        or raw.get("contact_email")
+        or ""
+    ).strip()
+    if not email:
+        return None
+
+    name = (
+        raw.get("name")
+        or raw.get("full_name")
+        or raw.get("customer_name")
+        or raw.get("company")
+        or email.split("@")[0]
+    ).strip()
+    company = (raw.get("company") or raw.get("company_name") or "").strip()
+    phone = (raw.get("phone") or raw.get("phone_number") or "").strip()
+    industry = (raw.get("industry") or raw.get("segment") or "Enterprise").strip() or "Enterprise"
+    notes = f"crm_id={raw.get('id') or raw.get('customer_id') or 'n/a'}; source=enterprise-crm-portal"
+    revenue = raw.get("revenue") or raw.get("annual_revenue") or 0
+
+    try:
+        revenue_value = float(revenue or 0)
+    except (TypeError, ValueError):
+        revenue_value = 0.0
+
+    return {
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "company": company,
+        "industry": industry,
+        "revenue": revenue_value,
+        "notes": notes,
+    }
+
+
+def _extract_customer_list(payload) -> list[dict]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        for key in ("customers", "items", "data", "results"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+    return []
+
+
+async def _fetch_crm_customers(crm: str, limit: int) -> list[dict]:
+    async with httpx.AsyncClient(timeout=12.0) as client:
+        attempts = [
+            (f"{crm}/api/customers", {"limit": limit}),
+            (f"{crm}/api/customers", {}),
+            (f"{crm}/customers", {"limit": limit}),
+        ]
+        for url, params in attempts:
+            resp = await client.get(url, params=params)
+            if resp.status_code != 200:
+                continue
+            customers = _extract_customer_list(resp.json())
+            if customers:
+                return customers[:limit]
+    return []
+
+
+async def _upsert_customers(customers: list[dict]) -> dict:
+    synced = 0
+    updated = 0
+    inserted = 0
+
+    async with get_db() as db:
+        for raw in customers:
+            customer = _normalize_customer(raw)
+            if not customer:
+                continue
+
+            existing = await db.execute(
+                text("SELECT id FROM customers WHERE lower(email) = lower(:email) FETCH FIRST 1 ROWS ONLY"),
+                {"email": customer["email"]},
+            )
+            row = existing.mappings().first()
+            if row:
+                await db.execute(
+                    text(
+                        "UPDATE customers SET "
+                        "name = :name, phone = :phone, company = :company, industry = :industry, "
+                        "revenue = :revenue, notes = :notes, updated_at = CURRENT_TIMESTAMP "
+                        "WHERE id = :id"
+                    ),
+                    {**customer, "id": row["id"]},
+                )
+                updated += 1
+            else:
+                await db.execute(
+                    text(
+                        "INSERT INTO customers (name, email, phone, company, industry, revenue, notes) "
+                        "VALUES (:name, :email, :phone, :company, :industry, :revenue, :notes)"
+                    ),
+                    customer,
+                )
+                inserted += 1
+            synced += 1
+
+    return {
+        "synced": synced,
+        "updated": updated,
+        "inserted": inserted,
+    }
+
+
+async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, source: str = "auto") -> dict:
+    crm = _crm_url()
+    if not crm:
+        return {"configured": False, "synced": False, "reason": "CRM not configured", **_sync_state_payload()}
+
+    now = time.time()
+    age = now - float(CRM_SYNC_STATE["last_sync_ts"] or 0)
+    if not force and CRM_SYNC_STATE["last_sync_ts"] and age < 300:
+        return {
+            "configured": True,
+            "synced": True,
+            "skipped": True,
+            "reason": f"cached ({int(age)}s ago)",
+            **_sync_state_payload(),
+        }
+
+    tracer = get_tracer()
+    with tracer.start_as_current_span("integration.crm.sync_customers") as span:
+        span.set_attribute("integration.target_service", "enterprise-crm-portal")
+        span.set_attribute("integration.sync_source", source)
+        span.set_attribute("integration.sync_limit", limit)
+        try:
+            customers = await _fetch_crm_customers(crm, max(1, min(limit, 500)))
+            upsert = await _upsert_customers(customers)
+            CRM_SYNC_STATE["last_sync_ts"] = now
+            CRM_SYNC_STATE["last_count"] = upsert["synced"]
+            CRM_SYNC_STATE["last_error"] = ""
+            span.set_attribute("integration.crm.customers_synced", upsert["synced"])
+            push_log(
+                "INFO",
+                "CRM customer sync completed",
+                **{
+                    "integration.type": "sync_customers",
+                    "integration.customers_synced": upsert["synced"],
+                    "integration.customers_inserted": upsert["inserted"],
+                    "integration.customers_updated": upsert["updated"],
+                },
+            )
+            return {
+                "configured": True,
+                "synced": True,
+                "crm_url": crm,
+                "customers_seen": len(customers),
+                **upsert,
+                **_sync_state_payload(),
+            }
+        except Exception as exc:
+            CRM_SYNC_STATE["last_error"] = str(exc)
+            span.set_attribute("integration.error", str(exc))
+            return {
+                "configured": True,
+                "synced": False,
+                "crm_url": crm,
+                "reason": str(exc),
+                **_sync_state_payload(),
+            }
+
+
+async def list_synced_customers(limit: int = 100) -> list[dict]:
+    async with get_db() as db:
+        result = await db.execute(
+            text(
+                "SELECT id, name, email, phone, company, industry, revenue, updated_at "
+                "FROM customers ORDER BY updated_at DESC"
+            ),
+        )
+        return [dict(row) for row in result.mappings().all()][: max(1, min(limit, 500))]
+
+
+async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float, source: str = "shop") -> dict:
+    tracer = get_tracer()
+    crm = _crm_url()
+    if not crm:
+        return {"synced": False, "reason": "CRM not configured"}
+
+    with tracer.start_as_current_span("integration.crm.sync_order") as span:
+        span.set_attribute("integration.target_service", "enterprise-crm-portal")
+        span.set_attribute("integration.order_id", order_id)
+        span.set_attribute("integration.order_total", total)
+        span.set_attribute("integration.order_source", source)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    f"{crm}/api/invoices",
+                    json={
+                        "customer_email": customer_email,
+                        "amount": total,
+                        "description": f"OCTO-CRM Order #{order_id}",
+                        "source": "octo-crm-apm",
+                    },
+                )
+            span.set_attribute("integration.crm.status_code", resp.status_code)
+            push_log(
+                "INFO",
+                "Order synced to CRM",
+                **{
+                    "integration.type": "sync_order",
+                    "integration.order_id": order_id,
+                    "integration.crm_status": resp.status_code,
+                },
+            )
+            return {
+                "synced": resp.status_code in (200, 201),
+                "order_id": order_id,
+                "status_code": resp.status_code,
+                "crm_response": resp.json() if resp.status_code in (200, 201) else None,
+            }
+        except Exception as exc:
+            span.set_attribute("integration.error", str(exc))
+            return {"synced": False, "order_id": order_id, "reason": str(exc)}
 
 
 # ── Cross-service: OCTO-CRM → CRM ──────────────────────────────────
@@ -89,46 +330,38 @@ async def crm_sync_order(payload: dict, request: Request):
 
     Creates a distributed trace spanning both services.
     """
-    tracer = get_tracer()
-    crm = _crm_url()
-    if not crm:
-        return {"error": "CRM not configured"}
+    return await sync_order_to_crm(
+        order_id=int(payload.get("order_id", 0) or 0),
+        customer_email=payload.get("customer_email", ""),
+        total=float(payload.get("total", 0) or 0),
+        source=payload.get("source", "api"),
+    )
 
-    with tracer.start_as_current_span("integration.crm.sync_order") as span:
-        order_id = payload.get("order_id")
-        customer_email = payload.get("customer_email", "")
-        total = payload.get("total", 0)
 
-        span.set_attribute("integration.target_service", "enterprise-crm-portal")
-        span.set_attribute("integration.order_id", order_id)
-        span.set_attribute("integration.order_total", total)
+@router.post("/crm/sync-customers")
+async def crm_sync_customers(payload: dict | None = None):
+    """Force a customer sync from enterprise-crm-portal into the local customer table."""
+    payload = payload or {}
+    return await sync_customers_from_crm(
+        force=bool(payload.get("force", True)),
+        limit=int(payload.get("limit", 200) or 200),
+        source="manual_endpoint",
+    )
 
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                # Create an invoice in CRM
-                resp = await client.post(f"{crm}/api/invoices", json={
-                    "customer_email": customer_email,
-                    "amount": total,
-                    "description": f"OCTO-CRM Order #{order_id}",
-                    "source": "octo-crm-apm",
-                })
-                span.set_attribute("integration.crm.status_code", resp.status_code)
 
-                push_log("INFO", "Order synced to CRM", **{
-                    "integration.type": "sync_order",
-                    "integration.order_id": order_id,
-                    "integration.crm_status": resp.status_code,
-                })
-
-                return {
-                    "synced": resp.status_code in (200, 201),
-                    "order_id": order_id,
-                    "crm_response": resp.json() if resp.status_code in (200, 201) else None,
-                }
-
-        except Exception as e:
-            span.set_attribute("integration.error", str(e))
-            return {"synced": False, "order_id": order_id, "reason": str(e)}
+@router.get("/crm/customers")
+async def crm_customers(
+    refresh: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=500),
+):
+    """List locally persisted customers with optional CRM refresh."""
+    sync = await sync_customers_from_crm(force=refresh, limit=limit, source="customers_endpoint")
+    customers = await list_synced_customers(limit=limit)
+    return {
+        "customers": customers,
+        "count": len(customers),
+        "sync": sync,
+    }
 
 
 @router.get("/crm/ticket-products")
@@ -227,6 +460,8 @@ async def integration_status():
                 "endpoints": [
                     "/api/integrations/crm/customer-enrichment",
                     "/api/integrations/crm/sync-order",
+                    "/api/integrations/crm/sync-customers",
+                    "/api/integrations/crm/customers",
                     "/api/integrations/crm/ticket-products",
                     "/api/integrations/crm/health",
                 ],

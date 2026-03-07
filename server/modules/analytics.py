@@ -4,6 +4,7 @@ VULNS: SQLi (geo region), no auth on analytics
 """
 
 import asyncio
+import json
 import random
 from fastapi import APIRouter, Request
 from sqlalchemy import text
@@ -64,6 +65,73 @@ async def analytics_overview():
             "active_campaigns": active_campaigns,
             "shipments_in_transit": in_transit,
             "total_leads": total_leads,
+        }
+
+
+@router.get("/security/events")
+async def security_events(limit: int = 100):
+    """Persisted security events for attack visibility and triage."""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("analytics.security.events") as span:
+        async with get_db() as db:
+            result = await db.execute(
+                text(
+                    "SELECT id, attack_type, severity, endpoint, source_ip, payload, "
+                    "product_id, session_id, trace_id, details, created_at "
+                    "FROM security_events ORDER BY created_at DESC"
+                )
+            )
+            events = [dict(row) for row in result.mappings().all()][: max(1, min(limit, 500))]
+
+        for event in events:
+            details = event.get("details")
+            if isinstance(details, str) and details:
+                try:
+                    event["details"] = json.loads(details)
+                except json.JSONDecodeError:
+                    pass
+
+        span.set_attribute("analytics.security_event_count", len(events))
+        return {"events": events, "count": len(events)}
+
+
+@router.get("/security/correlations")
+async def security_correlations(limit: int = 50):
+    """Correlate attacks with products and observed order activity."""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("analytics.security.correlations") as span:
+        async with get_db() as db:
+            attack_rows = await db.execute(
+                text(
+                    "SELECT se.attack_type, se.severity, se.product_id, p.name AS product_name, p.sku, "
+                    "COUNT(*) AS event_count, MAX(se.created_at) AS last_seen, "
+                    "COALESCE((SELECT SUM(oi.quantity) FROM order_items oi WHERE oi.product_id = se.product_id), 0) AS observed_order_units, "
+                    "COALESCE((SELECT SUM(oi.quantity * oi.unit_price) FROM order_items oi WHERE oi.product_id = se.product_id), 0) AS observed_order_value "
+                    "FROM security_events se "
+                    "LEFT JOIN products p ON p.id = se.product_id "
+                    "GROUP BY se.attack_type, se.severity, se.product_id, p.name, p.sku "
+                    "ORDER BY event_count DESC, last_seen DESC"
+                )
+            )
+            product_rows = await db.execute(
+                text(
+                    "SELECT p.id, p.name, p.sku, "
+                    "COALESCE((SELECT COUNT(*) FROM security_events se WHERE se.product_id = p.id), 0) AS security_event_count, "
+                    "COALESCE((SELECT COUNT(*) FROM order_items oi WHERE oi.product_id = p.id), 0) AS order_line_count, "
+                    "COALESCE((SELECT SUM(oi.quantity) FROM order_items oi WHERE oi.product_id = p.id), 0) AS units_ordered "
+                    "FROM products p WHERE p.is_active = 1 "
+                    "ORDER BY security_event_count DESC, order_line_count DESC, p.name"
+                )
+            )
+
+        correlations = [dict(row) for row in attack_rows.mappings().all()][: max(1, min(limit, 500))]
+        product_coverage = [dict(row) for row in product_rows.mappings().all()][: max(1, min(limit, 500))]
+
+        span.set_attribute("analytics.security_correlation_count", len(correlations))
+        return {
+            "correlations": correlations,
+            "product_coverage": product_coverage,
+            "count": len(correlations),
         }
 
 

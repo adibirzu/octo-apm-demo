@@ -1,37 +1,36 @@
-version: "3.8"
-
 services:
   app:
     build: .
     ports:
       - "8080:8080"
+    env_file:
+      - .env.local
     environment:
-      - DATABASE_URL=postgresql+asyncpg://octocrm:octocrm@postgres:5432/octocrm
-      - DATABASE_SYNC_URL=postgresql://octocrm:octocrm@postgres:5432/octocrm
-      - APP_NAME=octo-drone-shop
-      - APP_RUNTIME=docker
-      - ENVIRONMENT=development
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: octocrm
-      POSTGRES_USER: octocrm
-      POSTGRES_PASSWORD: octocrm
+      - APP_NAME=${APP_NAME:-octo-drone-shop}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-octo-drone-shop-oke}
+      - APP_RUNTIME=${APP_RUNTIME:-docker}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PORT=${PORT:-8080}
+      - OCI_AUTH_MODE=${OCI_AUTH_MODE:-auto}
+      - AUTH_TOKEN_SECRET=${AUTH_TOKEN_SECRET:-}
+      - ORACLE_DSN=${ORACLE_DSN:-}
+      - ORACLE_USER=${ORACLE_USER:-ADMIN}
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD:-}
+      - ORACLE_WALLET_DIR=/opt/oracle/wallet
+      - ORACLE_WALLET_PASSWORD=${ORACLE_WALLET_PASSWORD:-}
+      - ENTERPRISE_CRM_URL=${ENTERPRISE_CRM_URL:-}
+      - OCI_COMPARTMENT_ID=${OCI_COMPARTMENT_ID:-}
+      - OCI_GENAI_ENDPOINT=${OCI_GENAI_ENDPOINT:-}
+      - OCI_GENAI_MODEL_ID=${OCI_GENAI_MODEL_ID:-}
+      - OCI_APM_ENDPOINT=${OCI_APM_ENDPOINT:-}
+      - OCI_APM_PRIVATE_DATAKEY=${OCI_APM_PRIVATE_DATAKEY:-}
+      - OCI_APM_PUBLIC_DATAKEY=${OCI_APM_PUBLIC_DATAKEY:-}
+      - OCI_APM_RUM_ENDPOINT=${OCI_APM_RUM_ENDPOINT:-}
+      - OCI_APM_WEB_APPLICATION=${OCI_APM_WEB_APPLICATION:-octo-drone-shop-web}
+      - OCI_LOG_ID=${OCI_LOG_ID:-}
+      - OCI_LOG_GROUP_ID=${OCI_LOG_GROUP_ID:-}
+      - SPLUNK_HEC_URL=${SPLUNK_HEC_URL:-}
+      - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN:-}
     volumes:
-      - ./server/db_init.sql:/docker-entrypoint-initdb.d/01_init.sql
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U octocrm -d octocrm"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  pgdata:
+      - ${ORACLE_WALLET_PATH:-./wallet}:/opt/oracle/wallet:ro
+    restart: unless-stopped

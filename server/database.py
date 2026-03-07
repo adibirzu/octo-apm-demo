@@ -1,17 +1,9 @@
-"""OCI APM Test App — Database engine, session, models, and initialization.
+"""Database engine, session, models, and initialization for ATP-only runtime."""
 
-Supports Oracle ATP (production) and PostgreSQL (development).
-Uses SQLAlchemy async for both backends. Creates tables + seeds on startup.
-"""
-
-import os
 import logging
 from contextlib import asynccontextmanager
 
-from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, Text, DateTime, ForeignKey,
-    Identity, create_engine, text, inspect,
-)
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Identity, create_engine, text, inspect
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from sqlalchemy.sql import func
@@ -23,6 +15,286 @@ logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 
+DRONE_CATALOG_PRODUCTS = [
+    {
+        "name": "Skydio X10",
+        "sku": "DRN-001",
+        "description": "AI-powered autonomous drone with 6 cameras, 35min flight time. Obstacle avoidance in all directions. Made in USA.",
+        "price": 10999.00,
+        "stock": 25,
+        "category": "Complete Drones",
+    },
+    {
+        "name": "Parrot ANAFI Ai",
+        "sku": "DRN-002",
+        "description": "4G-connected robotic drone, 4K HDR camera, 32min flight. NATO-approved platform. Made in France.",
+        "price": 4499.00,
+        "stock": 40,
+        "category": "Complete Drones",
+    },
+    {
+        "name": "Autel EVO II Pro V3",
+        "sku": "DRN-003",
+        "description": "6K camera, 42min flight time, 9km range. 1-inch CMOS sensor. Designed in USA.",
+        "price": 1899.00,
+        "stock": 60,
+        "category": "Complete Drones",
+    },
+    {
+        "name": "Wingtra WingtraOne GEN II",
+        "sku": "DRN-004",
+        "description": "VTOL survey drone, 59min endurance, 42MP sensor. Survey-grade accuracy. Made in Switzerland.",
+        "price": 24900.00,
+        "stock": 8,
+        "category": "Complete Drones",
+    },
+    {
+        "name": "Quantum-Systems Trinity F90+",
+        "sku": "DRN-005",
+        "description": "Fixed-wing VTOL mapping drone, 90min flight, PPK/RTK. Made in Germany.",
+        "price": 28500.00,
+        "stock": 6,
+        "category": "Complete Drones",
+    },
+    {
+        "name": "Flyability ELIOS 3",
+        "sku": "DRN-006",
+        "description": "Caged inspection drone for confined spaces, LiDAR + 4K camera. Made in Switzerland.",
+        "price": 39900.00,
+        "stock": 4,
+        "category": "Complete Drones",
+    },
+    {
+        "name": "Parrot ANAFI USA",
+        "sku": "DRN-007",
+        "description": "Secure drone with 32x zoom, FLIR thermal, no data connection to external servers. Made in France.",
+        "price": 7499.00,
+        "stock": 15,
+        "category": "Complete Drones",
+    },
+    {
+        "name": "Freefly Astro",
+        "sku": "DRN-008",
+        "description": "Modular cinema drone, 8kg payload, interchangeable camera mounts. Made in USA.",
+        "price": 12495.00,
+        "stock": 10,
+        "category": "Complete Drones",
+    },
+    {
+        "name": "Holybro X500 V2 Frame Kit",
+        "sku": "FRM-001",
+        "description": "500mm quadcopter frame, ARF kit with Pixhawk 6C autopilot. Designed in USA.",
+        "price": 299.00,
+        "stock": 120,
+        "category": "Frames",
+    },
+    {
+        "name": "IFlight Chimera7 Pro Frame",
+        "sku": "FRM-002",
+        "description": "7-inch long-range frame, full carbon fiber, HD compatible. Designed in USA.",
+        "price": 89.99,
+        "stock": 200,
+        "category": "Frames",
+    },
+    {
+        "name": "KDE Direct 4215XF-465 Motor",
+        "sku": "MOT-001",
+        "description": "High-performance brushless motor, 465KV, UAS-grade reliability. Made in USA.",
+        "price": 189.99,
+        "stock": 150,
+        "category": "Motors & ESCs",
+    },
+    {
+        "name": "Holybro Tekko32 F4 4-in-1 ESC",
+        "sku": "ESC-001",
+        "description": "4x50A ESC, BLHeli_32, DShot1200. Current sensor built-in.",
+        "price": 69.99,
+        "stock": 180,
+        "category": "Motors & ESCs",
+    },
+    {
+        "name": "Holybro Pixhawk 6X",
+        "sku": "FLC-001",
+        "description": "Open-source autopilot, STM32H7, triple IMU, industrial-grade. FMUv6X standard.",
+        "price": 399.99,
+        "stock": 75,
+        "category": "Flight Controllers",
+    },
+    {
+        "name": "CUAV X7+ Pro",
+        "sku": "FLC-002",
+        "description": "Industrial autopilot, triple redundant IMU, CAN bus, vibration isolation. Designed in USA.",
+        "price": 549.00,
+        "stock": 45,
+        "category": "Flight Controllers",
+    },
+    {
+        "name": "Freefly MoVI Carbon Gimbal",
+        "sku": "GMB-001",
+        "description": "3-axis cinema gimbal, 15lb payload, Freefly MIMIC control. Made in USA.",
+        "price": 5995.00,
+        "stock": 12,
+        "category": "Cameras & Gimbals",
+    },
+    {
+        "name": "Phase One P3 Payload",
+        "sku": "CAM-001",
+        "description": "100MP metric camera for aerial survey, iXM-RS150F lens. Made in Denmark.",
+        "price": 52000.00,
+        "stock": 3,
+        "category": "Cameras & Gimbals",
+    },
+    {
+        "name": "Tattu 6S 10000mAh LiPo",
+        "sku": "BAT-001",
+        "description": "22.2V 25C high-capacity battery, XT60 connector. 6S for heavy-lift platforms.",
+        "price": 179.99,
+        "stock": 250,
+        "category": "Batteries",
+    },
+    {
+        "name": "EcoFlow DELTA Mini",
+        "sku": "BAT-002",
+        "description": "882Wh portable power station for field charging. 1400W output. Designed in USA.",
+        "price": 799.00,
+        "stock": 30,
+        "category": "Batteries",
+    },
+    {
+        "name": "KDE Direct CF 15.5x5.3 Props (pair)",
+        "sku": "PRP-001",
+        "description": "Carbon fiber propellers, precision-balanced, UAS multi-rotor. Made in USA.",
+        "price": 89.99,
+        "stock": 300,
+        "category": "Propellers",
+    },
+    {
+        "name": "Master Airscrew 13x4.5 Silent (set of 4)",
+        "sku": "PRP-002",
+        "description": "Low-noise propellers, optimized blade geometry. Designed in USA.",
+        "price": 29.99,
+        "stock": 500,
+        "category": "Propellers",
+    },
+    {
+        "name": "Orqa FPV.One Pilot Goggles",
+        "sku": "FPV-001",
+        "description": "OLED FPV goggles, 44-degree FOV, micro HDMI input. Made in Croatia (EU).",
+        "price": 549.00,
+        "stock": 50,
+        "category": "FPV Gear",
+    },
+    {
+        "name": "TBS Crossfire Nano TX",
+        "sku": "FPV-002",
+        "description": "Long-range RC link module, 868/915MHz, up to 40km range. Designed in Switzerland.",
+        "price": 69.99,
+        "stock": 100,
+        "category": "FPV Gear",
+    },
+    {
+        "name": "Hoodman Drone Launch Pad (5ft)",
+        "sku": "ACC-001",
+        "description": "Weighted 5-foot landing pad, high-vis orange. Folds to 24in. Made in USA.",
+        "price": 89.99,
+        "stock": 200,
+        "category": "Accessories",
+    },
+    {
+        "name": "Lowepro DroneGuard BP 450 AW",
+        "sku": "ACC-002",
+        "description": "Drone backpack, fits large quads + accessories, all-weather cover. Designed in USA.",
+        "price": 249.99,
+        "stock": 80,
+        "category": "Accessories",
+    },
+]
+
+LEGACY_MUSHOP_SKUS = {
+    "TEE-001",
+    "HOD-001",
+    "SOC-001",
+    "CAP-001",
+    "STK-001",
+    "MUG-001",
+    "MUG-002",
+    "BAG-001",
+    "NTB-001",
+    "PLH-001",
+    "PST-001",
+    "LAN-001",
+}
+
+SEED_PRODUCTS = [*DRONE_CATALOG_PRODUCTS, *ADDITIONAL_PRODUCTS]
+
+SEED_SERVICES = [
+    {
+        "name": "Annual Fleet Maintenance",
+        "sku": "SRV-001",
+        "description": "Comprehensive 100-point inspection and preventative maintenance for enterprise drone fleets.",
+        "price": 2500.00,
+        "category": "Maintenance",
+        "image_url": "",
+    },
+    {
+        "name": "Lidar Calibration & Alignment",
+        "sku": "SRV-002",
+        "description": "High-precision calibration for Zenmuse and Phase One Lidar payloads.",
+        "price": 850.00,
+        "category": "Calibration",
+        "image_url": "",
+    },
+    {
+        "name": "Advanced Pilot Training (BVLOS)",
+        "sku": "SRV-003",
+        "description": "5-day immersive tactical and BVLOS flight training course.",
+        "price": 4500.00,
+        "category": "Training",
+        "image_url": "",
+    },
+    {
+        "name": "Emergency Repair Diagnostic",
+        "sku": "SRV-004",
+        "description": "24-hour turnaround diagnostic service for grounded aircraft.",
+        "price": 300.00,
+        "category": "Maintenance",
+        "image_url": "",
+    },
+]
+
+SEED_USERS = [
+    {
+        "username": "admin",
+        "email": "admin@ocitest.local",
+        "password_hash": "$2b$12$stDMKhq3T8ZSu.c.JV/AuuhFkvdoLMWTZeY/wzArJl1fzv2thZ7ZW",
+        "role": "admin",
+    },
+    {
+        "username": "shopper",
+        "email": "shopper@ocitest.local",
+        "password_hash": "$2b$12$xHlGrfFw.WcVjkJRR2cFUuP2WgKqA90AcaBPwwm3ccPBNZmE76gx6",
+        "role": "user",
+    },
+    {
+        "username": "manager",
+        "email": "manager@ocitest.local",
+        "password_hash": "$2b$12$xHlGrfFw.WcVjkJRR2cFUuP2WgKqA90AcaBPwwm3ccPBNZmE76gx6",
+        "role": "manager",
+    },
+    {
+        "username": "analyst",
+        "email": "analyst@ocitest.local",
+        "password_hash": "$2b$12$xHlGrfFw.WcVjkJRR2cFUuP2WgKqA90AcaBPwwm3ccPBNZmE76gx6",
+        "role": "analyst",
+    },
+    {
+        "username": "support",
+        "email": "support@ocitest.local",
+        "password_hash": "$2b$12$xHlGrfFw.WcVjkJRR2cFUuP2WgKqA90AcaBPwwm3ccPBNZmE76gx6",
+        "role": "support",
+    },
+]
+
 # ── Engine creation ──────────────────────────────────────────────
 
 _engine_kwargs = {
@@ -32,34 +304,30 @@ _engine_kwargs = {
     "pool_pre_ping": True,
 }
 
-if cfg.use_oracle:
-    import oracledb
-    # Use thin mode (pure-Python, no Oracle Instant Client needed)
-    oracledb.defaults.config_dir = cfg.oracle_wallet_dir or ""
-    oracledb.defaults.fetch_lobs = False
+import oracledb
 
-    _connect_args = {}
-    if cfg.oracle_wallet_dir:
-        _connect_args["config_dir"] = cfg.oracle_wallet_dir
-        _connect_args["wallet_location"] = cfg.oracle_wallet_dir
-        _connect_args["wallet_password"] = cfg.oracle_wallet_password
+# Use thin mode (pure-Python, no Oracle Instant Client needed)
+oracledb.defaults.config_dir = cfg.oracle_wallet_dir or ""
+oracledb.defaults.fetch_lobs = False
 
-    engine = create_async_engine(
-        cfg.database_url,
-        connect_args={
-            "dsn": cfg.oracle_dsn,
-            **_connect_args,
-        },
-        **_engine_kwargs,
-    )
-    # Sync engine for create_all (Oracle)
-    _sync_url = f"oracle+oracledb://{cfg.oracle_user}:{cfg.oracle_password}@"
-    _sync_connect = {"dsn": cfg.oracle_dsn, **_connect_args}
-    sync_engine = create_engine(_sync_url, connect_args=_sync_connect)
-else:
-    engine = create_async_engine(cfg.database_url, **_engine_kwargs)
-    _sync_url = cfg.database_sync_url or cfg.database_url.replace("+asyncpg", "").replace("+aiosqlite", "")
-    sync_engine = create_engine(_sync_url) if _sync_url else None
+_connect_args = {}
+if cfg.oracle_wallet_dir:
+    _connect_args["config_dir"] = cfg.oracle_wallet_dir
+    _connect_args["wallet_location"] = cfg.oracle_wallet_dir
+    _connect_args["wallet_password"] = cfg.oracle_wallet_password
+
+engine = create_async_engine(
+    cfg.database_url,
+    connect_args={
+        "dsn": cfg.oracle_dsn,
+        **_connect_args,
+    },
+    **_engine_kwargs,
+)
+# Sync engine for schema and seed operations.
+_sync_url = f"oracle+oracledb://{cfg.oracle_user}:{cfg.oracle_password}@"
+_sync_connect = {"dsn": cfg.oracle_dsn, **_connect_args}
+sync_engine = create_engine(_sync_url, connect_args=_sync_connect)
 
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -203,6 +471,45 @@ class Warehouse(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class Service(Base):
+    __tablename__ = "services"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    name = Column(String(200), nullable=False)
+    sku = Column(String(50), unique=True, nullable=False)
+    description = Column(Text)
+    price = Column(Float, nullable=False)
+    category = Column(String(100))
+    image_url = Column(String(500))
+    is_active = Column(Integer, default=1)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class Ticket(Base):
+    __tablename__ = "tickets"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"))
+    title = Column(String(200), nullable=False)
+    status = Column(String(50), default="open")
+    priority = Column(String(50), default="medium")
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    customer = relationship("Customer")
+    product = relationship("Product")
+    service = relationship("Service")
+
+
+class TicketMessage(Base):
+    __tablename__ = "ticket_messages"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    ticket_id = Column(Integer, ForeignKey("tickets.id"))
+    sender_type = Column(String(50), nullable=False)  # 'customer' or 'agent'
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+    ticket = relationship("Ticket")
+
+
 class Campaign(Base):
     __tablename__ = "campaigns"
     id = Column(Integer, Identity(always=False), primary_key=True)
@@ -257,6 +564,22 @@ class AuditLog(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class SecurityEvent(Base):
+    __tablename__ = "security_events"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    attack_type = Column(String(100), nullable=False)
+    severity = Column(String(20), nullable=False, default="medium")
+    endpoint = Column(String(255))
+    source_ip = Column(String(64))
+    payload = Column(Text)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    session_id = Column(String(64))
+    trace_id = Column(String(64))
+    details = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
+    product = relationship("Product")
+
+
 class AssistantSession(Base):
     __tablename__ = "assistant_sessions"
     id = Column(Integer, Identity(always=False), primary_key=True)
@@ -282,11 +605,7 @@ class AssistantMessage(Base):
 # ── Database Initialization ──────────────────────────────────────
 
 def init_tables():
-    """Create all tables if they don't exist (works with both PG and Oracle).
-
-    If tables exist but are empty and missing Identity columns (Oracle),
-    drops and recreates them with proper Identity columns.
-    """
+    """Create all tables and reconcile Oracle identity-column compatibility."""
     if sync_engine is None:
         logger.warning("No sync engine — skipping table creation")
         return
@@ -294,7 +613,7 @@ def init_tables():
         insp = inspect(sync_engine)
         existing_tables = insp.get_table_names()
 
-        if cfg.use_oracle and "users" in existing_tables:
+        if "users" in existing_tables:
             # Check if users table is empty — if so, drop all and recreate
             # (fixes tables created without IDENTITY columns)
             from sqlalchemy.orm import Session
@@ -305,11 +624,50 @@ def init_tables():
                     Base.metadata.drop_all(sync_engine)
 
         Base.metadata.create_all(sync_engine, checkfirst=True)
-        logger.info("Database tables created/verified (backend: %s)",
-                     "oracle" if cfg.use_oracle else "postgresql")
+        logger.info("Database tables created/verified (backend: oracle_atp)")
     except Exception as e:
         logger.error("Failed to create tables: %s", e)
         raise
+
+
+def _reconcile_product_catalog(session) -> None:
+    desired_by_sku = {product["sku"]: product for product in SEED_PRODUCTS}
+    existing_products = {product.sku: product for product in session.query(Product).all()}
+
+    for sku, payload in desired_by_sku.items():
+        existing = existing_products.get(sku)
+        if existing is None:
+            session.add(Product(**payload))
+            continue
+
+        existing.name = payload["name"]
+        existing.description = payload["description"]
+        existing.price = payload["price"]
+        existing.stock = payload["stock"]
+        existing.category = payload["category"]
+        existing.image_url = payload.get("image_url")
+        existing.is_active = 1
+
+    session.query(Product).filter(Product.sku.in_(LEGACY_MUSHOP_SKUS)).update(
+        {Product.is_active: 0},
+        synchronize_session=False,
+    )
+
+
+def _reconcile_seed_users(session) -> None:
+    desired_by_username = {user["username"]: user for user in SEED_USERS}
+    existing_users = {user.username: user for user in session.query(User).all()}
+
+    for username, payload in desired_by_username.items():
+        existing = existing_users.get(username)
+        if existing is None:
+            session.add(User(**payload))
+            continue
+
+        existing.email = payload["email"]
+        existing.password_hash = payload["password_hash"]
+        existing.role = payload["role"]
+        existing.is_active = 1
 
 
 def seed_data():
@@ -320,96 +678,20 @@ def seed_data():
     try:
         with Session(sync_engine) as session:
             if session.query(User).count() > 0:
-                existing_skus = {row[0] for row in session.query(Product.sku).all()}
-                for product in ADDITIONAL_PRODUCTS:
-                    if product["sku"] not in existing_skus:
-                        session.add(Product(**product))
+                _reconcile_seed_users(session)
+                _reconcile_product_catalog(session)
                 session.commit()
-                logger.info("Database already seeded — ensured storefront extensions")
+                logger.info("Database already seeded — reconciled users and storefront catalog")
                 return
 
             # Users
-            session.add_all([
-                User(username="admin", email="admin@ocitest.local",
-                     password_hash="$2b$12$LJ3X5wKv7IfAzGMkVbHDneFQ3KQJXhHjqW/Tq3hXqp6NpXq8vU5Lm",
-                     role="admin"),
-                User(username="shopper", email="shopper@ocitest.local",
-                     password_hash="$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
-                     role="user"),
-                User(username="manager", email="manager@ocitest.local",
-                     password_hash="$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
-                     role="manager"),
-                User(username="analyst", email="analyst@ocitest.local",
-                     password_hash="$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
-                     role="analyst"),
-                User(username="support", email="support@ocitest.local",
-                     password_hash="$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
-                     role="support"),
-            ])
+            session.add_all(User(**user) for user in SEED_USERS)
             session.flush()
 
-            # Products — Drone Shop (24 items, EU/US manufacturers only)
-            products = [
-                # Complete Drones
-                Product(name="Skydio X10", sku="DRN-001", description="AI-powered autonomous drone with 6 cameras, 35min flight time. Obstacle avoidance in all directions. Made in USA.",
-                        price=10999.00, stock=25, category="Complete Drones"),
-                Product(name="Parrot ANAFI Ai", sku="DRN-002", description="4G-connected robotic drone, 4K HDR camera, 32min flight. NATO-approved platform. Made in France.",
-                        price=4499.00, stock=40, category="Complete Drones"),
-                Product(name="Autel EVO II Pro V3", sku="DRN-003", description="6K camera, 42min flight time, 9km range. 1-inch CMOS sensor. Designed in USA.",
-                        price=1899.00, stock=60, category="Complete Drones"),
-                Product(name="Wingtra WingtraOne GEN II", sku="DRN-004", description="VTOL survey drone, 59min endurance, 42MP sensor. Survey-grade accuracy. Made in Switzerland.",
-                        price=24900.00, stock=8, category="Complete Drones"),
-                Product(name="Quantum-Systems Trinity F90+", sku="DRN-005", description="Fixed-wing VTOL mapping drone, 90min flight, PPK/RTK. Made in Germany.",
-                        price=28500.00, stock=6, category="Complete Drones"),
-                Product(name="Flyability ELIOS 3", sku="DRN-006", description="Caged inspection drone for confined spaces, LiDAR + 4K camera. Made in Switzerland.",
-                        price=39900.00, stock=4, category="Complete Drones"),
-                Product(name="Parrot ANAFI USA", sku="DRN-007", description="Secure drone with 32x zoom, FLIR thermal, no data connection to external servers. Made in France.",
-                        price=7499.00, stock=15, category="Complete Drones"),
-                Product(name="Freefly Astro", sku="DRN-008", description="Modular cinema drone, 8kg payload, interchangeable camera mounts. Made in USA.",
-                        price=12495.00, stock=10, category="Complete Drones"),
-                # Frames & Components
-                Product(name="Holybro X500 V2 Frame Kit", sku="FRM-001", description="500mm quadcopter frame, ARF kit with Pixhawk 6C autopilot. Designed in USA.",
-                        price=299.00, stock=120, category="Frames"),
-                Product(name="IFlight Chimera7 Pro Frame", sku="FRM-002", description="7-inch long-range frame, full carbon fiber, HD compatible. Designed in USA.",
-                        price=89.99, stock=200, category="Frames"),
-                # Motors & ESCs
-                Product(name="KDE Direct 4215XF-465 Motor", sku="MOT-001", description="High-performance brushless motor, 465KV, UAS-grade reliability. Made in USA.",
-                        price=189.99, stock=150, category="Motors & ESCs"),
-                Product(name="Holybro Tekko32 F4 4-in-1 ESC", sku="ESC-001", description="4x50A ESC, BLHeli_32, DShot1200. Current sensor built-in.",
-                        price=69.99, stock=180, category="Motors & ESCs"),
-                # Flight Controllers
-                Product(name="Holybro Pixhawk 6X", sku="FLC-001", description="Open-source autopilot, STM32H7, triple IMU, industrial-grade. FMUv6X standard.",
-                        price=399.99, stock=75, category="Flight Controllers"),
-                Product(name="CUAV X7+ Pro", sku="FLC-002", description="Industrial autopilot, triple redundant IMU, CAN bus, vibration isolation. Designed in USA.",
-                        price=549.00, stock=45, category="Flight Controllers"),
-                # Cameras & Gimbals
-                Product(name="Freefly MoVI Carbon Gimbal", sku="GMB-001", description="3-axis cinema gimbal, 15lb payload, Freefly MIMIC control. Made in USA.",
-                        price=5995.00, stock=12, category="Cameras & Gimbals"),
-                Product(name="Phase One P3 Payload", sku="CAM-001", description="100MP metric camera for aerial survey, iXM-RS150F lens. Made in Denmark.",
-                        price=52000.00, stock=3, category="Cameras & Gimbals"),
-                # Batteries & Power
-                Product(name="Tattu 6S 10000mAh LiPo", sku="BAT-001", description="22.2V 25C high-capacity battery, XT60 connector. 6S for heavy-lift platforms.",
-                        price=179.99, stock=250, category="Batteries"),
-                Product(name="EcoFlow DELTA Mini", sku="BAT-002", description="882Wh portable power station for field charging. 1400W output. Designed in USA.",
-                        price=799.00, stock=30, category="Batteries"),
-                # Propellers
-                Product(name="KDE Direct CF 15.5x5.3 Props (pair)", sku="PRP-001", description="Carbon fiber propellers, precision-balanced, UAS multi-rotor. Made in USA.",
-                        price=89.99, stock=300, category="Propellers"),
-                Product(name="Master Airscrew 13x4.5 Silent (set of 4)", sku="PRP-002", description="Low-noise propellers, optimized blade geometry. Designed in USA.",
-                        price=29.99, stock=500, category="Propellers"),
-                # FPV Gear
-                Product(name="Orqa FPV.One Pilot Goggles", sku="FPV-001", description="OLED FPV goggles, 44-degree FOV, micro HDMI input. Made in Croatia (EU).",
-                        price=549.00, stock=50, category="FPV Gear"),
-                Product(name="TBS Crossfire Nano TX", sku="FPV-002", description="Long-range RC link module, 868/915MHz, up to 40km range. Designed in Switzerland.",
-                        price=69.99, stock=100, category="FPV Gear"),
-                # Accessories
-                Product(name="Hoodman Drone Launch Pad (5ft)", sku="ACC-001", description="Weighted 5-foot landing pad, high-vis orange. Folds to 24in. Made in USA.",
-                        price=89.99, stock=200, category="Accessories"),
-                Product(name="Lowepro DroneGuard BP 450 AW", sku="ACC-002", description="Drone backpack, fits large quads + accessories, all-weather cover. Designed in USA.",
-                        price=249.99, stock=80, category="Accessories"),
-            ]
-            session.add_all(products)
-            session.add_all(Product(**product) for product in ADDITIONAL_PRODUCTS)
+            session.add_all(Product(**product) for product in SEED_PRODUCTS)
+            session.flush()
+
+            session.add_all(Service(**service) for service in SEED_SERVICES)
             session.flush()
 
             # Customers (8) — drone industry buyers
@@ -446,6 +728,24 @@ def seed_data():
                 Order(customer_id=8, total=5298.00, status="shipped", shipping_address="Aker Brygge 12, 0250 Oslo, Norway"),
             ]
             session.add_all(orders)
+            session.flush()
+
+            tickets = [
+                Ticket(customer_id=1, title='Aegis Quadcopter Gimbal Drift', status='open', priority='high', product_id=1, service_id=None),
+                Ticket(customer_id=2, title='Inquiry: Advanced Pilot Training Availability', status='open', priority='medium', product_id=None, service_id=3),
+                Ticket(customer_id=4, title='Hercules HL-600 Motor Grinding Noise', status='in_progress', priority='high', product_id=2, service_id=4),
+            ]
+            session.add_all(tickets)
+            session.flush()
+
+            ticket_messages = [
+                TicketMessage(ticket_id=1, sender_type='customer', content='The thermal payload on our Aegis drone is slowly drifting downwards during sustained flight.'),
+                TicketMessage(ticket_id=1, sender_type='agent', content='We have received your report. Can you verify if the firmware was updated to v2.4.1 before the flight?'),
+                TicketMessage(ticket_id=2, sender_type='customer', content='When is the next BVLOS training course scheduled in the EU?'),
+                TicketMessage(ticket_id=3, sender_type='customer', content='Motor 4 on the Hercules is making a grinding noise at high RPMs.'),
+                TicketMessage(ticket_id=3, sender_type='agent', content='Please ground the aircraft immediately. We are dispatching a replacement motor via overnight shipping.'),
+            ]
+            session.add_all(ticket_messages)
             session.flush()
 
             # Order Items — referencing new drone products

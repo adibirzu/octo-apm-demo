@@ -1,5 +1,10 @@
 """Security span helpers — MITRE ATT&CK + OWASP classification for OCTO-CRM-APM."""
 
+import json
+
+from sqlalchemy import text
+
+from server.database import sync_engine
 from server.observability.otel_setup import get_tracer
 from server.observability.logging_sdk import log_security_event
 
@@ -42,14 +47,71 @@ OWASP_MAP = {
 }
 
 
-def security_span(vuln_type: str, *, severity: str = "medium",
-                  payload: str = "", source_ip: str = "",
-                  endpoint: str = ""):
+def _persist_security_event(
+    *,
+    vuln_type: str,
+    severity: str,
+    payload: str,
+    source_ip: str,
+    endpoint: str,
+    product_id: int | None,
+    session_id: str,
+    trace_id: str,
+    mitre: tuple[str, str, str],
+    owasp: tuple[str, str],
+) -> None:
+    if sync_engine is None:
+        return
+    try:
+        with sync_engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO security_events "
+                    "(attack_type, severity, endpoint, source_ip, payload, product_id, session_id, trace_id, details) "
+                    "VALUES (:attack_type, :severity, :endpoint, :source_ip, :payload, :product_id, :session_id, :trace_id, :details)"
+                ),
+                {
+                    "attack_type": vuln_type,
+                    "severity": severity,
+                    "endpoint": endpoint,
+                    "source_ip": source_ip,
+                    "payload": payload[:500] if payload else "",
+                    "product_id": product_id,
+                    "session_id": session_id,
+                    "trace_id": trace_id,
+                    "details": json.dumps(
+                        {
+                            "mitre_technique_id": mitre[0],
+                            "mitre_tactic": mitre[2],
+                            "owasp_category": owasp[0],
+                            "owasp_name": owasp[1],
+                        }
+                    ),
+                },
+            )
+    except Exception:
+        # Security telemetry must not break the request path.
+        pass
+
+
+def security_span(
+    vuln_type: str,
+    *,
+    severity: str = "medium",
+    payload: str = "",
+    source_ip: str = "",
+    endpoint: str = "",
+    product_id: int | None = None,
+    session_id: str = "",
+):
     tracer = get_tracer("security")
     mitre = MITRE_MAP.get(vuln_type, ("T0000", "Unknown", "Unknown"))
     owasp = OWASP_MAP.get(vuln_type, ("A00:2021", "Unknown"))
 
     span = tracer.start_span(f"ATTACK:{vuln_type.upper()}")
+    trace_id = ""
+    if span and span.get_span_context().trace_id:
+        trace_id = format(span.get_span_context().trace_id, "032x")
     span.set_attributes({
         "security.event": True,
         "security.vuln_type": vuln_type,
@@ -57,6 +119,8 @@ def security_span(vuln_type: str, *, severity: str = "medium",
         "security.payload": payload[:500],
         "security.source_ip": source_ip,
         "security.endpoint": endpoint,
+        "security.product_id": product_id or 0,
+        "security.session_id": session_id or "n/a",
         "mitre.technique_id": mitre[0],
         "mitre.technique_name": mitre[1],
         "mitre.tactic": mitre[2],
@@ -76,5 +140,17 @@ def security_span(vuln_type: str, *, severity: str = "medium",
         mitre_technique_id=mitre[0],
         mitre_tactic=mitre[2],
         owasp_category=owasp[0],
+    )
+    _persist_security_event(
+        vuln_type=vuln_type,
+        severity=severity,
+        payload=payload,
+        source_ip=source_ip,
+        endpoint=endpoint,
+        product_id=product_id,
+        session_id=session_id,
+        trace_id=trace_id,
+        mitre=mitre,
+        owasp=owasp,
     )
     return span

@@ -11,6 +11,7 @@ from sqlalchemy import text
 from server.config import cfg
 from server.database import get_db
 from server.genai_service import chat_with_documents, genai_configured
+from server.modules.integrations import sync_customers_from_crm, sync_order_to_crm
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
 from server.store_service import ensure_customer, fetch_cart_items, place_order
@@ -48,6 +49,7 @@ async def storefront():
     """Full storefront payload sourced from ATP."""
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.storefront") as span:
+        crm_sync = await sync_customers_from_crm(force=False, limit=200, source="shop_storefront")
         async with get_db() as db:
             products_result = await db.execute(
                 text(
@@ -68,13 +70,8 @@ async def storefront():
                     "(SELECT COUNT(*) FROM products WHERE is_active = 1) AS product_count, "
                     "(SELECT COALESCE(SUM(stock), 0) FROM products WHERE is_active = 1) AS inventory_units, "
                     "(SELECT COALESCE(SUM(total), 0) FROM orders) AS revenue, "
-                    "(SELECT COUNT(*) FROM orders) AS order_count "
-                    "FROM DUAL" if cfg.use_oracle else
-                    "SELECT "
-                    "(SELECT COUNT(*) FROM products WHERE is_active = 1) AS product_count, "
-                    "(SELECT COALESCE(SUM(stock), 0) FROM products WHERE is_active = 1) AS inventory_units, "
-                    "(SELECT COALESCE(SUM(total), 0) FROM orders) AS revenue, "
                     "(SELECT COUNT(*) FROM orders) AS order_count"
+                    "FROM DUAL"
                 )
             )
             stats = dict(stats_result.mappings().first())
@@ -90,11 +87,12 @@ async def storefront():
                 "order_count": int(stats["order_count"] or 0),
             },
             "backend": {
-                "database": "oracle_atp" if cfg.use_oracle else "postgresql",
+                "database": "oracle_atp",
                 "apm_configured": cfg.apm_configured,
                 "rum_configured": cfg.rum_configured,
                 "genai_configured": genai_configured(),
             },
+            "crm_sync": crm_sync,
         }
 
 
@@ -133,6 +131,7 @@ async def checkout(payload: dict, request: Request):
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.checkout") as span:
         session_id = payload.get("session_id") or request.cookies.get("session_id", "") or str(uuid.uuid4())
+        crm_customer_sync = await sync_customers_from_crm(force=False, limit=200, source="shop_checkout")
         async with get_db() as db:
             items = await fetch_cart_items(db, session_id)
             if not items:
@@ -151,6 +150,7 @@ async def checkout(payload: dict, request: Request):
                 customer=customer,
                 items=items,
                 shipping_address=payload.get("shipping_address", "ATP-backed fulfilment queue"),
+                payment_method=payload.get("payment_method", "credit_card"),
                 notes=payload.get("notes", ""),
                 coupon_code=payload.get("coupon_code", ""),
                 session_id=session_id,
@@ -158,9 +158,16 @@ async def checkout(payload: dict, request: Request):
                 trace_id=_trace_id(),
             )
 
+        crm_order_sync = await sync_order_to_crm(
+            order_id=order_result["order"]["id"],
+            customer_email=customer["email"],
+            total=order_result["total"],
+            source="shop_checkout",
+        )
         span.set_attribute("orders.order_id", order_result["order"]["id"])
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
+        span.set_attribute("integration.crm_order_synced", bool(crm_order_sync.get("synced")))
         push_log(
             "INFO",
             "Store checkout persisted",
@@ -169,6 +176,7 @@ async def checkout(payload: dict, request: Request):
                 "orders.total": order_result["total"],
                 "orders.source": "shop_checkout",
                 "shop.session_id": session_id,
+                "integration.crm_order_synced": bool(crm_order_sync.get("synced")),
             },
         )
         return {
@@ -180,6 +188,8 @@ async def checkout(payload: dict, request: Request):
             "shipping_cost": order_result["shipping_cost"],
             "total": order_result["total"],
             "session_id": session_id,
+            "customer_sync": crm_customer_sync,
+            "crm_sync": crm_order_sync,
         }
 
 
@@ -213,6 +223,20 @@ async def get_wallet(username: str = ""):
             "currency": "USD",
             "order_count": int(wallet["order_count"] or 0),
         }
+
+
+@router.get("/locations")
+async def dealer_shops():
+    """Fetch authorized dealer locations."""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("shop.locations") as span:
+        async with get_db() as db:
+            result = await db.execute(
+                text("SELECT id, name, address, coordinates, contact_email, contact_phone FROM shops WHERE is_active = 1")
+            )
+            shops = [dict(row) for row in result.mappings().all()]
+            span.set_attribute("shop.locations_count", len(shops))
+            return {"shops": shops}
 
 
 @router.get("/assistant/history/{session_id}")

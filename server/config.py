@@ -1,31 +1,29 @@
 """OCTO-CRM-APM — Configuration.
 
-Loads settings from environment variables with sensible defaults.
-Supports both PostgreSQL (dev/Docker) and Oracle ATP (production/OKE).
+ATP-only runtime configuration for OKE and OCI deployments.
 """
 
 import os
 
 
 class Config:
-    app_name = os.getenv("APP_NAME", "octo-crm-apm")
-    app_runtime = os.getenv("APP_RUNTIME", "docker")  # docker, oke, vm
-    otel_service_name = os.getenv("OTEL_SERVICE_NAME", "octo-crm-apm")
+    app_name = os.getenv("APP_NAME", os.getenv("OBSERVABILITY_APP_NAME", "enterprise-crm-portal"))
+    app_runtime = os.getenv("APP_RUNTIME", "oke")
+    otel_service_name = os.getenv(
+        "OTEL_SERVICE_NAME",
+        os.getenv("OBSERVABILITY_SERVICE_NAME", "enterprise-crm-portal-oke"),
+    )
     oci_auth_mode = os.getenv("OCI_AUTH_MODE", "auto")
     port = int(os.getenv("PORT", "8080"))
-    environment = os.getenv("ENVIRONMENT", "development")
+    environment = os.getenv("ENVIRONMENT", "production")
+    auth_token_secret = os.getenv("AUTH_TOKEN_SECRET", "")
 
-    # ── Database ──
-    # Oracle ATP (production)
+    # ── Database (Oracle ATP only) ──
     oracle_dsn = os.getenv("ORACLE_DSN", "")  # e.g. "(description=...)" or TNS alias
     oracle_user = os.getenv("ORACLE_USER", "ADMIN")
     oracle_password = os.getenv("ORACLE_PASSWORD", "")
     oracle_wallet_dir = os.getenv("ORACLE_WALLET_DIR", "")
     oracle_wallet_password = os.getenv("ORACLE_WALLET_PASSWORD", "")
-
-    # PostgreSQL fallback (dev/Docker Compose)
-    pg_url = os.getenv("DATABASE_URL", "")
-    database_sync_url = os.getenv("DATABASE_SYNC_URL", "")
 
     # ── Cross-service integration ──
     enterprise_crm_url = os.getenv("ENTERPRISE_CRM_URL", "")
@@ -63,15 +61,19 @@ class Config:
         return bool(self.oci_log_id)
 
     @property
-    def use_oracle(self) -> bool:
-        return bool(self.oracle_dsn or self.oracle_wallet_dir)
-
-    @property
     def database_url(self) -> str:
-        """Return async database URL for SQLAlchemy."""
-        if self.use_oracle:
-            return f"oracle+oracledb_async://{self.oracle_user}:{self.oracle_password}@"
-        return self.pg_url or "postgresql+asyncpg://octocrm:octocrm@localhost:5432/octocrm"
+        """Return async Oracle ATP database URL for SQLAlchemy."""
+        return f"oracle+oracledb_async://{self.oracle_user}:{self.oracle_password}@"
+
+    def validate(self) -> None:
+        missing = []
+        if not self.oracle_dsn:
+            missing.append("ORACLE_DSN")
+        if not self.oracle_password:
+            missing.append("ORACLE_PASSWORD")
+        if missing:
+            values = ", ".join(missing)
+            raise RuntimeError(f"ATP-only mode requires: {values}")
 
 
 cfg = Config()

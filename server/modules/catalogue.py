@@ -68,7 +68,8 @@ async def get_product(product_id: int, request: Request):
             security_span("idor", severity="low",
                           payload=str(product_id),
                           source_ip=request.client.host if request.client else "",
-                          endpoint=f"/api/products/{product_id}")
+                          endpoint=f"/api/products/{product_id}",
+                          product_id=product_id)
             return {"error": "Product not found", "requested_id": product_id}
 
         return enrich_product(dict(product))
@@ -114,7 +115,8 @@ async def create_review(product_id: int, payload: dict, request: Request):
         # VULN: No HTML sanitization — stored XSS
         if "<script" in comment.lower() or "onerror" in comment.lower():
             security_span("xss", severity="high", payload=comment,
-                          source_ip=source_ip, endpoint=f"/api/products/{product_id}/reviews")
+                          source_ip=source_ip, endpoint=f"/api/products/{product_id}/reviews",
+                          product_id=product_id)
 
         async with get_db() as db:
             await db.execute(

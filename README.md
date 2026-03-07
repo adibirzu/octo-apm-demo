@@ -26,10 +26,39 @@ ATP-backed drone commerce demo for OCI monitored-app scenarios.
 
 ## Required production inputs
 
-- ATP: `ORACLE_DSN`, `ORACLE_USER`, `ORACLE_PASSWORD`, wallet secret mounted at `/opt/oracle/wallet`
+- ATP: `ORACLE_DSN`, `ORACLE_USER`, `ORACLE_PASSWORD`, `ORACLE_WALLET_PASSWORD`, wallet mounted at `/opt/oracle/wallet`
 - APM: `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY`, `OCI_APM_PUBLIC_DATAKEY`, `OCI_APM_RUM_ENDPOINT`, `OCI_APM_WEB_APPLICATION`
 - GenAI: `OCI_COMPARTMENT_ID`, `OCI_GENAI_ENDPOINT`, `OCI_GENAI_MODEL_ID`
-- Logging: `OCI_LOG_ID`, optional `SPLUNK_HEC_URL`, `SPLUNK_HEC_TOKEN`
+- Logging: `OCI_LOG_ID`, optional `OCI_LOG_GROUP_ID`, `SPLUNK_HEC_URL`, `SPLUNK_HEC_TOKEN`
+- Runtime: `OCI_AUTH_MODE`, optional `AUTH_TOKEN_SECRET`
+
+## ATP provisioning helper
+
+Use `deploy/oci/ensure_atp.sh` to verify or create the dedicated ATP for this component.
+
+Example:
+
+```bash
+COMPARTMENT_ID="<database compartment ocid>" \
+DISPLAY_NAME="mushop-cloudnative-atp" \
+DB_NAME="mushopcnatp" \
+./deploy/oci/ensure_atp.sh
+```
+
+## Local env templates
+
+- Copy `.env.local.example` to `.env.local` and fill in values.
+- Keep `.env.local` and any local overrides out of Git; `.gitignore` excludes local env files and wallet artifacts.
+
+## Git leak guard
+
+Enable repo hooks so commits are blocked when `gitleaks` detects secrets:
+
+```bash
+./scripts/setup-hooks.sh
+```
+
+The pre-commit hook scans staged changes using `.gitleaks.toml`.
 
 ## Install paths
 
