@@ -43,8 +43,53 @@ CREATE TABLE IF NOT EXISTS orders (
     customer_id INTEGER REFERENCES customers(id),
     total FLOAT NOT NULL,
     status VARCHAR(50) DEFAULT 'pending',
+    payment_method VARCHAR(50) DEFAULT 'credit_card',
+    payment_status VARCHAR(50) DEFAULT 'pending',
     notes TEXT,
     shipping_address TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS shops (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    coordinates VARCHAR(100),
+    contact_email VARCHAR(200),
+    contact_phone VARCHAR(50),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS services (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    sku VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    price FLOAT NOT NULL,
+    category VARCHAR(100),
+    image_url VARCHAR(500),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tickets (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(id),
+    title VARCHAR(200) NOT NULL,
+    status VARCHAR(50) DEFAULT 'open',
+    priority VARCHAR(50) DEFAULT 'medium',
+    product_id INTEGER REFERENCES products(id),
+    service_id INTEGER REFERENCES services(id),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ticket_messages (
+    id SERIAL PRIMARY KEY,
+    ticket_id INTEGER REFERENCES tickets(id),
+    sender_type VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -167,18 +212,23 @@ INSERT INTO users (username, email, password_hash, role) VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO products (name, sku, description, price, stock, category, image_url) VALUES
-    ('MuShop Classic Tee', 'TEE-001', 'Classic cotton t-shirt with MuShop logo', 29.99, 500, 'Clothing', '/static/img/tee-classic.png'),
-    ('MuShop Hoodie', 'HOD-001', 'Warm hoodie for cloud-native developers', 59.99, 200, 'Clothing', '/static/img/hoodie.png'),
-    ('Cloud Socks (3-pack)', 'SOC-001', 'Comfortable socks with cloud patterns', 14.99, 1000, 'Clothing', '/static/img/socks.png'),
-    ('DevOps Cap', 'CAP-001', 'Baseball cap for the DevOps lifestyle', 24.99, 300, 'Accessories', '/static/img/cap.png'),
-    ('Kubernetes Sticker Pack', 'STK-001', 'Pack of 10 Kubernetes-themed stickers', 9.99, 2000, 'Accessories', '/static/img/stickers.png'),
-    ('OCI Mug', 'MUG-001', 'Ceramic mug with Oracle Cloud logo', 19.99, 400, 'Drinkware', '/static/img/mug-oci.png'),
-    ('Microservices Mug', 'MUG-002', 'Mug celebrating distributed systems', 19.99, 350, 'Drinkware', '/static/img/mug-micro.png'),
-    ('Cloud Native Backpack', 'BAG-001', 'Durable laptop backpack for on-the-go', 79.99, 100, 'Bags', '/static/img/backpack.png'),
-    ('Terraform Notebook', 'NTB-001', 'Hardcover notebook for infrastructure planning', 15.99, 600, 'Stationery', '/static/img/notebook.png'),
-    ('Docker Whale Plush', 'PLH-001', 'Adorable blue whale plushie', 24.99, 150, 'Toys', '/static/img/whale.png'),
-    ('Observability Poster', 'PST-001', 'Wall poster: traces, metrics, and logs', 12.99, 400, 'Decor', '/static/img/poster.png'),
-    ('Zero Trust Lanyard', 'LAN-001', 'Security-themed conference lanyard', 7.99, 800, 'Accessories', '/static/img/lanyard.png')
+    ('Aegis Tactical Quadcopter', 'TAC-001', 'Military-grade reconnaissance drone with obsidian stealth coating and encrypted data link.', 12500.00, 15, 'Pro Drones', '/static/img/img_tactical_drone_1772827301095.png'),
+    ('Hercules HL-600 Hexacopter', 'HEX-001', 'Heavy-lift industrial platform with carbon fiber arms and extended endurance capabilities.', 28000.00, 8, 'Industrial Drones', '/static/img/img_heavy_hexacopter_1772827315590.png'),
+    ('Zenith Dual-Sensor Thermal', 'PLD-001', 'High-end thermal and optical payload with matte black finish and laser rangefinder.', 9500.00, 22, 'Payloads', '/static/img/img_thermal_camera_1772827334371.png'),
+    ('Command Center GCS', 'GCS-001', 'Ruggedized ground control station with dual monitors and tactical switch interface.', 18000.00, 10, 'Accessories', '/static/img/img_control_station_1772827362454.png')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO shops (name, address, coordinates, contact_email, contact_phone) VALUES
+    ('OCTO Drone Shop - Flagship', '100 Cloud Way, Silicon Valley, CA', '37.3875,-122.0575', 'store.sv@octodrones.com', '+1-555-0810'),
+    ('OCTO Defense Systems - East', '50 Defense Blvd, Arlington, VA', '38.8816,-77.0910', 'tactical@octodrones.com', '+1-555-0820'),
+    ('OCTO Industrial - EU', '15 Industrialweg, Frankfurt, Germany', '50.1109,8.6821', 'eu.sales@octodrones.com', '+49-69-555-0830')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO services (name, sku, description, price, category, image_url) VALUES
+    ('Annual Fleet Maintenance', 'SRV-001', 'Comprehensive 100-point inspection and preventative maintenance for enterprise drone fleets.', 2500.00, 'Maintenance', ''),
+    ('Lidar Calibration & Alignment', 'SRV-002', 'High-precision calibration for Zenmuse and Phase One Lidar payloads.', 850.00, 'Calibration', ''),
+    ('Advanced Pilot Training (BVLOS)', 'SRV-003', '5-day immersive tactical and BVLOS flight training course.', 4500.00, 'Training', ''),
+    ('Emergency Repair Diagnostic', 'SRV-004', '24-hour turnaround diagnostic service for grounded aircraft.', 300.00, 'Maintenance', '')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO customers (name, email, phone, company, industry, revenue) VALUES
@@ -197,6 +247,20 @@ INSERT INTO orders (customer_id, total, status, shipping_address) VALUES
     (4, 79.99, 'shipped', '10880 Malibu Point, CA'),
     (1, 29.99, 'completed', '123 Industrial Way, Springfield'),
     (5, 134.97, 'processing', '1007 Mountain Drive, Gotham')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO tickets (customer_id, title, status, priority, product_id, service_id) VALUES
+    (1, 'Aegis Quadcopter Gimbal Drift', 'open', 'high', 1, NULL),
+    (2, 'Inquiry: Advanced Pilot Training Availability', 'open', 'medium', NULL, 3),
+    (4, 'Hercules HL-600 Motor Grinding Noise', 'in_progress', 'high', 2, 4)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO ticket_messages (ticket_id, sender_type, content) VALUES
+    (1, 'customer', 'The thermal payload on our Aegis drone is slowly drifting downwards during sustained flight.'),
+    (1, 'agent', 'We have received your report. Can you verify if the firmware was updated to v2.4.1 before the flight?'),
+    (2, 'customer', 'When is the next BVLOS training course scheduled in the EU?'),
+    (3, 'customer', 'Motor 4 on the Hercules is making a grinding noise at high RPMs.'),
+    (3, 'agent', 'Please ground the aircraft immediately. We are dispatching a replacement motor via overnight shipping.')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES

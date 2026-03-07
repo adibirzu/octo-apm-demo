@@ -48,7 +48,7 @@
 
 ## ATP deployment notes
 
-- Production deployment assumes ATP, not the bundled PostgreSQL compose setup.
+- Production deployment and local smoke tests are ATP-only.
 - Mount the ATP wallet secret at `/opt/oracle/wallet`.
 - The readiness endpoint validates DB connectivity with `SELECT 1 FROM DUAL` for Oracle.
 

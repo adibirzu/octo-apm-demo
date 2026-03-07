@@ -210,7 +210,7 @@ async function loadDashboard() {
     document.getElementById('s-orders').textContent = summary.orders || 0;
     document.getElementById('s-revenue').textContent = `$${(summary.revenue || 0).toLocaleString()}`;
     document.getElementById('s-products').textContent = summary.products || 0;
-    document.getElementById('backendStatus').textContent = storefront.backend?.database === 'oracle_atp' ? 'Oracle ATP' : 'Database fallback';
+    document.getElementById('backendStatus').textContent = 'Oracle ATP';
     document.getElementById('apmHealth').textContent = storefront.backend?.apm_configured ? 'enabled' : 'pending';
     document.getElementById('rumHealth').textContent = storefront.backend?.rum_configured ? 'enabled' : 'pending';
     document.getElementById('integrationHealth').textContent = integration.status || 'not_configured';

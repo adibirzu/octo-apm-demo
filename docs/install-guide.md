@@ -20,9 +20,24 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## 3. Local smoke test
+Install local Git hooks (recommended):
 
-The repo still contains `docker-compose.yml` for a PostgreSQL-based local smoke environment. Production is ATP-first.
+```bash
+./scripts/setup-hooks.sh
+```
+
+This enables a pre-commit `gitleaks` scan of staged changes.
+
+## 3. Local smoke test (ATP only)
+
+This repository is ATP-only. `docker-compose.yml` expects Oracle ATP inputs and a wallet mount.
+
+Prepare local environment file:
+
+```bash
+cp .env.local.example .env.local
+# edit .env.local with your local values
+```
 
 ```bash
 docker compose up --build
@@ -36,7 +51,7 @@ uvicorn server.main:app --host 0.0.0.0 --port 8080 --reload
 
 ## 4. Oracle ATP configuration
 
-Production and OKE deployments should use ATP.
+Production and OKE deployments require ATP.
 
 Required environment variables:
 
@@ -51,8 +66,17 @@ export ORACLE_WALLET_PASSWORD="<wallet password>"
 Notes:
 
 - Mount the ATP wallet into the path used by `ORACLE_WALLET_DIR`.
-- When ATP is configured, the app uses Oracle automatically.
+- ATP configuration is mandatory; startup fails if required Oracle inputs are missing.
 - The readiness check runs `SELECT 1 FROM DUAL` and reports `db_type: oracle_atp`.
+
+Optional helper to ensure/create ATP:
+
+```bash
+COMPARTMENT_ID="<database compartment ocid>" \
+DISPLAY_NAME="mushop-cloudnative-atp" \
+DB_NAME="mushopcnatp" \
+./deploy/oci/ensure_atp.sh
+```
 
 ## 5. OCI APM and RUM configuration
 
@@ -124,6 +148,7 @@ Create the required secrets first:
 - `octo-logging`
 - `octo-genai`
 - `octo-integrations`
+- `octo-auth` with key `token-secret` for stable signed bearer tokens across replicas
 
 Then deploy:
 

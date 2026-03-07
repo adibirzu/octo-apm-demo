@@ -9,8 +9,10 @@ from opentelemetry import trace
 from sqlalchemy import text
 
 from server.database import get_db
+from server.modules.integrations import sync_customers_from_crm, sync_order_to_crm
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
+from server.observability.security_spans import security_span
 from server.store_service import (
     compute_subtotal,
     ensure_customer,
@@ -57,14 +59,72 @@ async def add_to_cart(payload: dict, request: Request):
     tracer = get_tracer()
     with tracer.start_as_current_span("orders.cart.add") as span:
         sid = payload.get("session_id") or request.cookies.get("session_id") or str(uuid.uuid4())
-        product_id = int(payload.get("product_id"))
-        quantity = max(int(payload.get("quantity", 1) or 1), 1)
+        source_ip = request.client.host if request.client else "unknown"
+        try:
+            product_id = int(payload.get("product_id"))
+        except (TypeError, ValueError):
+            security_span(
+                "mass_assign",
+                severity="high",
+                payload=str(payload.get("product_id", "")),
+                source_ip=source_ip,
+                endpoint="/api/cart/add",
+                session_id=sid,
+            )
+            return {"error": "Invalid product id", "session_id": sid}
+        try:
+            quantity = max(int(payload.get("quantity", 1) or 1), 1)
+        except (TypeError, ValueError):
+            security_span(
+                "mass_assign",
+                severity="medium",
+                payload=f"invalid_quantity={payload.get('quantity')}",
+                source_ip=source_ip,
+                endpoint="/api/cart/add",
+                product_id=product_id,
+                session_id=sid,
+            )
+            return {"error": "Invalid quantity", "session_id": sid}
 
         span.set_attribute("cart.session_id", sid)
         span.set_attribute("cart.product_id", product_id)
         span.set_attribute("cart.quantity", quantity)
+        if quantity > 20:
+            security_span(
+                "rate_limit",
+                severity="high",
+                payload=f"product_id={product_id}; quantity={quantity}",
+                source_ip=source_ip,
+                endpoint="/api/cart/add",
+                product_id=product_id,
+                session_id=sid,
+            )
+            return {"error": "Quantity exceeds allowed threshold", "session_id": sid}
 
         async with get_db() as db:
+            product_lookup = await db.execute(
+                text(
+                    "SELECT id, stock, is_active FROM products "
+                    "WHERE id = :product_id FETCH FIRST 1 ROWS ONLY"
+                ),
+                {"product_id": product_id},
+            )
+            product = product_lookup.mappings().first()
+            if not product or int(product.get("is_active") or 0) != 1:
+                security_span(
+                    "idor",
+                    severity="medium",
+                    payload=f"missing_product={product_id}",
+                    source_ip=source_ip,
+                    endpoint="/api/cart/add",
+                    product_id=product_id,
+                    session_id=sid,
+                )
+                return {"error": "Product not found", "session_id": sid}
+
+            if int(product.get("stock") or 0) <= 0:
+                return {"error": "Product is out of stock", "session_id": sid}
+
             existing = await db.execute(
                 text(
                     "SELECT id, quantity FROM cart_items WHERE session_id = :sid "
@@ -183,6 +243,7 @@ async def create_order(payload: dict, request: Request):
         coupon_code = payload.get("coupon_code", "")
         shipping_address = payload.get("shipping_address", "")
         notes = payload.get("notes", "")
+        customer_sync = await sync_customers_from_crm(force=False, limit=200, source="orders_api")
 
         async with get_db() as db:
             if session_id:
@@ -213,9 +274,16 @@ async def create_order(payload: dict, request: Request):
                 trace_id=_trace_id(),
             )
 
+        crm_sync = await sync_order_to_crm(
+            order_id=order_result["order"]["id"],
+            customer_email=customer["email"],
+            total=order_result["total"],
+            source="orders_api",
+        )
         span.set_attribute("orders.order_id", order_result["order"]["id"])
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
+        span.set_attribute("integration.crm_order_synced", bool(crm_sync.get("synced")))
         push_log(
             "INFO",
             "Order persisted in backend",
@@ -223,6 +291,7 @@ async def create_order(payload: dict, request: Request):
                 "orders.order_id": order_result["order"]["id"],
                 "orders.total": order_result["total"],
                 "orders.source": "orders_api",
+                "integration.crm_order_synced": bool(crm_sync.get("synced")),
             },
         )
         return {
@@ -234,4 +303,6 @@ async def create_order(payload: dict, request: Request):
             "discount": order_result["coupon"]["discount"],
             "shipping_cost": order_result["shipping_cost"],
             "session_id": session_id,
+            "customer_sync": customer_sync,
+            "crm_sync": crm_sync,
         }

@@ -19,7 +19,7 @@ async def summary():
             orders = (await db.execute(text("SELECT COUNT(*) FROM orders"))).scalar()
             revenue = (await db.execute(text("SELECT COALESCE(SUM(total),0) FROM orders"))).scalar()
             products = (await db.execute(text("SELECT COUNT(*) FROM products"))).scalar()
-            tickets_open = 0  # no tickets table in this app variant
+            tickets_open = (await db.execute(text("SELECT COUNT(*) FROM tickets WHERE status = 'open'"))).scalar()
 
         return {
             "customers": customers,

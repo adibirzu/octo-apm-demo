@@ -23,10 +23,18 @@ spec:
           env:
             - name: APP_NAME
               value: "octo-drone-shop"
+            - name: OTEL_SERVICE_NAME
+              value: "octo-drone-shop-oke"
             - name: APP_RUNTIME
               value: "oke"
             - name: ENVIRONMENT
               value: "production"
+            - name: AUTH_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: octo-auth
+                  key: token-secret
+                  optional: true
             - name: OCI_AUTH_MODE
               value: "resource_principal"
             - name: ORACLE_DSN

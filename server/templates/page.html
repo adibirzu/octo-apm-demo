@@ -1,82 +1,782 @@
 {% extends "base.html" %}
+{% block head %}
+<style>
+    .module-shell {
+        display: grid;
+        gap: 18px;
+    }
+    .module-hero {
+        padding: 28px;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 18px;
+    }
+    .module-hero h1 {
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        line-height: 0.95;
+        margin: 10px 0 14px;
+        max-width: 13ch;
+    }
+    .module-hero p {
+        color: var(--muted);
+        max-width: 62ch;
+        line-height: 1.6;
+    }
+    .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+    }
+    .signal-list,
+    .insight-list,
+    .source-list,
+    .detail-grid,
+    .metric-grid {
+        display: grid;
+        gap: 14px;
+    }
+    .signal-list,
+    .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .signal-card,
+    .metric-card,
+    .insight-card,
+    .source-card {
+        padding: 18px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .metric-card strong,
+    .detail-value {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.9rem;
+    }
+    .signal-card p,
+    .metric-card p,
+    .insight-card p,
+    .source-card p,
+    .runtime-note,
+    .empty-state {
+        color: var(--muted);
+        line-height: 1.55;
+    }
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+        align-items: start;
+    }
+    .sidebar-stack {
+        display: grid;
+        gap: 18px;
+    }
+    .table-wrap {
+        overflow: auto;
+    }
+    .status-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--ok);
+        margin-right: 8px;
+        box-shadow: 0 0 0 6px rgba(126, 214, 161, 0.1);
+    }
+    .status-dot.warn {
+        background: var(--amber);
+        box-shadow: 0 0 0 6px rgba(240, 195, 107, 0.1);
+    }
+    .auth-callout {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(240, 195, 107, 0.2);
+        background: rgba(240, 195, 107, 0.08);
+    }
+    .auth-callout p {
+        color: var(--ink);
+    }
+    @media (max-width: 1100px) {
+        .module-hero,
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    @media (max-width: 760px) {
+        .signal-list,
+        .metric-grid {
+            grid-template-columns: 1fr;
+        }
+        .module-hero {
+            padding: 22px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2 style="margin-bottom: 16px;">{{ title }}</h2>
+<section class="module-shell">
+    <section class="hero-card module-hero">
+        <div>
+            <div class="eyebrow" id="heroEyebrow">{{ module|upper }}</div>
+            <h1 id="heroTitle">{{ title }}</h1>
+            <p id="heroCopy">Loading live module details.</p>
+            <div class="hero-actions">
+                <a class="btn" href="/shop">Open Storefront</a>
+                <a class="btn btn-outline" href="/login" id="authActionBtn">Sign In</a>
+            </div>
+        </div>
+        <div class="signal-list" id="signalList"></div>
+    </section>
 
-<div class="card">
-    <h3>{{ module|title }} Module</h3>
-    <div id="content-area" style="color:var(--text-secondary)">Loading...</div>
-</div>
+    <section class="metric-grid" id="metricGrid"></section>
 
-<div class="card">
-    <h3>API Endpoints</h3>
-    <div id="endpoints" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
-</div>
+    <section class="content-grid">
+        <div class="panel">
+            <div class="section-title">
+                <h3 id="tableTitle">Live data</h3>
+                <span class="chip" id="tableChip">loading</span>
+            </div>
+            <div id="authCallout"></div>
+            <div class="table-wrap">
+                <table>
+                    <thead id="dataHead"><tr><th>Loading...</th></tr></thead>
+                    <tbody id="dataBody"></tbody>
+                </table>
+            </div>
+        </div>
 
-<div class="card">
-    <h3>Data</h3>
-    <table>
-        <thead id="data-head"><tr><th>Loading...</th></tr></thead>
-        <tbody id="data-body"></tbody>
-    </table>
-</div>
+        <div class="sidebar-stack">
+            <div class="panel">
+                <div class="section-title">
+                    <h3>Operational Views</h3>
+                </div>
+                <div class="insight-list" id="insightList"></div>
+            </div>
+            <div class="panel">
+                <div class="section-title">
+                    <h3>Data Sources</h3>
+                </div>
+                <div class="source-list" id="sourceList"></div>
+            </div>
+            <div class="panel">
+                <div class="section-title">
+                    <h3>Runtime Notes</h3>
+                </div>
+                <p class="runtime-note" id="runtimeNote"></p>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="section-title">
+            <h3>Supplemental Signals</h3>
+            <span class="chip" id="detailChip">loading</span>
+        </div>
+        <div class="detail-grid" id="detailGrid"></div>
+    </section>
+
+    <section class="panel" id="adminControls" style="display: none;">
+        <div class="section-title">
+            <h3>Admin DB Controls</h3>
+        </div>
+        <div class="detail-grid">
+            <form id="createPartnerForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
+                <p><strong>Create Partner (Shop)</strong></p>
+                <input type="text" name="name" placeholder="Partner Name" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="address" placeholder="Address" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="email" name="contact_email" placeholder="Contact Email" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="contact_phone" placeholder="Contact Phone" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <button type="submit" class="btn">Create Partner & Trace</button>
+            </form>
+            <form id="createUserForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
+                <p><strong>Create User</strong></p>
+                <input type="text" name="username" placeholder="Username" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="email" name="email" placeholder="Email" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="password" name="password" placeholder="Password" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <select name="role" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <button type="submit" class="btn">Create User & Trace</button>
+            </form>
+        </div>
+        <p id="adminStatusMsg" style="margin-top: 10px; color: var(--ok);"></p>
+    </section>
+</section>
 {% endblock %}
 
 {% block scripts %}
 <script>
 const MODULE = "{{ module }}";
-const ENDPOINTS = {
-    shop:       { list: '/api/shop/featured', label: 'Featured Products', key: 'products',
-                  extra: ['/api/shop/coupon/apply', '/api/shop/checkout', '/api/shop/wallet', '/api/shop/captcha'] },
-    catalogue:  { list: '/api/products', label: 'Products', key: 'products',
-                  extra: ['/api/categories', '/api/products/1/reviews'] },
-    orders:     { list: '/api/orders', label: 'Orders', key: 'orders',
-                  extra: ['/api/cart', '/api/cart/add'] },
-    shipping:   { list: '/api/shipping', label: 'Shipments', key: 'shipments',
-                  extra: ['/api/shipping/warehouses', '/api/shipping/by-region?region=eu-central-1'] },
-    campaigns:  { list: '/api/campaigns', label: 'Campaigns', key: 'campaigns',
-                  extra: ['/api/campaigns/1/leads'] },
-    analytics:  { list: '/api/analytics/overview', label: 'Analytics Overview', key: null,
-                  extra: ['/api/analytics/geo', '/api/analytics/funnel'] },
-    admin:      { list: '/api/admin/users', label: 'Users', key: 'users',
-                  extra: ['/api/admin/audit-logs', '/api/admin/config'] },
+
+const MODULE_CONFIG = {
+    catalogue: {
+        eyebrow: 'Commerce Surface',
+        title: 'Catalogue operations tuned for product discovery and ATP health.',
+        copy: 'This view tracks the live product catalog, category breadth, and review signal so the storefront can stay operational while still surfacing meaningful observability points.',
+        primary: { url: '/api/products', key: 'products' },
+        extras: [
+            { name: 'categories', url: '/api/categories' },
+            { name: 'reviews', url: '/api/products/1/reviews' }
+        ],
+        signals: [
+            { label: 'Catalog API', state: 'healthy', copy: 'Product discovery reads ATP-backed catalog rows with enriched specs and generated product art.' },
+            { label: 'Review Feed', state: 'healthy', copy: 'Review endpoints provide shopper signal and support search relevance validation.' },
+            { label: 'Trace Depth', state: 'healthy', copy: 'Catalogue requests emit request and DB spans for OCI APM trace correlation.' },
+            { label: 'Search Quality', state: 'monitor', copy: 'Search behavior should be tracked for latency and result quality during demo traffic.' }
+        ],
+        insights: [
+            'Inventory mix across drone systems, payloads, batteries, radios, and accessories.',
+            'Review presence on product detail flows for conversion support.',
+            'Category breadth to confirm the storefront is showing the intended drone catalogue.'
+        ],
+        sources: [
+            'Primary source: `/api/products` catalog query.',
+            'Supporting sources: `/api/categories` and `/api/products/1/reviews`.',
+            'Storefront consumers: `/shop` hero, filters, search, and cart flows.'
+        ],
+        runtimeNote: 'Catalogue health is only credible when the active product set remains drone-focused and legacy MuShop inventory is not exposed.',
+        metrics(data) {
+            const products = data.primary || [];
+            const categories = data.extras.categories?.categories || [];
+            const reviews = data.extras.reviews?.reviews || [];
+            return [
+                { label: 'Active Products', value: products.length, copy: 'Live catalog rows available to the storefront.' },
+                { label: 'Categories', value: categories.length, copy: 'Distinct catalog segments represented in ATP.' },
+                { label: 'Average Price', value: money(avg(products.map((item) => Number(item.price) || 0))), copy: 'Commercial mix across the current catalog.' },
+                { label: 'Review Samples', value: reviews.length, copy: 'Available product sentiment records for preview.' }
+            ];
+        },
+        table(data) {
+            return {
+                title: 'Catalog snapshot',
+                chip: `${(data.primary || []).length} products`,
+                columns: ['name', 'category', 'price', 'stock', 'support_tier'],
+                rows: (data.primary || []).slice(0, 12)
+            };
+        },
+        details(data) {
+            const categories = data.extras.categories?.categories || [];
+            return [
+                { title: 'Top category', value: categories[0] || 'n/a', copy: 'First alphabetic active category from the catalog query.' },
+                { title: 'Highest stock', value: `${Math.max(0, ...(data.primary || []).map((item) => Number(item.stock) || 0))}`, copy: 'Largest visible inventory bucket in the active dataset.' },
+                { title: 'Most premium SKU', value: money(Math.max(0, ...(data.primary || []).map((item) => Number(item.price) || 0))), copy: 'Upper bound of the currently visible offer mix.' }
+            ];
+        }
+    },
+    orders: {
+        eyebrow: 'Transaction Flow',
+        title: 'Order operations that map storefront actions to persisted business records.',
+        copy: 'Orders are the center of the commercial trace. This view keeps the current queue, revenue, and item mix visible so checkout changes can be validated quickly.',
+        primary: { url: '/api/orders', key: 'orders' },
+        extras: [
+            { name: 'cart', url: '/api/cart?session_id=ops-preview' }
+        ],
+        signals: [
+            { label: 'Checkout persistence', state: 'healthy', copy: 'Store checkouts create orders, items, shipments, and audit log entries.' },
+            { label: 'Revenue telemetry', state: 'healthy', copy: 'Order totals and item counts surface naturally in traces and correlated logs.' },
+            { label: 'Cart carry-over', state: 'monitor', copy: 'Session-linked cart state should be validated during smoke tests and load tests.' },
+            { label: 'Back-office readiness', state: 'healthy', copy: 'Operational staff can inspect order queues without leaving the portal.' }
+        ],
+        insights: [
+            'Recent customer orders and commercial volume.',
+            'Processing vs completed backlog visibility.',
+            'Average order value as a quick checkout health signal.'
+        ],
+        sources: [
+            'Primary source: `/api/orders` with embedded items.',
+            'Supporting source: `/api/cart` for current session cart state.',
+            'Related flow: `/api/shop/checkout` creates the persisted records.'
+        ],
+        runtimeNote: 'Order data should be validated immediately after any checkout-path change because it is the easiest place to spot regressions in persistence, audit, or shipment creation.',
+        metrics(data) {
+            const orders = data.primary || [];
+            const totals = orders.map((item) => Number(item.total) || 0);
+            return [
+                { label: 'Orders', value: orders.length, copy: 'Current persisted order records visible to operations.' },
+                { label: 'Revenue', value: money(sum(totals)), copy: 'Total order value across the visible queue.' },
+                { label: 'Avg Order', value: money(avg(totals)), copy: 'Useful sanity check for cart and coupon behavior.' },
+                { label: 'Processing', value: orders.filter((item) => item.status === 'processing').length, copy: 'Orders still moving through the operational workflow.' }
+            ];
+        },
+        table(data) {
+            return {
+                title: 'Recent orders',
+                chip: `${(data.primary || []).length} visible`,
+                columns: ['id', 'customer_name', 'status', 'total', 'created_at'],
+                rows: (data.primary || []).slice(0, 12)
+            };
+        },
+        details(data) {
+            const cartItems = data.extras.cart?.items || [];
+            return [
+                { title: 'Largest order', value: money(Math.max(0, ...(data.primary || []).map((item) => Number(item.total) || 0))), copy: 'Upper-value order in the visible backlog.' },
+                { title: 'Cart preview items', value: cartItems.length, copy: 'Session preview count from the cart API.' },
+                { title: 'Completed orders', value: (data.primary || []).filter((item) => item.status === 'completed').length, copy: 'Orders fully completed in the current result set.' }
+            ];
+        }
+    },
+    shipping: {
+        eyebrow: 'Fulfillment Flow',
+        title: 'Shipping operations with region-aware latency and warehouse coverage.',
+        copy: 'Shipping is where transaction data meets operational execution. This page keeps shipments, region routing, and warehouse footprint in one deliberate view.',
+        primary: { url: '/api/shipping', key: 'shipments' },
+        extras: [
+            { name: 'warehouses', url: '/api/shipping/warehouses' },
+            { name: 'region', url: '/api/shipping/by-region?region=eu-central-1' }
+        ],
+        signals: [
+            { label: 'Shipment queue', state: 'healthy', copy: 'Active shipment records are exposed for operational triage and readiness checks.' },
+            { label: 'Regional latency', state: 'healthy', copy: 'Region simulations create differentiated spans for fulfillment paths.' },
+            { label: 'Warehouse map', state: 'healthy', copy: 'Warehouse inventory surfaces help validate operational reach.' },
+            { label: 'Status control', state: 'monitor', copy: 'Status updates need stronger role controls in future follow-up hardening.' }
+        ],
+        insights: [
+            'In-transit shipment queue and carrier mix.',
+            'Warehouse footprint across active regions.',
+            'Regional lookup delay as an observability demo path.'
+        ],
+        sources: [
+            'Primary source: `/api/shipping`.',
+            'Supporting sources: `/api/shipping/warehouses` and `/api/shipping/by-region`.',
+            'Related flow: checkout-generated shipment records.'
+        ],
+        runtimeNote: 'Shipping is a useful place to validate both business correctness and observability because each update naturally touches DB spans, regional delay spans, and downstream operational dashboards.',
+        metrics(data) {
+            const shipments = data.primary || [];
+            const warehouses = data.extras.warehouses?.warehouses || [];
+            return [
+                { label: 'Shipments', value: shipments.length, copy: 'Current fulfillment records returned by the shipping API.' },
+                { label: 'In Transit', value: shipments.filter((item) => ['shipped', 'in_transit'].includes(item.status)).length, copy: 'Active delivery work currently underway.' },
+                { label: 'Warehouses', value: warehouses.length, copy: 'Operational warehouse footprint available for routing.' },
+                { label: 'Shipping Cost', value: money(sum(shipments.map((item) => Number(item.shipping_cost) || 0))), copy: 'Visible shipping spend across the queue.' }
+            ];
+        },
+        table(data) {
+            return {
+                title: 'Shipment queue',
+                chip: `${(data.primary || []).length} shipments`,
+                columns: ['tracking_number', 'carrier', 'status', 'origin_region', 'destination_region'],
+                rows: (data.primary || []).slice(0, 12)
+            };
+        },
+        details(data) {
+            return [
+                { title: 'EU region sample', value: `${(data.extras.region?.shipments || []).length} shipments`, copy: 'Preview result from the `eu-central-1` regional lookup.' },
+                { title: 'Simulated delay', value: `${data.extras.region?.simulated_delay_ms || 0} ms`, copy: 'Region-specific latency inserted for trace realism.' },
+                { title: 'Warehouse regions', value: [...new Set((data.extras.warehouses?.warehouses || []).map((item) => item.region))].length, copy: 'Unique regions represented by active warehouses.' }
+            ];
+        }
+    },
+    campaigns: {
+        eyebrow: 'Demand Engine',
+        title: 'Campaign operations paired with lead flow and performance state.',
+        copy: 'Campaign data is useful only when it reads like an operational system, not an endpoint dump. This view emphasizes active programs, lead load, and budget posture.',
+        primary: { url: '/api/campaigns', key: 'campaigns' },
+        extras: [
+            { name: 'leads', url: '/api/campaigns/1/leads' }
+        ],
+        signals: [
+            { label: 'Campaign roster', state: 'healthy', copy: 'Program inventory is available for marketers and demo operators.' },
+            { label: 'Lead visibility', state: 'healthy', copy: 'Lead lists give downstream signal for campaign effectiveness.' },
+            { label: 'Budget posture', state: 'monitor', copy: 'Spend integrity should be watched closely in future finance hardening.' },
+            { label: 'Trace coverage', state: 'healthy', copy: 'Campaign listing and lead lookups add useful app-level trace depth.' }
+        ],
+        insights: [
+            'Active campaign count and draft backlog.',
+            'Lead density across the visible campaign list.',
+            'Budget-to-spend comparison for quick operational review.'
+        ],
+        sources: [
+            'Primary source: `/api/campaigns`.',
+            'Supporting source: `/api/campaigns/1/leads`.',
+            'Related analytics: `/api/analytics/overview` for aggregate lead volume.'
+        ],
+        runtimeNote: 'Campaigns should feel like an operational workspace, so the portal now emphasizes live program state, not just raw endpoint output.',
+        metrics(data) {
+            const campaigns = data.primary || [];
+            return [
+                { label: 'Campaigns', value: campaigns.length, copy: 'Programs returned by the campaign API.' },
+                { label: 'Active', value: campaigns.filter((item) => item.status === 'active').length, copy: 'Currently running campaigns.' },
+                { label: 'Lead Count', value: sum(campaigns.map((item) => Number(item.lead_count) || 0)), copy: 'Lead volume aggregated from the live roster.' },
+                { label: 'Budget', value: money(sum(campaigns.map((item) => Number(item.budget) || 0))), copy: 'Visible top-line budget allocation.' }
+            ];
+        },
+        table(data) {
+            return {
+                title: 'Campaign roster',
+                chip: `${(data.primary || []).length} campaigns`,
+                columns: ['name', 'campaign_type', 'status', 'budget', 'lead_count'],
+                rows: (data.primary || []).slice(0, 12)
+            };
+        },
+        details(data) {
+            return [
+                { title: 'Preview leads', value: `${(data.extras.leads?.leads || []).length}`, copy: 'Lead sample from the first campaign endpoint preview.' },
+                { title: 'Spent so far', value: money(sum((data.primary || []).map((item) => Number(item.spent) || 0))), copy: 'Visible spend against live campaign records.' },
+                { title: 'Draft programs', value: (data.primary || []).filter((item) => item.status === 'draft').length, copy: 'Programs still pending activation.' }
+            ];
+        }
+    },
+    analytics: {
+        eyebrow: 'Observability Lens',
+        title: 'Analytics tuned to explain traffic, conversion, and regional experience.',
+        copy: 'Analytics should help you understand the system quickly. This view blends aggregate KPIs, funnel stages, and geographic latency into one concise operational lens.',
+        primary: { url: '/api/analytics/overview', key: null },
+        extras: [
+            { name: 'funnel', url: '/api/analytics/funnel' },
+            { name: 'geo', url: '/api/analytics/geo' },
+            { name: 'securityEvents', url: '/api/analytics/security/events?limit=100' },
+            { name: 'securityCorrelation', url: '/api/analytics/security/correlations?limit=50' }
+        ],
+        signals: [
+            { label: 'Overview aggregation', state: 'healthy', copy: 'Cross-module metrics summarize customers, orders, campaigns, and shipments.' },
+            { label: 'Funnel visibility', state: 'healthy', copy: 'Conversion stages stay visible for demo walkthroughs and load-test interpretation.' },
+            { label: 'Geo drill-down', state: 'healthy', copy: 'Regional page-view latency creates a clear observability story for distributed users.' },
+            { label: 'Attack telemetry', state: 'healthy', copy: 'Security events are persisted and correlated with product/order activity.' }
+        ],
+        insights: [
+            'Commercial KPIs summarized from multiple modules.',
+            'Funnel progression between visits, carts, and completed orders.',
+            'Regional experience variance based on tracked page views.',
+            'Attack detections correlated with impacted product and order flows.'
+        ],
+        sources: [
+            'Primary source: `/api/analytics/overview`.',
+            'Supporting sources: `/api/analytics/funnel` and `/api/analytics/geo`.',
+            'Security sources: `/api/analytics/security/events` and `/api/analytics/security/correlations`.',
+            'Event producer: `/api/analytics/track` from browser flows.'
+        ],
+        runtimeNote: 'This page is the fastest way to check whether the storefront is still producing meaningful behavioral and operational signal after a deploy.',
+        metrics(data) {
+            const overview = data.primary || {};
+            const securityEvents = data.extras.securityEvents?.events || [];
+            const productCoverage = data.extras.securityCorrelation?.product_coverage || [];
+            return [
+                { label: 'Customers', value: overview.total_customers || 0, copy: 'Customer entities visible to the analytics layer.' },
+                { label: 'Revenue', value: money(overview.total_revenue || 0), copy: 'Completed-order revenue exposed by the analytics summary.' },
+                { label: 'In Transit', value: overview.shipments_in_transit || 0, copy: 'Operational fulfillment load visible in analytics.' },
+                { label: 'Attack Events', value: securityEvents.length, copy: 'Persisted detections available for investigation and triage.' },
+                { label: 'Products With Events', value: productCoverage.filter((item) => Number(item.security_event_count) > 0).length, copy: 'Products currently mapped to at least one security event.' },
+                { label: 'Leads', value: overview.total_leads || 0, copy: 'Campaign lead volume reflected in the same view.' }
+            ];
+        },
+        table(data) {
+            const correlations = data.extras.securityCorrelation?.correlations || [];
+            if (correlations.length) {
+                return {
+                    title: 'Security correlations',
+                    chip: `${correlations.length} correlated rows`,
+                    columns: ['attack_type', 'severity', 'product_name', 'event_count', 'observed_order_units', 'last_seen'],
+                    rows: correlations.slice(0, 20)
+                };
+            }
+            return {
+                title: 'Funnel stages',
+                chip: `${(data.extras.funnel?.funnel || []).length} stages`,
+                columns: ['stage', 'count'],
+                rows: data.extras.funnel?.funnel || []
+            };
+        },
+        details(data) {
+            const geo = data.extras.geo?.regions || [];
+            const productCoverage = data.extras.securityCorrelation?.product_coverage || [];
+            const hottestProduct = [...productCoverage]
+                .sort((a, b) => (Number(b.security_event_count) || 0) - (Number(a.security_event_count) || 0))[0];
+            return [
+                { title: 'Geo regions', value: geo.length, copy: 'Distinct tracked visitor regions returned by the geo endpoint.' },
+                { title: 'Fastest region', value: pickFastestRegion(geo), copy: 'Lowest average load time among tracked regions.' },
+                { title: 'Top region views', value: `${Math.max(0, ...geo.map((item) => Number(item.view_count) || 0))}`, copy: 'Highest view concentration among tracked regions.' },
+                { title: 'Most targeted product', value: hottestProduct?.name || 'n/a', copy: 'Product with the highest correlated security event count.' }
+            ];
+        }
+    },
+    admin: {
+        eyebrow: 'Governed Control',
+        title: 'Administrative access that now requires authenticated operator context.',
+        copy: 'The admin surface is intended for governed operational use. It now hides secrets, requires a signed admin token, and blocks destructive resets in production.',
+        primary: { url: '/api/admin/users', key: 'users', requiresAuth: true },
+        extras: [
+            { name: 'audit', url: '/api/admin/audit-logs', requiresAuth: true },
+            { name: 'config', url: '/api/admin/config', requiresAuth: true }
+        ],
+        signals: [
+            { label: 'Admin auth', state: 'healthy', copy: 'Signed bearer tokens gate the administrative endpoints.' },
+            { label: 'Secret exposure', state: 'healthy', copy: 'Runtime config now exposes state only, not raw secrets or connection strings.' },
+            { label: 'Audit visibility', state: 'healthy', copy: 'Recent audit entries stay available for operational review.' },
+            { label: 'Mutation safety', state: 'healthy', copy: 'Destructive reseed operations are blocked in production.' }
+        ],
+        insights: [
+            'Current user roster and role distribution.',
+            'Recent audit activity.',
+            'Runtime feature toggles without secret disclosure.'
+        ],
+        sources: [
+            'Primary source: `/api/admin/users` with admin bearer token.',
+            'Supporting sources: `/api/admin/audit-logs` and `/api/admin/config`.',
+            'Authentication source: `/api/auth/login`.'
+        ],
+        runtimeNote: 'If this page shows an auth prompt, the portal is behaving as intended. Sign in as an admin to preview the governed data surfaces.',
+        metrics(data) {
+            const users = data.primary || [];
+            const config = data.extras.config || {};
+            return [
+                { label: 'Users', value: users.length, copy: 'Governed user roster visible to admin operators.' },
+                { label: 'Admins', value: users.filter((item) => item.role === 'admin').length, copy: 'Administrators currently present in the user table.' },
+                { label: 'Audit rows', value: (data.extras.audit?.audit_logs || []).length, copy: 'Recent audit entries available for review.' },
+                { label: 'Runtime', value: config.app_runtime || 'n/a', copy: 'Current deployment runtime reported by the app.' }
+            ];
+        },
+        table(data) {
+            return {
+                title: 'Governed user roster',
+                chip: `${(data.primary || []).length} users`,
+                columns: ['username', 'email', 'role', 'is_active', 'last_login'],
+                rows: (data.primary || []).slice(0, 12)
+            };
+        },
+        details(data) {
+            const config = data.extras.config || {};
+            return [
+                { title: 'Database backend', value: config.database_backend || 'n/a', copy: 'Reported operational data backend.' },
+                { title: 'APM status', value: config.apm_configured ? 'enabled' : 'pending', copy: 'Whether backend trace export is configured.' },
+                { title: 'RUM status', value: config.rum_configured ? 'enabled' : 'pending', copy: 'Whether browser telemetry is configured.' }
+            ];
+        }
+    }
 };
 
-async function load() {
-    const cfg = ENDPOINTS[MODULE];
-    if (!cfg) { document.getElementById('content-area').textContent = 'Unknown module: ' + MODULE; return; }
+function money(value) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value) || 0);
+}
 
-    // Show endpoint links
-    const allUrls = [cfg.list, ...(cfg.extra || [])];
-    document.getElementById('endpoints').innerHTML = allUrls.map(u =>
-        `<a class="btn btn-outline" href="${u}" target="_blank">${u}</a>`
-    ).join('');
+function sum(values) {
+    return values.reduce((total, value) => total + (Number(value) || 0), 0);
+}
 
-    // Load data
+function avg(values) {
+    return values.length ? sum(values) / values.length : 0;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char]));
+}
+
+function authHeaders(required) {
+    const token = localStorage.getItem('octo-auth-token');
+    if (!required || !token) {
+        return {};
+    }
+    return { Authorization: `Bearer ${token}` };
+}
+
+async function fetchJson(endpoint, required = false) {
+    const response = await fetch(endpoint, { headers: authHeaders(required) });
+    if (response.status === 401 || response.status === 403) {
+        const error = new Error('Authentication required');
+        error.code = response.status;
+        throw error;
+    }
+    if (!response.ok) {
+        throw new Error(`Request failed: ${endpoint}`);
+    }
+    return response.json();
+}
+
+function renderSignals(items) {
+    document.getElementById('signalList').innerHTML = items.map((item) => `
+        <article class="signal-card">
+            <div><span class="status-dot ${item.state === 'monitor' ? 'warn' : ''}"></span>${escapeHtml(item.label)}</div>
+            <p>${escapeHtml(item.copy)}</p>
+        </article>
+    `).join('');
+}
+
+function renderMetrics(items) {
+    document.getElementById('metricGrid').innerHTML = items.map((item) => `
+        <article class="metric-card">
+            <span class="eyebrow">${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.value)}</strong>
+            <p>${escapeHtml(item.copy)}</p>
+        </article>
+    `).join('');
+}
+
+function renderList(targetId, items, className) {
+    document.getElementById(targetId).innerHTML = items.map((item) => `
+        <article class="${className}">
+            <p>${escapeHtml(item)}</p>
+        </article>
+    `).join('');
+}
+
+function formatCell(column, row) {
+    const value = row?.[column];
+    if (value === null || value === undefined) {
+        return '';
+    }
+    if (typeof value === 'number') {
+        return column.includes('price') || column.includes('total') || column.includes('budget') || column.includes('spent')
+            ? money(value)
+            : value.toLocaleString();
+    }
+    if (typeof value === 'boolean') {
+        return value ? 'Yes' : 'No';
+    }
+    return String(value);
+}
+
+function renderTable(table) {
+    document.getElementById('tableTitle').textContent = table.title;
+    document.getElementById('tableChip').textContent = table.chip;
+
+    if (!table.rows.length) {
+        document.getElementById('dataHead').innerHTML = '<tr><th>No live rows</th></tr>';
+        document.getElementById('dataBody').innerHTML = '<tr><td class="empty-state">No records are available for this module right now.</td></tr>';
+        return;
+    }
+
+    document.getElementById('dataHead').innerHTML = '<tr>' + table.columns.map((column) => `<th>${escapeHtml(column.replaceAll('_', ' '))}</th>`).join('') + '</tr>';
+    document.getElementById('dataBody').innerHTML = table.rows.map((row) => `
+        <tr>${table.columns.map((column) => `<td>${escapeHtml(formatCell(column, row))}</td>`).join('')}</tr>
+    `).join('');
+}
+
+function renderDetails(items) {
+    document.getElementById('detailChip').textContent = `${items.length} highlights`;
+    document.getElementById('detailGrid').innerHTML = items.map((item) => `
+        <article class="source-card">
+            <span class="eyebrow">${escapeHtml(item.title)}</span>
+            <strong class="detail-value">${escapeHtml(item.value)}</strong>
+            <p>${escapeHtml(item.copy)}</p>
+        </article>
+    `).join('');
+}
+
+function renderAuthCallout() {
+    document.getElementById('authCallout').innerHTML = `
+        <div class="auth-callout">
+            <p>Admin data requires a signed bearer token. Sign in with an admin account, then reload this view.</p>
+            <a class="btn btn-outline" href="/login">Open Login</a>
+        </div>
+    `;
+}
+
+function clearAuthCallout() {
+    document.getElementById('authCallout').innerHTML = '';
+}
+
+function pickFastestRegion(regions) {
+    if (!regions.length) {
+        return 'n/a';
+    }
+    const fastest = [...regions].sort((a, b) => (Number(a.avg_load_time) || 0) - (Number(b.avg_load_time) || 0))[0];
+    return fastest?.visitor_region || 'n/a';
+}
+
+async function loadModule() {
+    const config = MODULE_CONFIG[MODULE];
+    if (!config) {
+        document.getElementById('heroCopy').textContent = 'Unknown module configuration.';
+        return;
+    }
+
+    document.getElementById('heroEyebrow').textContent = config.eyebrow;
+    document.getElementById('heroTitle').textContent = config.title;
+    document.getElementById('heroCopy').textContent = config.copy;
+    document.getElementById('runtimeNote').textContent = config.runtimeNote;
+
+    renderSignals(config.signals);
+    renderList('insightList', config.insights, 'insight-card');
+    renderList('sourceList', config.sources, 'source-card');
+
+    const data = { primary: null, extras: {} };
+
     try {
-        const r = await fetch(cfg.list);
-        const d = await r.json();
-        const items = cfg.key ? (d[cfg.key] || []) : [d];
-        document.getElementById('content-area').textContent = `${cfg.label}: ${items.length} item(s)`;
-
-        if (items.length > 0) {
-            const keys = Object.keys(items[0]).slice(0, 6);
-            document.getElementById('data-head').innerHTML = '<tr>' + keys.map(k => `<th>${k}</th>`).join('') + '</tr>';
-            document.getElementById('data-body').innerHTML = items.slice(0, 20).map(item =>
-                '<tr>' + keys.map(k => {
-                    let v = item[k];
-                    if (v === null || v === undefined) v = '';
-                    if (typeof v === 'object') v = JSON.stringify(v).substring(0, 60);
-                    return `<td>${String(v).substring(0, 80)}</td>`;
-                }).join('') + '</tr>'
-            ).join('');
+        const primaryPayload = await fetchJson(config.primary.url, Boolean(config.primary.requiresAuth));
+        data.primary = config.primary.key ? (primaryPayload[config.primary.key] || []) : primaryPayload;
+        clearAuthCallout();
+    } catch (error) {
+        if (MODULE === 'admin' && error.message === 'Authentication required') {
+            renderAuthCallout();
+            data.primary = [];
         } else {
-            document.getElementById('data-head').innerHTML = '<tr><th>No data</th></tr>';
-            document.getElementById('data-body').innerHTML = '';
+            throw error;
         }
-    } catch(e) {
-        document.getElementById('content-area').innerHTML = '<span class="badge badge-err">Error loading data</span> ' + e.message;
+    }
+
+    for (const extra of config.extras || []) {
+        try {
+            data.extras[extra.name] = await fetchJson(extra.url, Boolean(extra.requiresAuth));
+        } catch (error) {
+            if (!(MODULE === 'admin' && error.message === 'Authentication required')) {
+                data.extras[extra.name] = null;
+            }
+        }
+    }
+
+    renderMetrics(config.metrics(data));
+    renderTable(config.table(data));
+    renderDetails(config.details(data));
+    
+    const token = localStorage.getItem('octo-auth-token');
+    const authBtn = document.getElementById('authActionBtn');
+    if (token && authBtn) {
+        authBtn.textContent = 'Sign Out';
+        authBtn.href = '#';
+        authBtn.onclick = (e) => {
+            e.preventDefault();
+            localStorage.removeItem('octo-auth-token');
+            window.location.reload();
+        };
+    }
+
+    if (MODULE === 'admin' && data.primary && data.primary.length) {
+        const controls = document.getElementById('adminControls');
+        if (controls) {
+            controls.style.display = 'block';
+            document.getElementById('createPartnerForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const f = new FormData(e.target);
+                try {
+                    const p = Object.fromEntries(f.entries());
+                    const res = await fetch('/api/admin/partners', { method: 'POST', headers: {'Content-Type': 'application/json', ...authHeaders(true)}, body: JSON.stringify(p)});
+                    const j = await res.json();
+                    document.getElementById('adminStatusMsg').textContent = j.message || ('Error: ' + j.detail);
+                    e.target.reset();
+                    loadModule();
+                } catch(err) { document.getElementById('adminStatusMsg').textContent = err.message; }
+            };
+            document.getElementById('createUserForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const f = new FormData(e.target);
+                try {
+                    const p = Object.fromEntries(f.entries());
+                    const res = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type': 'application/json', ...authHeaders(true)}, body: JSON.stringify(p)});
+                    const j = await res.json();
+                    document.getElementById('adminStatusMsg').textContent = j.message || ('Error: ' + j.detail);
+                    e.target.reset();
+                    loadModule();
+                } catch(err) { document.getElementById('adminStatusMsg').textContent = err.message; }
+            };
+        }
     }
 }
-load();
+
+loadModule().catch((error) => {
+    document.getElementById('heroCopy').textContent = error.message;
+    document.getElementById('dataHead').innerHTML = '<tr><th>Module load failed</th></tr>';
+    document.getElementById('dataBody').innerHTML = `<tr><td class="empty-state">${escapeHtml(error.message)}</td></tr>`;
+});
 </script>
 {% endblock %}

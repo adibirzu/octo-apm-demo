@@ -1,49 +1,95 @@
 {% extends "base.html" %}
+{% block head %}
+<style>
+    .login-shell {
+        max-width: 460px;
+        margin: 56px auto;
+    }
+    .login-card {
+        display: grid;
+        gap: 16px;
+    }
+    .login-card p {
+        color: var(--muted);
+        line-height: 1.6;
+    }
+    .login-form {
+        display: grid;
+        gap: 12px;
+    }
+    .login-result {
+        min-height: 52px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--muted);
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:400px;margin:60px auto;">
-    <div class="card">
-        <h3>Login</h3>
-        <form id="login-form" style="margin-top:12px;">
-            <div style="margin-bottom:12px;">
-                <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:4px;">Username</label>
-                <input type="text" id="username" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;" value="admin">
-            </div>
-            <div style="margin-bottom:16px;">
-                <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:4px;">Password</label>
-                <input type="password" id="password" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;" value="admin123">
-            </div>
-            <button type="submit" class="btn" style="width:100%;">Sign In</button>
-        </form>
-        <div id="result" style="margin-top:12px;font-size:14px;"></div>
-        <p style="margin-top:16px;font-size:12px;color:var(--text-secondary);">
-            Default: admin / admin123 (deliberately weak for demo)
+<div class="login-shell">
+    <section class="card login-card">
+        <div class="eyebrow">Operator Access</div>
+        <h2>Sign in to governed administrative views.</h2>
+        <p>
+            Successful sign-in stores a signed bearer token in local storage so the portal can call protected admin APIs.
+            Use an administrator account for the Admin surface.
         </p>
-    </div>
+        <p>Seeded demo access: `admin / OctoAdmin!2026` for admin views, `shopper / OctoUser!2026` for standard-user checks.</p>
+        <form id="loginForm" class="login-form">
+            <input type="text" id="username" placeholder="Username" autocomplete="username" required>
+            <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+            <button type="submit" class="btn">Sign In</button>
+        </form>
+        <div class="login-result" id="result">No active sign-in yet.</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <a class="btn btn-outline" href="/admin-page">Open Admin</a>
+            <button type="button" class="btn btn-outline" id="clearTokenBtn">Clear Stored Token</button>
+        </div>
+    </section>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.getElementById('login-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const username = document.getElementById('username').value;
+const result = document.getElementById('result');
+
+function setMessage(message) {
+    result.textContent = message;
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
+
     try {
-        const r = await fetch('/api/auth/login', {
+        const response = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
-        const d = await r.json();
-        const el = document.getElementById('result');
-        if (d.status === 'success') {
-            el.innerHTML = '<span class="badge badge-ok">Login successful</span> Token: <code>' + d.token + '</code>';
-        } else {
-            el.innerHTML = '<span class="badge badge-err">' + (d.error || 'Login failed') + '</span>';
+        const payload = await response.json();
+        if (!response.ok || payload.status !== 'success') {
+            setMessage(payload.detail || payload.error || 'Login failed');
+            return;
         }
-    } catch(e) {
-        document.getElementById('result').innerHTML = '<span class="badge badge-err">Error: ' + e.message + '</span>';
+
+        localStorage.setItem('octo-auth-token', payload.token);
+        localStorage.setItem('octo-auth-user', JSON.stringify(payload.user));
+        setMessage(`Signed in as ${payload.user.username} (${payload.user.role}). Admin views can now call protected APIs.`);
+    } catch (error) {
+        setMessage(`Login failed: ${error.message}`);
     }
+});
+
+document.getElementById('clearTokenBtn').addEventListener('click', () => {
+    localStorage.removeItem('octo-auth-token');
+    localStorage.removeItem('octo-auth-user');
+    setMessage('Stored token cleared.');
 });
 </script>
 {% endblock %}
