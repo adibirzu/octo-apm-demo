@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: octo-drone-shop
-  namespace: default
+  namespace: octo-drone-shop
   labels:
     app: octo-drone-shop
 spec:
@@ -156,6 +156,8 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
+      imagePullSecrets:
+        - name: ocir-pull-secret
       volumes:
         - name: atp-wallet
           secret:
@@ -165,13 +167,18 @@ apiVersion: v1
 kind: Service
 metadata:
   name: octo-drone-shop
-  namespace: default
+  namespace: octo-drone-shop
   labels:
     app: octo-drone-shop
   annotations:
+    oci.oraclecloud.com/load-balancer-type: "lb"
     service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
     service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
-    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "100"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "10"
+    service.beta.kubernetes.io/oci-load-balancer-subnet1: "ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaa4q6hvwazrbtktsqu57lyjpvggze26hubs566v7zy4eclmjh7x2hq"
+    oci.oraclecloud.com/oci-load-balancer-health-check-interval: "10000"
+    oci.oraclecloud.com/oci-load-balancer-health-check-retries: "3"
+    oci.oraclecloud.com/oci-load-balancer-health-check-timeout: "3000"
 spec:
   type: LoadBalancer
   ports:
