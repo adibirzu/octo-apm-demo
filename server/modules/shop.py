@@ -70,7 +70,7 @@ async def storefront():
                     "(SELECT COUNT(*) FROM products WHERE is_active = 1) AS product_count, "
                     "(SELECT COALESCE(SUM(stock), 0) FROM products WHERE is_active = 1) AS inventory_units, "
                     "(SELECT COALESCE(SUM(total), 0) FROM orders) AS revenue, "
-                    "(SELECT COUNT(*) FROM orders) AS order_count"
+                    "(SELECT COUNT(*) FROM orders) AS order_count "
                     "FROM DUAL"
                 )
             )
