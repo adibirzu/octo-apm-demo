@@ -1,374 +1,297 @@
 {% extends "base.html" %}
 {% block head %}
 <style>
-    .shop-shell {
-        display: grid;
-        gap: 18px;
-    }
-    .hero-card {
-        padding: 30px;
-        display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
-        gap: 24px;
-        overflow: hidden;
-        position: relative;
-    }
-    .hero-proof {
-        display: grid;
-        gap: 18px;
-        align-content: start;
-    }
-    .hero-proof-card {
-        padding: 18px;
-        border-radius: 22px;
+    /* ── Top toolbar ─────────────────────────────────────────────── */
+    .shop-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        border-radius: 20px;
         border: 1px solid var(--line);
         background: rgba(255,255,255,0.03);
     }
-    .hero-proof-card ul {
-        margin-top: 10px;
-        padding-left: 18px;
-        color: var(--muted);
-        line-height: 1.7;
+    .shop-toolbar h2 {
+        font-size: 1.1rem;
+        font-family: "Orbitron", sans-serif;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
-    .hero-card::after {
-        content: "";
-        position: absolute;
-        inset: auto -80px -90px auto;
-        width: 320px;
-        height: 320px;
-        background: radial-gradient(circle, rgba(108, 210, 224, 0.2), transparent 62%);
-        pointer-events: none;
+    .toolbar-search {
+        flex: 1;
+        min-width: 200px;
+        max-width: 420px;
     }
-    .hero-title {
-        font-size: clamp(2rem, 4vw, 3.8rem);
-        line-height: 0.94;
-        max-width: 11ch;
-        margin: 10px 0 14px;
+    .toolbar-right {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-left: auto;
     }
-    .hero-copy p {
-        color: var(--muted);
-        max-width: 64ch;
-        line-height: 1.6;
+    .toolbar-right select {
+        min-width: 160px;
+        font-size: 0.84rem;
+        padding: 8px 12px;
     }
-    .hero-actions {
-        margin-top: 22px;
+
+    /* ── Category chips bar ──────────────────────────────────────── */
+    .cat-bar {
         display: flex;
         flex-wrap: wrap;
-        gap: 12px;
+        gap: 8px;
+        padding: 10px 0 4px;
     }
-    .shop-grid {
+    .cat-btn {
+        padding: 6px 14px;
+        border-radius: 20px;
+        border: 1px solid rgba(147,170,189,0.18);
+        background: rgba(255,255,255,0.03);
+        color: var(--muted);
+        font-size: 0.81rem;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .cat-btn:hover { border-color: rgba(108,210,224,0.3); color: var(--ink); }
+    .cat-btn.active {
+        border-color: rgba(108,210,224,0.55);
+        background: rgba(108,210,224,0.12);
+        color: var(--teal);
+        font-weight: 600;
+    }
+
+    /* ── Main layout: sidebar | catalog | cart ───────────────────── */
+    .shop-layout {
         display: grid;
-        grid-template-columns: 280px minmax(0, 1fr) 340px;
+        grid-template-columns: minmax(0, 1fr) 320px;
         gap: 18px;
         align-items: start;
     }
-    .sidebar-stack {
-        display: grid;
-        gap: 18px;
-    }
-    .section-title {
+
+    /* ── Product grid ────────────────────────────────────────────── */
+    .catalog-area { display: grid; gap: 14px; }
+    .catalog-meta {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 14px;
-    }
-    .section-title h3 {
-        font-size: 1rem;
-    }
-    .filter-list {
-        display: grid;
-        gap: 8px;
-    }
-    .filter-list button {
-        text-align: left;
-        padding: 10px 12px;
-        border-radius: 14px;
-        border: 1px solid rgba(147, 170, 189, 0.12);
-        background: rgba(255, 255, 255, 0.02);
-        color: var(--ink);
-        cursor: pointer;
-    }
-    .filter-list button.active {
-        border-color: rgba(108, 210, 224, 0.4);
-        background: rgba(108, 210, 224, 0.12);
-    }
-    .search-bar {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 10px;
-        margin: 18px 0 10px;
-    }
-    .catalog-header {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
         gap: 12px;
-        margin-bottom: 14px;
     }
-    .catalog-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-    }
-    .catalog-header .muted strong {
-        color: var(--ink);
-    }
+    .catalog-meta .muted strong { color: var(--ink); }
+    .status-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+
     .product-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
     }
     .product-card {
-        display: grid;
-        gap: 14px;
-        padding: 18px;
+        border-radius: 22px;
         border: 1px solid var(--line);
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255,255,255,0.03);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: border-color 0.18s, transform 0.18s;
+    }
+    .product-card:hover {
+        border-color: rgba(108,210,224,0.4);
+        transform: translateY(-2px);
     }
     .product-card img {
         width: 100%;
-        height: 240px;
+        height: 160px;
         object-fit: cover;
-        border-radius: 18px;
-        border: 1px solid rgba(147, 170, 189, 0.12);
-        background: rgba(255, 255, 255, 0.02);
-    }
-    .product-meta {
-        display: flex;
-        justify-content: space-between;
-        gap: 14px;
-        color: var(--muted);
-        font-size: 0.88rem;
-    }
-    .product-card h3 {
-        font-size: 1.15rem;
-    }
-    .product-card p {
-        color: var(--muted);
-        line-height: 1.6;
-        font-size: 0.92rem;
-    }
-    .spec-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .price-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-    }
-    .price-row strong {
-        font-size: 1.4rem;
-    }
-    .mini-stat-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 10px;
-    }
-    .mini-stat {
-        padding: 14px;
-        border-radius: 18px;
-        border: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
         background: rgba(255,255,255,0.02);
     }
-    .mini-stat strong {
-        display: block;
-        font-size: 1.15rem;
-        margin-top: 6px;
-    }
-    .trust-strip {
+    .product-body {
+        padding: 14px 16px 16px;
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 10px;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
     }
-    .order-note {
-        padding: 12px 14px;
-        border-radius: 16px;
-        border: 1px dashed rgba(108, 210, 224, 0.35);
-        background: rgba(108, 210, 224, 0.08);
-    }
-    .checkout-form,
-    .assistant-form {
-        display: grid;
-        gap: 12px;
-    }
-    .cart-list {
-        display: grid;
-        gap: 10px;
-        margin-bottom: 14px;
-    }
-    .cart-item {
-        display: grid;
-        grid-template-columns: 72px 1fr auto;
-        gap: 12px;
-        align-items: center;
-        padding: 10px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.03);
-    }
-    .cart-item img {
-        width: 72px;
-        height: 64px;
-        object-fit: cover;
-        border-radius: 14px;
-    }
-    .crm-customer {
+    .product-cat-row {
         display: flex;
         justify-content: space-between;
+        align-items: center;
+    }
+    .product-rating { color: var(--teal); font-size: 0.78rem; }
+    .product-body h3 { font-size: 0.92rem; line-height: 1.3; }
+    .product-body p {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        flex: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .spec-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .spec-chips .chip { font-size: 0.72rem; padding: 3px 8px; }
+    .product-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 6px;
+    }
+    .product-price {
+        font-size: 1.15rem;
+        font-family: "Orbitron", sans-serif;
+        font-weight: 700;
+        color: var(--teal);
+    }
+    .product-stock { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+    .add-btn {
+        padding: 7px 14px;
+        font-size: 0.8rem;
+        border-radius: 10px;
+    }
+
+    /* ── Right sidebar ───────────────────────────────────────────── */
+    .shop-sidebar { display: grid; gap: 16px; }
+
+    /* Cart */
+    .cart-list { display: grid; gap: 8px; margin-bottom: 12px; }
+    .cart-item {
+        display: grid;
+        grid-template-columns: 56px 1fr auto;
         gap: 10px;
         align-items: center;
-        padding: 10px;
+        padding: 8px 10px;
         border-radius: 14px;
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255,255,255,0.03);
     }
+    .cart-item img { width: 56px; height: 48px; object-fit: cover; border-radius: 10px; }
     .cart-total {
         display: flex;
         justify-content: space-between;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid rgba(147, 170, 189, 0.12);
+        padding: 10px 0;
+        border-top: 1px solid rgba(147,170,189,0.12);
+        font-weight: 600;
     }
+    .order-note {
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px dashed rgba(108,210,224,0.3);
+        background: rgba(108,210,224,0.06);
+        font-size: 0.78rem;
+        color: var(--muted);
+        line-height: 1.5;
+        margin-bottom: 4px;
+    }
+    .checkout-form { display: grid; gap: 10px; }
+    .checkout-form input,
+    .checkout-form textarea,
+    .checkout-form select { font-size: 0.84rem; padding: 9px 12px; }
+    .checkout-form textarea { min-height: 68px; }
+
+    /* Dealers */
+    .dealer-item {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(147,170,189,0.1);
+    }
+    .dealer-item strong { font-size: 0.88rem; display: block; }
+    .dealer-item .helper { font-size: 0.78rem; }
+
+    /* Assistant */
     .assistant-log {
         display: grid;
-        gap: 10px;
-        max-height: 320px;
+        gap: 8px;
+        max-height: 260px;
         overflow: auto;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
     .assistant-msg {
-        padding: 12px 14px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.03);
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.03);
         color: var(--muted);
-        line-height: 1.55;
+        line-height: 1.5;
+        font-size: 0.84rem;
         white-space: pre-wrap;
     }
-    .assistant-msg strong {
-        color: var(--ink);
-        display: block;
-        margin-bottom: 6px;
+    .assistant-msg strong { color: var(--ink); display: block; margin-bottom: 4px; }
+    .assistant-form { display: grid; gap: 8px; }
+    .assistant-form textarea { min-height: 60px; font-size: 0.84rem; }
+
+    .helper { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+
+    /* ── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+        .product-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    .helper {
-        color: var(--muted);
-        font-size: 0.84rem;
-        line-height: 1.5;
+    @media (max-width: 960px) {
+        .shop-layout { grid-template-columns: 1fr; }
+        .product-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    @media (max-width: 1180px) {
-        .hero-card,
-        .shop-grid {
-            grid-template-columns: 1fr;
-        }
-        .product-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-    }
-    @media (max-width: 760px) {
-        .hero-card {
-            padding: 20px;
-        }
-        .product-grid {
-            grid-template-columns: 1fr;
-        }
+    @media (max-width: 620px) {
+        .shop-toolbar { flex-direction: column; align-items: stretch; }
+        .toolbar-right { margin-left: 0; }
+        .product-grid { grid-template-columns: 1fr; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="shop-shell">
-    <section class="hero-card">
-        <div class="hero-copy">
-            <div class="eyebrow">OCTO Drone Store</div>
-            <h1 class="hero-title">Professional drone equipment and support.</h1>
-            <p>
-                Browse our complete catalog of industrial endurance platforms, specialized payloads, and accessories. Experience premier support directly from our technical sales team.
-            </p>
-            <div class="search-bar">
-                <input id="searchInput" type="search" placeholder="Search drones, payloads, batteries, radios...">
-                <button class="btn" id="refreshBtn" type="button">Refresh Catalog</button>
-            </div>
-            <div class="hero-actions">
-                <a class="btn" href="#catalog">Browse Inventory</a>
-            </div>
-            <div class="trust-strip">
-                <span class="chip">ATP-backed catalog</span>
-                <span class="chip">CRM-aware checkout</span>
-                <span class="chip">Service and dealer network</span>
-            </div>
-        </div>
-        <div class="hero-proof">
-            <div class="hero-proof-card">
-                <div class="eyebrow">Operational confidence</div>
-                <h3>Enterprise-ready storefront</h3>
-                <ul>
-                    <li>Mission platforms, payloads, field power, and support services.</li>
-                    <li>Checkout persists orders, shipments, audit trail, and CRM sync metadata.</li>
-                    <li>Grounded assistant helps compare endurance, payload, and inspection fit.</li>
-                </ul>
-            </div>
-            <div class="hero-proof-card mini-stat-grid" id="miniStatGrid"></div>
-        </div>
-    </section>
+<section style="display:grid;gap:16px;">
 
-    <section class="shop-grid">
-        <aside class="sidebar-stack">
-            <div class="panel">
-                <div class="section-title">
-                    <h3>Categories</h3>
-                    <span class="chip" id="categoryCount">0 loaded</span>
-                </div>
-                <div class="filter-list" id="categoryFilters"></div>
-            </div>
-            <div class="panel">
-                <div class="section-title">
-                    <h3>Sort & Filter</h3>
-                </div>
-                <label class="helper" for="sortSelect">Sort products</label>
-                <select id="sortSelect">
-                    <option value="name">Name</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                    <option value="rating-desc">Top Rated</option>
-                    <option value="stock-desc">Inventory</option>
-                </select>
-                <label class="helper" for="assistantFocus">Assistant focus</label>
-                <select id="assistantFocus">
-                    <option value="">All drone products</option>
-                </select>
-            </div>
-        </aside>
+    <!-- Top toolbar -->
+    <div class="shop-toolbar">
+        <h2>Drone Shop</h2>
+        <input class="toolbar-search" id="searchInput" type="search" placeholder="Search drones, payloads, batteries…">
+        <div class="toolbar-right">
+            <select id="sortSelect">
+                <option value="name">Sort: A–Z</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="rating-desc">Top Rated</option>
+                <option value="stock-desc">Highest Stock</option>
+            </select>
+            <span class="chip" id="backendChip">ATP</span>
+            <span class="chip" id="crmChip">CRM</span>
+        </div>
+    </div>
 
-        <section class="panel" id="catalog">
-            <div class="catalog-header">
-                <div class="muted">Showing <strong id="visibleCount">0</strong> products</div>
-                <div class="catalog-toolbar">
-                    <span class="chip" id="backendChip">ATP status</span>
-                    <span class="chip" id="crmChip">CRM sync</span>
-                </div>
+    <!-- Category filter chips -->
+    <div class="cat-bar" id="catBar">
+        <button class="cat-btn active" type="button" data-cat="All">All</button>
+    </div>
+
+    <!-- Main content -->
+    <div class="shop-layout" id="shopLayout">
+        <!-- Catalog -->
+        <section class="catalog-area">
+            <div class="catalog-meta">
+                <span class="muted">Showing <strong id="visibleCount">0</strong> products</span>
+                <div class="status-chips" id="statsChips"></div>
             </div>
-            <div class="product-grid" id="productGrid"></div>
+            <div class="product-grid" id="productGrid">
+                <div class="helper" style="grid-column:1/-1;padding:24px 0;">Loading catalog from Oracle ATP…</div>
+            </div>
         </section>
 
-        <aside class="sidebar-stack">
-            <div class="panel">
+        <!-- Right sidebar -->
+        <aside class="shop-sidebar">
+            <!-- Cart & Checkout -->
+            <div class="panel" id="cartPanel">
                 <div class="section-title">
                     <h3>Cart & Checkout</h3>
-                    <span class="chip" id="cartItemsChip">0 items</span>
+                    <span class="chip" id="cartChip">0 items</span>
                 </div>
                 <div class="cart-list" id="cartList">
-                    <div class="helper">Your cart is empty. Add a drone or accessory to begin.</div>
+                    <div class="helper">Add products to your cart to begin checkout.</div>
                 </div>
                 <div class="cart-total">
-                    <span class="muted">Current total</span>
+                    <span class="muted">Total</span>
                     <strong id="cartTotal">$0.00</strong>
                 </div>
-                <div class="order-note helper">Orders are correlated with ATP persistence, logistics records, and Enterprise CRM synchronization without exposing backend endpoints in the UI.</div>
+                <div class="order-note">Orders are persisted in Oracle ATP, traced through OCI APM, and synchronized with Enterprise CRM.</div>
                 <form class="checkout-form" id="checkoutForm">
                     <input name="customer_name" placeholder="Contact name" required>
                     <input name="customer_email" type="email" placeholder="Contact email" required>
@@ -376,42 +299,45 @@
                     <input name="customer_phone" placeholder="Phone">
                     <textarea name="shipping_address" placeholder="Shipping address" required></textarea>
                     <select name="payment_method" required>
-                        <option value="" disabled selected>Select Payment Method</option>
+                        <option value="" disabled selected>Payment method</option>
                         <option value="credit_card">Credit Card</option>
-                        <option value="crypto">Cryptocurrency</option>
                         <option value="bank_transfer">Bank Transfer (Net 30)</option>
+                        <option value="crypto">Cryptocurrency</option>
                     </select>
                     <input name="coupon_code" placeholder="Coupon code (optional)">
-                    <button class="btn" type="submit">Persist Order in Backend</button>
+                    <button class="btn" type="submit">Place Order</button>
                 </form>
-                <div class="helper" id="checkoutStatus">Every checkout creates order, order items, shipment, audit log, and traces.</div>
+                <div class="helper" id="checkoutStatus" style="margin-top:6px;"></div>
             </div>
 
+            <!-- Authorized dealers -->
             <div class="panel">
                 <div class="section-title">
                     <h3>Authorized Dealers</h3>
-                    <span class="chip" id="shopCount">0 locs</span>
+                    <span class="chip" id="shopCount">–</span>
                 </div>
-                <div class="cart-list" id="shopList">
-                    <div class="helper">Loading dealer locations from ATP...</div>
+                <div style="display:grid;gap:8px;" id="shopList">
+                    <div class="helper">Loading dealer locations…</div>
                 </div>
             </div>
 
+            <!-- AI Assistant -->
             <div class="panel">
                 <div class="section-title">
-                    <h3>Drone Technical Assistant</h3>
-                    <span class="chip" id="assistantProvider">grounded</span>
+                    <h3>Drone Advisor</h3>
+                    <span class="chip" id="assistantProvider">OCI GenAI</span>
                 </div>
                 <div class="assistant-log" id="assistantLog">
-                    <div class="assistant-msg"><strong>OCTO Advisor</strong>Ask about endurance, sensors, mapping, payload, radios, batteries, or compare platforms.</div>
+                    <div class="assistant-msg"><strong>OCTO Advisor</strong>Ask about endurance, sensors, mapping, payload, radios, or compare platforms.</div>
                 </div>
                 <form class="assistant-form" id="assistantForm">
-                    <textarea name="message" placeholder="Example: Which platform is best for utility inspection with thermal imaging?" required></textarea>
-                    <button class="btn" type="submit">Ask Agent</button>
+                    <textarea name="message" placeholder="e.g. Best platform for thermal utility inspection?" required></textarea>
+                    <button class="btn" type="submit">Ask Advisor</button>
                 </form>
             </div>
         </aside>
-    </section>
+    </div>
+
 </section>
 {% endblock %}
 
@@ -421,303 +347,264 @@ const state = {
     products: [],
     filtered: [],
     cart: [],
-    cartTotal: 0,
     category: 'All',
     sessionId: localStorage.getItem('octo-session-id') || crypto.randomUUID(),
     assistantSessionId: localStorage.getItem('octo-assistant-session-id') || crypto.randomUUID(),
-    backend: {},
-    crmSync: {},
 };
-
 localStorage.setItem('octo-session-id', state.sessionId);
 localStorage.setItem('octo-assistant-session-id', state.assistantSessionId);
 
-function money(value) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value || 0);
+function money(v) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(v || 0);
 }
 
-function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, char => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[char]));
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function renderCategories(categories) {
-    const container = document.getElementById('categoryFilters');
-    container.innerHTML = '';
-    ['All', ...categories].forEach(category => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = category;
-        if (state.category === category) button.classList.add('active');
-        button.addEventListener('click', () => {
-            state.category = category;
-            renderCategories(categories);
+/* ── Categories ──────────────────────────────────────────────── */
+function renderCategories(cats) {
+    const bar = document.getElementById('catBar');
+    bar.innerHTML = ['All', ...cats].map(c => `
+        <button class="cat-btn${state.category === c ? ' active' : ''}" type="button" data-cat="${esc(c)}">${esc(c)}</button>
+    `).join('');
+    bar.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.category = btn.dataset.cat;
+            renderCategories(cats);
             applyFilters();
         });
-        container.appendChild(button);
     });
-    document.getElementById('categoryCount').textContent = `${categories.length} categories`;
-    document.getElementById('assistantFocus').innerHTML = '<option value="">All drone products</option>' +
-        categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
 }
 
-function renderStoreStats(stats = {}) {
-    const items = [
-        { label: 'Products', value: String(stats.product_count || 0) },
-        { label: 'Inventory Units', value: String(stats.inventory_units || 0) },
-        { label: 'Orders', value: String(stats.order_count || 0) },
-        { label: 'Revenue', value: money(stats.revenue || 0) },
-    ];
-    document.getElementById('miniStatGrid').innerHTML = items.map(item => `
-        <div class="mini-stat">
-            <span class="helper">${escapeHtml(item.label)}</span>
-            <strong>${escapeHtml(item.value)}</strong>
-        </div>
-    `).join('');
+/* ── Stats chips ─────────────────────────────────────────────── */
+function renderStats(stats = {}) {
+    document.getElementById('statsChips').innerHTML = [
+        stats.product_count != null ? `<span class="chip">${stats.product_count} products</span>` : '',
+        stats.order_count   != null ? `<span class="chip">${stats.order_count} orders</span>` : '',
+        stats.revenue       != null ? `<span class="chip">${money(stats.revenue)} revenue</span>` : '',
+    ].join('');
 }
 
-function renderIntegrationStatus() {
-    const backendChip = document.getElementById('backendChip');
-    const crmChip = document.getElementById('crmChip');
-    backendChip.textContent = state.backend.apm_configured ? 'ATP + APM active' : 'ATP active';
-    const crmLabel = state.crmSync.synced
-        ? `CRM synced${state.crmSync.customers_seen ? ` • ${state.crmSync.customers_seen} seen` : ''}`
-        : (state.crmSync.configured ? 'CRM reachable' : 'CRM optional');
-    crmChip.textContent = crmLabel;
-}
-
+/* ── Products ────────────────────────────────────────────────── */
 function renderProducts() {
     const grid = document.getElementById('productGrid');
+    document.getElementById('visibleCount').textContent = state.filtered.length;
     if (!state.filtered.length) {
-        grid.innerHTML = '<div class="helper">No products match the current search and category filters.</div>';
-        document.getElementById('visibleCount').textContent = '0';
+        grid.innerHTML = '<div class="helper" style="grid-column:1/-1;padding:24px 0;">No products match the current filter. Try clearing the search or selecting a different category.</div>';
         return;
     }
-    grid.innerHTML = state.filtered.map(product => `
+    grid.innerHTML = state.filtered.map(p => `
         <article class="product-card">
-            <img src="${product.image_url}" alt="${escapeHtml(product.name)}">
-            <div class="product-meta">
-                <span>${escapeHtml(product.category)}</span>
-                <span>${product.rating.toFixed(1)} / 5</span>
-            </div>
-            <div>
-                <h3>${escapeHtml(product.name)}</h3>
-                <p>${escapeHtml(product.description)}</p>
-            </div>
-            <div class="spec-row">
-                ${(product.specs || []).slice(0, 3).map(spec => `<span class="chip">${escapeHtml(spec.label)}: <strong>${escapeHtml(spec.value)}</strong></span>`).join('')}
-            </div>
-            <div class="price-row">
-                <div>
-                    <strong>${money(product.price)}</strong>
-                    <div class="helper">${escapeHtml(product.inventory_badge)} | ${escapeHtml(product.support_tier)}</div>
+            <img src="${esc(p.image_url)}" alt="${esc(p.name)}" onerror="this.style.display='none'">
+            <div class="product-body">
+                <div class="product-cat-row">
+                    <span class="chip" style="font-size:0.71rem;padding:3px 8px;">${esc(p.category)}</span>
+                    <span class="product-rating">★ ${(p.rating || 0).toFixed(1)}</span>
                 </div>
-                <button class="btn add-cart-btn" type="button" data-product="${product.id}">Add to Cart</button>
+                <h3>${esc(p.name)}</h3>
+                <p>${esc(p.description)}</p>
+                <div class="spec-chips">
+                    ${(p.specs || []).slice(0, 3).map(s => `<span class="chip">${esc(s.label)}: <strong>${esc(s.value)}</strong></span>`).join('')}
+                </div>
+                <div class="product-footer">
+                    <div>
+                        <div class="product-price">${money(p.price)}</div>
+                        <div class="product-stock">${esc(p.inventory_badge)}</div>
+                    </div>
+                    <button class="btn add-btn" type="button" data-id="${p.id}">Add to Cart</button>
+                </div>
             </div>
         </article>
     `).join('');
-    document.getElementById('visibleCount').textContent = String(state.filtered.length);
-    grid.querySelectorAll('.add-cart-btn').forEach(button => {
-        button.addEventListener('click', () => addToCart(Number(button.dataset.product)));
+    grid.querySelectorAll('.add-btn').forEach(btn => {
+        btn.addEventListener('click', () => addToCart(Number(btn.dataset.id)));
     });
 }
 
 function applyFilters() {
-    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
     const sort = document.getElementById('sortSelect').value;
-    state.filtered = state.products.filter(product => {
-        const matchesCategory = state.category === 'All' || product.category === state.category;
-        const haystack = `${product.name} ${product.description} ${product.category} ${product.sku}`.toLowerCase();
-        const matchesSearch = !query || haystack.includes(query);
-        return matchesCategory && matchesSearch;
+    state.filtered = state.products.filter(p => {
+        if (state.category !== 'All' && p.category !== state.category) return false;
+        if (q) {
+            const hay = `${p.name} ${p.description} ${p.category} ${p.sku || ''}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+        }
+        return true;
     });
     const sorters = {
-        name: (a, b) => a.name.localeCompare(b.name),
-        'price-asc': (a, b) => a.price - b.price,
-        'price-desc': (a, b) => b.price - a.price,
-        'rating-desc': (a, b) => b.rating - a.rating,
-        'stock-desc': (a, b) => b.stock - a.stock,
+        name:          (a, b) => a.name.localeCompare(b.name),
+        'price-asc':   (a, b) => a.price - b.price,
+        'price-desc':  (a, b) => b.price - a.price,
+        'rating-desc': (a, b) => (b.rating || 0) - (a.rating || 0),
+        'stock-desc':  (a, b) => (b.stock || 0) - (a.stock || 0),
     };
     state.filtered.sort(sorters[sort] || sorters.name);
     renderProducts();
 }
 
+/* ── Storefront load ─────────────────────────────────────────── */
 async function loadStorefront() {
-    const response = await fetch('/api/shop/storefront');
-    if (!response.ok) {
-        throw new Error(`Storefront API failed (${response.status})`);
-    }
-    const payload = await response.json();
-    state.products = payload.products || [];
-    state.backend = payload.backend || {};
-    state.crmSync = payload.crm_sync || {};
-    renderCategories(payload.categories || []);
-    renderStoreStats(payload.stats || {});
-    renderIntegrationStatus();
+    const res = await fetch('/api/shop/storefront');
+    if (!res.ok) throw new Error(`Storefront ${res.status}`);
+    const data = await res.json();
+    state.products = data.products || [];
+    const be = data.backend || {};
+    const crm = data.crm_sync || {};
+    document.getElementById('backendChip').textContent = be.apm_configured ? 'ATP + APM' : 'Oracle ATP';
+    document.getElementById('crmChip').textContent = crm.configured ? 'CRM sync' : 'CRM optional';
+    renderCategories(data.categories || []);
+    renderStats(data.stats || {});
     applyFilters();
 }
 
-async function trackPageView() {
-    await fetch('/api/analytics/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            page: window.location.pathname,
-            session_id: state.sessionId,
-            visitor_region: Intl.DateTimeFormat().resolvedOptions().timeZone || 'browser',
-            load_time_ms: Math.round(performance.now()),
-            referrer: document.referrer || 'direct'
-        })
+/* ── Cart ────────────────────────────────────────────────────── */
+async function loadCart() {
+    const res = await fetch(`/api/cart?session_id=${encodeURIComponent(state.sessionId)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    state.cart = data.items || [];
+    const total = data.total || 0;
+    document.getElementById('cartChip').textContent = `${state.cart.length} item${state.cart.length !== 1 ? 's' : ''}`;
+    document.getElementById('cartTotal').textContent = money(total);
+    const list = document.getElementById('cartList');
+    if (!state.cart.length) {
+        list.innerHTML = '<div class="helper">Add products to your cart to begin checkout.</div>';
+        return;
+    }
+    list.innerHTML = state.cart.map(item => `
+        <div class="cart-item">
+            <img src="${esc(item.image_url)}" alt="${esc(item.name)}" onerror="this.style.display='none'">
+            <div>
+                <strong style="font-size:0.85rem;">${esc(item.name)}</strong>
+                <div class="helper">${item.quantity} × ${money(item.price)}</div>
+            </div>
+            <button class="btn btn-outline remove-btn" style="font-size:0.75rem;padding:5px 10px;" type="button" data-id="${item.id}">✕</button>
+        </div>
+    `).join('');
+    list.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => removeCartItem(Number(btn.dataset.id)));
     });
 }
 
 async function addToCart(productId) {
-    const response = await fetch('/api/cart/add', {
+    const res = await fetch('/api/cart/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: state.sessionId, product_id: productId, quantity: 1 })
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({session_id: state.sessionId, product_id: productId, quantity: 1}),
     });
-    const payload = await response.json();
-    if (!response.ok || payload.error) {
-        document.getElementById('checkoutStatus').textContent = payload.error || 'Failed to add product to cart.';
+    const data = await res.json();
+    if (!res.ok || data.error) {
+        document.getElementById('checkoutStatus').textContent = data.error || 'Failed to add item.';
         return;
     }
     await loadCart();
 }
 
 async function removeCartItem(itemId) {
-    await fetch(`/api/cart/${itemId}`, { method: 'DELETE' });
+    await fetch(`/api/cart/${itemId}`, {method: 'DELETE'});
     await loadCart();
 }
 
-async function loadCart() {
-    const response = await fetch(`/api/cart?session_id=${encodeURIComponent(state.sessionId)}`);
-    if (!response.ok) {
-        throw new Error(`Cart API failed (${response.status})`);
-    }
-    const payload = await response.json();
-    state.cart = payload.items || [];
-    state.cartTotal = payload.total || 0;
-    document.getElementById('cartItemsChip').textContent = `${state.cart.length} items`;
-    document.getElementById('cartTotal').textContent = money(state.cartTotal);
-    const list = document.getElementById('cartList');
-    if (!state.cart.length) {
-        list.innerHTML = '<div class="helper">Your cart is empty. Add a drone or accessory to begin.</div>';
-        return;
-    }
-    list.innerHTML = state.cart.map(item => `
-        <div class="cart-item">
-            <img src="${item.image_url}" alt="${escapeHtml(item.name)}">
-            <div>
-                <strong>${escapeHtml(item.name)}</strong>
-                <div class="helper">${item.quantity} x ${money(item.price)}</div>
-            </div>
-            <button class="btn btn-outline remove-cart-btn" type="button" data-item="${item.id}">Remove</button>
-        </div>
-    `).join('');
-    list.querySelectorAll('.remove-cart-btn').forEach(button => {
-        button.addEventListener('click', () => removeCartItem(Number(button.dataset.item)));
-    });
-}
-
-async function submitCheckout(event) {
-    event.preventDefault();
-    const formEl = event.currentTarget;
-    const form = new FormData(formEl);
-    const payload = Object.fromEntries(form.entries());
-    payload.session_id = state.sessionId;
+/* ── Checkout ────────────────────────────────────────────────── */
+async function submitCheckout(e) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const payload = {...Object.fromEntries(form.entries()), session_id: state.sessionId};
     const status = document.getElementById('checkoutStatus');
+    status.textContent = 'Placing order…';
     try {
-        const response = await fetch('/api/shop/checkout', {
+        const res = await fetch('/api/shop/checkout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
         });
-        const result = await response.json();
-        if (!response.ok || result.error) {
-            status.textContent = result.error || `Checkout failed (${response.status})`;
+        const result = await res.json();
+        if (!res.ok || result.error) {
+            status.textContent = result.error || `Checkout failed (${res.status})`;
             return;
         }
-        status.textContent = `Order #${result.order_id} stored. Tracking number: ${result.tracking_number}.`;
-        formEl.reset();
+        status.textContent = `Order #${result.order_id} placed. Tracking: ${result.tracking_number}`;
+        e.currentTarget.reset();
         await Promise.all([loadCart(), loadStorefront()]);
-    } catch (error) {
-        status.textContent = `Checkout request failed: ${error.message}`;
+    } catch (err) {
+        status.textContent = `Request failed: ${err.message}`;
     }
 }
 
-function appendAssistantMessage(role, content) {
-    const container = document.getElementById('assistantLog');
-    const el = document.createElement('div');
-    el.className = 'assistant-msg';
-    el.innerHTML = `<strong>${role}</strong>${escapeHtml(content)}`;
-    container.appendChild(el);
-    container.scrollTop = container.scrollHeight;
+/* ── Dealers ─────────────────────────────────────────────────── */
+async function loadShops() {
+    try {
+        const res = await fetch('/api/shop/locations');
+        const data = await res.json();
+        const shops = data.shops || [];
+        document.getElementById('shopCount').textContent = `${shops.length} locations`;
+        const list = document.getElementById('shopList');
+        list.innerHTML = shops.length
+            ? shops.map(s => `
+                <div class="dealer-item">
+                    <strong>${esc(s.name)}</strong>
+                    <div class="helper">${esc(s.address)}</div>
+                </div>`).join('')
+            : '<div class="helper">No dealer locations on file.</div>';
+    } catch (_) {}
 }
 
-async function submitAssistant(event) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+/* ── AI Advisor ──────────────────────────────────────────────── */
+function appendMsg(role, content) {
+    const log = document.getElementById('assistantLog');
+    const el = document.createElement('div');
+    el.className = 'assistant-msg';
+    el.innerHTML = `<strong>${esc(role)}</strong>${esc(content)}`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+}
+
+async function submitAssistant(e) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
     const message = String(form.get('message') || '').trim();
     if (!message) return;
-    appendAssistantMessage('You', message);
-    event.currentTarget.reset();
-    const response = await fetch('/api/shop/assistant/query', {
+    appendMsg('You', message);
+    e.currentTarget.reset();
+    const res = await fetch('/api/shop/assistant/query', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
             message,
             session_id: state.assistantSessionId,
-            customer_email: document.querySelector('#checkoutForm [name="customer_email"]').value || '',
-            product_focus: document.getElementById('assistantFocus').value || ''
-        })
+            customer_email: document.querySelector('#checkoutForm [name="customer_email"]')?.value || '',
+        }),
     });
-    const result = await response.json();
-    if (result.error) {
-        appendAssistantMessage('OCTO Advisor', result.error);
-        return;
-    }
-    document.getElementById('assistantProvider').textContent = result.provider;
-    appendAssistantMessage('OCTO Advisor', result.answer);
+    const result = await res.json();
+    if (result.error) { appendMsg('OCTO Advisor', result.error); return; }
+    document.getElementById('assistantProvider').textContent = result.provider || 'OCI GenAI';
+    appendMsg('OCTO Advisor', result.answer);
 }
 
-// CRM functions removed
-
-async function loadShops() {
-    try {
-        const response = await fetch('/api/shop/locations');
-        const payload = await response.json();
-        const shops = payload.shops || [];
-        document.getElementById('shopCount').textContent = `${shops.length} locs`;
-        const list = document.getElementById('shopList');
-        if (!shops.length) {
-            list.innerHTML = '<div class="helper">No dealer locations found.</div>';
-            return;
-        }
-        list.innerHTML = shops.map(shop => `
-            <div class="crm-customer">
-                <div>
-                    <strong>${escapeHtml(shop.name)}</strong>
-                    <div class="helper">${escapeHtml(shop.address)}</div>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error("Failed to load shops", error);
-    }
+/* ── Analytics ───────────────────────────────────────────────── */
+async function trackPageView() {
+    await fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            page: window.location.pathname,
+            session_id: state.sessionId,
+            visitor_region: Intl.DateTimeFormat().resolvedOptions().timeZone || 'browser',
+            load_time_ms: Math.round(performance.now()),
+            referrer: document.referrer || 'direct',
+        }),
+    });
 }
 
+/* ── Wire events ─────────────────────────────────────────────── */
 document.getElementById('searchInput').addEventListener('input', applyFilters);
 document.getElementById('sortSelect').addEventListener('change', applyFilters);
-document.getElementById('assistantFocus').addEventListener('change', () => {});
 document.getElementById('checkoutForm').addEventListener('submit', submitCheckout);
 document.getElementById('assistantForm').addEventListener('submit', submitAssistant);
-document.getElementById('refreshBtn').addEventListener('click', async () => {
-    await loadStorefront();
-    await loadCart();
-});
 
+/* ── Boot ────────────────────────────────────────────────────── */
 (async function init() {
     try {
         await Promise.all([
@@ -726,8 +613,9 @@ document.getElementById('refreshBtn').addEventListener('click', async () => {
             loadShops(),
             trackPageView().catch(() => {}),
         ]);
-    } catch (error) {
-        document.getElementById('productGrid').innerHTML = `<div class="helper">Storefront failed to load: ${escapeHtml(error.message)}</div>`;
+    } catch (err) {
+        document.getElementById('productGrid').innerHTML =
+            `<div class="helper" style="grid-column:1/-1;color:var(--rose);">Failed to load catalog: ${esc(err.message)}</div>`;
     }
 })();
 </script>

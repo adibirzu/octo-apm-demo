@@ -77,6 +77,11 @@ async def storefront():
             stats = dict(stats_result.mappings().first())
 
         span.set_attribute("shop.catalog_count", len(products))
+        span.set_attribute("shop.category_count", len(categories))
+        span.set_attribute("shop.inventory_units", int(stats.get("inventory_units") or 0))
+        span.set_attribute("shop.total_revenue", float(stats.get("revenue") or 0))
+        span.set_attribute("shop.order_count", int(stats.get("order_count") or 0))
+        span.set_attribute("integration.crm_sync_configured", bool(crm_sync.get("configured")))
         return {
             "products": products,
             "categories": categories,
@@ -167,6 +172,14 @@ async def checkout(payload: dict, request: Request):
         span.set_attribute("orders.order_id", order_result["order"]["id"])
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
+        span.set_attribute("orders.subtotal", order_result.get("subtotal", order_result["total"]))
+        span.set_attribute("orders.discount", float(order_result.get("coupon", {}).get("discount") or 0))
+        span.set_attribute("orders.shipping_cost", float(order_result.get("shipping_cost") or 0))
+        span.set_attribute("shop.payment_method", payload.get("payment_method", "unknown"))
+        span.set_attribute("shop.coupon_code", payload.get("coupon_code", "") or "none")
+        span.set_attribute("shop.session_id", session_id)
+        span.set_attribute("customer.company", payload.get("company", "") or "")
+        span.set_attribute("customer.email_domain", (payload.get("customer_email") or "").split("@")[-1] or "unknown")
         span.set_attribute("integration.crm_order_synced", bool(crm_order_sync.get("synced")))
         push_log(
             "INFO",
@@ -265,6 +278,8 @@ async def assistant_query(payload: dict, request: Request):
     with tracer.start_as_current_span("shop.assistant.query") as span:
         span.set_attribute("assistant.session_id", session_id)
         span.set_attribute("assistant.message_length", len(message))
+        span.set_attribute("assistant.product_focus", payload.get("product_focus", "") or "all")
+        span.set_attribute("assistant.customer_email_provided", bool(payload.get("customer_email")))
 
         async with get_db() as db:
             existing = await db.execute(
@@ -346,6 +361,8 @@ async def assistant_query(payload: dict, request: Request):
             )
 
         span.set_attribute("assistant.provider", response_payload["provider"])
+        span.set_attribute("assistant.genai_used", response_payload["provider"] != "local_grounded_fallback")
+        span.set_attribute("assistant.documents_grounded", len(documents))
         push_log(
             "INFO",
             "Assistant response generated",

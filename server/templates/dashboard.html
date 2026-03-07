@@ -1,256 +1,315 @@
 {% extends "base.html" %}
 {% block head %}
 <style>
-    .dashboard-grid {
+    .intro-grid { display: grid; gap: 18px; }
+
+    /* Hero */
+    .intro-hero {
+        padding: 48px 42px;
         display: grid;
-        gap: 18px;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
     }
-    .dashboard-hero {
-        padding: 28px;
-        display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
-        gap: 18px;
+    .intro-hero::after {
+        content: "";
+        position: absolute;
+        inset: auto -60px -80px auto;
+        width: 420px; height: 420px;
+        background: radial-gradient(circle, rgba(108,210,224,0.18), transparent 65%);
+        pointer-events: none;
     }
-    .dashboard-hero h1 {
-        font-size: clamp(2rem, 4vw, 3.4rem);
-        line-height: 0.95;
-        margin: 10px 0 14px;
-        max-width: 12ch;
-    }
-    .dashboard-hero p {
-        color: var(--muted);
-        max-width: 66ch;
-        line-height: 1.6;
-    }
-    .stats-grid,
-    .apps-grid {
-        display: grid;
-        gap: 16px;
-    }
-    .stats-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    .apps-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .stat-card,
-    .app-card {
-        padding: 20px;
-        border-radius: 24px;
-        border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.03);
-    }
-    .stat-card strong {
-        display: block;
-        margin-top: 8px;
-        font-size: 2rem;
-    }
-    .app-card img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-        border-radius: 18px;
+    .intro-eyebrow {
+        color: var(--teal);
+        font-family: "Orbitron", sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        font-size: 0.72rem;
         margin-bottom: 14px;
     }
-    .app-card p {
-        color: var(--muted);
-        line-height: 1.55;
-        margin: 10px 0 14px;
+    .intro-title {
+        font-size: clamp(2.4rem, 5vw, 4.2rem);
+        line-height: 0.92;
+        margin-bottom: 18px;
     }
-    .dashboard-panels {
+    .intro-body {
+        color: var(--muted);
+        line-height: 1.65;
+        max-width: 58ch;
+        margin-bottom: 28px;
+    }
+    .intro-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .intro-trust { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+
+    /* Stats row */
+    .stats-row {
         display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+    }
+    .stat-tile {
+        padding: 22px 20px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.03);
+    }
+    .stat-tile .label { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; }
+    .stat-tile .value { font-size: 2.1rem; font-family: "Orbitron", sans-serif; font-weight: 700; margin: 8px 0 4px; color: var(--ink); }
+    .stat-tile .sub { color: var(--muted); font-size: 0.82rem; }
+
+    /* Featured products */
+    .featured-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+    .featured-card {
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.03);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: border-color 0.2s;
+    }
+    .featured-card:hover { border-color: rgba(108,210,224,0.4); }
+    .featured-card img {
+        width: 100%; height: 180px;
+        object-fit: cover;
+        background: rgba(255,255,255,0.02);
+    }
+    .featured-card-body { padding: 16px 18px 18px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .featured-card-body h3 { font-size: 0.95rem; line-height: 1.3; }
+    .featured-card-body p { color: var(--muted); font-size: 0.84rem; line-height: 1.5; flex: 1; }
+    .featured-price { font-size: 1.25rem; font-family: "Orbitron", sans-serif; font-weight: 700; color: var(--teal); }
+    .featured-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+
+    /* Two-column bottom section */
+    .dash-panels {
+        display: grid;
+        grid-template-columns: 1.3fr 0.7fr;
         gap: 18px;
     }
-    .status-list {
-        display: grid;
-        gap: 12px;
-    }
+    .orders-table td, .orders-table th { font-size: 0.88rem; }
+    .status-list { display: grid; gap: 10px; }
     .status-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 14px;
-        padding: 12px 14px;
-        border-radius: 18px;
-        border: 1px solid rgba(147, 170, 189, 0.1);
-        background: rgba(255, 255, 255, 0.03);
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 12px 14px; border-radius: 16px;
+        border: 1px solid rgba(147,170,189,0.1);
+        background: rgba(255,255,255,0.025);
+        font-size: 0.88rem;
     }
+    .status-row .val { font-weight: 600; color: var(--teal); }
+
     @media (max-width: 1100px) {
-        .dashboard-hero,
-        .dashboard-panels {
-            grid-template-columns: 1fr;
-        }
-        .stats-grid,
-        .apps-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+        .intro-hero, .dash-panels { grid-template-columns: 1fr; }
+        .stats-row { grid-template-columns: repeat(2, 1fr); }
+        .featured-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    @media (max-width: 760px) {
-        .stats-grid,
-        .apps-grid {
-            grid-template-columns: 1fr;
-        }
+    @media (max-width: 680px) {
+        .stats-row, .featured-grid { grid-template-columns: 1fr; }
+        .intro-hero { padding: 28px 22px; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="dashboard-grid">
-    <section class="hero-card dashboard-hero">
+<section class="intro-grid">
+
+    <!-- Hero -->
+    <section class="hero-card intro-hero">
         <div>
-            <div class="eyebrow">Control Plane</div>
-            <h1>Monitor the OCTO storefront and every supporting app.</h1>
-            <p>
-                This control plane surfaces the Drone Shop, supporting modules, ATP-backed business data, and the telemetry path into OCI APM,
-                OCI Logging, Log Analytics, and downstream Splunk pipelines.
+            <div class="intro-eyebrow">OCTO Drone Commerce</div>
+            <h1 class="intro-title">Enterprise drone equipment and support.</h1>
+            <p class="intro-body">
+                Browse our catalog of professional-grade drone platforms, precision payloads, field power systems, and accessories.
+                Every order is persisted in Oracle ATP, traced through OCI APM, and synchronized with Enterprise CRM.
             </p>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:22px;">
-                <a class="btn" href="/shop">Open Drone Shop</a>
-                <a class="btn btn-outline" href="/health" target="_blank">Health</a>
-                <a class="btn btn-outline" href="/ready" target="_blank">Readiness</a>
-                <a class="btn btn-outline" href="/api/modules" target="_blank">Module Graph</a>
+            <div class="intro-actions">
+                <a class="btn" href="/shop">Browse Drone Shop</a>
+                <a class="btn btn-outline" href="/services">Services & Support</a>
+            </div>
+            <div class="intro-trust">
+                <span class="chip">Oracle ATP catalog</span>
+                <span class="chip">OCI APM traces</span>
+                <span class="chip">Enterprise CRM sync</span>
+                <span class="chip">OCI GenAI advisor</span>
             </div>
         </div>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="eyebrow">Customers</span>
-                <strong id="s-customers">-</strong>
-                <div class="muted">Stored in the backend database.</div>
+        <div class="stats-row" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="stat-tile">
+                <div class="label">Products</div>
+                <div class="value" id="s-products">–</div>
+                <div class="sub">In catalog</div>
             </div>
-            <div class="stat-card">
-                <span class="eyebrow">Orders</span>
-                <strong id="s-orders">-</strong>
-                <div class="muted">Persisted and processed by backend flows.</div>
+            <div class="stat-tile">
+                <div class="label">Orders</div>
+                <div class="value" id="s-orders">–</div>
+                <div class="sub">Processed</div>
             </div>
-            <div class="stat-card">
-                <span class="eyebrow">Revenue</span>
-                <strong id="s-revenue">-</strong>
-                <div class="muted">Calculated from order tables.</div>
+            <div class="stat-tile">
+                <div class="label">Customers</div>
+                <div class="value" id="s-customers">–</div>
+                <div class="sub">Enterprise accounts</div>
             </div>
-            <div class="stat-card">
-                <span class="eyebrow">Products</span>
-                <strong id="s-products">-</strong>
-                <div class="muted">ATP-backed catalog rows exposed to the UI.</div>
+            <div class="stat-tile">
+                <div class="label">Revenue</div>
+                <div class="value" id="s-revenue">–</div>
+                <div class="sub">All time</div>
             </div>
         </div>
     </section>
 
+    <!-- Stats bar -->
+    <div class="stats-row">
+        <div class="stat-tile">
+            <div class="label">Database</div>
+            <div class="value" style="font-size:1.15rem;margin-top:6px;" id="db-status">Oracle ATP</div>
+            <div class="sub">Autonomous Transaction Processing</div>
+        </div>
+        <div class="stat-tile">
+            <div class="label">APM Tracing</div>
+            <div class="value" style="font-size:1.15rem;margin-top:6px;" id="apm-status">–</div>
+            <div class="sub">OCI Application Performance Monitor</div>
+        </div>
+        <div class="stat-tile">
+            <div class="label">CRM Integration</div>
+            <div class="value" style="font-size:1.15rem;margin-top:6px;" id="crm-status">–</div>
+            <div class="sub">Enterprise CRM Portal sync</div>
+        </div>
+        <div class="stat-tile">
+            <div class="label">AI Advisor</div>
+            <div class="value" style="font-size:1.15rem;margin-top:6px;" id="ai-status">–</div>
+            <div class="sub">OCI Generative AI grounded assistant</div>
+        </div>
+    </div>
+
+    <!-- Featured Products -->
     <section class="panel">
         <div class="section-title">
-            <h3>Application Surfaces</h3>
-            <span class="chip">OCTO branding applied across apps</span>
+            <h3>Featured Products</h3>
+            <a href="/shop" class="btn btn-outline" style="font-size:0.78rem;padding:8px 16px;">View All</a>
         </div>
-        <div class="apps-grid" id="appsGrid"></div>
+        <div class="featured-grid" id="featuredGrid">
+            <div class="helper">Loading catalog from Oracle ATP…</div>
+        </div>
     </section>
 
-    <section class="dashboard-panels">
+    <!-- Orders + System Status -->
+    <section class="dash-panels">
         <div class="panel">
             <div class="section-title">
                 <h3>Recent Orders</h3>
-                <span class="chip">Backend persistence</span>
+                <span class="chip">ATP-persisted</span>
             </div>
-            <table>
-                <thead>
-                    <tr><th>ID</th><th>Customer</th><th>Status</th><th>Total</th><th>Created</th></tr>
-                </thead>
-                <tbody id="orders-body"><tr><td colspan="5">Loading...</td></tr></tbody>
+            <table class="orders-table">
+                <thead><tr><th>#</th><th>Customer</th><th>Status</th><th>Total</th></tr></thead>
+                <tbody id="orders-body"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
             </table>
         </div>
         <div class="panel">
-            <div class="section-title">
-                <h3>Telemetry & Edge</h3>
-            </div>
-            <div class="status-list">
-                <div class="status-row"><span>Store backend</span><strong id="backendStatus">checking</strong></div>
-                <div class="status-row"><span>OCI APM</span><strong id="apmHealth">checking</strong></div>
-                <div class="status-row"><span>OCI RUM</span><strong id="rumHealth">checking</strong></div>
-                <div class="status-row"><span>CRM integration</span><strong id="integrationHealth">checking</strong></div>
-                <div class="status-row"><span>Edge logging</span><strong>LB + WAF via OCI Logging</strong></div>
+            <div class="section-title"><h3>System Status</h3></div>
+            <div class="status-list" id="statusList">
+                <div class="status-row"><span>Store backend</span><span class="val">Oracle ATP</span></div>
+                <div class="status-row"><span>OCI APM</span><span class="val" id="sl-apm">–</span></div>
+                <div class="status-row"><span>OCI RUM</span><span class="val" id="sl-rum">–</span></div>
+                <div class="status-row"><span>CRM Portal</span><span class="val" id="sl-crm">–</span></div>
+                <div class="status-row"><span>GenAI Advisor</span><span class="val" id="sl-ai">–</span></div>
             </div>
         </div>
     </section>
+
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function buildAppArt(label, accent) {
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 320 180">
-            <defs>
-                <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-                    <stop offset="0%" stop-color="#091827" />
-                    <stop offset="100%" stop-color="${accent}" />
-                </linearGradient>
-            </defs>
-            <rect width="320" height="180" rx="26" fill="url(#bg)" />
-            <rect x="22" y="22" width="276" height="136" rx="20" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.15)" />
-            <circle cx="88" cy="90" r="30" fill="rgba(255,255,255,0.12)" />
-            <path d="M72 90 H104 M88 74 V106" stroke="white" stroke-width="6" stroke-linecap="round" />
-            <text x="130" y="86" fill="white" font-size="26" font-family="Arial, sans-serif" font-weight="700">OCTO</text>
-            <text x="130" y="116" fill="rgba(255,255,255,0.78)" font-size="16" font-family="Arial, sans-serif">${label}</text>
-        </svg>
-    `;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+function money(v) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v || 0);
+}
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function badge(ok, yes, no) {
+    return ok ? `<span style="color:var(--ok)">${yes}</span>` : `<span style="color:var(--amber)">${no}</span>`;
 }
 
 async function loadDashboard() {
-    const [summaryRes, ordersRes, integrationRes, storefrontRes] = await Promise.all([
-        fetch('/api/dashboard/summary'),
-        fetch('/api/orders'),
-        fetch('/api/integrations/crm/health'),
-        fetch('/api/shop/storefront')
+    const [summaryRes, ordersRes, storefrontRes, integrationRes] = await Promise.all([
+        fetch('/api/dashboard/summary').catch(() => null),
+        fetch('/api/orders').catch(() => null),
+        fetch('/api/shop/storefront').catch(() => null),
+        fetch('/api/integrations/crm/health').catch(() => null),
     ]);
-    const summary = await summaryRes.json();
-    const ordersPayload = await ordersRes.json();
-    const integration = await integrationRes.json();
-    const storefront = await storefrontRes.json();
 
-    document.getElementById('s-customers').textContent = summary.customers || 0;
-    document.getElementById('s-orders').textContent = summary.orders || 0;
-    document.getElementById('s-revenue').textContent = `$${(summary.revenue || 0).toLocaleString()}`;
-    document.getElementById('s-products').textContent = summary.products || 0;
-    document.getElementById('backendStatus').textContent = 'Oracle ATP';
-    document.getElementById('apmHealth').textContent = storefront.backend?.apm_configured ? 'enabled' : 'pending';
-    document.getElementById('rumHealth').textContent = storefront.backend?.rum_configured ? 'enabled' : 'pending';
-    document.getElementById('integrationHealth').textContent = integration.status || 'not_configured';
+    const summary = summaryRes?.ok ? await summaryRes.json() : {};
+    const ordersData = ordersRes?.ok ? await ordersRes.json() : {};
+    const storefront = storefrontRes?.ok ? await storefrontRes.json() : {};
+    const integration = integrationRes?.ok ? await integrationRes.json() : {};
 
-    const orders = ordersPayload.orders || [];
-    const tbody = document.getElementById('orders-body');
-    if (!orders.length) {
-        tbody.innerHTML = '<tr><td colspan="5">No orders available.</td></tr>';
+    // Hero stats
+    document.getElementById('s-products').textContent = summary.products ?? storefront.stats?.product_count ?? '–';
+    document.getElementById('s-orders').textContent = summary.orders ?? storefront.stats?.order_count ?? '–';
+    document.getElementById('s-customers').textContent = summary.customers ?? '–';
+    document.getElementById('s-revenue').textContent = summary.revenue ? money(summary.revenue) : (storefront.stats?.revenue ? money(storefront.stats.revenue) : '–');
+
+    // Status bar
+    const be = storefront.backend || {};
+    document.getElementById('apm-status').innerHTML = badge(be.apm_configured, 'Enabled', 'Pending');
+    document.getElementById('crm-status').innerHTML = badge(integration.crm_configured, 'Connected', 'Optional');
+    document.getElementById('ai-status').innerHTML = badge(be.genai_configured, 'OCI GenAI', 'Grounded');
+
+    // Side status
+    document.getElementById('sl-apm').innerHTML = badge(be.apm_configured, 'enabled', 'pending');
+    document.getElementById('sl-rum').innerHTML = badge(be.rum_configured, 'enabled', 'pending');
+    document.getElementById('sl-crm').innerHTML = badge(integration.status === 'healthy', 'healthy', integration.status || 'optional');
+    document.getElementById('sl-ai').innerHTML = badge(be.genai_configured, 'oci genai', 'grounded');
+
+    // Featured products — top 6 by price descending
+    const products = (storefront.products || []).slice().sort((a,b) => b.price - a.price).slice(0, 6);
+    const grid = document.getElementById('featuredGrid');
+    if (!products.length) {
+        grid.innerHTML = '<div class="helper">No products loaded. Check ATP connectivity.</div>';
     } else {
-        tbody.innerHTML = orders.slice(0, 8).map(order => `
-            <tr>
-                <td>#${order.id}</td>
-                <td>${order.customer_name || 'Unknown'}</td>
-                <td>${order.status}</td>
-                <td>$${Number(order.total).toLocaleString()}</td>
-                <td>${order.created_at || ''}</td>
-            </tr>
+        grid.innerHTML = products.map(p => `
+            <article class="featured-card">
+                <img src="${esc(p.image_url)}" alt="${esc(p.name)}"
+                     onerror="this.style.display='none'">
+                <div class="featured-card-body">
+                    <span class="chip" style="font-size:0.75rem;padding:4px 10px;">${esc(p.category)}</span>
+                    <h3>${esc(p.name)}</h3>
+                    <p>${esc(p.description?.slice(0,90))}…</p>
+                    <div class="featured-footer">
+                        <span class="featured-price">${new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(p.price)}</span>
+                        <a href="/shop#catalog" class="btn btn-outline" style="font-size:0.76rem;padding:8px 14px;border-radius:10px;">View</a>
+                    </div>
+                </div>
+            </article>
         `).join('');
     }
 
-    const apps = [
-        { label: 'Drone Shop', href: '/shop', copy: 'Live storefront with ATP-backed product, cart, order, and assistant flows.', accent: '#0ea5b7' },
-        { label: 'Catalogue', href: '/catalogue', copy: 'Full inventory lookup and product detail endpoints exposed to the control plane.', accent: '#375dfb' },
-        { label: 'Orders', href: '/orders-page', copy: 'Server-side order persistence, items, shipment creation, and audit records.', accent: '#e47f45' },
-        { label: 'Shipping', href: '/shipping-page', copy: 'Operational fulfillment data and geo-aware shipment telemetry.', accent: '#2fa36f' },
-        { label: 'Analytics', href: '/analytics-page', copy: 'Page views, conversion funnel, and telemetry-oriented drill-downs.', accent: '#8f5cf7' },
-        { label: 'Campaigns', href: '/campaigns-page', copy: 'Lead and campaign activity sourced from the backend dataset.', accent: '#d64f7f' }
-    ];
-    document.getElementById('appsGrid').innerHTML = apps.map(app => `
-        <article class="app-card">
-            <img src="${buildAppArt(app.label, app.accent)}" alt="${app.label}">
-            <h3>${app.label}</h3>
-            <p>${app.copy}</p>
-            <a class="btn btn-outline" href="${app.href}">Open ${app.label}</a>
-        </article>
-    `).join('');
+    // Orders table
+    const orders = ordersData.orders || [];
+    const tbody = document.getElementById('orders-body');
+    if (!orders.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">No orders yet.</td></tr>';
+    } else {
+        tbody.innerHTML = orders.slice(0, 8).map(o => `
+            <tr>
+                <td class="muted">#${esc(String(o.id))}</td>
+                <td>${esc(o.customer_name || 'Unknown')}</td>
+                <td><span class="chip" style="font-size:0.76rem;padding:4px 10px;">${esc(o.status)}</span></td>
+                <td style="font-weight:600;">${money(o.total)}</td>
+            </tr>
+        `).join('');
+    }
 }
 
-loadDashboard().catch(error => {
-    document.getElementById('orders-body').innerHTML = `<tr><td colspan="5">${error.message}</td></tr>`;
+loadDashboard().catch(err => {
+    document.getElementById('orders-body').innerHTML = `<tr><td colspan="4" style="color:var(--rose)">${esc(err.message)}</td></tr>`;
+    document.getElementById('featuredGrid').innerHTML = `<div class="helper" style="color:var(--rose)">${esc(err.message)}</div>`;
 });
 </script>
 {% endblock %}
