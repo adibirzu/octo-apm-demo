@@ -249,41 +249,17 @@
 <section class="shop-shell">
     <section class="hero-card">
         <div class="hero-copy">
-            <div class="eyebrow">OCI-DEMO Monitored Storefront</div>
-            <h1 class="hero-title">Drone commerce with ATP, APM, RUM, and guided support.</h1>
+            <div class="eyebrow">OCTO Drone Store</div>
+            <h1 class="hero-title">Professional drone equipment and support.</h1>
             <p>
-                OCTO Drone Shop runs the catalog, cart, orders, assistant conversations, and operational telemetry through the backend.
-                The storefront reads its inventory from Oracle ATP, persists every checkout server-side, and exposes the traces you need in OCI APM.
+                Browse our complete catalog of industrial endurance platforms, specialized payloads, and accessories. Experience premier support directly from our technical sales team.
             </p>
             <div class="search-bar">
                 <input id="searchInput" type="search" placeholder="Search drones, payloads, batteries, radios...">
-                <button class="btn" id="refreshBtn" type="button">Refresh ATP Data</button>
+                <button class="btn" id="refreshBtn" type="button">Refresh Catalog</button>
             </div>
             <div class="hero-actions">
-                <a class="btn" href="#catalog">Browse Drone Inventory</a>
-                <button class="btn btn-outline" type="button" id="trackBtn">Record Test Page View</button>
-            </div>
-        </div>
-        <div class="hero-metrics">
-            <div class="metric-card">
-                <span class="eyebrow">Products</span>
-                <strong id="metricProducts">0</strong>
-                <div class="helper">ATP catalog rows surfaced in the storefront.</div>
-            </div>
-            <div class="metric-card">
-                <span class="eyebrow">Inventory</span>
-                <strong id="metricInventory">0</strong>
-                <div class="helper">Units available across drones, payloads, and accessories.</div>
-            </div>
-            <div class="metric-card">
-                <span class="eyebrow">Revenue</span>
-                <strong id="metricRevenue">$0</strong>
-                <div class="helper">Backend-calculated order revenue from the store tables.</div>
-            </div>
-            <div class="metric-card">
-                <span class="eyebrow">Observability</span>
-                <strong id="metricTelemetry">Pending</strong>
-                <div class="helper">Live ATP, APM, RUM, and assistant pipeline status.</div>
+                <a class="btn" href="#catalog">Browse Inventory</a>
             </div>
         </div>
     </section>
@@ -314,32 +290,11 @@
                     <option value="">All drone products</option>
                 </select>
             </div>
-            <div class="panel">
-                <div class="section-title">
-                    <h3>Telemetry Status</h3>
-                </div>
-                <div class="chip">Database: <strong id="dbStatus">checking</strong></div>
-                <div class="chip">APM: <strong id="apmStatus">checking</strong></div>
-                <div class="chip">RUM: <strong id="rumStatus">checking</strong></div>
-                <div class="chip">GenAI: <strong id="genaiStatus">checking</strong></div>
-            </div>
-            <div class="panel">
-                <div class="section-title">
-                    <h3>Enterprise CRM Customers</h3>
-                    <span class="chip" id="crmSyncChip">idle</span>
-                </div>
-                <div class="helper" id="crmSyncStatus">Waiting for CRM sync status.</div>
-                <div class="cart-list" id="crmCustomerList">
-                    <div class="helper">No CRM customers synced yet.</div>
-                </div>
-                <button class="btn btn-outline" type="button" id="crmRefreshBtn">Sync CRM Customers</button>
-            </div>
         </aside>
 
         <section class="panel" id="catalog">
             <div class="catalog-header">
-                <div class="muted">Showing <strong id="visibleCount">0</strong> ATP-backed products</div>
-                <div class="chip" id="catalogSource">Source: Oracle ATP</div>
+                <div class="muted">Showing <strong id="visibleCount">0</strong> products</div>
             </div>
             <div class="product-grid" id="productGrid"></div>
         </section>
@@ -395,9 +350,8 @@
                 </div>
                 <form class="assistant-form" id="assistantForm">
                     <textarea name="message" placeholder="Example: Which platform is best for utility inspection with thermal imaging?" required></textarea>
-                    <button class="btn" type="submit">Ask OCI GenAI Agent</button>
+                    <button class="btn" type="submit">Ask Agent</button>
                 </form>
-                <div class="helper">Conversation turns are persisted in ATP and exposed as traceable backend activity.</div>
             </div>
         </aside>
     </section>
@@ -514,23 +468,8 @@ async function loadStorefront() {
     }
     const payload = await response.json();
     state.products = payload.products || [];
-    state.backend = payload.backend || {};
-    state.crmSync = payload.crm_sync || {};
     renderCategories(payload.categories || []);
     applyFilters();
-
-    const stats = payload.stats || {};
-    document.getElementById('metricProducts').textContent = stats.product_count || 0;
-    document.getElementById('metricInventory').textContent = (stats.inventory_units || 0).toLocaleString();
-    document.getElementById('metricRevenue').textContent = money(stats.revenue || 0);
-    const crmLabel = state.crmSync.synced ? 'CRM Synced' : (state.crmSync.configured ? 'CRM Pending' : 'CRM Off');
-    document.getElementById('metricTelemetry').textContent =
-        `ATP / ${state.backend.apm_configured ? 'APM' : 'No APM'} / ${crmLabel}`;
-    document.getElementById('catalogSource').textContent = 'Source: Oracle ATP';
-    document.getElementById('dbStatus').textContent = 'ATP';
-    document.getElementById('apmStatus').textContent = state.backend.apm_configured ? 'enabled' : 'pending';
-    document.getElementById('rumStatus').textContent = state.backend.rum_configured ? 'enabled' : 'pending';
-    document.getElementById('genaiStatus').textContent = state.backend.genai_configured ? 'oci genai' : 'grounded fallback';
 }
 
 async function trackPageView() {
@@ -614,10 +553,9 @@ async function submitCheckout(event) {
             status.textContent = result.error || `Checkout failed (${response.status})`;
             return;
         }
-        const crmMessage = result.crm_sync?.synced ? 'CRM invoice synced.' : (result.crm_sync?.reason ? `CRM sync pending: ${result.crm_sync.reason}` : 'CRM sync pending.');
-        status.textContent = `Order #${result.order_id} stored in backend. Tracking ${result.tracking_number}. Total ${money(result.total)}. ${crmMessage}`;
+        status.textContent = `Order #${result.order_id} stored. Tracking number: ${result.tracking_number}.`;
         formEl.reset();
-        await Promise.all([loadCart(), loadStorefront(), loadCrmCustomers(false)]);
+        await Promise.all([loadCart(), loadStorefront()]);
     } catch (error) {
         status.textContent = `Checkout request failed: ${error.message}`;
     }
@@ -658,42 +596,7 @@ async function submitAssistant(event) {
     appendAssistantMessage('OCTO Advisor', result.answer);
 }
 
-function renderCrmCustomers(customers, sync) {
-    const list = document.getElementById('crmCustomerList');
-    const chip = document.getElementById('crmSyncChip');
-    const status = document.getElementById('crmSyncStatus');
-    const count = customers.length;
-
-    chip.textContent = sync?.synced ? `synced ${sync.last_count || count}` : (sync?.configured ? 'pending' : 'off');
-    status.textContent = sync?.reason
-        ? `CRM sync status: ${sync.reason}`
-        : (sync?.synced ? 'Customer records are synced from enterprise-crm-portal.' : 'CRM sync not yet available.');
-
-    if (!count) {
-        list.innerHTML = '<div class="helper">No CRM customers synced yet.</div>';
-        return;
-    }
-
-    list.innerHTML = customers.slice(0, 8).map(customer => `
-        <div class="crm-customer">
-            <div>
-                <strong>${escapeHtml(customer.name)}</strong>
-                <div class="helper">${escapeHtml(customer.email)}</div>
-            </div>
-            <div class="helper">${escapeHtml(customer.company || customer.industry || 'CRM')}</div>
-        </div>
-    `).join('');
-}
-
-async function loadCrmCustomers(refresh = false) {
-    const url = `/api/integrations/crm/customers?limit=8${refresh ? '&refresh=true' : ''}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`CRM customer API failed (${response.status})`);
-    }
-    const payload = await response.json();
-    renderCrmCustomers(payload.customers || [], payload.sync || {});
-}
+// CRM functions removed
 
 async function loadShops() {
     try {
@@ -728,17 +631,6 @@ document.getElementById('refreshBtn').addEventListener('click', async () => {
     await loadStorefront();
     await loadCart();
 });
-document.getElementById('crmRefreshBtn').addEventListener('click', async () => {
-    try {
-        await loadCrmCustomers(true);
-    } catch (error) {
-        document.getElementById('crmSyncStatus').textContent = `CRM sync failed: ${error.message}`;
-    }
-});
-document.getElementById('trackBtn').addEventListener('click', async () => {
-    await trackPageView();
-    document.getElementById('metricTelemetry').textContent = 'Page view traced';
-});
 
 (async function init() {
     try {
@@ -746,7 +638,6 @@ document.getElementById('trackBtn').addEventListener('click', async () => {
             loadStorefront(),
             loadCart(),
             loadShops(),
-            loadCrmCustomers(false).catch(() => {}),
             trackPageView().catch(() => {}),
         ]);
     } catch (error) {

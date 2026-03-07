@@ -310,40 +310,20 @@
           <img src="/static/img/octo-logo.svg" alt="OCTO logo" />
           <div class="brand-copy">
             <strong>OCTO Drone Commerce</strong>
-            <span>ATP-backed catalog, APM traces, RUM, and guided support</span>
+            <span>Professional platforms and payload configurations</span>
           </div>
         </div>
         <nav class="nav-links">
-          <a href="/" {% if module == 'dashboard' or not module %}class="active" {% endif %}>Control Plane</a>
+          <a href="/" {% if module == 'dashboard' or not module %}class="active" {% endif %}>Workspace</a>
           <a href="/shop" {% if module == 'shop' %}class="active" {% endif %}>Drone Shop</a>
           <a href="/services" {% if module == 'services' %}class="active" {% endif %}>Services & Support</a>
-          <a href="/catalogue" {% if module == 'catalogue' %}class="active" {% endif %}>Catalogue</a>
-          <a href="/orders-page" {% if module == 'orders' %}class="active" {% endif %}>Orders</a>
-          <a href="/shipping-page" {% if module == 'shipping' %}class="active" {% endif %}>Shipping</a>
-          <a href="/campaigns-page" {% if module == 'campaigns' %}class="active" {% endif %}>Campaigns</a>
-          <a href="/analytics-page" {% if module == 'analytics' %}class="active" {% endif %}>Analytics</a>
-          <a href="/admin-page" {% if module == 'admin' %}class="active" {% endif %}>Admin</a>
         </nav>
-        <div class="status-strip">
-          <div class="status-pill {{ 'ok' if apm_configured else 'warn' }}">
-            <strong>APM {{ 'On' if apm_configured else 'Off' }}</strong>
-          </div>
-          <div class="status-pill {{ 'ok' if rum_configured else 'warn' }}">
-            <strong>RUM {{ 'On' if rum_configured else 'Off' }}</strong>
-          </div>
-          <div class="status-pill {{ 'ok' if genai_configured else 'warn' }}">
-            <strong
-              >GenAI {{ 'On' if genai_configured else 'Fallback' }}</strong
-            >
-          </div>
-        </div>
       </header>
 
       <main class="container">{% block content %}{% endblock %}</main>
 
       <footer>
-        OCTO monitored store on {{ app_name }}{% if rum_configured %} | OCI APM
-        RUM active{% endif %}
+        OCTO Drone Commerce &copy; 2026. All rights reserved.
       </footer>
     </div>
 
