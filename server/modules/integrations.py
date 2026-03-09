@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -17,6 +18,7 @@ from server.observability.correlation import (
 )
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
+from server.order_sync import external_orders_base_url, order_security_summary
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
@@ -38,6 +40,14 @@ def _configured_dependencies() -> list[dict]:
             "url": cfg.mushop_cloudnative_url or cfg.octo_apm_cloudnative_url,
             "health_paths": ["/health", "/ready"],
             "drilldown_product": "APM",
+        },
+        {
+            "name": "octo-drone-shop",
+            "display_name": "OCTO Drone Shop",
+            "type": "application",
+            "url": external_orders_base_url(),
+            "health_paths": ["/health", "/ready"],
+            "drilldown_product": "APM / Log Analytics",
         },
         {
             "name": "oci-demo-control-plane",
@@ -124,7 +134,7 @@ async def _get_json(url: str, path: str, correlation_id: str, timeout: float = 1
         return await client.get(f"{url.rstrip('/')}{path}")
 
 
-def _status_payload(request: Request | None, dependencies: list[dict]) -> dict:
+def _status_payload(request: Optional[Request], dependencies: list[dict]) -> dict:
     trace_ctx = current_trace_context()
     correlation_id = build_correlation_id(getattr(getattr(request, "state", None), "correlation_id", ""))
     return {
@@ -149,6 +159,9 @@ def _status_payload(request: Request | None, dependencies: list[dict]) -> dict:
             "otlp_log_export_enabled": cfg.otlp_log_export_enabled,
             "database_target": cfg.database_target_label,
             "database_observability_enabled": cfg.database_observability_enabled,
+            "orders_sync_enabled": cfg.orders_sync_enabled,
+            "orders_sync_interval_seconds": cfg.orders_sync_interval_seconds,
+            "orders_sync_source_name": cfg.orders_sync_source_name,
         },
         "dependencies": dependencies,
         "drilldowns": _drilldown_targets(),
@@ -159,8 +172,12 @@ def _mushop_url() -> str:
     return cfg.mushop_cloudnative_url or cfg.octo_apm_cloudnative_url
 
 
-@router.get("/mushop/product-catalog")
-async def mushop_product_catalog(category: str = "", request: Request | None = None):
+def _order_source_url() -> str:
+    return external_orders_base_url()
+
+
+@router.get("/mushop/product-catalog", response_model=None)
+async def mushop_product_catalog(category: str = "", request: Request = None):
     """Fetch MuShop catalog with propagated trace context."""
     tracer = get_tracer()
     mushop = _mushop_url()
@@ -197,11 +214,11 @@ async def mushop_product_catalog(category: str = "", request: Request | None = N
             return {"products": [], "reason": str(exc), "correlation_id": correlation_id}
 
 
-@router.get("/mushop/order-history")
-async def mushop_order_history(customer_email: str = "", request: Request | None = None):
+@router.get("/mushop/order-history", response_model=None)
+async def mushop_order_history(customer_email: str = "", request: Request = None):
     """Fetch MuShop orders for a CRM customer."""
     tracer = get_tracer()
-    mushop = _mushop_url()
+    mushop = _order_source_url()
     correlation_id = build_correlation_id(getattr(getattr(request, "state", None), "correlation_id", ""))
     if not mushop:
         return {"error": "MuShop not configured"}
@@ -269,8 +286,8 @@ async def mushop_recommend_products(payload: dict, request: Request):
             return {"recommendations": [], "reason": str(exc), "correlation_id": correlation_id}
 
 
-@router.get("/mushop/health")
-async def mushop_health(request: Request | None = None):
+@router.get("/mushop/health", response_model=None)
+async def mushop_health(request: Request = None):
     """Check MuShop service health with current correlation context."""
     correlation_id = build_correlation_id(getattr(getattr(request, "state", None), "correlation_id", ""))
     status = await _dependency_health(_configured_dependencies()[0], correlation_id)
@@ -284,6 +301,7 @@ async def topology(request: Request):
     correlation_id = build_correlation_id(getattr(request.state, "correlation_id", ""))
     dependencies = await _collect_dependency_status(correlation_id)
     payload = _status_payload(request, dependencies)
+    payload["orders"] = await order_security_summary()
     push_log("INFO", "Topology requested", **{
         "integration.type": "topology",
         "integration.dependency_count": len(dependencies),
@@ -298,6 +316,7 @@ async def integration_status(request: Request):
     correlation_id = build_correlation_id(getattr(request.state, "correlation_id", ""))
     dependencies = await _collect_dependency_status(correlation_id)
     payload = _status_payload(request, dependencies)
+    payload["orders"] = await order_security_summary()
     push_log("INFO", "Integration status requested", **{
         "integration.type": "status",
         "integration.dependency_count": len(dependencies),

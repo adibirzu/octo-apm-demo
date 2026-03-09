@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: enterprise-crm-portal
-  namespace: default
+  namespace: enterprise-crm
   labels:
     app: enterprise-crm-portal
 spec:
@@ -23,14 +23,31 @@ spec:
           env:
             - name: APP_RUNTIME
               value: "oke"
-            - name: DATABASE_URL
-              value: "postgresql+asyncpg://crm_user:crm_password@crm-postgres:5432/crm_db"
-            - name: DATABASE_SYNC_URL
-              value: "postgresql://crm_user:crm_password@crm-postgres:5432/crm_db"
+            - name: BRAND_NAME
+              value: "OCTO CRM APM"
+            - name: APP_VERSION
+              value: "1.1.0"
+            - name: SERVICE_NAMESPACE
+              value: "octo"
+            - name: DEMO_STACK_NAME
+              value: "octo-apm"
+            - name: ORDERS_SYNC_ENABLED
+              value: "true"
+            - name: ORDERS_SYNC_INTERVAL_SECONDS
+              value: "300"
+            - name: ORDERS_SYNC_SOURCE_NAME
+              value: "octo-drone-shop"
           envFrom:
             - secretRef:
                 name: crm-portal-secrets
-                optional: true
+                optional: false
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
           livenessProbe:
             httpGet:
               path: /health
@@ -53,64 +70,11 @@ spec:
               cpu: 500m
               memory: 512Mi
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: crm-postgres
-  namespace: default
-  labels:
-    app: crm-postgres
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: crm-postgres
-  template:
-    metadata:
-      labels:
-        app: crm-postgres
-    spec:
-      containers:
-        - name: postgres
-          image: postgres:16-alpine
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRES_DB
-              value: crm_db
-            - name: POSTGRES_USER
-              value: crm_user
-            - name: POSTGRES_PASSWORD
-              value: crm_password
-          volumeMounts:
-            - name: init-sql
-              mountPath: /docker-entrypoint-initdb.d
-            - name: pgdata
-              mountPath: /var/lib/postgresql/data
-          livenessProbe:
-            exec:
-              command: ["pg_isready", "-U", "crm_user", "-d", "crm_db"]
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          resources:
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
-      volumes:
-        - name: init-sql
-          configMap:
-            name: crm-db-init
-        - name: pgdata
-          emptyDir: {}
----
 apiVersion: v1
 kind: Service
 metadata:
   name: enterprise-crm-portal
-  namespace: default
+  namespace: enterprise-crm
   labels:
     app: enterprise-crm-portal
 spec:
@@ -121,16 +85,3 @@ spec:
       protocol: TCP
   selector:
     app: enterprise-crm-portal
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: crm-postgres
-  namespace: default
-spec:
-  type: ClusterIP
-  ports:
-    - port: 5432
-      targetPort: 5432
-  selector:
-    app: crm-postgres

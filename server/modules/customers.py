@@ -24,6 +24,8 @@ async def list_customers(
     request: Request,
     search: str = Query(default="", description="Search customers"),
     sort_by: str = Query(default="name", description="Sort field"),
+    limit: int = Query(default=100, ge=1, le=500, description="Max rows to return"),
+    offset: int = Query(default=0, ge=0, description="Rows to skip"),
 ):
     """List customers — VULN: SQL injection in search and sort_by parameters."""
     tracer = tracer_fn()
@@ -51,6 +53,7 @@ async def list_customers(
                 else:
                     query = f"SELECT * FROM customers ORDER BY {sort_by}"
 
+                query += f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
                 db_span.set_attribute("db.statement", query[:200])
                 result = await db.execute(text(query))
                 rows = result.fetchall()
@@ -60,7 +63,7 @@ async def list_customers(
             "customers.count": len(customers),
             "customers.search": search,
         })
-        return {"customers": customers, "total": len(customers)}
+        return {"customers": customers, "total": len(customers), "limit": limit, "offset": offset}
 
 
 @router.get("/{customer_id}")

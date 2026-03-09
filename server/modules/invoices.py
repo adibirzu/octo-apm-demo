@@ -23,6 +23,8 @@ tracer_fn = get_tracer
 async def list_invoices(
     request: Request,
     status: str = Query(default="", description="Filter by status"),
+    limit: int = Query(default=100, ge=1, le=500, description="Max rows to return"),
+    offset: int = Query(default=0, ge=0, description="Rows to skip"),
 ):
     """List all invoices — VULN: no auth, exposes financial data."""
     tracer = tracer_fn()
@@ -38,11 +40,12 @@ async def list_invoices(
                     query += " AND i.status = :status"
                     params["status"] = status
                 query += " ORDER BY i.created_at DESC"
+                query += f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
                 result = await db.execute(text(query), params)
                 rows = result.fetchall()
 
         invoices = [dict(r._mapping) for r in rows]
-        return {"invoices": invoices, "total": len(invoices)}
+        return {"invoices": invoices, "total": len(invoices), "limit": limit, "offset": offset}
 
 
 @router.get("/{invoice_id}")

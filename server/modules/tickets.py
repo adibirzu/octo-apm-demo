@@ -14,7 +14,7 @@ from sqlalchemy import text
 from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
 from server.observability.logging_sdk import log_security_event, push_log
-from server.database import get_db
+from server.database import SupportTicket, get_db
 
 router = APIRouter(prefix="/api/tickets", tags=["Support Tickets"])
 tracer_fn = get_tracer
@@ -26,6 +26,8 @@ async def list_tickets(
     search: str = Query(default="", description="Search tickets"),
     priority: str = Query(default="", description="Filter by priority"),
     status: str = Query(default="", description="Filter by status"),
+    limit: int = Query(default=100, ge=1, le=500, description="Max rows to return"),
+    offset: int = Query(default=0, ge=0, description="Rows to skip"),
 ):
     """List tickets — VULN: reflected XSS in search, SQLi in filters."""
     tracer = tracer_fn()
@@ -54,12 +56,13 @@ async def list_tickets(
                     query += " AND t.status = :status"
                     params["status"] = status
                 query += " ORDER BY t.created_at DESC"
+                query += f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
                 result = await db.execute(text(query), params)
                 rows = result.fetchall()
 
         tickets = [dict(r._mapping) for r in rows]
         # VULN: Reflecting search term in response (XSS vector in rendered HTML)
-        return {"tickets": tickets, "total": len(tickets), "search_term": search}
+        return {"tickets": tickets, "total": len(tickets), "limit": limit, "offset": offset, "search_term": search}
 
 
 @router.post("")
@@ -82,19 +85,16 @@ async def create_ticket(request: Request):
 
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.ticket_insert"):
-                result = await db.execute(
-                    text("INSERT INTO support_tickets (customer_id, subject, description, priority, assigned_to) "
-                         "VALUES (:cid, :sub, :desc, :pri, :assign) RETURNING id"),
-                    {
-                        "cid": body.get("customer_id"),
-                        "sub": body.get("subject", ""),
-                        "desc": description,
-                        "pri": body.get("priority", "medium"),
-                        "assign": body.get("assigned_to", ""),
-                    }
+                ticket = SupportTicket(
+                    customer_id=body.get("customer_id"),
+                    subject=body.get("subject", ""),
+                    description=description,
+                    priority=body.get("priority", "medium"),
+                    assigned_to=body.get("assigned_to", ""),
                 )
-                ticket_row = result.fetchone()
-                ticket_id = ticket_row[0] if ticket_row else None
+                db.add(ticket)
+                await db.flush()
+                ticket_id = ticket.id
 
         push_log("INFO", f"Ticket #{ticket_id} created: {body.get('subject', '')}",
                  **{"tickets.id": ticket_id, "tickets.priority": body.get("priority", "medium")})

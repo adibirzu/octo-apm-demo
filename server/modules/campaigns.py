@@ -17,7 +17,7 @@ from sqlalchemy import text
 from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
 from server.observability.logging_sdk import log_security_event, push_log
-from server.database import get_db
+from server.database import Campaign, Lead, get_db
 
 router = APIRouter(prefix="/api/campaigns", tags=["Campaigns"])
 tracer_fn = get_tracer
@@ -28,6 +28,8 @@ async def list_campaigns(
     request: Request,
     status: str = Query(default="", description="Filter by status"),
     campaign_type: str = Query(default="", description="Filter by type"),
+    limit: int = Query(default=100, ge=1, le=500, description="Max rows to return"),
+    offset: int = Query(default=0, ge=0, description="Rows to skip"),
 ):
     """List campaigns with N+1 pattern — loads leads per campaign individually for APM demo."""
     tracer = tracer_fn()
@@ -44,6 +46,7 @@ async def list_campaigns(
                     query += " AND campaign_type = :ctype"
                     params["ctype"] = campaign_type
                 query += " ORDER BY created_at DESC"
+                query += f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
                 result = await db.execute(text(query), params)
                 rows = result.fetchall()
 
@@ -62,7 +65,7 @@ async def list_campaigns(
                 campaigns.append(campaign)
 
         span.set_attribute("campaigns.count", len(campaigns))
-        return {"campaigns": campaigns, "total": len(campaigns)}
+        return {"campaigns": campaigns, "total": len(campaigns), "limit": limit, "offset": offset}
 
 
 @router.get("/{campaign_id}")
@@ -133,25 +136,20 @@ async def create_campaign(request: Request):
 
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.campaign_insert"):
-                result = await db.execute(
-                    text("INSERT INTO campaigns (name, campaign_type, status, budget, spent, "
-                         "target_audience, start_date, end_date, created_by) "
-                         "VALUES (:name, :ctype, :status, :budget, :spent, "
-                         ":audience, :start, :end, :created_by) RETURNING id"),
-                    {
-                        "name": body.get("name", "Untitled Campaign"),
-                        "ctype": body.get("campaign_type", "email"),
-                        "status": body.get("status", "draft"),
-                        "budget": body.get("budget", 0.0),
-                        "spent": body.get("spent", 0.0),  # VULN: mass assignment
-                        "audience": body.get("target_audience", ""),
-                        "start": body.get("start_date"),
-                        "end": body.get("end_date"),
-                        "created_by": body.get("created_by"),
-                    }
+                campaign = Campaign(
+                    name=body.get("name", "Untitled Campaign"),
+                    campaign_type=body.get("campaign_type", "email"),
+                    status=body.get("status", "draft"),
+                    budget=body.get("budget", 0.0),
+                    spent=body.get("spent", 0.0),  # VULN: mass assignment
+                    target_audience=body.get("target_audience", ""),
+                    start_date=body.get("start_date"),
+                    end_date=body.get("end_date"),
+                    created_by=body.get("created_by"),
                 )
-                campaign_row = result.fetchone()
-                campaign_id = campaign_row[0] if campaign_row else None
+                db.add(campaign)
+                await db.flush()
+                campaign_id = campaign.id
 
         push_log("INFO", f"Campaign #{campaign_id} created", **{
             "campaign.id": campaign_id,
@@ -166,6 +164,8 @@ async def list_campaign_leads(
     campaign_id: int,
     request: Request,
     status: str = Query(default="", description="Filter by lead status"),
+    limit: int = Query(default=100, ge=1, le=500, description="Max rows to return"),
+    offset: int = Query(default=0, ge=0, description="Rows to skip"),
 ):
     """List leads for campaign — VULN: no auth check."""
     tracer = tracer_fn()
@@ -183,11 +183,12 @@ async def list_campaign_leads(
                     query += " AND l.status = :status"
                     params["status"] = status
                 query += " ORDER BY l.created_at DESC"
+                query += f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
                 result = await db.execute(text(query), params)
                 rows = result.fetchall()
 
         leads = [dict(r._mapping) for r in rows]
-        return {"leads": leads, "total": len(leads)}
+        return {"leads": leads, "total": len(leads), "limit": limit, "offset": offset}
 
 
 @router.post("/{campaign_id}/leads")
@@ -212,24 +213,19 @@ async def create_lead(campaign_id: int, request: Request):
 
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.lead_insert"):
-                result = await db.execute(
-                    text("INSERT INTO leads (campaign_id, customer_id, email, name, source, "
-                         "status, score, notes) "
-                         "VALUES (:cid, :custid, :email, :name, :source, "
-                         ":status, :score, :notes) RETURNING id"),
-                    {
-                        "cid": campaign_id,
-                        "custid": body.get("customer_id"),
-                        "email": body.get("email", ""),
-                        "name": body.get("name", ""),
-                        "source": body.get("source", "web"),
-                        "status": "new",
-                        "score": body.get("score", 0),
-                        "notes": notes,  # VULN: stored XSS — no sanitization
-                    }
+                lead = Lead(
+                    campaign_id=campaign_id,
+                    customer_id=body.get("customer_id"),
+                    email=body.get("email", ""),
+                    name=body.get("name", ""),
+                    source=body.get("source", "web"),
+                    status="new",
+                    score=body.get("score", 0),
+                    notes=notes,  # VULN: stored XSS — no sanitization
                 )
-                lead_row = result.fetchone()
-                lead_id = lead_row[0] if lead_row else None
+                db.add(lead)
+                await db.flush()
+                lead_id = lead.id
 
         push_log("INFO", f"Lead #{lead_id} created for campaign #{campaign_id}", **{
             "lead.id": lead_id,
@@ -268,7 +264,7 @@ async def update_lead_status(campaign_id: int, lead_id: int, request: Request):
                 params = {"status": new_status, "lid": lead_id}
 
                 if new_status == "converted":
-                    update_fields += ", converted_at = NOW()"
+                    update_fields += ", converted_at = CURRENT_TIMESTAMP"
 
                 if "score" in body:
                     update_fields += ", score = :score"

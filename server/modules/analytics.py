@@ -11,6 +11,7 @@ import asyncio
 from fastapi import APIRouter, Request, Query, Header
 from sqlalchemy import text
 
+from server.database import PageView
 from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
 from server.observability.logging_sdk import log_security_event, push_log
@@ -244,23 +245,18 @@ async def track_page_view(request: Request):
 
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.page_view_insert"):
-                result = await db.execute(
-                    text("INSERT INTO page_views (page, visitor_ip, visitor_region, "
-                         "user_agent, load_time_ms, referrer, session_id) "
-                         "VALUES (:page, :ip, :region, :ua, :load_time, :referrer, :session) "
-                         "RETURNING id"),
-                    {
-                        "page": page,
-                        "ip": client_ip,
-                        "region": visitor_region,
-                        "ua": body.get("user_agent", request.headers.get("user-agent", "")),
-                        "load_time": load_time_ms,
-                        "referrer": body.get("referrer", ""),
-                        "session": body.get("session_id", ""),
-                    }
+                pv = PageView(
+                    page=page,
+                    visitor_ip=client_ip,
+                    visitor_region=visitor_region,
+                    user_agent=body.get("user_agent", request.headers.get("user-agent", "")),
+                    load_time_ms=load_time_ms,
+                    referrer=body.get("referrer", ""),
+                    session_id=body.get("session_id", ""),
                 )
-                pv_row = result.fetchone()
-                pv_id = pv_row[0] if pv_row else None
+                db.add(pv)
+                await db.flush()
+                pv_id = pv.id
 
         push_log("INFO", f"Page view tracked: {page}", **{
             "analytics.page_view_id": pv_id,

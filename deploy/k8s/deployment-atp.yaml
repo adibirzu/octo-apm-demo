@@ -49,6 +49,24 @@ spec:
                   name: crm-portal-secrets
                   key: C28_MUSHOP_URL
                   optional: true
+            - name: OCTO_DRONE_SHOP_URL
+              valueFrom:
+                secretKeyRef:
+                  name: crm-portal-secrets
+                  key: OCTO_DRONE_SHOP_URL
+                  optional: true
+            - name: EXTERNAL_ORDERS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: crm-portal-secrets
+                  key: EXTERNAL_ORDERS_URL
+                  optional: true
+            - name: ORDERS_SYNC_ENABLED
+              value: "true"
+            - name: ORDERS_SYNC_INTERVAL_SECONDS
+              value: "300"
+            - name: ORDERS_SYNC_SOURCE_NAME
+              value: "octo-drone-shop"
             - name: OCTO_APM_CLOUDNATIVE_URL
               valueFrom:
                 secretKeyRef:
@@ -95,6 +113,13 @@ spec:
             - secretRef:
                 name: crm-portal-secrets
                 optional: false
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
           livenessProbe:
             httpGet:
               path: /health

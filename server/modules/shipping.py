@@ -14,7 +14,7 @@ from sqlalchemy import text
 from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
 from server.observability.logging_sdk import push_log
-from server.database import get_db
+from server.database import Shipment, get_db
 
 router = APIRouter(prefix="/api/shipping", tags=["Shipping"])
 tracer_fn = get_tracer
@@ -46,6 +46,8 @@ async def list_shipments(
     request: Request,
     status: str = Query(default="", description="Filter by status"),
     carrier: str = Query(default="", description="Filter by carrier"),
+    limit: int = Query(default=100, ge=1, le=500, description="Max rows to return"),
+    offset: int = Query(default=0, ge=0, description="Rows to skip"),
 ):
     """List shipments with order+customer join."""
     tracer = tracer_fn()
@@ -67,12 +69,13 @@ async def list_shipments(
                     query += " AND s.carrier = :carrier"
                     params["carrier"] = carrier
                 query += " ORDER BY s.created_at DESC"
+                query += f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
                 result = await db.execute(text(query), params)
                 rows = result.fetchall()
 
         shipments = [dict(r._mapping) for r in rows]
         span.set_attribute("shipping.count", len(shipments))
-        return {"shipments": shipments, "total": len(shipments)}
+        return {"shipments": shipments, "total": len(shipments), "limit": limit, "offset": offset}
 
 
 @router.get("/by-region")
@@ -179,25 +182,20 @@ async def create_shipment(request: Request):
         # VULN: no validation on carrier or tracking_number — accepts anything
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.shipment_insert"):
-                result = await db.execute(
-                    text("INSERT INTO shipments (order_id, tracking_number, carrier, status, "
-                         "origin_region, destination_region, weight_kg, shipping_cost, "
-                         "estimated_delivery) "
-                         "VALUES (:oid, :tracking, :carrier, 'processing', "
-                         ":origin, :dest, :weight, :cost, :eta) RETURNING id"),
-                    {
-                        "oid": body.get("order_id"),
-                        "tracking": body.get("tracking_number", ""),
-                        "carrier": body.get("carrier", ""),  # VULN: no validation
-                        "origin": body.get("origin_region", ""),
-                        "dest": body.get("destination_region", ""),
-                        "weight": body.get("weight_kg", 0.0),
-                        "cost": body.get("shipping_cost", 0.0),
-                        "eta": body.get("estimated_delivery"),
-                    }
+                shipment = Shipment(
+                    order_id=body.get("order_id"),
+                    tracking_number=body.get("tracking_number", ""),
+                    carrier=body.get("carrier", ""),  # VULN: no validation
+                    status="processing",
+                    origin_region=body.get("origin_region", ""),
+                    destination_region=body.get("destination_region", ""),
+                    weight_kg=body.get("weight_kg", 0.0),
+                    shipping_cost=body.get("shipping_cost", 0.0),
+                    estimated_delivery=body.get("estimated_delivery"),
                 )
-                shipment_row = result.fetchone()
-                shipment_id = shipment_row[0] if shipment_row else None
+                db.add(shipment)
+                await db.flush()
+                shipment_id = shipment.id
 
         push_log("INFO", f"Shipment #{shipment_id} created", **{
             "shipping.id": shipment_id,
@@ -232,7 +230,7 @@ async def update_shipment_status(shipment_id: int, request: Request):
                 params = {"status": new_status, "sid": shipment_id}
 
                 if new_status == "delivered":
-                    update_sql += ", actual_delivery = NOW()"
+                    update_sql += ", actual_delivery = CURRENT_TIMESTAMP"
 
                 update_sql += " WHERE id = :sid"
                 await db.execute(text(update_sql), params)

@@ -5,9 +5,10 @@ observability demonstration. Includes OCI APM (OTel), RUM, OCI Logging SDK,
 structured security logging, and chaos engineering capabilities.
 """
 
+import asyncio
 import logging
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,13 +17,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 
+from server.bootstrap import bootstrap_database
 from server.config import cfg
 from server.database import engine, get_db
+from server.db_compat import HEALTH_CHECK_SQL
 from server.observability.otel_setup import init_otel, get_tracer
 from server.observability.logging_sdk import push_log
 from server.middleware.tracing import TracingMiddleware
 from server.middleware.chaos import ChaosMiddleware
 from server.middleware.geo_latency import GeoLatencyMiddleware
+from server.order_sync import sync_external_orders
 
 # Module routers
 from server.modules.auth import router as auth_router
@@ -46,7 +50,17 @@ logger = logging.getLogger(__name__)
 
 
 # ── Pre-initialize OTel provider + exporters (before app creation) ────
-_sync_engine = create_engine(cfg.database_sync_url) if cfg.database_sync_url else None
+def _sync_database_url() -> str:
+    url = cfg.database_sync_url or cfg.database_url
+    if url.startswith("postgresql+asyncpg://"):
+        return url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    if url.startswith("oracle+oracledb_async://"):
+        return url.replace("oracle+oracledb_async://", "oracle+oracledb://", 1)
+    return url
+
+
+_sync_url = _sync_database_url()
+_sync_engine = create_engine(_sync_url) if _sync_url else None
 init_otel(sync_engine=_sync_engine)
 
 
@@ -55,14 +69,33 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown."""
     logger.info("Enterprise CRM Portal starting — APM: %s, RUM: %s, Logging: %s",
                 cfg.apm_configured, cfg.rum_configured, cfg.logging_configured)
+    await bootstrap_database()
+    sync_task = None
+    if cfg.orders_sync_enabled:
+        sync_task = asyncio.create_task(_orders_sync_loop())
     push_log("INFO", "Enterprise CRM Portal started", **{
         "app.name": cfg.app_name,
         "app.runtime": cfg.app_runtime,
         "app.apm_configured": cfg.apm_configured,
         "app.rum_configured": cfg.rum_configured,
+        "orders.sync_enabled": cfg.orders_sync_enabled,
     })
     yield
+    if sync_task is not None:
+        sync_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await sync_task
     push_log("INFO", "Enterprise CRM Portal shutting down")
+
+
+async def _orders_sync_loop() -> None:
+    await asyncio.sleep(10)
+    while True:
+        try:
+            await sync_external_orders(correlation_id="background-sync")
+        except Exception as exc:
+            push_log("ERROR", "Background order sync failed", **{"error.message": str(exc)})
+        await asyncio.sleep(max(cfg.orders_sync_interval_seconds, 60))
 
 
 app = FastAPI(
@@ -128,7 +161,7 @@ async def list_modules():
     return {
         "modules": [
             {"name": "customers", "label": "Customers", "endpoints": 4, "related_to": ["orders", "tickets", "leads", "invoices"]},
-            {"name": "orders", "label": "Orders", "endpoints": 4, "related_to": ["customers", "products", "invoices", "shipping"]},
+            {"name": "orders", "label": "Orders", "endpoints": 6, "related_to": ["customers", "products", "invoices", "shipping"]},
             {"name": "products", "label": "Products", "endpoints": 4, "related_to": ["orders"]},
             {"name": "invoices", "label": "Invoices", "endpoints": 3, "related_to": ["orders"]},
             {"name": "tickets", "label": "Support Tickets", "endpoints": 4, "related_to": ["customers"]},
@@ -147,7 +180,7 @@ async def list_modules():
              "cross_service": True},
         ],
         "total_modules": 16,
-        "total_endpoints": 66,
+        "total_endpoints": 68,
     }
 
 
@@ -159,7 +192,7 @@ async def ready():
         db_ok = False
         try:
             async with get_db() as db:
-                await db.execute(text("SELECT 1"))
+                await db.execute(text(HEALTH_CHECK_SQL))
                 db_ok = True
         except Exception as e:
             span.set_attribute("health.db_error", str(e))
@@ -218,7 +251,7 @@ async def customers_page(request: Request):
 
 @app.get("/orders", response_class=HTMLResponse)
 async def orders_page(request: Request):
-    return _render_page(request, "page", "Orders", module="orders", nav_key="orders")
+    return _render_page(request, "orders", "Orders", module="orders", nav_key="orders")
 
 
 @app.get("/products", response_class=HTMLResponse)

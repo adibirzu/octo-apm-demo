@@ -1,27 +1,64 @@
-"""Database engine, session management, and models."""
+"""Database engine, session management, and models (PostgreSQL or Oracle ATP)."""
 
 import asyncio
-import time
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from sqlalchemy import (
-    Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey,
-    func, text, event,
+    Column, Integer, String, Text, Float, DateTime, ForeignKey,
+    UniqueConstraint, Identity, create_engine, inspect, text,
 )
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.sql import func
 
 from server.config import cfg
 
-engine = create_async_engine(
-    cfg.database_url,
-    pool_size=cfg.db_pool_size,
-    max_overflow=cfg.db_max_overflow,
-    pool_timeout=cfg.db_pool_timeout,
-    pool_pre_ping=True,
-    echo=False,
-)
+logger = logging.getLogger(__name__)
+
+# ── Engine creation (PostgreSQL or Oracle ATP) ─────────────────────
+
+_engine_kwargs = {
+    "pool_size": cfg.db_pool_size,
+    "max_overflow": cfg.db_max_overflow,
+    "pool_timeout": cfg.db_pool_timeout,
+    "pool_pre_ping": True,
+    "echo": False,
+}
+
+if cfg.use_postgres or not cfg.oracle_dsn:
+    logger.info("Using PostgreSQL backend")
+    engine = create_async_engine(cfg.database_url, **_engine_kwargs)
+    sync_engine = create_engine(cfg.database_sync_url)
+else:
+    try:
+        import oracledb
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "Oracle ATP mode requires 'oracledb' package. "
+            "Set DATABASE_URL for PostgreSQL or install oracledb."
+        ) from exc
+
+    oracledb.defaults.config_dir = cfg.oracle_wallet_dir or ""
+    oracledb.defaults.fetch_lobs = False
+
+    _connect_args = {}
+    if cfg.oracle_wallet_dir:
+        _connect_args["config_dir"] = cfg.oracle_wallet_dir
+        _connect_args["wallet_location"] = cfg.oracle_wallet_dir
+        _connect_args["wallet_password"] = cfg.oracle_wallet_password
+
+    engine = create_async_engine(
+        cfg.database_url,
+        connect_args={"dsn": cfg.oracle_dsn, **_connect_args},
+        **_engine_kwargs,
+    )
+    sync_engine = create_engine(
+        cfg.database_sync_url,
+        connect_args={"dsn": cfg.oracle_dsn, **_connect_args},
+    )
+    logger.info("Using Oracle ATP backend (DSN: %s)", cfg.oracle_dsn)
 
 async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -32,7 +69,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     if cfg.simulate_db_disconnect:
         raise ConnectionError("Simulated database disconnect")
     if cfg.simulate_db_latency:
-        await asyncio.sleep(2.5)  # artificial latency
+        await asyncio.sleep(2.5)
     async with async_session_factory() as session:
         try:
             yield session
@@ -42,7 +79,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
 
 
-# ── ORM Models ──────────────────────────────────────────────────────
+# ── ORM Models (Oracle + PostgreSQL compatible) ────────────────────
+# - Identity(always=False) works on both Oracle and PostgreSQL
+# - Integer instead of Boolean for Oracle compatibility
 
 class Base(DeclarativeBase):
     pass
@@ -50,7 +89,7 @@ class Base(DeclarativeBase):
 
 class Customer(Base):
     __tablename__ = "customers"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
     email = Column(String(200), unique=True, nullable=False)
     phone = Column(String(50))
@@ -66,25 +105,37 @@ class Customer(Base):
 
 class Product(Base):
     __tablename__ = "products"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
     sku = Column(String(50), unique=True, nullable=False)
     description = Column(Text)
     price = Column(Float, nullable=False)
     stock = Column(Integer, default=0)
     category = Column(String(100))
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Integer, default=1)
     created_at = Column(DateTime, server_default=func.now())
 
 
 class Order(Base):
     __tablename__ = "orders"
-    id = Column(Integer, primary_key=True)
+    __table_args__ = (
+        UniqueConstraint("source_system", "source_order_id", name="uq_orders_source_ref"),
+    )
+    id = Column(Integer, Identity(always=False), primary_key=True)
     customer_id = Column(Integer, ForeignKey("customers.id"))
     total = Column(Float, nullable=False)
     status = Column(String(50), default="pending")
     notes = Column(Text)
     shipping_address = Column(Text)
+    source_system = Column(String(100), default="enterprise-crm")
+    source_order_id = Column(String(120))
+    source_customer_email = Column(String(200))
+    sync_status = Column(String(50), default="local")
+    backlog_status = Column(String(50), default="current")
+    sync_error = Column(Text)
+    source_payload = Column(Text)
+    correlation_id = Column(String(128))
+    last_synced_at = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now())
     customer = relationship("Customer", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
@@ -92,7 +143,7 @@ class Order(Base):
 
 class OrderItem(Base):
     __tablename__ = "order_items"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     product_id = Column(Integer, ForeignKey("products.id"))
     quantity = Column(Integer, nullable=False)
@@ -103,7 +154,7 @@ class OrderItem(Base):
 
 class Invoice(Base):
     __tablename__ = "invoices"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     invoice_number = Column(String(50), unique=True, nullable=False)
     amount = Column(Float, nullable=False)
@@ -116,7 +167,7 @@ class Invoice(Base):
 
 class SupportTicket(Base):
     __tablename__ = "support_tickets"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     customer_id = Column(Integer, ForeignKey("customers.id"))
     subject = Column(String(300), nullable=False)
     description = Column(Text)
@@ -130,19 +181,19 @@ class SupportTicket(Base):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     username = Column(String(100), unique=True, nullable=False)
     email = Column(String(200), unique=True, nullable=False)
     password_hash = Column(String(300), nullable=False)
     role = Column(String(50), default="user")
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Integer, default=1)
     last_login = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now())
 
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     user_id = Column(Integer)
     action = Column(String(100), nullable=False)
     resource = Column(String(200))
@@ -155,7 +206,7 @@ class AuditLog(Base):
 
 class Report(Base):
     __tablename__ = "reports"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
     report_type = Column(String(50))
     query = Column(Text)
@@ -166,10 +217,10 @@ class Report(Base):
 
 class Campaign(Base):
     __tablename__ = "campaigns"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
-    campaign_type = Column(String(50), default="email")  # email, sms, social, ppc
-    status = Column(String(50), default="draft")  # draft, active, paused, completed
+    campaign_type = Column(String(50), default="email")
+    status = Column(String(50), default="draft")
     budget = Column(Float, default=0.0)
     spent = Column(Float, default=0.0)
     target_audience = Column(Text)
@@ -183,13 +234,13 @@ class Campaign(Base):
 
 class Lead(Base):
     __tablename__ = "leads"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     campaign_id = Column(Integer, ForeignKey("campaigns.id"))
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
     email = Column(String(200), nullable=False)
     name = Column(String(200))
-    source = Column(String(100))  # web, referral, social, paid
-    status = Column(String(50), default="new")  # new, contacted, qualified, converted, lost
+    source = Column(String(100))
+    status = Column(String(50), default="new")
     score = Column(Integer, default=0)
     notes = Column(Text)
     converted_at = Column(DateTime)
@@ -200,12 +251,12 @@ class Lead(Base):
 
 class Shipment(Base):
     __tablename__ = "shipments"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     tracking_number = Column(String(100))
-    carrier = Column(String(100))  # fedex, ups, dhl, usps
-    status = Column(String(50), default="processing")  # processing, shipped, in_transit, delivered, returned
-    origin_region = Column(String(50))  # us-east, eu-west, ap-southeast, etc.
+    carrier = Column(String(100))
+    status = Column(String(50), default="processing")
+    origin_region = Column(String(50))
     destination_region = Column(String(50))
     weight_kg = Column(Float, default=0.0)
     shipping_cost = Column(Float, default=0.0)
@@ -218,10 +269,10 @@ class Shipment(Base):
 
 class PageView(Base):
     __tablename__ = "page_views"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     page = Column(String(200), nullable=False)
     visitor_ip = Column(String(50))
-    visitor_region = Column(String(50))  # detected from header or GeoIP
+    visitor_region = Column(String(50))
     user_agent = Column(String(500))
     load_time_ms = Column(Integer)
     referrer = Column(String(500))
@@ -231,11 +282,24 @@ class PageView(Base):
 
 class Warehouse(Base):
     __tablename__ = "warehouses"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(always=False), primary_key=True)
     name = Column(String(200), nullable=False)
-    region = Column(String(50), nullable=False)  # us-east-1, eu-west-1, ap-southeast-1
+    region = Column(String(50), nullable=False)
     address = Column(Text)
     capacity = Column(Integer, default=10000)
     current_stock = Column(Integer, default=0)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Integer, default=1)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class OrderSyncAudit(Base):
+    __tablename__ = "order_sync_audit"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    source_system = Column(String(100), nullable=False)
+    source_order_id = Column(String(120))
+    sync_action = Column(String(50), nullable=False)
+    sync_status = Column(String(50), nullable=False)
+    message = Column(Text)
+    correlation_id = Column(String(128))
+    trace_id = Column(String(64))
     created_at = Column(DateTime, server_default=func.now())

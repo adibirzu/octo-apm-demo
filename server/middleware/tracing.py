@@ -7,8 +7,9 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from server.observability.otel_setup import get_tracer
-from server.observability.logging_sdk import push_log
+from server.observability.logging_sdk import log_security_event, push_log
 from server.observability.correlation import build_correlation_id, current_trace_context
+from server.observability.security_spans import security_span
 
 
 class TracingMiddleware(BaseHTTPMiddleware):
@@ -50,6 +51,25 @@ class TracingMiddleware(BaseHTTPMiddleware):
                 content_length = request.headers.get("content-length", "0")
                 val_span.set_attribute("request.content_type", content_type)
                 val_span.set_attribute("request.content_length", content_length)
+                waf_score = request.headers.get("x-oci-waf-score", "")
+                waf_action = request.headers.get("x-oci-waf-action", "")
+                if waf_score or waf_action:
+                    val_span.set_attribute("security.waf.score", waf_score or "unknown")
+                    val_span.set_attribute("security.waf.action", waf_action or "unknown")
+                    with security_span(
+                        "security_misconfig",
+                        severity="medium",
+                        payload=f"waf_score={waf_score}, waf_action={waf_action}",
+                        source_ip=client_ip,
+                    ):
+                        log_security_event(
+                            "security_misconfig",
+                            "medium",
+                            "WAF signal observed on inbound request",
+                            source_ip=client_ip,
+                            payload=f"waf_score={waf_score}, waf_action={waf_action}",
+                            correlation_id=request.state.correlation_id,
+                        )
 
             # Call the actual route handler (generates its own spans)
             try:

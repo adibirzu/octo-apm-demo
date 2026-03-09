@@ -14,6 +14,7 @@ from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
 from server.observability.logging_sdk import log_security_event
 from server.database import get_db
+from server.db_compat import BOOL_TRUE
 
 router = APIRouter(prefix="/api/products", tags=["Products"])
 tracer_fn = get_tracer
@@ -25,6 +26,8 @@ async def list_products(
     category: str = Query(default="", description="Filter by category"),
     min_price: str = Query(default="", description="Minimum price"),
     max_price: str = Query(default="", description="Maximum price"),
+    limit: int = Query(default=100, ge=1, le=500, description="Max rows to return"),
+    offset: int = Query(default=0, ge=0, description="Rows to skip"),
 ):
     """List products — VULN: SQLi in category filter, verbose errors."""
     tracer = tracer_fn()
@@ -33,7 +36,7 @@ async def list_products(
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.products_list"):
                 # VULN: SQL injection via category parameter
-                query = "SELECT * FROM products WHERE is_active = true"
+                query = f"SELECT * FROM products WHERE is_active = {BOOL_TRUE}"
                 if category:
                     query += f" AND category = '{category}'"  # VULN: SQLi
                 if min_price:
@@ -41,6 +44,7 @@ async def list_products(
                 if max_price:
                     query += f" AND price <= {max_price}"  # VULN: SQLi
                 query += " ORDER BY name"
+                query += f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
 
                 try:
                     result = await db.execute(text(query))
@@ -50,7 +54,7 @@ async def list_products(
                     return {"error": f"Database error: {str(e)}", "query": query}
 
         products = [dict(r._mapping) for r in rows]
-        return {"products": products, "total": len(products)}
+        return {"products": products, "total": len(products), "limit": limit, "offset": offset}
 
 
 @router.get("/{product_id}")

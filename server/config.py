@@ -36,16 +36,19 @@ class Config:
     service_instance_id: str = field(default_factory=lambda: _env("SERVICE_INSTANCE_ID", _env("HOSTNAME", "local-dev")))
     demo_stack_name: str = field(default_factory=lambda: _env("DEMO_STACK_NAME", "octo-apm"))
 
-    # Database
-    database_url: str = field(default_factory=lambda: _env("DATABASE_URL", "postgresql+asyncpg://crm_user:crm_password@localhost:5432/crm_db"))
-    database_sync_url: str = field(default_factory=lambda: _env("DATABASE_SYNC_URL", "postgresql://crm_user:crm_password@localhost:5432/crm_db"))
+    # Database — PostgreSQL (default for local dev) or Oracle ATP (OKE production)
+    _pg_url: str = field(default_factory=lambda: _env("DATABASE_URL", ""))
+    _pg_sync_url: str = field(default_factory=lambda: _env("DATABASE_SYNC_URL", ""))
     db_pool_size: int = field(default_factory=lambda: _env_int("DB_POOL_SIZE", 10))
     db_max_overflow: int = field(default_factory=lambda: _env_int("DB_MAX_OVERFLOW", 20))
     db_pool_timeout: int = field(default_factory=lambda: _env_int("DB_POOL_TIMEOUT", 30))
+    # Oracle ATP
+    oracle_dsn: str = field(default_factory=lambda: _env("ORACLE_DSN"))
+    oracle_user: str = field(default_factory=lambda: _env("ORACLE_USER", "ADMIN"))
+    oracle_password: str = field(default_factory=lambda: _env("ORACLE_PASSWORD"))
+    oracle_wallet_dir: str = field(default_factory=lambda: _env("ORACLE_WALLET_DIR"))
+    oracle_wallet_password: str = field(default_factory=lambda: _env("ORACLE_WALLET_PASSWORD"))
     atp_ocid: str = field(default_factory=lambda: _env("ATP_OCID", _env("C28_ATP_OCID")))
-    atp_connection_name: str = field(default_factory=lambda: _env("ATP_CONNECTION_NAME", "ATPAdi"))
-    atp_wallet_dir: str = field(default_factory=lambda: _env("ATP_WALLET_DIR"))
-    atp_tns_name: str = field(default_factory=lambda: _env("ATP_TNS_NAME"))
     database_observability_enabled: bool = field(default_factory=lambda: _env_bool("DATABASE_OBSERVABILITY_ENABLED", True))
 
     # OCI APM
@@ -71,12 +74,20 @@ class Config:
     # Cross-service integration
     mushop_cloudnative_url: str = field(default_factory=lambda: _env("MUSHOP_CLOUDNATIVE_URL", _env("C28_MUSHOP_URL")))
     octo_apm_cloudnative_url: str = field(default_factory=lambda: _env("OCTO_APM_CLOUDNATIVE_URL", _env("C28_MUSHOP_URL")))
+    octo_drone_shop_url: str = field(default_factory=lambda: _env("OCTO_DRONE_SHOP_URL", _env("MUSHOP_CLOUDNATIVE_URL", _env("C28_MUSHOP_URL"))))
     oci_demo_control_plane_url: str = field(default_factory=lambda: _env("OCI_DEMO_CONTROL_PLANE_URL"))
     oci_demo_backend_url: str = field(default_factory=lambda: _env("OCI_DEMO_BACKEND_URL"))
     opsi_console_url: str = field(default_factory=lambda: _env("OPSI_CONSOLE_URL"))
     db_management_console_url: str = field(default_factory=lambda: _env("DB_MANAGEMENT_CONSOLE_URL"))
     log_analytics_console_url: str = field(default_factory=lambda: _env("LOG_ANALYTICS_CONSOLE_URL"))
     apm_console_url: str = field(default_factory=lambda: _env("APM_CONSOLE_URL"))
+    external_orders_url: str = field(default_factory=lambda: _env("EXTERNAL_ORDERS_URL", _env("OCTO_DRONE_SHOP_URL", _env("MUSHOP_CLOUDNATIVE_URL", _env("C28_MUSHOP_URL")))))
+    external_orders_path: str = field(default_factory=lambda: _env("EXTERNAL_ORDERS_PATH", "/api/orders"))
+    orders_sync_enabled: bool = field(default_factory=lambda: _env_bool("ORDERS_SYNC_ENABLED", True))
+    orders_sync_interval_seconds: int = field(default_factory=lambda: _env_int("ORDERS_SYNC_INTERVAL_SECONDS", 300))
+    orders_sync_source_name: str = field(default_factory=lambda: _env("ORDERS_SYNC_SOURCE_NAME", "octo-drone-shop"))
+    suspicious_order_total_threshold: int = field(default_factory=lambda: _env_int("SUSPICIOUS_ORDER_TOTAL_THRESHOLD", 50000))
+    backlog_order_age_minutes: int = field(default_factory=lambda: _env_int("BACKLOG_ORDER_AGE_MINUTES", 30))
 
     # Security
     security_log_enabled: bool = field(default_factory=lambda: _env_bool("SECURITY_LOG_ENABLED", True))
@@ -91,6 +102,35 @@ class Config:
     simulate_slow_queries: bool = field(default_factory=lambda: _env_bool("SIMULATE_SLOW_QUERIES"))
 
     @property
+    def use_postgres(self) -> bool:
+        """True when PostgreSQL is the backend (default for local dev)."""
+        if self.oracle_dsn:
+            return False
+        return bool(self._pg_url)
+
+    @property
+    def database_url(self) -> str:
+        """Async database URL for SQLAlchemy."""
+        if self.use_postgres:
+            url = self._pg_url
+            if url.startswith("postgresql://"):
+                return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            return url
+        if self.oracle_dsn:
+            return f"oracle+oracledb_async://{self.oracle_user}:{self.oracle_password}@"
+        # Fallback: local dev PostgreSQL
+        return "postgresql+asyncpg://crm_user:crm_password@localhost:5432/crm_db"
+
+    @property
+    def database_sync_url(self) -> str:
+        """Synchronous database URL for OTel and bootstrap."""
+        if self.use_postgres:
+            return self._pg_sync_url or self._pg_url
+        if self.oracle_dsn:
+            return f"oracle+oracledb://{self.oracle_user}:{self.oracle_password}@"
+        return "postgresql://crm_user:crm_password@localhost:5432/crm_db"
+
+    @property
     def apm_configured(self) -> bool:
         return bool(self.oci_apm_endpoint and self.oci_apm_private_datakey)
 
@@ -103,12 +143,15 @@ class Config:
         return bool(self.oci_log_id)
 
     @property
+    def atp_connection_name(self) -> str:
+        """ATP connection/DSN name (e.g. 'ocidemoatp_low')."""
+        return self.oracle_dsn or ""
+
+    @property
     def database_target_label(self) -> str:
-        if self.atp_ocid:
+        if self.oracle_dsn or self.atp_ocid:
             return "oracle-atp"
-        if self.database_url.startswith("oracle+"):
-            return "oracle"
-        if self.database_url.startswith("postgresql"):
+        if self.use_postgres:
             return "postgresql"
         return "custom"
 

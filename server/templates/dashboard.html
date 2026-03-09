@@ -10,7 +10,7 @@
         <h2>CRM, MuShop, ATP, and OCI-DEMO backends on one correlated path.</h2>
         <p class="hero-copy">This view combines business metrics, dependency health, and drilldown targets so you can pivot from an application trace to logs, database tooling, and service status without losing context.</p>
     </div>
-    <img src="/static/img/octo-logo.svg" alt="OCTO CRM APM" class="hero-logo">
+    <img src="/static/img/octo-logo.png" alt="OCTO CRM APM" class="hero-logo">
 </section>
 
 <div class="dashboard-grid">
@@ -29,6 +29,10 @@
     <div class="card metric-card" id="card-tickets">
         <h3>Open Tickets</h3>
         <div class="metric-value" id="metric-tickets">-</div>
+    </div>
+    <div class="card metric-card" id="card-backlog">
+        <h3>Backlog Orders</h3>
+        <div class="metric-value" id="metric-backlog">-</div>
     </div>
 </div>
 
@@ -102,6 +106,7 @@ async function loadDashboard() {
         document.getElementById('metric-orders').textContent = summary.orders.total;
         document.getElementById('metric-revenue').textContent = '$' + Number(summary.orders.revenue).toLocaleString();
         document.getElementById('metric-tickets').textContent = (summary.tickets.open || 0) + (summary.tickets.in_progress || 0);
+        document.getElementById('metric-backlog').textContent = summary.security?.backlog_orders || 0;
 
         document.getElementById('top-customers-body').innerHTML = summary.top_customers.map(c =>
             `<tr><td>${c.customer || c.name}</td><td>$${Number(c.revenue).toLocaleString()}</td><td>${c.order_count}</td></tr>`
@@ -113,7 +118,10 @@ async function loadDashboard() {
 
         renderStatusGrid(ready, status);
         renderDrilldowns(status.drilldowns || []);
-        document.getElementById('correlation-output').textContent = JSON.stringify(status.correlation || {}, null, 2);
+        document.getElementById('correlation-output').textContent = JSON.stringify({
+            correlation: status.correlation || {},
+            orders: summary.security || {},
+        }, null, 2);
     } catch (error) {
         console.error('Dashboard load failed:', error);
     }

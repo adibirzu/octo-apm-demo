@@ -10,7 +10,7 @@ Vulnerabilities:
 import os
 import sys
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from sqlalchemy import text
 
 from server.config import cfg
@@ -18,6 +18,7 @@ from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
 from server.observability.logging_sdk import log_security_event, push_log
 from server.database import get_db
+from server.db_compat import DB_VERSION_SQL, DB_ACTIVE_CONNECTIONS_SQL
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Panel"])
 tracer_fn = get_tracer
@@ -125,19 +126,24 @@ async def debug_info(request: Request):
 
 
 @router.get("/audit-logs")
-async def get_audit_logs(request: Request):
-    """View audit logs — VULN: no pagination (DoS potential), no auth."""
+async def get_audit_logs(
+    request: Request,
+    limit: int = Query(default=100, ge=1, le=500, description="Max rows to return"),
+    offset: int = Query(default=0, ge=0, description="Rows to skip"),
+):
+    """View audit logs — VULN: no auth."""
     tracer = tracer_fn()
 
     with tracer.start_as_current_span("admin.audit_logs"):
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.audit_logs"):
                 result = await db.execute(
-                    text("SELECT * FROM audit_logs ORDER BY created_at DESC")
+                    text(f"SELECT * FROM audit_logs ORDER BY created_at DESC"
+                         f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY")
                 )
                 rows = result.fetchall()
 
-        return {"audit_logs": [dict(r._mapping) for r in rows]}
+        return {"audit_logs": [dict(r._mapping) for r in rows], "limit": limit, "offset": offset}
 
 
 @router.get("/db-status")
@@ -148,15 +154,14 @@ async def db_status(request: Request):
     with tracer.start_as_current_span("admin.db_status") as span:
         async with get_db() as db:
             with tracer.start_as_current_span("db.query.db_version"):
-                result = await db.execute(text("SELECT version()"))
+                result = await db.execute(text(DB_VERSION_SQL))
                 version = result.scalar()
             with tracer.start_as_current_span("db.query.db_connections"):
-                result = await db.execute(
-                    text("SELECT count(*) FROM pg_stat_activity WHERE datname = 'crm_db'")
-                )
+                result = await db.execute(text(DB_ACTIVE_CONNECTIONS_SQL))
                 active_connections = result.scalar()
 
         return {
+            "database_target": cfg.database_target_label,
             "database_version": version,
             "active_connections": active_connections,
             "pool_size": cfg.db_pool_size,

@@ -1,8 +1,14 @@
-"""Structured logging with OCI Logging SDK + Splunk HEC integration."""
+"""Structured logging with OCI Logging SDK + Splunk HEC integration.
+
+External pushes (OCI Logging, Splunk HEC) are dispatched to a background
+thread via a queue so they never block the async event loop.
+"""
 
 import json
 import logging
+import queue
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -10,6 +16,24 @@ import httpx
 
 from server.config import cfg
 from server.observability.correlation import current_trace_context, service_metadata
+
+# ── Background log dispatch queue ────────────────────────────────
+_log_queue: queue.SimpleQueue[tuple[str, str, dict] | None] = queue.SimpleQueue()
+
+
+def _log_worker() -> None:
+    """Drain the queue and push to OCI / Splunk in a background thread."""
+    while True:
+        item = _log_queue.get()
+        if item is None:  # poison pill → shut down
+            break
+        level, message, extra = item
+        _push_to_oci_logging(level, message, extra)
+        _push_to_splunk(level, message, extra)
+
+
+_worker_thread = threading.Thread(target=_log_worker, daemon=True, name="log-push-worker")
+_worker_thread.start()
 
 _security_logger = logging.getLogger("security.events")
 _security_logger.setLevel(logging.INFO)
@@ -88,7 +112,7 @@ def push_log(level: str, message: str, **kwargs):
     if cfg.atp_connection_name:
         kwargs["db.connection_name"] = cfg.atp_connection_name
 
-    # Write to structured logger (stdout)
+    # Write to structured logger (stdout) — fast, stays synchronous
     record = logging.LogRecord(
         name="security.events", level=getattr(logging, level.upper(), logging.INFO),
         pathname="", lineno=0, msg=message, args=(), exc_info=None,
@@ -96,11 +120,8 @@ def push_log(level: str, message: str, **kwargs):
     record.extra_fields = kwargs
     _security_logger.handle(record)
 
-    # Push to OCI Logging SDK
-    _push_to_oci_logging(level, message, kwargs)
-
-    # Push to Splunk HEC
-    _push_to_splunk(level, message, kwargs)
+    # Enqueue external pushes (OCI Logging + Splunk HEC) for background thread
+    _log_queue.put((level, message, dict(kwargs)))
 
 
 def _push_to_oci_logging(level: str, message: str, extra: dict):
