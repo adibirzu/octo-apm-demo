@@ -90,7 +90,7 @@ async def resolve_direct_items(db, items: list[dict[str, Any]]) -> list[dict[str
         product = product_row.mappings().first()
         if not product:
             continue
-        resolved.append({**dict(product), "quantity": quantity})
+        resolved.append({**dict(product), "product_id": product["id"], "quantity": quantity})
     return resolved
 
 
@@ -202,13 +202,12 @@ async def place_order(
     )
     await db.execute(
         text(
-            "INSERT INTO audit_logs (user_id, action, resource, details, trace_id) "
-            "VALUES (:user_id, 'order.created', :resource, :details, :trace_id)"
+            "INSERT INTO audit_logs (user_id, action, details, trace_id) "
+            "VALUES (:user_id, 'order.created', :details, :trace_id)"
         ),
         {
                 "user_id": customer["id"],
-                "resource": f"orders/{order['id']}",
-                "details": f"source={source}; session_id={session_id or 'n/a'}; coupon={coupon_code or 'none'}",
+                "details": f"resource=orders/{order['id']}; source={source}; session_id={session_id or 'n/a'}; coupon={coupon_code or 'none'}",
                 "trace_id": trace_id,
             },
         )

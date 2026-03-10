@@ -65,10 +65,10 @@ async def create_campaign(payload: dict, request: Request):
     async with get_db() as db:
         await db.execute(
             text("INSERT INTO campaigns (name, campaign_type, status, budget, spent, target_audience) "
-                 "VALUES (:name, :type, :status, :budget, :spent, :audience)"),
+                 "VALUES (:name, :campaign_type, :status, :budget, :spent, :audience)"),
             {
                 "name": payload.get("name", "Untitled"),
-                "type": payload.get("campaign_type", "email"),
+                "campaign_type": payload.get("campaign_type", "email"),
                 "status": payload.get("status", "draft"),
                 "budget": payload.get("budget", 0),
                 "spent": payload.get("spent", 0),  # VULN: client-controlled

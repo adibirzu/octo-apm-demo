@@ -15,9 +15,15 @@ Create a virtual environment and install dependencies:
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
+source /Users/abirzu/dev/octo-drone-shop/.venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+Verify critical runtime modules are present:
+
+```bash
+python -c "import fastapi, uvicorn, sqlalchemy, oracledb; print('runtime-ok')"
 ```
 
 Install local Git hooks (recommended):
@@ -49,6 +55,21 @@ Or run the app directly after exporting environment variables:
 uvicorn server.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
+If startup fails with `ModuleNotFoundError: No module named 'oracledb'`, reinstall dependencies in the active environment:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -c "import oracledb; print(oracledb.__version__)"
+```
+
+Optional validation:
+
+```bash
+python -m py_compile server/main.py server/config.py server/modules/integrations.py server/modules/admin.py server/database.py
+pytest
+```
+
 ## 4. Oracle ATP configuration
 
 Production and OKE deployments require ATP.
@@ -72,10 +93,7 @@ Notes:
 Optional helper to ensure/create ATP:
 
 ```bash
-COMPARTMENT_ID="<database compartment ocid>" \
-DISPLAY_NAME="mushop-cloudnative-atp" \
-DB_NAME="mushopcnatp" \
-./deploy/oci/ensure_atp.sh
+COMPARTMENT_ID="<database compartment ocid>" DISPLAY_NAME="mushop-cloudnative-atp" DB_NAME="mushopcnatp" ./deploy/oci/ensure_atp.sh
 ```
 
 ## 5. OCI APM and RUM configuration
@@ -154,6 +172,25 @@ Then deploy:
 
 ```bash
 kubectl apply -f deploy/k8s/deployment.yaml
+```
+
+Recommended image build and push flow for OCIR / OKE:
+
+```bash
+docker build -t <region-key>.ocir.io/<tenancy-namespace>/octo-drone-shop:latest .
+docker push <region-key>.ocir.io/<tenancy-namespace>/octo-drone-shop:latest
+```
+
+For direct VM or OCI x86 validation, use the same `.env.local` file and run:
+
+```bash
+python -m uvicorn server.main:app --host 0.0.0.0 --port 8080
+```
+
+For Docker-based validation:
+
+```bash
+docker compose up --build
 ```
 
 ## 9. Post-install checks

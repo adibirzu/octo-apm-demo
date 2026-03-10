@@ -13,6 +13,8 @@ services:
       - PORT=${PORT:-8080}
       - OCI_AUTH_MODE=${OCI_AUTH_MODE:-auto}
       - AUTH_TOKEN_SECRET=${AUTH_TOKEN_SECRET:-}
+      - SEED_USER_EMAIL_DOMAIN=${SEED_USER_EMAIL_DOMAIN:-example.invalid}
+      - SEED_PAGEVIEW_IP_PREFIX=${SEED_PAGEVIEW_IP_PREFIX:-198.18.0.}
       - ORACLE_DSN=${ORACLE_DSN:-}
       - ORACLE_USER=${ORACLE_USER:-ADMIN}
       - ORACLE_PASSWORD=${ORACLE_PASSWORD:-}
@@ -33,4 +35,10 @@ services:
       - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN:-}
     volumes:
       - ${ORACLE_WALLET_PATH:-./wallet}:/opt/oracle/wallet:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped

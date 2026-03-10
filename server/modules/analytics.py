@@ -217,15 +217,15 @@ async def track_pageview(payload: dict, request: Request):
             await db.execute(
                 text("INSERT INTO page_views (page, visitor_ip, visitor_region, "
                      "load_time_ms, session_id, user_agent, referrer) "
-                     "VALUES (:page, :ip, :region, :load_time, :session, :ua, :ref)"),
+                     "VALUES (:page, :ip, :region, :load_time, :sess_id, :ua, :referrer_url)"),
                 {
                     "page": page,
                     "ip": source_ip,
                     "region": payload.get("visitor_region", ""),
                     "load_time": load_time_ms,
-                    "session": session_id,
+                    "sess_id": session_id,
                     "ua": request.headers.get("user-agent", ""),
-                    "ref": payload.get("referrer", ""),
+                    "referrer_url": payload.get("referrer", ""),
                 },
             )
         push_log(

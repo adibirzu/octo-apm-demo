@@ -121,9 +121,9 @@ async def create_review(product_id: int, payload: dict, request: Request):
         async with get_db() as db:
             await db.execute(
                 text("INSERT INTO reviews (product_id, rating, comment, author_name) "
-                     "VALUES (:pid, :rating, :comment, :author)"),
+                     "VALUES (:pid, :rating, :review_comment, :author)"),
                 {"pid": product_id, "rating": rating,
-                 "comment": comment, "author": author},
+                 "review_comment": comment, "author": author},
             )
 
         return {"status": "created", "product_id": product_id}

@@ -48,6 +48,9 @@
 </main>
 
 <script>
+    /* Restore native fetch — APM RUM agent patches fetch/XHR and can break API calls */
+    const _fetch = window.__nativeFetch || window.fetch.bind(window);
+
     // Escape HTML function to prevent XSS
     const escapeHtml = (unsafe) => {
         return (unsafe || '').toString()
@@ -63,7 +66,7 @@
      */
     async function loadServiceCatalog() {
         try {
-            const response = await fetch('/api/services/catalog');
+            const response = await _fetch('/api/services/catalog');
             if (!response.ok) throw new Error("Catalog load failed.");
             const payload = await response.json();
             const services = payload.services || [];
@@ -111,7 +114,7 @@
     async function loadTickets() {
         try {
             const customerId = document.getElementById('customerId').value;
-            const response = await fetch(`/api/services/tickets?customer_id=${customerId}`);
+            const response = await _fetch(`/api/services/tickets?customer_id=${customerId}`);
             if (!response.ok) throw new Error("Tickets load failed.");
             const payload = await response.json();
             const tickets = payload.tickets || [];
@@ -164,7 +167,7 @@
         };
 
         try {
-            const response = await fetch('/api/services/tickets', {
+            const response = await _fetch('/api/services/tickets', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

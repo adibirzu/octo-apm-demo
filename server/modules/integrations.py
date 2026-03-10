@@ -20,6 +20,7 @@ import httpx
 from fastapi import APIRouter, Query, Request
 from sqlalchemy import text
 
+from server.config import cfg
 from server.database import get_db
 from server.observability.otel_setup import get_tracer
 from server.observability.logging_sdk import push_log
@@ -200,7 +201,7 @@ async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, sour
             return {
                 "configured": True,
                 "synced": True,
-                "crm_url": crm,
+                "crm_host": cfg.crm_hostname or "configured",
                 "customers_seen": len(customers),
                 **upsert,
                 **_sync_state_payload(),
@@ -211,7 +212,7 @@ async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, sour
             return {
                 "configured": True,
                 "synced": False,
-                "crm_url": crm,
+                "crm_host": cfg.crm_hostname or "configured",
                 "reason": str(exc),
                 **_sync_state_payload(),
             }
@@ -288,7 +289,7 @@ async def crm_customer_enrichment(customer_id: int, request: Request):
     with tracer.start_as_current_span("integration.crm.customer_enrichment") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
         span.set_attribute("integration.customer_id", customer_id)
-        span.set_attribute("integration.crm_url", crm)
+        span.set_attribute("integration.crm_host", cfg.crm_hostname or "configured")
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -425,7 +426,7 @@ async def crm_health():
 
     with tracer.start_as_current_span("integration.crm.health_check") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
-        span.set_attribute("integration.crm_url", crm)
+        span.set_attribute("integration.crm_host", cfg.crm_hostname or "configured")
 
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
@@ -434,13 +435,13 @@ async def crm_health():
 
             return {
                 "crm_configured": True,
-                "crm_url": crm,
+                "crm_host": cfg.crm_hostname or "configured",
                 "status": "healthy" if resp.status_code == 200 else "unhealthy",
                 "crm_response": resp.json() if resp.status_code == 200 else None,
             }
         except Exception as e:
             span.set_attribute("integration.error", str(e))
-            return {"crm_configured": True, "crm_url": crm,
+            return {"crm_configured": True, "crm_host": cfg.crm_hostname or "configured",
                     "status": "unreachable", "error": str(e)}
 
 
@@ -456,7 +457,7 @@ async def integration_status():
                 "name": "enterprise-crm-portal",
                 "type": "cross-service",
                 "configured": bool(crm),
-                "url": crm or None,
+                "host": cfg.crm_hostname or None,
                 "endpoints": [
                     "/api/integrations/crm/customer-enrichment",
                     "/api/integrations/crm/sync-order",

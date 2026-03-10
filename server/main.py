@@ -1,9 +1,4 @@
-"""OCTO-CRM-APM — Main application entry point.
-
-A cloud-native e-commerce portal with full OCI observability stack
-(APM/OTel, RUM, Logging SDK, Splunk HEC) and deliberate security
-vulnerabilities for testing and demonstration.
-"""
+"""OCTO Drone Shop main application entry point."""
 
 import logging
 import os
@@ -258,8 +253,8 @@ async def global_exception_handler(request: Request, exc: Exception):
         "error.message": str(exc),
         "http.url.path": request.url.path,
     })
-    # VULN: Verbose error in all environments
+    detail = "Internal server error" if cfg.is_production else str(exc)
     return JSONResponse(
         status_code=500,
-        content={"error": str(exc), "type": type(exc).__name__, "path": request.url.path},
+        content={"error": detail, "type": type(exc).__name__, "path": request.url.path},
     )

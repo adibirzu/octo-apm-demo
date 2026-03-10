@@ -47,12 +47,14 @@ async def get_tickets(customer_id: int):
             ticket_ids = [t["id"] for t in tickets]
             messages_by_ticket = {tid: [] for tid in ticket_ids}
             if ticket_ids:
+                placeholders = ", ".join(f":tid_{i}" for i in range(len(ticket_ids)))
+                params = {f"tid_{i}": tid for i, tid in enumerate(ticket_ids)}
                 msg_result = await db.execute(
                     text(
-                        "SELECT id, ticket_id, sender_type, content, created_at "
-                        "FROM ticket_messages WHERE ticket_id IN :ticket_ids ORDER BY created_at ASC"
+                        f"SELECT id, ticket_id, sender_type, content, created_at "
+                        f"FROM ticket_messages WHERE ticket_id IN ({placeholders}) ORDER BY created_at ASC"
                     ),
-                    {"ticket_ids": tuple(ticket_ids)},
+                    params,
                 )
                 for msg in msg_result.mappings().all():
                     messages_by_ticket[msg["ticket_id"]].append(dict(msg))
@@ -78,12 +80,11 @@ async def create_ticket(payload: dict):
     with tracer.start_as_current_span("services.tickets.create") as span:
         span.set_attribute("customer.id", customer_id)
         async with get_db() as db:
-            # 1. Insert Title
-            result = await db.execute(
+            # 1. Insert ticket
+            await db.execute(
                 text(
                     "INSERT INTO tickets (customer_id, title, status, priority, product_id, service_id) "
-                    "VALUES (:customer_id, :title, 'open', :priority, :product_id, :service_id) "
-                    "RETURNING id"
+                    "VALUES (:customer_id, :title, 'open', :priority, :product_id, :service_id)"
                 ),
                 {
                     "customer_id": customer_id,
@@ -93,7 +94,12 @@ async def create_ticket(payload: dict):
                     "service_id": payload.get("service_id"),
                 },
             )
-            ticket_id = result.scalar()
+            # Get the auto-generated ID (Oracle-compatible)
+            row = await db.execute(
+                text("SELECT MAX(id) FROM tickets WHERE customer_id = :cid AND title = :title"),
+                {"cid": customer_id, "title": title},
+            )
+            ticket_id = row.scalar()
 
             # 2. Insert Initial Message
             await db.execute(

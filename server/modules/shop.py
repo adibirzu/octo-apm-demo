@@ -14,7 +14,7 @@ from server.genai_service import chat_with_documents, genai_configured
 from server.modules.integrations import sync_customers_from_crm, sync_order_to_crm
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
-from server.store_service import ensure_customer, fetch_cart_items, place_order
+from server.store_service import ensure_customer, fetch_cart_items, place_order, resolve_direct_items
 from server.storefront import build_grounding_documents, enrich_product, fallback_product_answer
 
 router = APIRouter(prefix="/api/shop", tags=["shop"])
@@ -70,13 +70,18 @@ async def storefront():
                     "(SELECT COUNT(*) FROM products WHERE is_active = 1) AS product_count, "
                     "(SELECT COALESCE(SUM(stock), 0) FROM products WHERE is_active = 1) AS inventory_units, "
                     "(SELECT COALESCE(SUM(total), 0) FROM orders) AS revenue, "
-                    "(SELECT COUNT(*) FROM orders) AS order_count"
+                    "(SELECT COUNT(*) FROM orders) AS order_count "
                     "FROM DUAL"
                 )
             )
             stats = dict(stats_result.mappings().first())
 
         span.set_attribute("shop.catalog_count", len(products))
+        span.set_attribute("shop.category_count", len(categories))
+        span.set_attribute("shop.inventory_units", int(stats.get("inventory_units") or 0))
+        span.set_attribute("shop.total_revenue", float(stats.get("revenue") or 0))
+        span.set_attribute("shop.order_count", int(stats.get("order_count") or 0))
+        span.set_attribute("integration.crm_sync_configured", bool(crm_sync.get("configured")))
         return {
             "products": products,
             "categories": categories,
@@ -134,6 +139,8 @@ async def checkout(payload: dict, request: Request):
         crm_customer_sync = await sync_customers_from_crm(force=False, limit=200, source="shop_checkout")
         async with get_db() as db:
             items = await fetch_cart_items(db, session_id)
+            if not items and payload.get("items"):
+                items = await resolve_direct_items(db, payload["items"])
             if not items:
                 return {"error": "Cart is empty", "session_id": session_id}
 
@@ -167,6 +174,14 @@ async def checkout(payload: dict, request: Request):
         span.set_attribute("orders.order_id", order_result["order"]["id"])
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
+        span.set_attribute("orders.subtotal", order_result.get("subtotal", order_result["total"]))
+        span.set_attribute("orders.discount", float(order_result.get("coupon", {}).get("discount") or 0))
+        span.set_attribute("orders.shipping_cost", float(order_result.get("shipping_cost") or 0))
+        span.set_attribute("shop.payment_method", payload.get("payment_method", "unknown"))
+        span.set_attribute("shop.coupon_code", payload.get("coupon_code", "") or "none")
+        span.set_attribute("shop.session_id", session_id)
+        span.set_attribute("customer.company", payload.get("company", "") or "")
+        span.set_attribute("customer.email_domain", (payload.get("customer_email") or "").split("@")[-1] or "unknown")
         span.set_attribute("integration.crm_order_synced", bool(crm_order_sync.get("synced")))
         push_log(
             "INFO",
@@ -265,6 +280,8 @@ async def assistant_query(payload: dict, request: Request):
     with tracer.start_as_current_span("shop.assistant.query") as span:
         span.set_attribute("assistant.session_id", session_id)
         span.set_attribute("assistant.message_length", len(message))
+        span.set_attribute("assistant.product_focus", payload.get("product_focus", "") or "all")
+        span.set_attribute("assistant.customer_email_provided", bool(payload.get("customer_email")))
 
         async with get_db() as db:
             existing = await db.execute(
@@ -346,6 +363,8 @@ async def assistant_query(payload: dict, request: Request):
             )
 
         span.set_attribute("assistant.provider", response_payload["provider"])
+        span.set_attribute("assistant.genai_used", response_payload["provider"] != "local_grounded_fallback")
+        span.set_attribute("assistant.documents_grounded", len(documents))
         push_log(
             "INFO",
             "Assistant response generated",

@@ -4,6 +4,7 @@ import time
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from opentelemetry import trace
+from server.config import cfg
 from server.observability.otel_setup import get_tracer
 
 
@@ -15,7 +16,7 @@ class TracingMiddleware(BaseHTTPMiddleware):
             span.set_attribute("http.url.path", request.url.path)
             span.set_attribute("http.client_ip",
                                request.client.host if request.client else "unknown")
-            span.set_attribute("service.name", "octo-crm-apm-cloudnative")
+            span.set_attribute("service.name", cfg.otel_service_name)
 
             start = time.monotonic()
             response = await call_next(request)

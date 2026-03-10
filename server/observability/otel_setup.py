@@ -27,7 +27,7 @@ def init_otel(service_name: str = "octo-crm-apm",
         SERVICE_NAME: service_name,
         SERVICE_VERSION: service_version,
         "deployment.environment": "production",
-        "service.namespace": "octo-crm-apm",
+        "service.namespace": "octo",
     })
 
     _tracer_provider = TracerProvider(resource=resource)

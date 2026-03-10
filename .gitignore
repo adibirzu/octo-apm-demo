@@ -4,7 +4,13 @@ __pycache__/
 .env.local
 .env.*.local
 .env.local.*
+.env.development
+.env.production
+.env.test
+.env.staging
+*.env
 !.env.local.example
+!.env.example
 *.egg-info/
 dist/
 build/
@@ -13,5 +19,13 @@ node_modules/
 .DS_Store
 *.pem
 wallet/
+*.wallet
+*.key
+*.p12
+*.pfx
+*.jks
+*.kdbx
+secrets/
+config/local/
 __pycache__/
 .playwright-cli/
