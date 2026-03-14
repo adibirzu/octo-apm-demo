@@ -26,6 +26,7 @@ ATP-backed drone commerce demo for OCI monitored-app scenarios.
 
 ## Required production inputs
 
+- Database prerequisite: provision Oracle ATP and wallet before deploying the application. This repo is intended to run against ATP for OKE and tenancy-to-tenancy installs.
 - ATP: `ORACLE_DSN`, `ORACLE_USER`, `ORACLE_PASSWORD`, `ORACLE_WALLET_PASSWORD`, wallet mounted at `/opt/oracle/wallet`
 - APM: `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY`, `OCI_APM_PUBLIC_DATAKEY`, `OCI_APM_RUM_ENDPOINT`, `OCI_APM_WEB_APPLICATION`
 - GenAI: `OCI_COMPARTMENT_ID`, `OCI_GENAI_ENDPOINT`, `OCI_GENAI_MODEL_ID`
@@ -43,6 +44,23 @@ COMPARTMENT_ID="<database compartment ocid>" \
 DISPLAY_NAME="mushop-cloudnative-atp" \
 DB_NAME="mushopcnatp" \
 ./deploy/oci/ensure_atp.sh
+```
+
+After ATP creation, download the wallet, mount it into the runtime, and populate:
+
+```bash
+export ORACLE_DSN="<atp_low or atp_tp alias>"
+export ORACLE_USER="ADMIN"
+export ORACLE_PASSWORD="<admin password>"
+export ORACLE_WALLET_DIR="/opt/oracle/wallet"
+export ORACLE_WALLET_PASSWORD="<wallet password>"
+```
+
+For OCI observability drill-downs, also enable native ADB services:
+
+```bash
+oci db autonomous-database enable-autonomous-database-management --autonomous-database-id <atp_ocid>
+oci db autonomous-database enable-operations-insights --autonomous-database-id <atp_ocid>
 ```
 
 ## Local env templates

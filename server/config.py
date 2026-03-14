@@ -8,7 +8,13 @@ import os
 
 class Config:
     app_name = os.getenv("APP_NAME", os.getenv("OBSERVABILITY_APP_NAME", "octo-drone-shop"))
+    brand_name = os.getenv("BRAND_NAME", "OCTO Drone Shop")
+    app_version = os.getenv("APP_VERSION", "1.2.0")
     app_runtime = os.getenv("APP_RUNTIME", "oke")
+    app_env = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", "production"))
+    service_namespace = os.getenv("SERVICE_NAMESPACE", "octo")
+    service_instance_id = os.getenv("SERVICE_INSTANCE_ID", os.getenv("HOSTNAME", "local-dev"))
+    demo_stack_name = os.getenv("DEMO_STACK_NAME", "octo-demo")
     otel_service_name = os.getenv(
         "OTEL_SERVICE_NAME",
         os.getenv("OBSERVABILITY_SERVICE_NAME", "octo-drone-shop-oke"),
@@ -51,6 +57,7 @@ class Config:
     # ── Splunk HEC ──
     splunk_hec_url = os.getenv("SPLUNK_HEC_URL", "")
     splunk_hec_token = os.getenv("SPLUNK_HEC_TOKEN", "")
+    otlp_log_export_enabled = os.getenv("OTLP_LOG_EXPORT_ENABLED", "true").lower() in ("1", "true", "yes")
 
     @property
     def is_production(self) -> bool:
@@ -73,6 +80,10 @@ class Config:
     @property
     def logging_configured(self) -> bool:
         return bool(self.oci_log_id)
+
+    @property
+    def database_target_label(self) -> str:
+        return "postgresql" if self.use_postgres else "oracle_atp"
 
     @property
     def use_postgres(self) -> bool:
@@ -102,9 +113,9 @@ class Config:
     def safe_runtime_summary(self) -> dict:
         return {
             "app_name": self.app_name,
-            "environment": self.environment,
+            "environment": self.app_env,
             "app_runtime": self.app_runtime,
-            "database_backend": "postgresql" if self.use_postgres else "oracle_atp",
+            "database_backend": self.database_target_label,
             "database_configured": bool(self._pg_url) if self.use_postgres else bool(self.oracle_dsn and self.oracle_password),
             "apm_configured": self.apm_configured,
             "rum_configured": self.rum_configured,

@@ -5,15 +5,32 @@ Supports trace-log correlation for OCI Log Analytics via oracleApmTraceId.
 
 import json
 import logging
+import queue
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 
-from opentelemetry import trace
-
 from server.config import cfg
+from server.observability.correlation import current_trace_context, service_metadata
 
 logger = logging.getLogger(__name__)
+
+_log_queue: queue.SimpleQueue[tuple[str, str, dict] | None] = queue.SimpleQueue()
+
+
+def _log_worker() -> None:
+    while True:
+        item = _log_queue.get()
+        if item is None:
+            break
+        level, message, extra = item
+        _push_to_oci_logging(level, message, extra)
+        _push_to_splunk(level, message, extra)
+
+
+_worker_thread = threading.Thread(target=_log_worker, daemon=True, name="octo-shop-log-push")
+_worker_thread.start()
 
 _security_logger = logging.getLogger("security.events")
 _security_logger.setLevel(logging.INFO)
@@ -29,20 +46,17 @@ class _JSONFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
-            "service": cfg.app_name,
-            "runtime": cfg.app_runtime,
         }
+        log_entry.update(service_metadata())
         if hasattr(record, "extra_fields"):
             log_entry.update(record.extra_fields)
-        # Inject trace context for OCI Log Analytics correlation
-        span = trace.get_current_span()
-        if span and span.is_recording():
-            ctx = span.get_span_context()
-            trace_id_hex = format(ctx.trace_id, "032x")
-            log_entry["trace_id"] = trace_id_hex
-            log_entry["span_id"] = format(ctx.span_id, "016x")
-            # OCI Log Analytics uses this field for APM ↔ Log correlation
-            log_entry["oracleApmTraceId"] = trace_id_hex
+        trace_ctx = current_trace_context()
+        if trace_ctx["trace_id"]:
+            log_entry["trace_id"] = trace_ctx["trace_id"]
+            log_entry["span_id"] = trace_ctx["span_id"]
+            log_entry["traceparent"] = trace_ctx["traceparent"]
+            log_entry["oracleApmTraceId"] = trace_ctx["trace_id"]
+            log_entry["oracleApmSpanId"] = trace_ctx["span_id"]
         return json.dumps(log_entry, default=str)
 
 
@@ -83,18 +97,19 @@ def push_log(level: str, message: str, **kwargs):
 
     Injects trace_id and oracleApmTraceId for APM ↔ Log Analytics correlation.
     """
-    # Inject trace context
-    span = trace.get_current_span()
-    if span and span.is_recording():
-        ctx = span.get_span_context()
-        trace_id_hex = format(ctx.trace_id, "032x")
-        kwargs["trace_id"] = trace_id_hex
-        kwargs["span_id"] = format(ctx.span_id, "016x")
-        kwargs["oracleApmTraceId"] = trace_id_hex
+    trace_ctx = current_trace_context()
+    if trace_ctx["trace_id"]:
+        kwargs["trace_id"] = trace_ctx["trace_id"]
+        kwargs["span_id"] = trace_ctx["span_id"]
+        kwargs["traceparent"] = trace_ctx["traceparent"]
+        kwargs["oracleApmTraceId"] = trace_ctx["trace_id"]
+        kwargs["oracleApmSpanId"] = trace_ctx["span_id"]
 
-    service_name = f"{cfg.app_name}-{cfg.app_runtime}"
-    kwargs["app.service"] = service_name
-    kwargs["app.runtime"] = cfg.app_runtime
+    kwargs.update(service_metadata())
+    kwargs["app.service"] = cfg.otel_service_name
+    kwargs["db.target"] = cfg.database_target_label
+    if cfg.oracle_dsn:
+        kwargs["db.connection_name"] = cfg.oracle_dsn
 
     # Write to structured logger (stdout)
     record = logging.LogRecord(
@@ -104,11 +119,7 @@ def push_log(level: str, message: str, **kwargs):
     record.extra_fields = kwargs
     _security_logger.handle(record)
 
-    # Push to OCI Logging SDK
-    _push_to_oci_logging(level, message, kwargs)
-
-    # Push to Splunk HEC
-    _push_to_splunk(level, message, kwargs)
+    _log_queue.put((level, message, dict(kwargs)))
 
 
 def _push_to_oci_logging(level: str, message: str, extra: dict):
@@ -151,8 +162,12 @@ def _push_to_splunk(level: str, message: str, extra: dict):
             "message": message,
             **extra,
         }
+        # SPLUNK_HEC_URL already includes /services/collector/event
+        url = cfg.splunk_hec_url.rstrip("/")
+        if not url.endswith("/services/collector/event"):
+            url = f"{url}/services/collector/event"
         httpx.post(
-            f"{cfg.splunk_hec_url}/services/collector/event",
+            url,
             json={"event": event, "sourcetype": "oci:octo-crm-apm:security"},
             headers={"Authorization": f"Splunk {cfg.splunk_hec_token}"},
             verify=False,

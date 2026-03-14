@@ -6,6 +6,7 @@ VULNS: SQLi (search), XSS (reviews), IDOR (product detail)
 from fastapi import APIRouter, Request, Query
 from sqlalchemy import text
 from server.database import get_db
+from server.observability.correlation import apply_span_attributes, sql_attributes
 from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
 from server.storefront import enrich_product
@@ -22,8 +23,13 @@ async def list_products(request: Request,
     source_ip = request.client.host if request.client else "unknown"
 
     with tracer.start_as_current_span("catalogue.list_products") as span:
-        span.set_attribute("catalogue.search", search)
-        span.set_attribute("catalogue.category", category)
+        apply_span_attributes(span, {
+            "catalogue.search": search,
+            "catalogue.category": category,
+            "app.page.name": "catalogue",
+            "app.module": "catalogue",
+            "app.logical_endpoint": "catalogue.list_products",
+        })
 
         async with get_db() as db:
             # VULN: SQL injection in search parameter
@@ -43,6 +49,7 @@ async def list_products(request: Request,
                               source_ip=source_ip, endpoint="/api/products")
 
             with tracer.start_as_current_span("db.query.products") as db_span:
+                apply_span_attributes(db_span, sql_attributes(query, connection_name="", database_target="oracle_atp"))
                 result = await db.execute(text(query))
                 products = [enrich_product(dict(r)) for r in result.mappings().all()]
                 db_span.set_attribute("db.row_count", len(products))
@@ -55,7 +62,12 @@ async def get_product(product_id: int, request: Request):
     """Get single product — VULN: IDOR (no ownership check)."""
     tracer = get_tracer()
     with tracer.start_as_current_span("catalogue.get_product") as span:
-        span.set_attribute("catalogue.product_id", product_id)
+        apply_span_attributes(span, {
+            "catalogue.product_id": product_id,
+            "app.page.name": "catalogue",
+            "app.module": "catalogue",
+            "app.logical_endpoint": "catalogue.get_product",
+        })
 
         async with get_db() as db:
             result = await db.execute(
@@ -90,6 +102,12 @@ async def get_reviews(product_id: int):
     """Get product reviews."""
     tracer = get_tracer()
     with tracer.start_as_current_span("catalogue.get_reviews") as span:
+        apply_span_attributes(span, {
+            "catalogue.product_id": product_id,
+            "app.page.name": "catalogue",
+            "app.module": "catalogue",
+            "app.logical_endpoint": "catalogue.get_reviews",
+        })
         async with get_db() as db:
             result = await db.execute(
                 text("SELECT id, rating, comment, author_name, created_at "
@@ -108,6 +126,12 @@ async def create_review(product_id: int, payload: dict, request: Request):
     source_ip = request.client.host if request.client else "unknown"
 
     with tracer.start_as_current_span("catalogue.create_review") as span:
+        apply_span_attributes(span, {
+            "catalogue.product_id": product_id,
+            "app.page.name": "catalogue",
+            "app.module": "catalogue",
+            "app.logical_endpoint": "catalogue.create_review",
+        })
         comment = payload.get("comment", "")
         author = payload.get("author_name", "Anonymous")
         rating = payload.get("rating", 5)

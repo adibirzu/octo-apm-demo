@@ -12,6 +12,7 @@ from server.config import cfg
 from server.database import get_db
 from server.genai_service import chat_with_documents, genai_configured
 from server.modules.integrations import sync_customers_from_crm, sync_order_to_crm
+from server.observability.correlation import apply_span_attributes
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
 from server.store_service import ensure_customer, fetch_cart_items, place_order, resolve_direct_items
@@ -32,6 +33,13 @@ async def featured_products():
     """Featured products for the landing page."""
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.featured") as span:
+        apply_span_attributes(span, {
+            "app.page.name": "shop",
+            "app.module": "shop",
+            "app.logical_endpoint": "shop.featured",
+            "db.target": cfg.database_target_label,
+            "db.connection_name": cfg.oracle_dsn,
+        })
         async with get_db() as db:
             result = await db.execute(
                 text(
@@ -49,6 +57,13 @@ async def storefront():
     """Full storefront payload sourced from ATP."""
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.storefront") as span:
+        apply_span_attributes(span, {
+            "app.page.name": "shop",
+            "app.module": "shop",
+            "app.logical_endpoint": "shop.storefront",
+            "db.target": cfg.database_target_label,
+            "db.connection_name": cfg.oracle_dsn,
+        })
         crm_sync = await sync_customers_from_crm(force=False, limit=200, source="shop_storefront")
         async with get_db() as db:
             products_result = await db.execute(
@@ -108,8 +123,13 @@ async def apply_coupon(payload: dict):
     subtotal = float(payload.get("subtotal", 0) or 0)
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.coupon.apply") as span:
-        span.set_attribute("shop.coupon_code", code or "none")
-        span.set_attribute("shop.subtotal", subtotal)
+        apply_span_attributes(span, {
+            "shop.coupon_code": code or "none",
+            "shop.subtotal": subtotal,
+            "app.page.name": "shop",
+            "app.module": "shop",
+            "app.logical_endpoint": "shop.coupon.apply",
+        })
         async with get_db() as db:
             result = await db.execute(
                 text(
@@ -135,6 +155,13 @@ async def checkout(payload: dict, request: Request):
     """Persist the order, create shipment records, and emit traces/logs."""
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.checkout") as span:
+        apply_span_attributes(span, {
+            "app.page.name": "shop",
+            "app.module": "shop",
+            "app.logical_endpoint": "shop.checkout",
+            "db.target": cfg.database_target_label,
+            "db.connection_name": cfg.oracle_dsn,
+        })
         session_id = payload.get("session_id") or request.cookies.get("session_id", "") or str(uuid.uuid4())
         crm_customer_sync = await sync_customers_from_crm(force=False, limit=200, source="shop_checkout")
         async with get_db() as db:
@@ -213,6 +240,13 @@ async def get_wallet(username: str = ""):
     """Show a simple storefront loyalty balance derived from order history."""
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.wallet.lookup") as span:
+        apply_span_attributes(span, {
+            "app.page.name": "shop",
+            "app.module": "shop",
+            "app.logical_endpoint": "shop.wallet.lookup",
+            "db.target": cfg.database_target_label,
+            "db.connection_name": cfg.oracle_dsn,
+        })
         async with get_db() as db:
             if username:
                 result = await db.execute(
@@ -245,6 +279,13 @@ async def dealer_shops():
     """Fetch authorized dealer locations."""
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.locations") as span:
+        apply_span_attributes(span, {
+            "app.page.name": "services",
+            "app.module": "shop",
+            "app.logical_endpoint": "shop.locations",
+            "db.target": cfg.database_target_label,
+            "db.connection_name": cfg.oracle_dsn,
+        })
         async with get_db() as db:
             result = await db.execute(
                 text("SELECT id, name, address, coordinates, contact_email, contact_phone FROM shops WHERE is_active = 1")
@@ -278,10 +319,17 @@ async def assistant_query(payload: dict, request: Request):
     session_id = payload.get("session_id") or str(uuid.uuid4())
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.assistant.query") as span:
-        span.set_attribute("assistant.session_id", session_id)
-        span.set_attribute("assistant.message_length", len(message))
-        span.set_attribute("assistant.product_focus", payload.get("product_focus", "") or "all")
-        span.set_attribute("assistant.customer_email_provided", bool(payload.get("customer_email")))
+        apply_span_attributes(span, {
+            "assistant.session_id": session_id,
+            "assistant.message_length": len(message),
+            "assistant.product_focus": payload.get("product_focus", "") or "all",
+            "assistant.customer_email_provided": bool(payload.get("customer_email")),
+            "app.page.name": "shop",
+            "app.module": "shop",
+            "app.logical_endpoint": "shop.assistant.query",
+            "db.target": cfg.database_target_label,
+            "db.connection_name": cfg.oracle_dsn,
+        })
 
         async with get_db() as db:
             existing = await db.execute(
