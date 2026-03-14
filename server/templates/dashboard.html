@@ -1,315 +1,698 @@
 {% extends "base.html" %}
 {% block head %}
 <style>
-    .intro-grid { display: grid; gap: 18px; }
-
-    /* Hero */
-    .intro-hero {
-        padding: 48px 42px;
+    .hero-panel {
+        padding: 38px 34px;
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 32px;
+        grid-template-columns: 1.3fr 0.7fr;
+        gap: 22px;
         align-items: center;
-        position: relative;
-        overflow: hidden;
     }
-    .intro-hero::after {
-        content: "";
-        position: absolute;
-        inset: auto -60px -80px auto;
-        width: 420px; height: 420px;
-        background: radial-gradient(circle, rgba(108,210,224,0.18), transparent 65%);
-        pointer-events: none;
-    }
-    .intro-eyebrow {
+    .hero-kicker {
         color: var(--teal);
         font-family: "Orbitron", sans-serif;
         text-transform: uppercase;
-        letter-spacing: 0.22em;
-        font-size: 0.72rem;
-        margin-bottom: 14px;
+        letter-spacing: 0.18em;
+        font-size: 0.74rem;
+        margin-bottom: 12px;
     }
-    .intro-title {
-        font-size: clamp(2.4rem, 5vw, 4.2rem);
-        line-height: 0.92;
-        margin-bottom: 18px;
-    }
-    .intro-body {
+    .hero-copy {
         color: var(--muted);
-        line-height: 1.65;
-        max-width: 58ch;
-        margin-bottom: 28px;
+        line-height: 1.6;
+        margin-top: 14px;
+        max-width: 62ch;
     }
-    .intro-actions { display: flex; flex-wrap: wrap; gap: 12px; }
-    .intro-trust { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-
-    /* Stats row */
-    .stats-row {
+    .hero-logo {
+        width: min(100%, 280px);
+        justify-self: end;
+        opacity: 0.92;
+        filter: drop-shadow(0 18px 32px rgba(108, 210, 224, 0.18));
+    }
+    .dashboard-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 18px;
     }
-    .stat-tile {
-        padding: 22px 20px;
-        border-radius: 22px;
-        border: 1px solid var(--line);
-        background: rgba(255,255,255,0.03);
+    .metric-card { min-height: 132px; }
+    .metric-value {
+        font-size: 2rem;
+        font-family: "Orbitron", sans-serif;
+        margin-top: 12px;
     }
-    .stat-tile .label { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; }
-    .stat-tile .value { font-size: 2.1rem; font-family: "Orbitron", sans-serif; font-weight: 700; margin: 8px 0 4px; color: var(--ink); }
-    .stat-tile .sub { color: var(--muted); font-size: 0.82rem; }
-
-    /* Featured products */
-    .featured-grid {
+    .dashboard-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+    }
+    .dashboard-row-wide { grid-template-columns: 1fr; }
+    .status-grid, .drilldown-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
+        gap: 14px;
     }
-    .featured-card {
-        border-radius: 22px;
+    .status-card, .drilldown-card {
         border: 1px solid var(--line);
-        background: rgba(255,255,255,0.03);
-        overflow: hidden;
+        border-radius: 18px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .status-label {
+        display: block;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.74rem;
+        margin-bottom: 10px;
+    }
+    .status-value-pill {
+        display: inline-flex;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-bottom: 10px;
+    }
+    .status-value-pill.is-healthy { background: rgba(91, 229, 159, 0.12); color: var(--ok); }
+    .status-value-pill.is-degraded { background: rgba(255, 189, 89, 0.12); color: var(--amber); }
+    .status-value-pill.is-unhealthy { background: rgba(255, 107, 122, 0.12); color: var(--rose); }
+    .drilldown-card {
         display: flex;
         flex-direction: column;
-        transition: border-color 0.2s;
+        gap: 10px;
+        min-height: 110px;
+        justify-content: space-between;
     }
-    .featured-card:hover { border-color: rgba(108,210,224,0.4); }
-    .featured-card img {
-        width: 100%; height: 180px;
-        object-fit: cover;
-        background: rgba(255,255,255,0.02);
+    .drilldown-card.is-disabled {
+        opacity: 0.55;
+        cursor: default;
+        pointer-events: none;
     }
-    .featured-card-body { padding: 16px 18px 18px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
-    .featured-card-body h3 { font-size: 0.95rem; line-height: 1.3; }
-    .featured-card-body p { color: var(--muted); font-size: 0.84rem; line-height: 1.5; flex: 1; }
-    .featured-price { font-size: 1.25rem; font-family: "Orbitron", sans-serif; font-weight: 700; color: var(--teal); }
-    .featured-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-
-    /* Two-column bottom section */
-    .dash-panels {
+    .control-stack { display: grid; gap: 18px; }
+    .control-section { display: grid; gap: 12px; }
+    .simulation-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .btn-primary { border-color: var(--teal); color: var(--teal); }
+    .btn-success { border-color: var(--ok); color: var(--ok); background: rgba(91, 229, 159, 0.08); }
+    .btn-warning { border-color: var(--amber); color: var(--amber); background: rgba(255, 189, 89, 0.08); }
+    .btn-danger { border-color: var(--rose); color: var(--rose); background: rgba(255, 107, 122, 0.08); }
+    .btn-secondary { border-color: var(--line); color: var(--ink); background: rgba(255, 255, 255, 0.02); }
+    .btn-primary:hover, .btn-success:hover, .btn-warning:hover, .btn-danger:hover, .btn-secondary:hover {
+        color: #031018;
+    }
+    .state-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .telemetry-pill {
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+    .telemetry-pill.is-on {
+        border-color: rgba(91, 229, 159, 0.35);
+        color: var(--ok);
+    }
+    .form-grid {
         display: grid;
-        grid-template-columns: 1.3fr 0.7fr;
-        gap: 18px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
     }
-    .orders-table td, .orders-table th { font-size: 0.88rem; }
-    .status-list { display: grid; gap: 10px; }
-    .status-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 12px 14px; border-radius: 16px;
-        border: 1px solid rgba(147,170,189,0.1);
-        background: rgba(255,255,255,0.025);
-        font-size: 0.88rem;
+    .form-grid-orders { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .checkbox-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        padding: 12px 4px;
     }
-    .status-row .val { font-weight: 600; color: var(--teal); }
-
-    @media (max-width: 1100px) {
-        .intro-hero, .dash-panels { grid-template-columns: 1fr; }
-        .stats-row { grid-template-columns: repeat(2, 1fr); }
-        .featured-grid { grid-template-columns: repeat(2, 1fr); }
+    .checkbox-inline input { width: auto; }
+    .code-output {
+        border: 1px solid rgba(147, 170, 189, 0.14);
+        border-radius: 18px;
+        background: rgba(4, 11, 19, 0.82);
+        padding: 16px;
+        min-height: 110px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+        color: #d8e9fb;
+        font-size: 0.9rem;
     }
-    @media (max-width: 680px) {
-        .stats-row, .featured-grid { grid-template-columns: 1fr; }
-        .intro-hero { padding: 28px 22px; }
+    .data-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border: 1px solid var(--line);
+    }
+    .badge-processing, .badge-pending, .badge-queued { color: var(--amber); }
+    .badge-completed, .badge-delivered { color: var(--ok); }
+    .badge-cancelled, .badge-failed { color: var(--rose); }
+    .featured-products-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+    .featured-product {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .featured-product img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .featured-product-body {
+        padding: 14px 16px 16px;
+        display: grid;
+        gap: 10px;
+    }
+    @media (max-width: 1180px) {
+        .dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .dashboard-row, .status-grid, .drilldown-grid, .featured-products-grid { grid-template-columns: 1fr; }
+        .hero-panel { grid-template-columns: 1fr; }
+        .hero-logo { justify-self: start; }
+        .form-grid, .form-grid-orders { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+        .dashboard-grid, .form-grid, .form-grid-orders { grid-template-columns: 1fr; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="intro-grid">
+<section class="hero-card hero-panel">
+    <div>
+        <p class="hero-kicker">OCTO shared commerce telemetry</p>
+        <h2>MuShop, CRM, ATP, OCI APM, and Splunk share the same business path.</h2>
+        <p class="hero-copy">
+            This dashboard shows live ATP-backed commerce state, cross-service drilldowns, issue simulation controls,
+            and demo-data generation for the shared CRM and shop tenancy. Every action is designed to be visible in
+            OCI APM, OCI Logging, and the external Splunk pipeline.
+        </p>
+    </div>
+    <img src="/static/img/octo-logo.png" alt="OCTO Drone Shop" class="hero-logo">
+</section>
 
-    <!-- Hero -->
-    <section class="hero-card intro-hero">
-        <div>
-            <div class="intro-eyebrow">OCTO Drone Commerce</div>
-            <h1 class="intro-title">Enterprise drone equipment and support.</h1>
-            <p class="intro-body">
-                Browse our catalog of professional-grade drone platforms, precision payloads, field power systems, and accessories.
-                Every order is persisted in Oracle ATP, traced through OCI APM, and synchronized with Enterprise CRM.
-            </p>
-            <div class="intro-actions">
-                <a class="btn" href="/shop">Browse Drone Shop</a>
-                <a class="btn btn-outline" href="/services">Services & Support</a>
-            </div>
-            <div class="intro-trust">
-                <span class="chip">Oracle ATP catalog</span>
-                <span class="chip">OCI APM traces</span>
-                <span class="chip">Enterprise CRM sync</span>
-                <span class="chip">OCI GenAI advisor</span>
-            </div>
-        </div>
-        <div class="stats-row" style="grid-template-columns: repeat(2, 1fr);">
-            <div class="stat-tile">
-                <div class="label">Products</div>
-                <div class="value" id="s-products">–</div>
-                <div class="sub">In catalog</div>
-            </div>
-            <div class="stat-tile">
-                <div class="label">Orders</div>
-                <div class="value" id="s-orders">–</div>
-                <div class="sub">Processed</div>
-            </div>
-            <div class="stat-tile">
-                <div class="label">Customers</div>
-                <div class="value" id="s-customers">–</div>
-                <div class="sub">Enterprise accounts</div>
-            </div>
-            <div class="stat-tile">
-                <div class="label">Revenue</div>
-                <div class="value" id="s-revenue">–</div>
-                <div class="sub">All time</div>
-            </div>
-        </div>
-    </section>
+<div class="dashboard-grid">
+    <div class="card metric-card"><h3>Total Customers</h3><div class="metric-value" id="metric-customers">-</div></div>
+    <div class="card metric-card"><h3>Total Companies</h3><div class="metric-value" id="metric-companies">-</div></div>
+    <div class="card metric-card"><h3>Total Orders</h3><div class="metric-value" id="metric-orders">-</div></div>
+    <div class="card metric-card"><h3>Total Revenue</h3><div class="metric-value" id="metric-revenue">-</div></div>
+    <div class="card metric-card"><h3>Open Tickets</h3><div class="metric-value" id="metric-tickets">-</div></div>
+    <div class="card metric-card"><h3>Low Stock</h3><div class="metric-value" id="metric-low-stock">-</div></div>
+</div>
 
-    <!-- Stats bar -->
-    <div class="stats-row">
-        <div class="stat-tile">
-            <div class="label">Database</div>
-            <div class="value" style="font-size:1.15rem;margin-top:6px;" id="db-status">Oracle ATP</div>
-            <div class="sub">Autonomous Transaction Processing</div>
-        </div>
-        <div class="stat-tile">
-            <div class="label">APM Tracing</div>
-            <div class="value" style="font-size:1.15rem;margin-top:6px;" id="apm-status">–</div>
-            <div class="sub">OCI Application Performance Monitor</div>
-        </div>
-        <div class="stat-tile">
-            <div class="label">CRM Integration</div>
-            <div class="value" style="font-size:1.15rem;margin-top:6px;" id="crm-status">–</div>
-            <div class="sub">Enterprise CRM Portal sync</div>
-        </div>
-        <div class="stat-tile">
-            <div class="label">AI Advisor</div>
-            <div class="value" style="font-size:1.15rem;margin-top:6px;" id="ai-status">–</div>
-            <div class="sub">OCI Generative AI grounded assistant</div>
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Platform Health</h3>
+        <div class="status-grid" id="status-grid">
+            <div class="status-card"><span>Loading platform health...</span></div>
         </div>
     </div>
-
-    <!-- Featured Products -->
-    <section class="panel">
-        <div class="section-title">
-            <h3>Featured Products</h3>
-            <a href="/shop" class="btn btn-outline" style="font-size:0.78rem;padding:8px 16px;">View All</a>
+    <div class="card">
+        <h3>Drilldowns</h3>
+        <div class="drilldown-grid" id="drilldown-grid">
+            <div class="drilldown-card">Loading drilldown targets...</div>
         </div>
-        <div class="featured-grid" id="featuredGrid">
-            <div class="helper">Loading catalog from Oracle ATP…</div>
-        </div>
-    </section>
+    </div>
+</div>
 
-    <!-- Orders + System Status -->
-    <section class="dash-panels">
-        <div class="panel">
-            <div class="section-title">
-                <h3>Recent Orders</h3>
-                <span class="chip">ATP-persisted</span>
+<div class="dashboard-row">
+    <div class="card">
+        <h3>Top Customers by Revenue</h3>
+        <table class="data-table">
+            <thead><tr><th>Name</th><th>Company</th><th>Revenue</th><th>Orders</th></tr></thead>
+            <tbody id="top-customers-body"></tbody>
+        </table>
+    </div>
+    <div class="card">
+        <h3>Recent Orders</h3>
+        <table class="data-table">
+            <thead><tr><th>ID</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+            <tbody id="recent-orders-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Featured Product Mix</h3>
+        <div class="featured-products-grid" id="featured-products-grid">
+            <div class="featured-product"><div class="featured-product-body">Loading products...</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-simulation">
+        <h3>Issue Simulation Controls</h3>
+        <div class="control-stack">
+            <div class="control-section">
+                <h4>One-shot incidents</h4>
+                <div class="simulation-controls">
+                    <button onclick="setDbLatency(2500)" class="btn btn-warning">DB Latency Spike</button>
+                    <button onclick="toggleDbDisconnect(true)" class="btn btn-danger">DB Disconnect</button>
+                    <button onclick="setErrorRate(0.3)" class="btn btn-danger">Error Burst</button>
+                    <button onclick="loadSlowQuery()" class="btn btn-warning">Slow Query</button>
+                    <button onclick="loadNPlusOne()" class="btn btn-warning">N+1 Demo</button>
+                    <button onclick="runErrorDemo('exception')" class="btn btn-danger">App Exception</button>
+                    <button onclick="runErrorDemo('db_error')" class="btn btn-danger">DB Error</button>
+                </div>
             </div>
-            <table class="orders-table">
-                <thead><tr><th>#</th><th>Customer</th><th>Status</th><th>Total</th></tr></thead>
-                <tbody id="orders-body"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
-            </table>
-        </div>
-        <div class="panel">
-            <div class="section-title"><h3>System Status</h3></div>
-            <div class="status-list" id="statusList">
-                <div class="status-row"><span>Store backend</span><span class="val">Oracle ATP</span></div>
-                <div class="status-row"><span>OCI APM</span><span class="val" id="sl-apm">–</span></div>
-                <div class="status-row"><span>OCI RUM</span><span class="val" id="sl-rum">–</span></div>
-                <div class="status-row"><span>CRM Portal</span><span class="val" id="sl-crm">–</span></div>
-                <div class="status-row"><span>GenAI Advisor</span><span class="val" id="sl-ai">–</span></div>
+            <div class="control-section">
+                <h4>Persistent toggles</h4>
+                <div class="simulation-controls">
+                    <button id="flag-db_latency" onclick="toggleDbLatency()" class="btn btn-secondary">DB Latency: off</button>
+                    <button id="flag-db_disconnect" onclick="toggleDbDisconnect()" class="btn btn-secondary">DB Disconnect: off</button>
+                    <button id="flag-slow_responses" onclick="toggleSlowResponses()" class="btn btn-secondary">Slow Responses: off</button>
+                    <button onclick="setErrorRate(0)" class="btn btn-secondary">Clear Error Rate</button>
+                    <button onclick="resetSimulation()" class="btn btn-secondary">Reset All</button>
+                </div>
+                <div class="state-pills" id="simulation-state-pills"></div>
             </div>
         </div>
-    </section>
+        <div id="simulation-output" class="code-output"></div>
+    </div>
 
-</section>
+    <div class="card" id="card-demo-data">
+        <h3>Demo Data Controls</h3>
+        <div class="control-stack">
+            <div class="control-section">
+                <h4>Quick actions</h4>
+                <div class="simulation-controls">
+                    <button onclick="generateQuickOrders(5, 'processing', false)" class="btn btn-primary">Generate 5 Orders</button>
+                    <button onclick="generateQuickOrders(10, 'queued', true)" class="btn btn-warning">Generate Backlog</button>
+                    <button onclick="generateQuickOrders(1, 'processing', false, true)" class="btn btn-danger">High-Value Order</button>
+                    <button onclick="createPresetCustomer()" class="btn btn-success">Add Customer</button>
+                    <button onclick="syncCustomers()" class="btn btn-secondary">Sync CRM Customers</button>
+                </div>
+            </div>
+            <div class="control-section">
+                <h4>Create customer / company</h4>
+                <form class="form-grid" onsubmit="createCustomer(event)">
+                    <input id="company-name" placeholder="Company name" value="Vector Air Mobility">
+                    <input id="company-contact" placeholder="Primary contact" value="Morgan Lee">
+                    <input id="company-email" placeholder="Email" value="">
+                    <input id="company-industry" placeholder="Industry" value="Aerospace">
+                    <input id="company-revenue" type="number" min="0" step="1000" placeholder="Revenue" value="5800000">
+                    <button class="btn btn-success" type="submit">Create Customer</button>
+                </form>
+            </div>
+            <div class="control-section">
+                <h4>Generate orders</h4>
+                <form class="form-grid form-grid-orders" onsubmit="createOrders(event)">
+                    <select id="order-customer"></select>
+                    <select id="order-product"></select>
+                    <input id="order-count" type="number" min="1" max="50" step="1" value="3">
+                    <input id="order-quantity" type="number" min="1" max="25" step="1" value="2">
+                    <select id="order-status">
+                        <option value="processing">processing</option>
+                        <option value="pending">pending</option>
+                        <option value="completed">completed</option>
+                        <option value="queued">queued</option>
+                    </select>
+                    <label class="checkbox-inline"><input id="order-high-value" type="checkbox"> High-value mix</label>
+                    <button class="btn btn-primary" type="submit">Generate Orders</button>
+                </form>
+            </div>
+        </div>
+        <div id="data-output" class="code-output"></div>
+    </div>
+</div>
+
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Correlation Snapshot</h3>
+        <pre id="correlation-output" class="code-output">Loading correlation context...</pre>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function money(v) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v || 0);
+let simulationState = {};
+
+function money(value) {
+    return '$' + Number(value || 0).toLocaleString();
 }
-function esc(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function normalizeStatus(status) {
+    const value = String(status || '').toLowerCase();
+    if (['healthy', 'connected', 'enabled', 'configured', 'ready', 'ok'].includes(value)) return 'healthy';
+    if (['pending', 'warning', 'degraded', 'optional'].includes(value)) return 'degraded';
+    return 'unhealthy';
 }
-function badge(ok, yes, no) {
-    return ok ? `<span style="color:var(--ok)">${yes}</span>` : `<span style="color:var(--amber)">${no}</span>`;
+
+async function _fetch(path, options = {}) {
+    const resp = await fetch(path, options);
+    if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `${resp.status} ${resp.statusText}`);
+    }
+    return resp;
 }
 
 async function loadDashboard() {
-    const [summaryRes, ordersRes, storefrontRes, integrationRes] = await Promise.all([
-        fetch('/api/dashboard/summary').catch(() => null),
-        fetch('/api/orders').catch(() => null),
-        fetch('/api/shop/storefront').catch(() => null),
-        fetch('/api/integrations/crm/health').catch(() => null),
-    ]);
+    try {
+        const [summaryResp, readyResp, crmResp, catalogResp, simResp, integrationsResp] = await Promise.all([
+            fetch('/api/dashboard/summary'),
+            fetch('/ready'),
+            fetch('/api/integrations/crm/health'),
+            fetch('/api/dashboard/catalog'),
+            fetch('/api/simulate/status'),
+            fetch('/api/integrations/status'),
+        ]);
 
-    const summary = summaryRes?.ok ? await summaryRes.json() : {};
-    const ordersData = ordersRes?.ok ? await ordersRes.json() : {};
-    const storefront = storefrontRes?.ok ? await storefrontRes.json() : {};
-    const integration = integrationRes?.ok ? await integrationRes.json() : {};
+        const summary = await summaryResp.json();
+        const ready = await readyResp.json();
+        const crm = await crmResp.json();
+        const catalog = await catalogResp.json();
+        const sim = await simResp.json();
+        const integrations = await integrationsResp.json();
 
-    // Hero stats
-    document.getElementById('s-products').textContent = summary.products ?? storefront.stats?.product_count ?? '–';
-    document.getElementById('s-orders').textContent = summary.orders ?? storefront.stats?.order_count ?? '–';
-    document.getElementById('s-customers').textContent = summary.customers ?? '–';
-    document.getElementById('s-revenue').textContent = summary.revenue ? money(summary.revenue) : (storefront.stats?.revenue ? money(storefront.stats.revenue) : '–');
+        simulationState = sim || {};
 
-    // Status bar
-    const be = storefront.backend || {};
-    document.getElementById('apm-status').innerHTML = badge(be.apm_configured, 'Enabled', 'Pending');
-    document.getElementById('crm-status').innerHTML = badge(integration.crm_configured, 'Connected', 'Optional');
-    document.getElementById('ai-status').innerHTML = badge(be.genai_configured, 'OCI GenAI', 'Grounded');
+        document.getElementById('metric-customers').textContent = summary.customers?.total ?? 0;
+        document.getElementById('metric-companies').textContent = summary.customers?.companies ?? 0;
+        document.getElementById('metric-orders').textContent = summary.orders?.total ?? 0;
+        document.getElementById('metric-revenue').textContent = money(summary.orders?.revenue ?? 0);
+        document.getElementById('metric-tickets').textContent = summary.tickets?.open ?? 0;
+        document.getElementById('metric-low-stock').textContent = summary.products?.low_stock ?? 0;
 
-    // Side status
-    document.getElementById('sl-apm').innerHTML = badge(be.apm_configured, 'enabled', 'pending');
-    document.getElementById('sl-rum').innerHTML = badge(be.rum_configured, 'enabled', 'pending');
-    document.getElementById('sl-crm').innerHTML = badge(integration.status === 'healthy', 'healthy', integration.status || 'optional');
-    document.getElementById('sl-ai').innerHTML = badge(be.genai_configured, 'oci genai', 'grounded');
+        document.getElementById('top-customers-body').innerHTML = (summary.top_customers || []).map(customer =>
+            `<tr><td>${customer.name || '-'}</td><td>${customer.company || '-'}</td><td>${money(customer.revenue)}</td><td>${customer.order_count || 0}</td></tr>`
+        ).join('') || '<tr><td colspan="4" class="muted">No customers yet.</td></tr>';
 
-    // Featured products — top 6 by price descending
-    const products = (storefront.products || []).slice().sort((a,b) => b.price - a.price).slice(0, 6);
-    const grid = document.getElementById('featuredGrid');
-    if (!products.length) {
-        grid.innerHTML = '<div class="helper">No products loaded. Check ATP connectivity.</div>';
-    } else {
-        grid.innerHTML = products.map(p => `
-            <article class="featured-card">
-                <img src="${esc(p.image_url)}" alt="${esc(p.name)}"
-                     onerror="this.style.display='none'">
-                <div class="featured-card-body">
-                    <span class="chip" style="font-size:0.75rem;padding:4px 10px;">${esc(p.category)}</span>
-                    <h3>${esc(p.name)}</h3>
-                    <p>${esc(p.description?.slice(0,90))}…</p>
-                    <div class="featured-footer">
-                        <span class="featured-price">${new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(p.price)}</span>
-                        <a href="/shop#catalog" class="btn btn-outline" style="font-size:0.76rem;padding:8px 14px;border-radius:10px;">View</a>
-                    </div>
-                </div>
-            </article>
-        `).join('');
-    }
+        document.getElementById('recent-orders-body').innerHTML = (summary.recent_orders || []).map(order =>
+            `<tr><td>#${order.id}</td><td>${order.customer_name || '-'}</td><td>${money(order.total)}</td><td><span class="badge badge-${order.status}">${order.status}</span></td></tr>`
+        ).join('') || '<tr><td colspan="4" class="muted">No orders yet.</td></tr>';
 
-    // Orders table
-    const orders = ordersData.orders || [];
-    const tbody = document.getElementById('orders-body');
-    if (!orders.length) {
-        tbody.innerHTML = '<tr><td colspan="4" class="muted">No orders yet.</td></tr>';
-    } else {
-        tbody.innerHTML = orders.slice(0, 8).map(o => `
-            <tr>
-                <td class="muted">#${esc(String(o.id))}</td>
-                <td>${esc(o.customer_name || 'Unknown')}</td>
-                <td><span class="chip" style="font-size:0.76rem;padding:4px 10px;">${esc(o.status)}</span></td>
-                <td style="font-weight:600;">${money(o.total)}</td>
-            </tr>
-        `).join('');
+        renderStatusGrid(ready, crm, summary, integrations);
+        renderDrilldowns(ready, crm);
+        renderFeaturedProducts(summary.featured_products || []);
+        renderCatalog(catalog);
+        renderSimulationState();
+        document.getElementById('correlation-output').textContent = JSON.stringify({
+            summary,
+            readiness: ready,
+            crm,
+            simulation: simulationState,
+            integrations,
+        }, null, 2);
+    } catch (error) {
+        console.error('Dashboard load failed:', error);
+        document.getElementById('correlation-output').textContent = String(error);
     }
 }
 
-loadDashboard().catch(err => {
-    document.getElementById('orders-body').innerHTML = `<tr><td colspan="4" style="color:var(--rose)">${esc(err.message)}</td></tr>`;
-    document.getElementById('featuredGrid').innerHTML = `<div class="helper" style="color:var(--rose)">${esc(err.message)}</div>`;
-});
+function renderStatusGrid(ready, crm, summary, integrations) {
+    const integration = (integrations.integrations || [])[0] || {};
+    const cards = [
+        {
+            label: 'Database',
+            status: ready.database || 'unknown',
+            body: ready.db_type || 'unknown',
+        },
+        {
+            label: 'Telemetry',
+            status: ready.apm_configured ? 'enabled' : 'pending',
+            body: `APM ${ready.apm_configured ? 'on' : 'off'} | RUM ${ready.rum_configured ? 'on' : 'off'}`,
+        },
+        {
+            label: 'CRM Sync',
+            status: crm.status || 'unknown',
+            body: crm.crm_host || 'Not configured',
+        },
+        {
+            label: 'Shared Customers',
+            status: (summary.integration?.last_sync_error ? 'degraded' : 'healthy'),
+            body: `last sync count ${summary.integration?.last_sync_count || 0}`,
+        },
+        {
+            label: 'Products',
+            status: (summary.products?.low_stock || 0) > 0 ? 'degraded' : 'healthy',
+            body: `${summary.products?.total || 0} active | ${summary.products?.low_stock || 0} low stock`,
+        },
+        {
+            label: 'Integration API',
+            status: integration.configured ? 'configured' : 'pending',
+            body: integration.host || 'Not configured',
+        },
+    ];
+
+    document.getElementById('status-grid').innerHTML = cards.map(card => `
+        <div class="status-card">
+            <span class="status-label">${card.label}</span>
+            <strong class="status-value-pill is-${normalizeStatus(card.status)}">${card.status}</strong>
+            <p>${card.body}</p>
+        </div>
+    `).join('');
+}
+
+function renderDrilldowns(ready, crm) {
+    const drilldowns = [
+        { name: 'Shop Frontend', url: '/shop', configured: true },
+        { name: 'Service Catalog', url: '/services', configured: true },
+        { name: 'CRM Portal', url: crm.crm_host ? `https://${crm.crm_host}` : '', configured: Boolean(crm.crm_host) },
+        { name: 'Orders API', url: '/api/orders', configured: true },
+        { name: 'ATP Readiness', url: '/ready', configured: true },
+        { name: 'CRM Integration Health', url: '/api/integrations/crm/health', configured: true },
+    ];
+    document.getElementById('drilldown-grid').innerHTML = drilldowns.map(target => `
+        <a class="drilldown-card ${target.configured ? '' : 'is-disabled'}" ${target.configured ? `href="${target.url}" target="_blank" rel="noreferrer"` : ''}>
+            <span>${target.name}</span>
+            <strong>${target.configured ? 'Open' : 'Not configured'}</strong>
+        </a>
+    `).join('');
+}
+
+function renderFeaturedProducts(products) {
+    const grid = document.getElementById('featured-products-grid');
+    if (!products.length) {
+        grid.innerHTML = '<div class="featured-product"><div class="featured-product-body">No products loaded.</div></div>';
+        return;
+    }
+    grid.innerHTML = products.map(product => `
+        <article class="featured-product">
+            <img src="${product.image_url || ''}" alt="${product.name || 'Product'}" onerror="this.style.display='none'">
+            <div class="featured-product-body">
+                <span class="chip">${product.category || 'Uncategorised'}</span>
+                <h4>${product.name || '-'}</h4>
+                <p class="muted">${(product.description || '').slice(0, 110)}</p>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <strong>${money(product.price)}</strong>
+                    <span class="chip">Stock ${product.stock || 0}</span>
+                </div>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderCatalog(catalog) {
+    const customerSelect = document.getElementById('order-customer');
+    const productSelect = document.getElementById('order-product');
+    customerSelect.innerHTML = ['<option value="">Random customer</option>']
+        .concat((catalog.customers || []).map(customer =>
+            `<option value="${customer.id}">${customer.name}${customer.company ? ' | ' + customer.company : ''}</option>`
+        )).join('');
+    productSelect.innerHTML = ['<option value="">Random product</option>']
+        .concat((catalog.products || []).map(product =>
+            `<option value="${product.id}">${product.name} | ${money(product.price)}</option>`
+        )).join('');
+}
+
+function renderSimulationState() {
+    const pills = [];
+    if (Number(simulationState.db_latency_ms || 0) > 0) pills.push(`<span class="telemetry-pill is-on">db latency ${simulationState.db_latency_ms}ms</span>`);
+    if (simulationState.db_disconnect) pills.push('<span class="telemetry-pill is-on">db disconnect</span>');
+    if (simulationState.slow_responses) pills.push('<span class="telemetry-pill is-on">slow responses</span>');
+    if (Number(simulationState.error_rate || 0) > 0) pills.push(`<span class="telemetry-pill is-on">error rate ${(Number(simulationState.error_rate) * 100).toFixed(0)}%</span>`);
+    document.getElementById('simulation-state-pills').innerHTML = pills.join('') || '<span class="telemetry-pill">No active chaos flags</span>';
+
+    const dbLatencyEnabled = Number(simulationState.db_latency_ms || 0) > 0;
+    const dbDisconnectEnabled = Boolean(simulationState.db_disconnect);
+    const slowResponsesEnabled = Boolean(simulationState.slow_responses);
+
+    document.getElementById('flag-db_latency').textContent = `DB Latency: ${dbLatencyEnabled ? 'on' : 'off'}`;
+    document.getElementById('flag-db_latency').className = `btn ${dbLatencyEnabled ? 'btn-warning' : 'btn-secondary'}`;
+    document.getElementById('flag-db_disconnect').textContent = `DB Disconnect: ${dbDisconnectEnabled ? 'on' : 'off'}`;
+    document.getElementById('flag-db_disconnect').className = `btn ${dbDisconnectEnabled ? 'btn-danger' : 'btn-secondary'}`;
+    document.getElementById('flag-slow_responses').textContent = `Slow Responses: ${slowResponsesEnabled ? 'on' : 'off'}`;
+    document.getElementById('flag-slow_responses').className = `btn ${slowResponsesEnabled ? 'btn-warning' : 'btn-secondary'}`;
+}
+
+async function updateSimulationOutput(respPromise) {
+    const output = document.getElementById('simulation-output');
+    try {
+        const resp = await respPromise;
+        const payload = await resp.json();
+        output.textContent = JSON.stringify(payload, null, 2);
+        await refreshSimulationState();
+        await loadDashboard();
+    } catch (error) {
+        output.textContent = String(error);
+    }
+}
+
+async function updateDataOutput(respPromise) {
+    const output = document.getElementById('data-output');
+    try {
+        const resp = await respPromise;
+        const payload = await resp.json();
+        output.textContent = JSON.stringify(payload, null, 2);
+        await loadDashboard();
+    } catch (error) {
+        output.textContent = String(error);
+    }
+}
+
+async function refreshSimulationState() {
+    const resp = await _fetch('/api/simulate/status');
+    simulationState = await resp.json();
+    renderSimulationState();
+}
+
+function setDbLatency(latencyMs) {
+    updateSimulationOutput(_fetch('/api/simulate/configure', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ db_latency_ms: latencyMs }),
+    }));
+}
+
+function toggleDbLatency() {
+    const nextValue = Number(simulationState.db_latency_ms || 0) > 0 ? 0 : 2500;
+    setDbLatency(nextValue);
+}
+
+function toggleDbDisconnect(forceValue = null) {
+    const nextValue = forceValue === null ? !Boolean(simulationState.db_disconnect) : Boolean(forceValue);
+    updateSimulationOutput(_fetch('/api/simulate/configure', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ db_disconnect: nextValue }),
+    }));
+}
+
+function toggleSlowResponses() {
+    updateSimulationOutput(_fetch('/api/simulate/configure', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ slow_responses: !Boolean(simulationState.slow_responses) }),
+    }));
+}
+
+function setErrorRate(rate) {
+    updateSimulationOutput(_fetch('/api/simulate/configure', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ error_rate: rate }),
+    }));
+}
+
+function resetSimulation() {
+    updateSimulationOutput(_fetch('/api/simulate/reset', { method: 'POST' }));
+}
+
+function loadSlowQuery() {
+    document.getElementById('simulation-output').textContent = 'Running slow query...';
+    updateSimulationOutput(_fetch('/api/dashboard/slow-query?delay=2'));
+}
+
+function loadNPlusOne() {
+    document.getElementById('simulation-output').textContent = 'Running N+1 demo...';
+    updateSimulationOutput(_fetch('/api/dashboard/n-plus-one'));
+}
+
+function runErrorDemo(type) {
+    document.getElementById('simulation-output').textContent = `Running ${type} demo...`;
+    updateSimulationOutput(_fetch(`/api/dashboard/error-demo?error_type=${encodeURIComponent(type)}`));
+}
+
+async function createCustomer(event) {
+    event.preventDefault();
+    const payload = {
+        company: document.getElementById('company-name').value,
+        contact_name: document.getElementById('company-contact').value,
+        email: document.getElementById('company-email').value,
+        industry: document.getElementById('company-industry').value,
+        revenue: Number(document.getElementById('company-revenue').value || 0),
+    };
+    await updateDataOutput(_fetch('/api/dashboard/demo/customer', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+    }));
+}
+
+async function createPresetCustomer() {
+    const suffix = Math.floor(Math.random() * 900 + 100);
+    await updateDataOutput(_fetch('/api/dashboard/demo/customer', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            company: `Northwind Flight Systems ${suffix}`,
+            contact_name: `Jordan ${suffix}`,
+            industry: 'Aerospace',
+            revenue: 8600000,
+        }),
+    }));
+}
+
+async function createOrders(event) {
+    event.preventDefault();
+    const payload = {
+        customer_id: document.getElementById('order-customer').value || null,
+        product_id: document.getElementById('order-product').value || null,
+        count: Number(document.getElementById('order-count').value || 1),
+        quantity: Number(document.getElementById('order-quantity').value || 1),
+        status: document.getElementById('order-status').value,
+        high_value: document.getElementById('order-high-value').checked,
+    };
+    await updateDataOutput(_fetch('/api/dashboard/demo/orders', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+    }));
+}
+
+async function generateQuickOrders(count, status, backlogOnly, highValue = false) {
+    await updateDataOutput(_fetch('/api/dashboard/demo/orders', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            count,
+            quantity: backlogOnly ? 3 : 2,
+            status,
+            high_value: highValue,
+        }),
+    }));
+}
+
+async function syncCustomers() {
+    await updateDataOutput(_fetch('/api/dashboard/demo/sync-customers', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ force: true, limit: 200 }),
+    }));
+}
+
+loadDashboard();
 </script>
 {% endblock %}

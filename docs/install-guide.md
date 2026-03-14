@@ -74,6 +74,8 @@ pytest
 
 Production and OKE deployments require ATP.
 
+Treat ATP creation and wallet download as a hard prerequisite before you deploy the application manifests.
+
 Required environment variables:
 
 ```bash
@@ -95,6 +97,15 @@ Optional helper to ensure/create ATP:
 ```bash
 COMPARTMENT_ID="<database compartment ocid>" DISPLAY_NAME="mushop-cloudnative-atp" DB_NAME="mushopcnatp" ./deploy/oci/ensure_atp.sh
 ```
+
+Recommended OCI-native post-create steps:
+
+```bash
+oci db autonomous-database enable-autonomous-database-management --autonomous-database-id <atp_ocid>
+oci db autonomous-database enable-operations-insights --autonomous-database-id <atp_ocid>
+```
+
+These services improve the drilldown path from APM traces into DB Management and Operations Insights.
 
 ## 5. OCI APM and RUM configuration
 
@@ -126,6 +137,7 @@ Validation steps:
 2. Open `/ready` and verify `apm_configured: true` and `rum_configured: true`.
 3. Open `/shop`, add a product, and complete checkout.
 4. Verify request, DB, checkout, and assistant traces appear in OCI APM.
+5. In Trace Explorer, confirm spans now include page and module attributes such as `app.page.name`, `app.module`, `db.operation`, `db.connection_name`, and request runtime fields.
 
 ## 6. OCI GenAI configuration
 

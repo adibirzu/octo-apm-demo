@@ -13,6 +13,7 @@ from sqlalchemy import text
 
 from server.config import cfg
 from server.database import engine, get_db, init_tables, seed_data, sync_engine
+from server.observability.correlation import runtime_snapshot
 from server.observability.otel_setup import init_otel, get_tracer
 from server.observability.logging_sdk import push_log
 from server.middleware.tracing import TracingMiddleware
@@ -37,11 +38,12 @@ logger = logging.getLogger(__name__)
 
 # ── Pre-initialize OTel ────────────────────────────────────────
 init_otel(
-    service_name=f"{cfg.otel_service_name}-{cfg.app_runtime}",
-    service_version="1.0.0",
+    service_name=cfg.otel_service_name,
+    service_version=cfg.app_version,
     apm_endpoint=cfg.oci_apm_endpoint,
     apm_private_key=cfg.oci_apm_private_datakey,
     sync_engine=sync_engine,
+    async_engine=engine,
 )
 
 
@@ -66,7 +68,7 @@ async def lifespan(app: FastAPI):
         "app.name": cfg.app_name,
         "app.runtime": cfg.app_runtime,
         "app.apm_configured": cfg.apm_configured,
-        "app.db_type": "oracle",
+        "app.db_type": cfg.database_target_label,
     })
     yield
     push_log("INFO", "OCTO-CRM-APM shutting down")
@@ -138,9 +140,10 @@ async def ready():
         return {
             "ready": db_ok,
             "database": "connected" if db_ok else "disconnected",
-            "db_type": "oracle_atp",
+            "db_type": cfg.database_target_label,
             "apm_configured": cfg.apm_configured,
             "rum_configured": cfg.rum_configured,
+            "runtime": runtime_snapshot(),
         }
 
 
@@ -181,6 +184,9 @@ async def list_modules():
 def _render_page(request: Request, page: str, title: str, **ctx):
     if templates is None:
         return HTMLResponse(f"<h1>{title}</h1><p>Templates not configured</p>")
+    request.state.page_name = ctx.get("module") or page
+    request.state.module_name = ctx.get("module") or page
+    request.state.template_name = f"{page}.html"
     return templates.TemplateResponse(
         f"{page}.html",
         {"request": request, "title": title,
