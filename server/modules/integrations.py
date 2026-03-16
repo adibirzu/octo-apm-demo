@@ -179,6 +179,8 @@ async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, sour
     tracer = get_tracer()
     with tracer.start_as_current_span("integration.crm.sync_customers") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
+        span.set_attribute("peer.service", "enterprise-crm-portal")
+        span.set_attribute("component", "http")
         span.set_attribute("integration.sync_source", source)
         span.set_attribute("integration.sync_limit", limit)
         try:
@@ -237,6 +239,8 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
 
     with tracer.start_as_current_span("integration.crm.sync_order") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
+        span.set_attribute("peer.service", "enterprise-crm-portal")
+        span.set_attribute("component", "http")
         span.set_attribute("integration.order_id", order_id)
         span.set_attribute("integration.order_total", total)
         span.set_attribute("integration.order_source", source)
@@ -288,6 +292,8 @@ async def crm_customer_enrichment(customer_id: int, request: Request):
 
     with tracer.start_as_current_span("integration.crm.customer_enrichment") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
+        span.set_attribute("peer.service", "enterprise-crm-portal")
+        span.set_attribute("component", "http")
         span.set_attribute("integration.customer_id", customer_id)
         span.set_attribute("integration.crm_host", cfg.crm_hostname or "configured")
 
@@ -378,6 +384,8 @@ async def crm_ticket_products(ticket_id: int, request: Request):
 
     with tracer.start_as_current_span("integration.crm.ticket_products") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
+        span.set_attribute("peer.service", "enterprise-crm-portal")
+        span.set_attribute("component", "http")
         span.set_attribute("integration.ticket_id", ticket_id)
 
         try:
@@ -426,6 +434,8 @@ async def crm_health():
 
     with tracer.start_as_current_span("integration.crm.health_check") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
+        span.set_attribute("peer.service", "enterprise-crm-portal")
+        span.set_attribute("component", "http")
         span.set_attribute("integration.crm_host", cfg.crm_hostname or "configured")
 
         try:
