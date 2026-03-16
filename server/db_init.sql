@@ -187,10 +187,10 @@ CREATE TABLE IF NOT EXISTS warehouses (
 -- Default users (passwords are bcrypt hashes of the plaintext shown in comments)
 -- admin / admin123  |  user1 / password1  |  viewer / viewer123
 INSERT INTO users (username, email, password_hash, role) VALUES
-    ('admin', 'admin@crm-enterprise.local', '$2b$12$LJ3X5wKv7IfAzGMkVbHDneFQ3KQJXhHjqW/Tq3hXqp6NpXq8vU5Lm', 'admin'),
-    ('user1', 'user1@crm-enterprise.local', '$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'user'),
-    ('manager', 'manager@crm-enterprise.local', '$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'manager'),
-    ('viewer', 'viewer@crm-enterprise.local', '$2b$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'viewer')
+    ('admin', 'admin@crm-enterprise.local', '$2b$12$QbLKByNORy6wzKQezx/oVeCrN3FM/Et84lcTnzyT8MpMaDF0edJZO', 'admin'),
+    ('user1', 'user1@crm-enterprise.local', '$2b$12$xpSaTDtKv.151u3S6sdtnODYM10tmPB0WtU.IzK2N.O2nR6DN8nOC', 'user'),
+    ('manager', 'manager@crm-enterprise.local', '$2b$12$OZxWwmIVi9GmuK3ufTu8/Ok3Taxg.WuROnhXuBQj2SC/36.lzbjE.', 'manager'),
+    ('viewer', 'viewer@crm-enterprise.local', '$2b$12$489tW2MVycVEyyf77oFG/ePNja48qf8IsXP80yFnzlP9PQ4lCUeTS', 'viewer')
 ON CONFLICT DO NOTHING;
 
 -- Customers

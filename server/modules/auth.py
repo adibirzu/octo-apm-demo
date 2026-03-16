@@ -31,8 +31,7 @@ from server.database import get_db
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 tracer_fn = get_tracer
 
-# In-memory session store (intentionally insecure — no server-side validation)
-_sessions: dict[str, dict] = {}
+# DB-backed session store — shared across all OKE replicas via ATP
 _login_attempts: dict[str, list[float]] = {}
 import hmac
 
@@ -89,16 +88,16 @@ async def login(req: LoginRequest, request: Request, response: Response):
                     span.set_attribute("auth.result", "invalid_password")
                     return {"error": "Invalid password", "status": "failed"}  # VULN: enumeration
 
-            # Create session — VULN: predictable session ID
+            # Create session in ATP — shared across all OKE replicas
             session_id = hashlib.md5(f"{user.username}{time.time()}".encode()).hexdigest()
-            _sessions[session_id] = {
-                "user_id": user.id,
-                "username": user.username,
-                "role": user.role,
-                "created_at": time.time(),
-            }
+            await db.execute(
+                text(
+                    "INSERT INTO user_sessions (session_id, user_id, username, role, auth_method) "
+                    "VALUES (:sid, :uid, :uname, :role, 'password')"
+                ),
+                {"sid": session_id, "uid": user.id, "uname": user.username, "role": user.role},
+            )
 
-            # VULN: Session fixation — sets cookie without regeneration
             response.set_cookie("session_id", session_id, httponly=False, samesite="none")
 
             push_log("INFO", f"User {req.username} logged in", **{
@@ -148,26 +147,66 @@ async def register(req: RegisterRequest, request: Request):
 
 @router.get("/session")
 async def get_session(request: Request):
-    """Return session info — VULN: no server-side session validation."""
+    """Return session info from ATP database."""
     session_id = request.cookies.get("session_id") or request.query_params.get("session_id", "")
-    session = _sessions.get(session_id)
-    if not session:
+    if not session_id:
         return {"authenticated": False}
-    return {"authenticated": True, **session}
+    async with get_db() as db:
+        result = await db.execute(
+            text("SELECT user_id, username, role, auth_method FROM user_sessions WHERE session_id = :sid"),
+            {"sid": session_id},
+        )
+        row = result.mappings().first()
+    if not row:
+        return {"authenticated": False}
+    return {"authenticated": True, "user_id": row["user_id"], "username": row["username"], "role": row["role"]}
 
 
 @router.post("/logout")
 async def logout(request: Request, response: Response):
     session_id = request.cookies.get("session_id", "")
-    _sessions.pop(session_id, None)
+    if session_id:
+        async with get_db() as db:
+            await db.execute(text("DELETE FROM user_sessions WHERE session_id = :sid"), {"sid": session_id})
     response.delete_cookie("session_id")
     return {"status": "logged_out"}
 
 
+_session_cache: dict[str, tuple[float, dict]] = {}
+_SESSION_CACHE_TTL = 30  # seconds — keeps DB queries low while staying fresh across replicas
+
+
 def get_current_user(request: Request) -> dict | None:
-    """Helper to extract current user from session."""
+    """Look up session in local cache, then fall back to ATP database."""
     session_id = request.cookies.get("session_id") or request.headers.get("x-session-id", "")
-    return _sessions.get(session_id)
+    if not session_id:
+        return None
+
+    # Check local cache first
+    cached = _session_cache.get(session_id)
+    if cached:
+        ts, user_data = cached
+        if time.time() - ts < _SESSION_CACHE_TTL:
+            return user_data
+
+    # Synchronous DB lookup (called from sync middleware context)
+    try:
+        from server.database import sync_engine
+        from sqlalchemy import text as sa_text
+        with sync_engine.connect() as conn:
+            row = conn.execute(
+                sa_text("SELECT user_id, username, role FROM user_sessions WHERE session_id = :sid"),
+                {"sid": session_id},
+            ).mappings().first()
+        if row:
+            user_data = {"user_id": row["user_id"], "username": row["username"], "role": row["role"]}
+            _session_cache[session_id] = (time.time(), user_data)
+            return user_data
+    except Exception:
+        pass
+
+    _session_cache.pop(session_id, None)
+    return None
 
 
 def _check_bcrypt(password: str, hash_str: str) -> bool:
@@ -313,15 +352,16 @@ async def sso_callback(request: Request, code: str = "", state: str = "", error:
                     "auth.email": email,
                 })
 
-        # Create session (same format as local login)
+        # Create session in ATP (shared across all OKE replicas)
         session_id = hashlib.md5(f"{user.username}{time.time()}".encode()).hexdigest()
-        _sessions[session_id] = {
-            "user_id": user.id,
-            "username": user.username,
-            "role": user.role,
-            "created_at": time.time(),
-            "auth_method": "sso",
-        }
+        async with get_db() as sess_db:
+            await sess_db.execute(
+                text(
+                    "INSERT INTO user_sessions (session_id, user_id, username, role, auth_method) "
+                    "VALUES (:sid, :uid, :uname, :role, 'sso')"
+                ),
+                {"sid": session_id, "uid": user.id, "uname": user.username, "role": user.role},
+            )
 
         push_log("INFO", f"SSO login: {user.username}", **{
             "auth.username": user.username,

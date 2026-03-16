@@ -186,6 +186,17 @@ class User(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    session_id = Column(String(64), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, nullable=False)
+    username = Column(String(100), nullable=False)
+    role = Column(String(50), nullable=False)
+    auth_method = Column(String(30), default="password")
+    created_at = Column(DateTime, server_default=func.now())
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     id = Column(Integer, Identity(always=False), primary_key=True)
