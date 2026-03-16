@@ -57,7 +57,9 @@ class Config:
     # ── Splunk HEC ──
     splunk_hec_url = os.getenv("SPLUNK_HEC_URL", "")
     splunk_hec_token = os.getenv("SPLUNK_HEC_TOKEN", "")
-    otlp_log_export_enabled = os.getenv("OTLP_LOG_EXPORT_ENABLED", "true").lower() in ("1", "true", "yes")
+    # OCI APM does not support OTLP log ingestion — logs go via OCI Logging SDK.
+    # Set to "true" only if a third-party OTLP log collector is configured.
+    otlp_log_export_enabled = os.getenv("OTLP_LOG_EXPORT_ENABLED", "false").lower() in ("1", "true", "yes")
 
     @property
     def is_production(self) -> bool:

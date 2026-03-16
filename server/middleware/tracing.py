@@ -30,6 +30,7 @@ class TracingMiddleware(BaseHTTPMiddleware):
             apply_span_attributes(
                 span,
                 {
+                    "component": "fastapi",
                     "http.method": request.method,
                     "http.url.path": request.url.path,
                     "url.full": str(request.url),
