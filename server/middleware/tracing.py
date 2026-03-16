@@ -27,6 +27,7 @@ class TracingMiddleware(BaseHTTPMiddleware):
         request_id = request.headers.get("x-correlation-id", "")
 
         with tracer.start_as_current_span("middleware.entry") as entry_span:
+            entry_span.set_attribute("component", "fastapi")
             entry_span.set_attribute("http.client_ip", client_ip)
             entry_span.set_attribute("http.user_agent", request.headers.get("user-agent", ""))
             entry_span.set_attribute("http.url.path", request.url.path)

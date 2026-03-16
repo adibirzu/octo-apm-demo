@@ -51,6 +51,11 @@ logger.info("Using Oracle ATP backend (DSN: %s)", cfg.oracle_dsn)
 
 async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
+# Enrich every DB query with db.statement + db.oracle.sql_id for APM Trace Explorer
+from server.observability.db_spans import register_db_span_events
+register_db_span_events(engine)
+register_db_span_events(sync_engine)
+
 
 @asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

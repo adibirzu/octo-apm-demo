@@ -1,4 +1,4 @@
-"""Helpers for trace/log correlation and shared service metadata."""
+"""Helpers for trace/log correlation, topology enrichment, and shared service metadata."""
 
 from __future__ import annotations
 
@@ -66,3 +66,18 @@ def outbound_headers(correlation_id: str = "") -> dict[str, str]:
     if trace_ctx["traceparent"]:
         headers["traceparent"] = trace_ctx["traceparent"]
     return headers
+
+
+def set_peer_service(span: trace.Span, target_service: str, target_url: str = ""):
+    """Set peer.service and related attributes on a span for APM topology rendering.
+
+    OCI APM uses peer.service to draw edges between services in the topology view.
+    Without this, outbound calls appear as internal spans with no topology edges.
+    """
+    if not span or not span.is_recording():
+        return
+    span.set_attribute("peer.service", target_service)
+    span.set_attribute("component", "http")
+    if target_url:
+        span.set_attribute("server.address", target_url)
+    span.set_attribute("http.request.source_service", cfg.otel_service_name)

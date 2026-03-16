@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Request
+from opentelemetry import trace
 
 from server.config import cfg
 from server.observability.correlation import (
@@ -15,6 +16,7 @@ from server.observability.correlation import (
     current_trace_context,
     outbound_headers,
     service_metadata,
+    set_peer_service,
 )
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
@@ -31,21 +33,28 @@ def _service_name_from_url(url: str) -> str:
     return host.split(":")[0]
 
 
+def _dns_url(subdomain: str) -> str:
+    """Return https://<subdomain>.<domain> if DNS_DOMAIN is set, else empty."""
+    if cfg.dns_domain:
+        return f"https://{subdomain}.{cfg.dns_domain}"
+    return ""
+
+
 def _configured_dependencies() -> list[dict]:
     return [
         {
-            "name": "mushop-cloudnative",
-            "display_name": "MuShop Cloud Native",
+            "name": "drone-shop-portal",
+            "display_name": "Drone Shop Portal",
             "type": "application",
-            "url": cfg.mushop_cloudnative_url or cfg.octo_apm_cloudnative_url,
+            "url": _dns_url("shop") or cfg.octo_drone_shop_url or cfg.mushop_cloudnative_url or cfg.octo_apm_cloudnative_url,
             "health_paths": ["/health", "/ready"],
             "drilldown_product": "APM",
         },
         {
-            "name": "octo-drone-shop",
-            "display_name": "OCTO Drone Shop",
+            "name": "seven-kingdoms-portal",
+            "display_name": "Seven Kingdoms Portal",
             "type": "application",
-            "url": external_orders_base_url(),
+            "url": _dns_url("portal") or cfg.c22_skp_url,
             "health_paths": ["/health", "/ready"],
             "drilldown_product": "APM / Log Analytics",
         },
@@ -53,7 +62,7 @@ def _configured_dependencies() -> list[dict]:
             "name": "oci-demo-control-plane",
             "display_name": "OCI-DEMO Control Plane",
             "type": "backend",
-            "url": cfg.oci_demo_control_plane_url,
+            "url": _dns_url("cp") or cfg.oci_demo_control_plane_url,
             "health_paths": ["/health", "/api/health", "/ready"],
             "drilldown_product": "APM",
         },
@@ -61,7 +70,7 @@ def _configured_dependencies() -> list[dict]:
             "name": "oci-demo-backend",
             "display_name": "OCI-DEMO Backends",
             "type": "backend",
-            "url": cfg.oci_demo_backend_url,
+            "url": cfg.oci_demo_backend_url or _dns_url("cp"),
             "health_paths": ["/health", "/api/health", "/ready"],
             "drilldown_product": "Log Analytics",
         },
@@ -108,6 +117,7 @@ async def _dependency_health(dep: dict, correlation_id: str) -> dict:
     with tracer.start_as_current_span(f"integration.health.{dep['name']}") as span:
         span.set_attribute("integration.target_service", dep["name"])
         span.set_attribute("integration.target_url", url)
+        set_peer_service(span, dep["name"], url)
         try:
             async with httpx.AsyncClient(timeout=5.0, headers=outbound_headers(correlation_id)) as client:
                 for path in dep.get("health_paths", ["/health"]):
@@ -128,8 +138,11 @@ async def _dependency_health(dep: dict, correlation_id: str) -> dict:
             return result
 
 
-async def _get_json(url: str, path: str, correlation_id: str, timeout: float = 10.0) -> httpx.Response:
+async def _get_json(url: str, path: str, correlation_id: str, timeout: float = 10.0, peer: str = "") -> httpx.Response:
     headers = outbound_headers(correlation_id)
+    if peer:
+        span = trace.get_current_span()
+        set_peer_service(span, peer, url)
     async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
         return await client.get(f"{url.rstrip('/')}{path}")
 
@@ -169,7 +182,7 @@ def _status_payload(request: Optional[Request], dependencies: list[dict]) -> dic
 
 
 def _mushop_url() -> str:
-    return cfg.mushop_cloudnative_url or cfg.octo_apm_cloudnative_url
+    return cfg.octo_drone_shop_url or cfg.mushop_cloudnative_url or cfg.octo_apm_cloudnative_url
 
 
 def _order_source_url() -> str:
@@ -189,6 +202,7 @@ async def mushop_product_catalog(category: str = "", request: Request = None):
         span.set_attribute("integration.target_service", "mushop-cloudnative")
         span.set_attribute("integration.category", category)
         span.set_attribute("integration.mushop_url", mushop)
+        set_peer_service(span, "drone-shop-portal", mushop)
         try:
             params = {"category": category} if category else {}
             async with httpx.AsyncClient(timeout=10.0, headers=outbound_headers(correlation_id)) as client:
@@ -226,6 +240,7 @@ async def mushop_order_history(customer_email: str = "", request: Request = None
     with tracer.start_as_current_span("integration.mushop.order_history") as span:
         span.set_attribute("integration.target_service", "mushop-cloudnative")
         span.set_attribute("integration.customer_email", customer_email)
+        set_peer_service(span, "drone-shop-portal", mushop)
         try:
             response = await _get_json(mushop, "/api/orders", correlation_id)
             span.set_attribute("integration.mushop.status_code", response.status_code)
@@ -261,6 +276,7 @@ async def mushop_recommend_products(payload: dict, request: Request):
         customer_id = payload.get("customer_id")
         span.set_attribute("integration.ticket_id", ticket_id or 0)
         span.set_attribute("integration.customer_id", customer_id or 0)
+        set_peer_service(span, "drone-shop-portal", mushop)
         try:
             response = await _get_json(mushop, "/api/shop/featured", correlation_id)
             span.set_attribute("integration.mushop.status_code", response.status_code)
@@ -343,12 +359,19 @@ async def console_connections(request: Request):
     if not cp_url:
         return {"connections": [], "error": "Control Plane not configured"}
 
+    tracer = get_tracer()
+    correlation_id = build_correlation_id(getattr(getattr(request, "state", None), "correlation_id", ""))
+
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(f"{cp_url.rstrip('/')}/api/guacamole/connections")
-            if resp.status_code != 200:
-                return {"connections": [], "error": f"Control Plane returned {resp.status_code}"}
-            data = resp.json()
+        with tracer.start_as_current_span("integration.control_plane.guacamole") as span:
+            set_peer_service(span, "oci-demo-control-plane", cp_url)
+            span.set_attribute("integration.target_service", "oci-demo-control-plane")
+            async with httpx.AsyncClient(timeout=10.0, headers=outbound_headers(correlation_id)) as client:
+                resp = await client.get(f"{cp_url.rstrip('/')}/api/guacamole/connections")
+                span.set_attribute("http.status_code", resp.status_code)
+                if resp.status_code != 200:
+                    return {"connections": [], "error": f"Control Plane returned {resp.status_code}"}
+                data = resp.json()
     except Exception as exc:
         return {"connections": [], "error": str(exc)}
 

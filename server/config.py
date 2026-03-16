@@ -22,6 +22,17 @@ def _env_int(key: str, default: int = 0) -> int:
         return default
 
 
+def _auto_redirect_uri() -> str:
+    """Derive SSO callback URI from DNS_DOMAIN or CRM_BASE_URL."""
+    dns = os.getenv("DNS_DOMAIN", "")
+    if dns:
+        return f"https://crm.{dns}/api/auth/sso/callback"
+    base = os.getenv("CRM_BASE_URL", "")
+    if base:
+        return f"{base.rstrip('/')}/api/auth/sso/callback"
+    return "http://localhost:8080/api/auth/sso/callback"
+
+
 @dataclass(frozen=True)
 class Config:
     # Application
@@ -54,7 +65,8 @@ class Config:
     oci_apm_private_datakey: str = field(default_factory=lambda: _env("OCI_APM_PRIVATE_DATAKEY"))
     oci_apm_public_datakey: str = field(default_factory=lambda: _env("OCI_APM_PUBLIC_DATAKEY"))
     otel_service_name: str = field(default_factory=lambda: _env("OTEL_SERVICE_NAME", "enterprise-crm-portal"))
-    otlp_log_export_enabled: bool = field(default_factory=lambda: _env_bool("OTLP_LOG_EXPORT_ENABLED", True))
+    # OCI APM does not support OTLP log ingestion — logs go via OCI Logging SDK.
+    otlp_log_export_enabled: bool = field(default_factory=lambda: _env_bool("OTLP_LOG_EXPORT_ENABLED", False))
 
     # OCI APM RUM
     oci_apm_rum_endpoint: str = field(default_factory=lambda: _env("OCI_APM_RUM_ENDPOINT"))
@@ -79,6 +91,7 @@ class Config:
     db_management_console_url: str = field(default_factory=lambda: _env("DB_MANAGEMENT_CONSOLE_URL"))
     log_analytics_console_url: str = field(default_factory=lambda: _env("LOG_ANALYTICS_CONSOLE_URL"))
     apm_console_url: str = field(default_factory=lambda: _env("APM_CONSOLE_URL"))
+    c22_skp_url: str = field(default_factory=lambda: _env("C22_SKP_URL", _env("C22_URL")))
     external_orders_url: str = field(default_factory=lambda: _env("EXTERNAL_ORDERS_URL", _env("OCTO_DRONE_SHOP_URL", _env("MUSHOP_CLOUDNATIVE_URL", _env("C28_MUSHOP_URL")))))
     external_orders_path: str = field(default_factory=lambda: _env("EXTERNAL_ORDERS_PATH", "/api/orders"))
     orders_sync_enabled: bool = field(default_factory=lambda: _env_bool("ORDERS_SYNC_ENABLED", True))
@@ -96,7 +109,8 @@ class Config:
     idcs_domain_url: str = field(default_factory=lambda: _env("IDCS_DOMAIN_URL"))
     idcs_client_id: str = field(default_factory=lambda: _env("IDCS_CLIENT_ID"))
     idcs_client_secret: str = field(default_factory=lambda: _env("IDCS_CLIENT_SECRET"))
-    idcs_redirect_uri: str = field(default_factory=lambda: _env("IDCS_REDIRECT_URI", "http://localhost:8080/api/auth/sso/callback"))
+    idcs_redirect_uri: str = field(default_factory=lambda: _env("IDCS_REDIRECT_URI") or _auto_redirect_uri())
+    dns_domain: str = field(default_factory=lambda: _env("DNS_DOMAIN"))
 
     # Chaos / Issue simulation
     simulate_db_latency: bool = field(default_factory=lambda: _env_bool("SIMULATE_DB_LATENCY"))

@@ -63,9 +63,16 @@ def init_otel(app=None, sync_engine=None):
         except Exception:
             logger.debug("SQLAlchemy instrumentation already active", exc_info=True)
 
-    # Auto-instrument outbound HTTP calls
+    # Auto-instrument outbound HTTP calls with peer.service enrichment for topology
+    def _httpx_request_hook(span, request):
+        """Enrich HTTPX client spans with peer.service for APM topology."""
+        if span and span.is_recording() and request:
+            host = request.url.host or ""
+            span.set_attribute("peer.service", host)
+            span.set_attribute("server.address", host)
+
     try:
-        HTTPXClientInstrumentor().instrument()
+        HTTPXClientInstrumentor().instrument(request_hook=_httpx_request_hook)
     except Exception:
         logger.debug("HTTPX instrumentation already active", exc_info=True)
 

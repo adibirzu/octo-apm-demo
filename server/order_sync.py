@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from server.config import cfg
 from server.database import Customer, Order, OrderItem, OrderSyncAudit, Product, async_session_factory
-from server.observability.correlation import build_correlation_id, current_trace_context, outbound_headers
+from server.observability.correlation import build_correlation_id, current_trace_context, outbound_headers, set_peer_service
 from server.observability.logging_sdk import log_security_event, push_log
 from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
@@ -42,6 +42,8 @@ async def sync_external_orders(correlation_id: str = "", limit: int = 200) -> di
     with tracer.start_as_current_span("orders.sync.external") as span:
         span.set_attribute("orders.sync.source", cfg.orders_sync_source_name)
         span.set_attribute("orders.sync.url", base_url)
+        set_peer_service(span, cfg.orders_sync_source_name, base_url)
+        span.set_attribute("component", "http")
         try:
             orders = await _fetch_external_orders(base_url, correlation_id, limit)
         except Exception as exc:

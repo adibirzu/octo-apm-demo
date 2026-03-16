@@ -26,6 +26,7 @@ from server.observability.logging_sdk import push_log
 from server.middleware.tracing import TracingMiddleware
 from server.middleware.chaos import ChaosMiddleware
 from server.middleware.geo_latency import GeoLatencyMiddleware
+from server.middleware.session_gate import SessionGateMiddleware
 from server.order_sync import sync_external_orders
 
 # Module routers
@@ -115,6 +116,7 @@ app.add_middleware(CORSMiddleware,
     allow_headers=["*"], allow_credentials=True)
 app.add_middleware(GeoLatencyMiddleware)
 app.add_middleware(ChaosMiddleware)
+app.add_middleware(SessionGateMiddleware)
 app.add_middleware(TracingMiddleware)
 
 # ── Mount static files and templates ─────────────────────────────
@@ -176,7 +178,7 @@ async def list_modules():
             {"name": "dashboard", "label": "Dashboard", "endpoints": 4, "related_to": ["customers", "orders", "invoices", "tickets"]},
             {"name": "simulation", "label": "Simulation", "endpoints": 5, "related_to": ["dashboard"]},
             {"name": "integrations", "label": "Integrations", "endpoints": 6,
-             "related_to": ["customers", "orders", "mushop-cloudnative"],
+             "related_to": ["customers", "orders", "drone-shop-portal"],
              "cross_service": True},
         ],
         "total_modules": 16,
