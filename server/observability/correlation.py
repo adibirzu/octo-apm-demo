@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from urllib.parse import urlparse
 
 from opentelemetry import trace
 
@@ -79,5 +80,6 @@ def set_peer_service(span: trace.Span, target_service: str, target_url: str = ""
     span.set_attribute("peer.service", target_service)
     span.set_attribute("component", "http")
     if target_url:
-        span.set_attribute("server.address", target_url)
+        parsed = urlparse(target_url)
+        span.set_attribute("server.address", parsed.hostname or parsed.netloc or target_url)
     span.set_attribute("http.request.source_service", cfg.otel_service_name)
