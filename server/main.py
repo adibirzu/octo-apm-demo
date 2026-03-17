@@ -86,9 +86,13 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 FastAPIInstrumentor.instrument_app(app)
 
 # ── Middleware (outermost first) ──────────────────────────────
+_cors_origins = [
+    o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "https://shop.octodemo.cloud,https://crm.octodemo.cloud").split(",") if o.strip()
+] or ["*"]
 app.add_middleware(CORSMiddleware,
-    allow_origins=["*"], allow_methods=["*"],
-    allow_headers=["*"], allow_credentials=True)
+    allow_origins=_cors_origins, allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Correlation-Id", "X-Session-Id"],
+    allow_credentials=True)
 app.add_middleware(GeoLatencyMiddleware)
 app.add_middleware(ChaosMiddleware)
 app.add_middleware(TracingMiddleware)
