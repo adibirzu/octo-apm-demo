@@ -98,7 +98,7 @@ async def login(req: LoginRequest, request: Request, response: Response):
                 {"sid": session_id, "uid": user.id, "uname": user.username, "role": user.role},
             )
 
-            response.set_cookie("session_id", session_id, httponly=False, samesite="none")
+            response.set_cookie("session_id", session_id, httponly=False, samesite="none", secure=True)
 
             push_log("INFO", f"User {req.username} logged in", **{
                 "auth.username": req.username,
