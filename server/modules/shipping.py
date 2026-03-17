@@ -1,7 +1,4 @@
-"""Shipping module — shipments, warehouses, geo-latency.
-
-VULNS: No auth on status update, no input validation
-"""
+"""Shipping module — shipments, warehouses, geo-latency."""
 
 import asyncio
 import random
@@ -9,7 +6,6 @@ from fastapi import APIRouter, Request
 from sqlalchemy import text
 from server.database import get_db
 from server.observability.otel_setup import get_tracer
-from server.observability.security_spans import security_span
 
 router = APIRouter(prefix="/api", tags=["shipping"])
 
@@ -20,6 +16,8 @@ REGION_SHIPPING_DELAY_MS = {
     "ap-southeast-2": 1000,
 }
 
+_VALID_STATUSES = {"processing", "shipped", "in_transit", "delivered", "returned", "cancelled"}
+
 
 @router.get("/shipping")
 async def list_shipments():
@@ -29,7 +27,8 @@ async def list_shipments():
         async with get_db() as db:
             result = await db.execute(
                 text("SELECT id, order_id, tracking_number, carrier, status, "
-                     "origin_region, destination_region, shipping_cost, created_at "
+                     "origin_region, destination_region, weight_kg, shipping_cost, "
+                     "estimated_delivery, actual_delivery, created_at "
                      "FROM shipments ORDER BY created_at DESC")
             )
             shipments = [dict(r) for r in result.mappings().all()]
@@ -38,8 +37,8 @@ async def list_shipments():
 
 
 @router.get("/shipping/{shipment_id}")
-async def get_shipment(shipment_id: int, request: Request):
-    """Get shipment with tracking — VULN: IDOR."""
+async def get_shipment(shipment_id: int):
+    """Get shipment with tracking details."""
     async with get_db() as db:
         result = await db.execute(
             text("SELECT * FROM shipments WHERE id = :id"), {"id": shipment_id}
@@ -47,18 +46,25 @@ async def get_shipment(shipment_id: int, request: Request):
         shipment = result.mappings().first()
 
     if not shipment:
-        security_span("idor", severity="low", payload=str(shipment_id),
-                      source_ip=request.client.host if request.client else "",
-                      endpoint=f"/api/shipping/{shipment_id}")
         return {"error": "Shipment not found"}
     return dict(shipment)
 
 
 @router.post("/shipping/{shipment_id}/status")
-async def update_status(shipment_id: int, payload: dict, request: Request):
-    """Update shipment status — VULN: No authentication."""
-    new_status = payload.get("status", "")
+async def update_status(shipment_id: int, payload: dict):
+    """Update shipment status with validation."""
+    new_status = str(payload.get("status", "")).strip().lower()
+    if new_status not in _VALID_STATUSES:
+        return {"error": f"Invalid status. Must be one of: {', '.join(sorted(_VALID_STATUSES))}"}
+
     async with get_db() as db:
+        # Verify shipment exists
+        exists = await db.execute(
+            text("SELECT id FROM shipments WHERE id = :id"), {"id": shipment_id}
+        )
+        if not exists.first():
+            return {"error": "Shipment not found"}
+
         await db.execute(
             text("UPDATE shipments SET status = :status WHERE id = :id"),
             {"status": new_status, "id": shipment_id},

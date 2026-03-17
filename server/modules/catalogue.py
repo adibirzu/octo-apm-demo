@@ -1,26 +1,26 @@
-"""Catalogue module — products, categories, search, reviews.
+"""Catalogue module — products, categories, search, reviews."""
 
-VULNS: SQLi (search), XSS (reviews), IDOR (product detail)
-"""
+import html
+import re
 
 from fastapi import APIRouter, Request, Query
 from sqlalchemy import text
 from server.database import get_db
 from server.observability.correlation import apply_span_attributes, sql_attributes
 from server.observability.otel_setup import get_tracer
-from server.observability.security_spans import security_span
 from server.storefront import enrich_product
 
 router = APIRouter(prefix="/api", tags=["catalogue"])
+
+_ALLOWED_SORT = {"name", "price", "stock", "category", "created_at", "id"}
 
 
 @router.get("/products")
 async def list_products(request: Request,
                         search: str = "", category: str = "",
                         sort_by: str = "name"):
-    """List products — VULN: SQL injection in search and sort_by."""
+    """List products with safe parameterized filtering."""
     tracer = get_tracer()
-    source_ip = request.client.host if request.client else "unknown"
 
     with tracer.start_as_current_span("catalogue.list_products") as span:
         apply_span_attributes(span, {
@@ -31,26 +31,30 @@ async def list_products(request: Request,
             "app.logical_endpoint": "catalogue.list_products",
         })
 
-        async with get_db() as db:
-            # VULN: SQL injection in search parameter
-            where = "WHERE is_active = 1"
-            if search:
-                where += f" AND (name LIKE '%{search}%' OR description LIKE '%{search}%')"
-                if any(c in search for c in ["'", ";", "--", "UNION"]):
-                    security_span("sqli", severity="high", payload=search,
-                                  source_ip=source_ip, endpoint="/api/products")
-            if category:
-                where += f" AND category = '{category}'"
+        # Validate sort column against whitelist
+        safe_sort = sort_by if sort_by in _ALLOWED_SORT else "name"
 
-            # VULN: SQL injection in sort_by
-            query = f"SELECT id, name, sku, description, price, stock, category, image_url FROM products {where} ORDER BY {sort_by}"
-            if sort_by not in ("name", "price", "stock", "category"):
-                security_span("sqli", severity="medium", payload=sort_by,
-                              source_ip=source_ip, endpoint="/api/products")
+        async with get_db() as db:
+            conditions = ["is_active = 1"]
+            params: dict = {}
+
+            if search:
+                conditions.append("(name LIKE :search OR description LIKE :search)")
+                params["search"] = f"%{search}%"
+
+            if category:
+                conditions.append("category = :category")
+                params["category"] = category
+
+            where = " AND ".join(conditions)
+            query = (
+                f"SELECT id, name, sku, description, price, stock, category, image_url "
+                f"FROM products WHERE {where} ORDER BY {safe_sort}"
+            )
 
             with tracer.start_as_current_span("db.query.products") as db_span:
                 apply_span_attributes(db_span, sql_attributes(query, connection_name="", database_target="oracle_atp"))
-                result = await db.execute(text(query))
+                result = await db.execute(text(query), params)
                 products = [enrich_product(dict(r)) for r in result.mappings().all()]
                 db_span.set_attribute("db.row_count", len(products))
 
@@ -59,7 +63,7 @@ async def list_products(request: Request,
 
 @router.get("/products/{product_id}")
 async def get_product(product_id: int, request: Request):
-    """Get single product — VULN: IDOR (no ownership check)."""
+    """Get single product by ID."""
     tracer = get_tracer()
     with tracer.start_as_current_span("catalogue.get_product") as span:
         apply_span_attributes(span, {
@@ -76,13 +80,7 @@ async def get_product(product_id: int, request: Request):
             product = result.mappings().first()
 
         if not product:
-            # VULN: IDOR — can enumerate product IDs
-            security_span("idor", severity="low",
-                          payload=str(product_id),
-                          source_ip=request.client.host if request.client else "",
-                          endpoint=f"/api/products/{product_id}",
-                          product_id=product_id)
-            return {"error": "Product not found", "requested_id": product_id}
+            return {"error": "Product not found"}
 
         return enrich_product(dict(product))
 
@@ -119,11 +117,16 @@ async def get_reviews(product_id: int):
         return {"reviews": reviews, "count": len(reviews)}
 
 
+def _sanitize_html(text_input: str) -> str:
+    """Strip HTML tags and escape remaining content."""
+    stripped = re.sub(r"<[^>]+>", "", text_input)
+    return html.escape(stripped, quote=True)
+
+
 @router.post("/products/{product_id}/reviews")
 async def create_review(product_id: int, payload: dict, request: Request):
-    """Create review — VULN: Stored XSS in comment, no auth required."""
+    """Create product review with input sanitization."""
     tracer = get_tracer()
-    source_ip = request.client.host if request.client else "unknown"
 
     with tracer.start_as_current_span("catalogue.create_review") as span:
         apply_span_attributes(span, {
@@ -132,17 +135,20 @@ async def create_review(product_id: int, payload: dict, request: Request):
             "app.module": "catalogue",
             "app.logical_endpoint": "catalogue.create_review",
         })
-        comment = payload.get("comment", "")
-        author = payload.get("author_name", "Anonymous")
-        rating = payload.get("rating", 5)
 
-        # VULN: No HTML sanitization — stored XSS
-        if "<script" in comment.lower() or "onerror" in comment.lower():
-            security_span("xss", severity="high", payload=comment,
-                          source_ip=source_ip, endpoint=f"/api/products/{product_id}/reviews",
-                          product_id=product_id)
+        comment = _sanitize_html(str(payload.get("comment", "")))
+        author = _sanitize_html(str(payload.get("author_name", "Anonymous")))[:100]
+        rating = max(1, min(5, int(payload.get("rating", 5) or 5)))
 
         async with get_db() as db:
+            # Verify product exists
+            exists = await db.execute(
+                text("SELECT id FROM products WHERE id = :pid AND is_active = 1"),
+                {"pid": product_id},
+            )
+            if not exists.first():
+                return {"error": "Product not found"}
+
             await db.execute(
                 text("INSERT INTO reviews (product_id, rating, comment, author_name) "
                      "VALUES (:pid, :rating, :review_comment, :author)"),

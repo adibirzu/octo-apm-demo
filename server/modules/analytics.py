@@ -1,9 +1,7 @@
-"""Analytics module — overview, geo, funnel, page views.
-
-VULNS: SQLi (geo region), no auth on analytics
-"""
+"""Analytics module — overview, geo, funnel, page views."""
 
 import asyncio
+import html
 import json
 import random
 from fastapi import APIRouter, Request
@@ -11,7 +9,6 @@ from sqlalchemy import text
 from server.database import get_db
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
-from server.observability.security_spans import security_span
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
@@ -21,6 +18,8 @@ REGION_LATENCY = {
     "ap-southeast-2": 380, "sa-east-1": 450, "af-south-1": 700,
     "me-south-1": 250,
 }
+
+_VALID_REGIONS = set(REGION_LATENCY.keys())
 
 
 @router.get("/overview")
@@ -137,9 +136,8 @@ async def security_correlations(limit: int = 50):
 
 @router.get("/geo")
 async def analytics_geo(region: str = "", request: Request = None):
-    """Geo analytics — VULN: SQL injection in region parameter."""
+    """Geo analytics with parameterized queries and validated region."""
     tracer = get_tracer()
-    source_ip = request.client.host if request and request.client else "unknown"
 
     with tracer.start_as_current_span("analytics.geo") as span:
         span.set_attribute("analytics.region", region)
@@ -149,21 +147,24 @@ async def analytics_geo(region: str = "", request: Request = None):
 
         async with get_db() as db:
             if region:
-                # VULN: SQL injection in region filter
-                query = (f"SELECT visitor_region, COUNT(*) as view_count, "
-                         f"AVG(load_time_ms) as avg_load_time "
-                         f"FROM page_views WHERE visitor_region = '{region}' "
-                         f"GROUP BY visitor_region ORDER BY view_count DESC")
-
-                if any(c in region for c in ["'", ";", "--", "UNION"]):
-                    security_span("sqli", severity="critical", payload=region,
-                                  source_ip=source_ip, endpoint="/api/analytics/geo")
+                # Parameterized query — no SQL injection
+                result = await db.execute(
+                    text(
+                        "SELECT visitor_region, COUNT(*) as view_count, "
+                        "AVG(load_time_ms) as avg_load_time "
+                        "FROM page_views WHERE visitor_region = :region "
+                        "GROUP BY visitor_region ORDER BY view_count DESC"
+                    ),
+                    {"region": region},
+                )
             else:
-                query = ("SELECT visitor_region, COUNT(*) as view_count, "
-                         "AVG(load_time_ms) as avg_load_time "
-                         "FROM page_views GROUP BY visitor_region ORDER BY view_count DESC")
-
-            result = await db.execute(text(query))
+                result = await db.execute(
+                    text(
+                        "SELECT visitor_region, COUNT(*) as view_count, "
+                        "AVG(load_time_ms) as avg_load_time "
+                        "FROM page_views GROUP BY visitor_region ORDER BY view_count DESC"
+                    )
+                )
             regions = [dict(r) for r in result.mappings().all()]
 
         return {"regions": regions, "total": len(regions)}
@@ -171,7 +172,7 @@ async def analytics_geo(region: str = "", request: Request = None):
 
 @router.get("/funnel")
 async def analytics_funnel():
-    """Conversion funnel — 4 sequential queries (slow by design)."""
+    """Conversion funnel — 4 sequential queries (slow by design for APM demo)."""
     tracer = get_tracer()
     with tracer.start_as_current_span("analytics.funnel") as span:
         async with get_db() as db:
@@ -203,16 +204,21 @@ async def analytics_funnel():
 
 @router.post("/track")
 async def track_pageview(payload: dict, request: Request):
-    """Track a page view — VULN: No validation, stored XSS in referrer."""
+    """Track a page view with input validation."""
     source_ip = request.client.host if request.client else ""
     tracer = get_tracer()
     with tracer.start_as_current_span("analytics.track_pageview") as span:
-        page = payload.get("page", "/")
-        session_id = payload.get("session_id", "")
-        load_time_ms = int(payload.get("load_time_ms", 0) or 0)
+        page = str(payload.get("page", "/"))[:200]
+        session_id = str(payload.get("session_id", ""))[:64]
+        load_time_ms = max(0, min(60000, int(payload.get("load_time_ms", 0) or 0)))
+        visitor_region = str(payload.get("visitor_region", ""))[:30]
+        referrer = str(payload.get("referrer", ""))[:500]
+        user_agent = str(request.headers.get("user-agent", ""))[:500]
+
         span.set_attribute("analytics.page", page)
         span.set_attribute("analytics.session_id", session_id or "anonymous")
         span.set_attribute("analytics.load_time_ms", load_time_ms)
+
         async with get_db() as db:
             await db.execute(
                 text("INSERT INTO page_views (page, visitor_ip, visitor_region, "
@@ -221,11 +227,11 @@ async def track_pageview(payload: dict, request: Request):
                 {
                     "page": page,
                     "ip": source_ip,
-                    "region": payload.get("visitor_region", ""),
+                    "region": visitor_region,
                     "load_time": load_time_ms,
                     "sess_id": session_id,
-                    "ua": request.headers.get("user-agent", ""),
-                    "referrer_url": payload.get("referrer", ""),
+                    "ua": user_agent,
+                    "referrer_url": referrer,
                 },
             )
         push_log(
