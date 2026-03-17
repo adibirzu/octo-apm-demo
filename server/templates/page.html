@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-container" data-module="{{ module }}">
+    <div id="stats-section"></div>
     <div class="toolbar">
         <input type="text" id="search-input" placeholder="Search {{ title }}..." class="search-input">
+        <select id="filter-select" class="search-input" style="max-width:180px;display:none">
+            <option value="">All</option>
+        </select>
         <button onclick="loadData()" class="btn btn-primary">Refresh</button>
-        <button onclick="showCreateForm()" class="btn btn-success">+ New</button>
+        <button onclick="showCreateForm()" class="btn btn-success" id="btn-create" style="display:none">+ New</button>
     </div>
     <div class="card">
         <table class="data-table" id="data-table">
@@ -45,13 +49,17 @@ const MODULE_CONFIG = {
         searchParam: 'search',
         createFields: ['name', 'email', 'phone', 'company', 'industry', 'revenue', 'notes'],
         dataKey: 'customers',
+        filterKey: 'industry',
+        filterOptions: ['Manufacturing', 'Technology', 'Consulting', 'Conglomerate', 'Enterprise'],
     },
     orders: {
         endpoint: '/api/orders',
-        columns: ['id', 'customer_name', 'total', 'status', 'created_at'],
+        columns: ['id', 'customer_name', 'total', 'status', 'source_system', 'created_at'],
         searchParam: 'status',
         createFields: ['customer_id', 'total', 'notes', 'shipping_address'],
         dataKey: 'orders',
+        filterKey: 'status',
+        filterOptions: ['pending', 'processing', 'completed', 'cancelled'],
     },
     products: {
         endpoint: '/api/products',
@@ -65,17 +73,21 @@ const MODULE_CONFIG = {
         columns: ['id', 'invoice_number', 'customer_name', 'amount', 'tax', 'status', 'due_date'],
         searchParam: 'status',
         dataKey: 'invoices',
+        filterKey: 'status',
+        filterOptions: ['pending', 'paid', 'overdue'],
     },
     tickets: {
         endpoint: '/api/tickets',
-        columns: ['id', 'subject', 'customer_name', 'priority', 'status', 'assigned_to'],
+        columns: ['id', 'subject', 'customer_name', 'priority', 'status', 'assigned_to', 'created_at'],
         searchParam: 'search',
         createFields: ['customer_id', 'subject', 'description', 'priority', 'assigned_to'],
         dataKey: 'tickets',
+        filterKey: 'status',
+        filterOptions: ['open', 'in_progress', 'resolved', 'closed'],
     },
     reports: {
         endpoint: '/api/reports',
-        columns: ['id', 'name', 'report_type', 'created_at'],
+        columns: ['id', 'name', 'report_type', 'created_by', 'created_at'],
         createFields: ['name', 'report_type', 'query'],
         dataKey: 'reports',
     },
@@ -86,22 +98,27 @@ const MODULE_CONFIG = {
     },
     files: {
         endpoint: '/api/files',
-        columns: ['filename', 'size', 'type'],
+        columns: ['filename', 'size', 'type', 'created_at'],
         dataKey: 'files',
+        createFields: ['filename'],
     },
     campaigns: {
         endpoint: '/api/campaigns',
-        columns: ['id', 'name', 'campaign_type', 'status', 'budget', 'spent', 'lead_count'],
+        columns: ['id', 'name', 'campaign_type', 'status', 'budget', 'spent', 'lead_count', 'start_date'],
         searchParam: 'status',
         createFields: ['name', 'campaign_type', 'status', 'budget', 'target_audience', 'start_date', 'end_date'],
         dataKey: 'campaigns',
+        filterKey: 'status',
+        filterOptions: ['active', 'draft', 'completed', 'paused'],
     },
     shipping: {
         endpoint: '/api/shipping',
-        columns: ['id', 'tracking_number', 'carrier', 'status', 'origin_region', 'destination_region'],
+        columns: ['id', 'tracking_number', 'carrier', 'status', 'origin_region', 'destination_region', 'weight_kg', 'estimated_delivery'],
         searchParam: 'status',
         createFields: ['order_id', 'tracking_number', 'carrier', 'origin_region', 'destination_region', 'weight_kg', 'shipping_cost'],
         dataKey: 'shipments',
+        filterKey: 'status',
+        filterOptions: ['processing', 'shipped', 'in_transit', 'delivered', 'returned'],
     },
     analytics: {
         endpoint: '/api/analytics/revenue-by-region',
@@ -111,13 +128,12 @@ const MODULE_CONFIG = {
     },
     leads: {
         endpoint: '/api/campaigns/1/leads',
-        columns: ['id', 'email', 'name', 'source', 'status', 'score'],
+        columns: ['id', 'email', 'name', 'source', 'status', 'score', 'converted_at'],
         dataKey: 'leads',
-        allowDetail: false,
     },
     warehouses: {
         endpoint: '/api/shipping/warehouses',
-        columns: ['id', 'name', 'region', 'capacity', 'current_stock', 'is_active'],
+        columns: ['id', 'name', 'region', 'address', 'capacity', 'current_stock', 'is_active'],
         dataKey: 'warehouses',
         allowDetail: false,
     },
@@ -130,35 +146,332 @@ const MODULE_CONFIG = {
 };
 
 const config = MODULE_CONFIG[MODULE] || {};
+let _allData = [];
+
+/* ── Stats Cards ────────────────────────────────────── */
+
+const STATS_CONFIG = {
+    invoices: {
+        compute(items) {
+            const total = items.reduce((s, i) => s + (i.amount || 0), 0);
+            const paid = items.filter(i => i.status === 'paid');
+            const paidTotal = paid.reduce((s, i) => s + (i.amount || 0), 0);
+            const pending = items.filter(i => i.status === 'pending');
+            const overdue = items.filter(i => i.status === 'overdue');
+            return [
+                { label: 'Total Invoices', value: items.length, accent: false },
+                { label: 'Total Amount', value: '$' + total.toLocaleString(), accent: true },
+                { label: 'Paid', value: paid.length + ' ($' + paidTotal.toLocaleString() + ')', accent: false },
+                { label: 'Pending', value: pending.length, accent: false },
+                { label: 'Overdue', value: overdue.length, accent: overdue.length > 0, warn: overdue.length > 0 },
+            ];
+        }
+    },
+    campaigns: {
+        compute(items) {
+            const totalBudget = items.reduce((s, i) => s + (i.budget || 0), 0);
+            const totalSpent = items.reduce((s, i) => s + (i.spent || 0), 0);
+            const totalLeads = items.reduce((s, i) => s + (i.lead_count || 0), 0);
+            const active = items.filter(i => i.status === 'active');
+            return [
+                { label: 'Campaigns', value: items.length, accent: false },
+                { label: 'Active', value: active.length, accent: true },
+                { label: 'Total Budget', value: '$' + totalBudget.toLocaleString(), accent: false },
+                { label: 'Total Spent', value: '$' + totalSpent.toLocaleString(), accent: false },
+                { label: 'Total Leads', value: totalLeads, accent: true },
+            ];
+        }
+    },
+    shipping: {
+        compute(items) {
+            const delivered = items.filter(i => i.status === 'delivered');
+            const inTransit = items.filter(i => ['shipped', 'in_transit', 'processing'].includes(i.status));
+            const totalWeight = items.reduce((s, i) => s + (i.weight_kg || 0), 0);
+            const totalCost = items.reduce((s, i) => s + (i.shipping_cost || 0), 0);
+            return [
+                { label: 'Shipments', value: items.length, accent: false },
+                { label: 'Delivered', value: delivered.length, accent: true },
+                { label: 'In Transit', value: inTransit.length, accent: false },
+                { label: 'Total Weight', value: totalWeight.toFixed(1) + ' kg', accent: false },
+                { label: 'Shipping Cost', value: '$' + totalCost.toLocaleString(), accent: false },
+            ];
+        }
+    },
+    tickets: {
+        compute(items) {
+            const open = items.filter(i => i.status === 'open');
+            const inProgress = items.filter(i => i.status === 'in_progress');
+            const resolved = items.filter(i => ['resolved', 'closed'].includes(i.status));
+            const critical = items.filter(i => i.priority === 'critical' || i.priority === 'high');
+            return [
+                { label: 'Total Tickets', value: items.length, accent: false },
+                { label: 'Open', value: open.length, accent: open.length > 0, warn: open.length > 3 },
+                { label: 'In Progress', value: inProgress.length, accent: false },
+                { label: 'Resolved', value: resolved.length, accent: true },
+                { label: 'High Priority', value: critical.length, accent: false, warn: critical.length > 0 },
+            ];
+        }
+    },
+    customers: {
+        compute(items) {
+            const totalRevenue = items.reduce((s, i) => s + (i.revenue || 0), 0);
+            const industries = new Set(items.map(i => i.industry).filter(Boolean));
+            return [
+                { label: 'Total Customers', value: items.length, accent: false },
+                { label: 'Total Revenue', value: '$' + totalRevenue.toLocaleString(), accent: true },
+                { label: 'Industries', value: industries.size, accent: false },
+                { label: 'Avg Revenue', value: '$' + Math.round(totalRevenue / (items.length || 1)).toLocaleString(), accent: false },
+            ];
+        }
+    },
+    reports: {
+        compute(items) {
+            const types = {};
+            items.forEach(i => { types[i.report_type] = (types[i.report_type] || 0) + 1; });
+            return [
+                { label: 'Total Reports', value: items.length, accent: false },
+                ...Object.entries(types).slice(0, 4).map(([t, c]) => ({ label: t, value: c, accent: false })),
+            ];
+        }
+    },
+};
+
+function renderStats(items) {
+    const sc = STATS_CONFIG[MODULE];
+    if (!sc) { document.getElementById('stats-section').innerHTML = ''; return; }
+    const stats = sc.compute(items);
+    document.getElementById('stats-section').innerHTML = `
+        <div class="dashboard-grid" style="grid-template-columns:repeat(${Math.min(stats.length, 5)},1fr)">
+            ${stats.map(s => `
+                <div class="card metric-card">
+                    <h3>${s.label}</h3>
+                    <div class="metric-value" style="${s.warn ? 'color:var(--danger)' : s.accent ? '' : 'color:var(--text-primary);font-size:2rem'}">${s.value}</div>
+                </div>
+            `).join('')}
+        </div>`;
+}
+
+/* ── Rich Detail Panels ─────────────────────────────── */
+
+function detailField(label, value, opts = {}) {
+    if (value === null || value === undefined || value === '') return '';
+    let display = value;
+    if (opts.money) display = '$' + Number(value).toLocaleString();
+    if (opts.badge) display = `<span class="badge badge-${value}">${value}</span>`;
+    if (opts.date && value) display = new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    if (opts.pre) display = `<pre style="margin:0">${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</pre>`;
+    return `<div style="margin-bottom:14px"><div style="color:var(--text-muted);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">${label}</div><div style="font-size:1rem">${display}</div></div>`;
+}
+
+function renderDetailActions(data) {
+    const actions = [];
+    if (MODULE === 'invoices' && data.status !== 'paid') {
+        actions.push(`<button class="btn btn-success" onclick="payInvoice(${data.id})">Mark as Paid</button>`);
+        actions.push(`<a class="btn btn-secondary" href="/api/invoices/${data.id}/pdf" target="_blank">Download PDF</a>`);
+    }
+    if (MODULE === 'invoices' && data.status === 'paid') {
+        actions.push(`<a class="btn btn-secondary" href="/api/invoices/${data.id}/pdf" target="_blank">Download PDF</a>`);
+    }
+    if (MODULE === 'reports') {
+        actions.push(`<button class="btn btn-primary" onclick="executeReport(${data.id})">Execute Report</button>`);
+    }
+    return actions.length ? `<div style="display:flex;gap:10px;margin-bottom:18px">${actions.join('')}</div>` : '';
+}
+
+const DETAIL_RENDERERS = {
+    invoices(data) {
+        return renderDetailActions(data) + `
+            <div class="detail-grid">
+                ${detailField('Invoice Number', data.invoice_number)}
+                ${detailField('Status', data.status, { badge: true })}
+                ${detailField('Amount', data.amount, { money: true })}
+                ${detailField('Tax', data.tax, { money: true })}
+                ${detailField('Total', (data.amount || 0) + (data.tax || 0), { money: true })}
+                ${detailField('Due Date', data.due_date, { date: true })}
+            </div>
+            <div style="border-top:1px solid var(--line);margin:16px 0;padding-top:16px">
+                ${detailField('Customer', data.customer_name || data.customer?.name)}
+                ${detailField('Order ID', data.order_id)}
+                ${detailField('Created', data.created_at, { date: true })}
+            </div>`;
+    },
+    campaigns(data) {
+        const pct = data.budget ? Math.round((data.spent / data.budget) * 100) : 0;
+        let leadsHtml = '';
+        if (data.leads && data.leads.length) {
+            leadsHtml = `<div style="border-top:1px solid var(--line);margin-top:16px;padding-top:16px">
+                <h3 style="margin-bottom:12px">Leads (${data.leads.length})</h3>
+                <table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Source</th><th>Status</th><th>Score</th></tr></thead><tbody>
+                ${data.leads.map(l => `<tr><td>${l.name||'—'}</td><td>${l.email}</td><td>${l.source||'—'}</td><td><span class="badge badge-${l.status}">${l.status}</span></td><td>${l.score||0}</td></tr>`).join('')}
+                </tbody></table></div>`;
+        }
+        return `
+            <div class="detail-grid">
+                ${detailField('Campaign Name', data.name)}
+                ${detailField('Type', data.campaign_type)}
+                ${detailField('Status', data.status, { badge: true })}
+                ${detailField('Target Audience', data.target_audience)}
+            </div>
+            <div style="margin:18px 0">
+                <div style="color:var(--text-muted);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Budget Utilization (${pct}%)</div>
+                <div style="background:rgba(255,255,255,0.06);border-radius:8px;height:12px;overflow:hidden">
+                    <div style="background:${pct > 90 ? 'var(--danger)' : pct > 70 ? 'var(--warning)' : 'var(--accent)'};height:100%;width:${Math.min(pct, 100)}%;border-radius:8px;transition:0.5s"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.85rem;color:var(--text-secondary)">
+                    <span>Spent: $${(data.spent||0).toLocaleString()}</span>
+                    <span>Budget: $${(data.budget||0).toLocaleString()}</span>
+                </div>
+            </div>
+            <div class="detail-grid">
+                ${detailField('Leads', data.lead_count || 0)}
+                ${detailField('Start Date', data.start_date, { date: true })}
+                ${detailField('End Date', data.end_date, { date: true })}
+                ${detailField('Created By', data.created_by)}
+            </div>
+            ${leadsHtml}`;
+    },
+    shipping(data) {
+        const steps = ['processing', 'shipped', 'in_transit', 'delivered'];
+        const currentIdx = steps.indexOf(data.status);
+        const timeline = steps.map((s, i) => {
+            const done = i <= currentIdx;
+            const active = i === currentIdx;
+            return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;
+                    ${done ? 'background:var(--accent);color:#03131e' : 'background:rgba(255,255,255,0.06);color:var(--text-muted)'}">
+                    ${done ? '&#10003;' : i + 1}
+                </div>
+                <div>
+                    <div style="text-transform:capitalize;${active ? 'color:var(--accent-strong);font-weight:600' : ''}">${s.replace('_', ' ')}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+        return `
+            <div class="detail-grid">
+                ${detailField('Tracking Number', data.tracking_number)}
+                ${detailField('Status', data.status, { badge: true })}
+                ${detailField('Carrier', (data.carrier || '').toUpperCase())}
+                ${detailField('Order ID', data.order_id)}
+            </div>
+            <div style="border-top:1px solid var(--line);margin:16px 0;padding-top:16px">
+                <h3 style="margin-bottom:14px">Shipment Timeline</h3>
+                ${timeline}
+            </div>
+            <div class="detail-grid">
+                ${detailField('Origin', data.origin_region)}
+                ${detailField('Destination', data.destination_region)}
+                ${detailField('Weight', (data.weight_kg || 0) + ' kg')}
+                ${detailField('Shipping Cost', data.shipping_cost, { money: true })}
+                ${detailField('Estimated Delivery', data.estimated_delivery, { date: true })}
+                ${detailField('Actual Delivery', data.actual_delivery, { date: true })}
+            </div>`;
+    },
+    tickets(data) {
+        const priorityColors = { critical: 'var(--danger)', high: 'var(--warning)', medium: 'var(--accent)', low: 'var(--text-secondary)' };
+        return `
+            <div style="display:flex;gap:10px;margin-bottom:18px">
+                <span class="badge badge-${data.status}">${data.status}</span>
+                <span style="background:${priorityColors[data.priority] || 'var(--text-muted)'}22;color:${priorityColors[data.priority] || 'var(--text-muted)'};border-radius:999px;padding:0.25rem 0.65rem;font-size:0.75rem">${data.priority}</span>
+            </div>
+            ${detailField('Subject', data.subject)}
+            ${detailField('Description', data.description)}
+            <div class="detail-grid">
+                ${detailField('Customer', data.customer_name || data.customer?.name)}
+                ${detailField('Assigned To', data.assigned_to)}
+                ${detailField('Created', data.created_at, { date: true })}
+                ${detailField('Updated', data.updated_at, { date: true })}
+            </div>`;
+    },
+    customers(data) {
+        let ordersHtml = '';
+        if (data.orders && data.orders.length) {
+            ordersHtml = `<div style="border-top:1px solid var(--line);margin-top:16px;padding-top:16px">
+                <h3 style="margin-bottom:12px">Orders (${data.orders.length})</h3>
+                <table class="data-table"><thead><tr><th>ID</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody>
+                ${data.orders.map(o => `<tr><td>#${o.id}</td><td>$${(o.total||0).toLocaleString()}</td><td><span class="badge badge-${o.status}">${o.status}</span></td><td>${o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</td></tr>`).join('')}
+                </tbody></table></div>`;
+        }
+        return `
+            <div class="detail-grid">
+                ${detailField('Name', data.name)}
+                ${detailField('Email', data.email)}
+                ${detailField('Phone', data.phone)}
+                ${detailField('Company', data.company)}
+                ${detailField('Industry', data.industry)}
+                ${detailField('Revenue', data.revenue, { money: true })}
+            </div>
+            ${detailField('Notes', data.notes)}
+            ${ordersHtml}`;
+    },
+    reports(data) {
+        return renderDetailActions(data) + `
+            <div class="detail-grid">
+                ${detailField('Report Name', data.name)}
+                ${detailField('Type', data.report_type)}
+                ${detailField('Created By', data.created_by)}
+                ${detailField('Created', data.created_at, { date: true })}
+            </div>
+            ${detailField('Query', data.query, { pre: true })}
+            ${data.parameters ? detailField('Parameters', data.parameters, { pre: true }) : ''}
+            <div id="report-output"></div>`;
+    },
+};
+
+/* ── Column Formatters ──────────────────────────────── */
+
+function formatCell(col, value, item) {
+    if (value === null || value === undefined) return '—';
+    if (col === 'status' || col === 'priority' || col === 'sync_status' || col === 'backlog_status')
+        return `<span class="badge badge-${value}">${value}</span>`;
+    if (col.match(/price|total|revenue|amount|tax|budget|spent|shipping_cost/))
+        return '$' + Number(value).toLocaleString();
+    if (col.match(/created_at|updated_at|due_date|start_date|end_date|estimated_delivery|actual_delivery|last_login|converted_at/) && value)
+        return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    if (col === 'weight_kg') return value + ' kg';
+    if (col === 'carrier') return (value || '').toUpperCase();
+    if (col === 'score' && MODULE === 'leads') {
+        const color = value >= 70 ? 'var(--success)' : value >= 40 ? 'var(--warning)' : 'var(--text-muted)';
+        return `<span style="color:${color};font-weight:600">${value}</span>`;
+    }
+    if (col === 'lead_count') return `<span style="color:var(--accent-strong)">${value}</span>`;
+    if (col === 'is_active') return value ? '<span style="color:var(--success)">Active</span>' : '<span style="color:var(--danger)">Inactive</span>';
+    return value;
+}
+
+/* ── Data Loading ───────────────────────────────────── */
 
 function loadData() {
     const search = document.getElementById('search-input').value;
+    const filter = document.getElementById('filter-select').value;
     let url = config.endpoint || '/api/' + MODULE;
-    if (search && config.searchParam) {
-        url += `?${config.searchParam}=${encodeURIComponent(search)}`;
-    }
+    const params = [];
+    if (search && config.searchParam) params.push(`${config.searchParam}=${encodeURIComponent(search)}`);
+    if (filter && config.filterKey) params.push(`${config.filterKey}=${encodeURIComponent(filter)}`);
+    if (params.length) url += '?' + params.join('&');
+
     _fetch(url)
         .then(r => r.json())
         .then(data => {
-            const items = data[config.dataKey] || [];
+            const items = data[config.dataKey] || data || [];
+            _allData = items;
             const cols = config.columns || Object.keys(items[0] || {});
+
+            renderStats(items);
+
+            const prettyCol = c => c.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             document.getElementById('table-head').innerHTML =
-                '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
-            document.getElementById('table-body').innerHTML = Array.isArray(items) ?
+                '<tr>' + cols.map(c => `<th>${prettyCol(c)}</th>`).join('') + '</tr>';
+
+            document.getElementById('table-body').innerHTML = Array.isArray(items) && items.length ?
                 items.map(item =>
-                    `<tr ${config.allowDetail === false ? '' : `onclick="showDetail(${item.id || 0})"`}>` +
-                    cols.map(c => {
-                        let v = item[c];
-                        if (typeof v === 'number' && c.match(/price|total|revenue|amount|tax/))
-                            v = '$' + Number(v).toLocaleString();
-                        if (c === 'status')
-                            v = `<span class="badge badge-${v}">${v}</span>`;
-                        return `<td>${v ?? '—'}</td>`;
-                    }).join('') + '</tr>'
-                ).join('') : `<tr><td colspan="${cols.length}"><pre>${JSON.stringify(items, null, 2)}</pre></td></tr>`;
+                    `<tr ${config.allowDetail === false ? '' : `onclick="showDetail(${item.id || 0})" style="cursor:pointer"`}>` +
+                    cols.map(c => `<td>${formatCell(c, item[c], item)}</td>`).join('') + '</tr>'
+                ).join('') :
+                `<tr><td colspan="${cols.length}" style="text-align:center;padding:32px;color:var(--text-muted)">No ${MODULE} found</td></tr>`;
         })
         .catch(e => {
-            document.getElementById('table-body').innerHTML = `<tr><td>Error: ${e.message}</td></tr>`;
+            document.getElementById('table-body').innerHTML = `<tr><td style="color:var(--danger)">Error: ${e.message}</td></tr>`;
         });
 }
 
@@ -167,28 +480,29 @@ function showDetail(id) {
     _fetch(`${config.endpoint}/${id}`)
         .then(r => r.json())
         .then(data => {
-            document.getElementById('detail-title').textContent = `${MODULE} #${id}`;
-            document.getElementById('detail-body').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            const renderer = DETAIL_RENDERERS[MODULE];
+            document.getElementById('detail-title').textContent =
+                data.name || data.subject || data.invoice_number || data.tracking_number || `${MODULE} #${id}`;
+            document.getElementById('detail-body').innerHTML = renderer
+                ? renderer(data)
+                : `<pre>${JSON.stringify(data, null, 2)}</pre>`;
             document.getElementById('detail-panel').classList.remove('hidden');
         });
 }
 
-function closeDetail() {
-    document.getElementById('detail-panel').classList.add('hidden');
-}
+function closeDetail() { document.getElementById('detail-panel').classList.add('hidden'); }
 
 function showCreateForm() {
     if (!config.createFields) return;
-    const fields = config.createFields.map(f =>
-        `<label>${f}</label><input type="text" name="${f}" class="form-input">`
-    ).join('');
+    const fields = config.createFields.map(f => {
+        const type = f.match(/date/) ? 'date' : f.match(/price|amount|budget|cost|revenue|total|stock|weight/) ? 'number' : 'text';
+        return `<label>${f.replace(/_/g, ' ')}</label><input type="${type}" name="${f}" class="form-input" ${f.match(/name|subject|title/) ? 'required' : ''}>`;
+    }).join('');
     document.getElementById('form-fields').innerHTML = fields;
     document.getElementById('create-form').classList.remove('hidden');
 }
 
-function closeCreateForm() {
-    document.getElementById('create-form').classList.add('hidden');
-}
+function closeCreateForm() { document.getElementById('create-form').classList.add('hidden'); }
 
 function createItem(e) {
     e.preventDefault();
@@ -199,12 +513,54 @@ function createItem(e) {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(body),
-    })
-    .then(r => r.json())
-    .then(data => {
-        closeCreateForm();
-        loadData();
+    }).then(r => r.json()).then(() => { closeCreateForm(); loadData(); });
+}
+
+/* ── Module-Specific Actions ────────────────────────── */
+
+async function payInvoice(id) {
+    await _fetch(`/api/invoices/${id}/pay`, { method: 'POST' });
+    showDetail(id);
+    loadData();
+}
+
+async function executeReport(id) {
+    const output = document.getElementById('report-output');
+    if (output) output.innerHTML = '<p style="color:var(--text-muted)">Executing...</p>';
+    try {
+        const resp = await _fetch(`/api/reports/${id}`, { method: 'GET' });
+        const report = await resp.json();
+        if (report.query) {
+            const execResp = await _fetch('/api/reports/execute', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ query: report.query }),
+            });
+            const result = await execResp.json();
+            if (output) {
+                output.innerHTML = `<div style="border-top:1px solid var(--line);margin-top:16px;padding-top:16px">
+                    <h3 style="margin-bottom:12px">Query Results</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre></div>`;
+            }
+        }
+    } catch (e) {
+        if (output) output.innerHTML = `<p style="color:var(--danger)">Error: ${e.message}</p>`;
+    }
+}
+
+/* ── Init ───────────────────────────────────────────── */
+
+if (config.createFields) document.getElementById('btn-create').style.display = '';
+
+if (config.filterOptions) {
+    const sel = document.getElementById('filter-select');
+    sel.style.display = '';
+    config.filterOptions.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o; opt.textContent = o.charAt(0).toUpperCase() + o.slice(1);
+        sel.appendChild(opt);
     });
+    sel.addEventListener('change', loadData);
 }
 
 document.getElementById('search-input').addEventListener('keyup', (e) => {
