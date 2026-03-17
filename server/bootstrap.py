@@ -47,15 +47,32 @@ async def bootstrap_database() -> None:
     async with async_session_factory() as session:
         existing_user = await session.scalar(select(User.id).limit(1))
         if existing_user:
-            # Reconcile demo passwords so they always match expected credentials
+            # Reconcile CRM demo users — upsert by email (not username) to avoid
+            # overwriting Shop's users in the shared ATP database.
             for username, (password, role, email) in _DEMO_USERS.items():
-                await session.execute(
-                    text(
-                        "UPDATE users SET password_hash = :hash, role = :role "
-                        "WHERE username = :user"
-                    ),
-                    {"hash": bcrypt.hash(password), "role": role, "user": username},
+                row = await session.execute(
+                    text("SELECT id FROM users WHERE email = :email"),
+                    {"email": email},
                 )
+                if row.first():
+                    await session.execute(
+                        text("UPDATE users SET password_hash = :hash, role = :role WHERE email = :email"),
+                        {"hash": bcrypt.hash(password), "role": role, "email": email},
+                    )
+                else:
+                    # CRM user doesn't exist yet — create with a CRM-prefixed username
+                    # if the base username is taken by another app
+                    existing_name = await session.execute(
+                        text("SELECT id FROM users WHERE username = :user"), {"user": username},
+                    )
+                    actual_username = f"crm-{username}" if existing_name.first() else username
+                    await session.execute(
+                        text(
+                            "INSERT INTO users (username, email, password_hash, role) "
+                            "VALUES (:user, :email, :hash, :role)"
+                        ),
+                        {"user": actual_username, "email": email, "hash": bcrypt.hash(password), "role": role},
+                    )
             await session.commit()
             return
 

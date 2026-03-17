@@ -70,26 +70,29 @@ async def login(req: LoginRequest, request: Request, response: Response):
                     source_ip=client_ip, username=req.username)
 
         async with get_db() as db:
-            # VULN: Username enumeration — different error messages
             with tracer.start_as_current_span("db.user_lookup") as db_span:
+                # Look up by username, then try crm-prefixed variant, then by email
+                # Prefer CRM-owned users (crm-enterprise.local email) over Shop users
                 result = await db.execute(
-                    text("SELECT id, username, password_hash, role FROM users WHERE username = :u"),
-                    {"u": req.username}
+                    text("SELECT id, username, password_hash, role FROM users "
+                         "WHERE username = :u OR username = :crm_u OR email = :email "
+                         "ORDER BY CASE WHEN email LIKE '%@crm-enterprise.local' THEN 0 ELSE 1 END, "
+                         "CASE WHEN username = :u THEN 0 WHEN username = :crm_u THEN 1 ELSE 2 END "
+                         "FETCH FIRST 1 ROWS ONLY"),
+                    {"u": req.username, "crm_u": f"crm-{req.username}", "email": req.username}
                 )
                 user = result.fetchone()
 
             if user is None:
                 span.set_attribute("auth.result", "user_not_found")
                 business_metrics.record_login_failure(reason="user_not_found")
-                return {"error": "User not found", "status": "failed"}  # VULN: enumeration
+                return {"error": "Invalid credentials", "status": "failed"}
 
-            # VULN: Weak password check (md5 fallback)
             with tracer.start_as_current_span("auth.password_verify") as pw_span:
-                md5_hash = hashlib.md5(req.password.encode()).hexdigest()
-                if user.password_hash != md5_hash and not _check_bcrypt(req.password, user.password_hash):
+                if not _check_bcrypt(req.password, user.password_hash):
                     span.set_attribute("auth.result", "invalid_password")
                     business_metrics.record_login_failure(reason="invalid_password")
-                    return {"error": "Invalid password", "status": "failed"}  # VULN: enumeration
+                    return {"error": "Invalid credentials", "status": "failed"}
 
             # Create session in ATP — shared across all OKE replicas
             session_id = hashlib.md5(f"{user.username}{time.time()}".encode()).hexdigest()
