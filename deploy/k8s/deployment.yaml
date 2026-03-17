@@ -133,6 +133,31 @@ spec:
                   name: octo-integrations
                   key: crm-url
                   optional: true
+            # OCI Console drilldown URLs (360 Monitoring)
+            - name: APM_CONSOLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: apm-console-url
+                  optional: true
+            - name: OPSI_CONSOLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: opsi-console-url
+                  optional: true
+            - name: DB_MANAGEMENT_CONSOLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: db-management-console-url
+                  optional: true
+            - name: LOG_ANALYTICS_CONSOLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: log-analytics-console-url
+                  optional: true
           volumeMounts:
             - name: atp-wallet
               mountPath: /opt/oracle/wallet
