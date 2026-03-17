@@ -14,7 +14,7 @@ _PUBLIC_PREFIXES = (
     "/login", "/static/", "/health", "/ready", "/metrics", "/api/auth/", "/favicon",
     # Cross-service endpoints used by octo-drone-shop and internal integrations
     "/api/customers", "/api/invoices", "/api/tickets", "/api/orders",
-    "/api/integrations", "/api/observability/",
+    "/api/integrations", "/api/observability/", "/api/analytics/track",
 )
 
 
