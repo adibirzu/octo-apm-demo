@@ -373,6 +373,14 @@ else:
 
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+# Tag Oracle sessions with MODULE/ACTION/CLIENT_IDENTIFIER for OPSI + DB Management correlation
+try:
+    from server.observability.db_session_tagging import register_session_tagging
+    register_session_tagging(engine)
+    register_session_tagging(sync_engine)
+except Exception:
+    logger.debug("DB session tagging registration deferred", exc_info=True)
+
 
 @asynccontextmanager
 async def get_db():

@@ -16,7 +16,9 @@ from server.database import engine, get_db, init_tables, seed_data, sync_engine
 from server.observability.correlation import runtime_snapshot
 from server.observability.otel_setup import init_otel, get_tracer
 from server.observability.logging_sdk import push_log
+from server.observability.metrics import init_metrics, runtime_metrics
 from server.middleware.tracing import TracingMiddleware
+from server.middleware.metrics_mw import MetricsMiddleware
 from server.middleware.chaos import ChaosMiddleware
 from server.middleware.geo_latency import GeoLatencyMiddleware
 
@@ -33,10 +35,11 @@ from server.modules.simulation import router as simulation_router
 from server.modules.dashboard import router as dashboard_router
 from server.modules.integrations import router as integrations_router
 from server.modules.services import router as services_router
+from server.modules.observability_dashboard import router as observability_dashboard_router
 
 logger = logging.getLogger(__name__)
 
-# ── Pre-initialize OTel ────────────────────────────────────────
+# ── Pre-initialize OTel + Metrics ─────────────────────────────
 init_otel(
     service_name=cfg.otel_service_name,
     service_version=cfg.app_version,
@@ -45,15 +48,18 @@ init_otel(
     sync_engine=sync_engine,
     async_engine=engine,
 )
+init_metrics()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     cfg.validate()
+    runtime_metrics.setup()
     logger.info(
-        "OCTO-CRM-APM starting — APM: %s, RUM: %s, DB: Oracle ATP",
+        "OCTO Drone Shop starting — APM: %s, RUM: %s, Metrics: enabled, DB: %s",
         cfg.apm_configured,
         cfg.rum_configured,
+        cfg.database_target_label,
     )
 
     # Create tables and seed data on startup
@@ -95,6 +101,7 @@ app.add_middleware(CORSMiddleware,
     allow_credentials=True)
 app.add_middleware(GeoLatencyMiddleware)
 app.add_middleware(ChaosMiddleware)
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(TracingMiddleware)
 
 # ── Static files and templates ────────────────────────────────
@@ -120,6 +127,16 @@ app.include_router(simulation_router)
 app.include_router(dashboard_router)
 app.include_router(integrations_router)
 app.include_router(services_router)
+app.include_router(observability_dashboard_router)
+
+
+# ── Prometheus /metrics endpoint ──────────────────────────────
+try:
+    from prometheus_client import make_asgi_app as _make_prom_app
+    app.mount("/metrics", _make_prom_app())
+    logger.info("Prometheus /metrics endpoint mounted")
+except ImportError:
+    logger.info("prometheus_client not installed — /metrics not available")
 
 
 # ── Health & readiness ────────────────────────────────────────
@@ -177,9 +194,12 @@ async def list_modules():
             {"name": "integrations", "label": "Integrations", "endpoints": 7,
              "related_to": ["orders", "customers", "enterprise-crm-portal"],
              "cross_service": True},
+            {"name": "observability", "label": "360 Monitoring", "endpoints": 4,
+             "related_to": ["integrations", "dashboard", "analytics"],
+             "cross_service": True},
         ],
-        "total_modules": 10,
-        "total_endpoints": 54,
+        "total_modules": 11,
+        "total_endpoints": 58,
     }
 
 
@@ -247,6 +267,11 @@ async def analytics_page(request: Request):
 @app.get("/admin-page", response_class=HTMLResponse)
 async def admin_page(request: Request):
     return _render_page(request, "page", "Admin", module="admin")
+
+
+@app.get("/observability", response_class=HTMLResponse)
+async def observability_page(request: Request):
+    return _render_page(request, "page", "360 Monitoring", module="observability")
 
 
 @app.get("/login", response_class=HTMLResponse)

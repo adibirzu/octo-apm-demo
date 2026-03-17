@@ -54,6 +54,12 @@ class Config:
     oci_genai_endpoint = os.getenv("OCI_GENAI_ENDPOINT", "")
     oci_genai_model_id = os.getenv("OCI_GENAI_MODEL_ID", "")
 
+    # ── OCI Console Drilldown URLs ──
+    apm_console_url = os.getenv("APM_CONSOLE_URL", "")
+    opsi_console_url = os.getenv("OPSI_CONSOLE_URL", "")
+    db_management_console_url = os.getenv("DB_MANAGEMENT_CONSOLE_URL", "")
+    log_analytics_console_url = os.getenv("LOG_ANALYTICS_CONSOLE_URL", "")
+
     # ── Splunk HEC ──
     splunk_hec_url = os.getenv("SPLUNK_HEC_URL", "")
     splunk_hec_token = os.getenv("SPLUNK_HEC_TOKEN", "")

@@ -16,6 +16,7 @@ from server.observability.correlation import (
 )
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
+from server.observability.db_session_tagging import set_db_context
 
 
 class TracingMiddleware(BaseHTTPMiddleware):
@@ -49,6 +50,13 @@ class TracingMiddleware(BaseHTTPMiddleware):
                     "db.connection_name": cfg.oracle_dsn,
                     **runtime_snapshot(),
                 },
+            )
+
+            # Tag Oracle DB sessions with request context for OPSI/DB Management correlation
+            trace_ctx_for_db = current_trace_context()
+            set_db_context(
+                action=f"{request.method} {request.url.path}"[:64],
+                client_identifier=trace_ctx_for_db["trace_id"],
             )
 
             try:
