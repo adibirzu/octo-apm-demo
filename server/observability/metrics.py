@@ -48,21 +48,9 @@ def init_metrics():
     except ImportError:
         logger.warning("opentelemetry-exporter-prometheus not installed — /metrics disabled")
 
-    # OTLP export to OCI APM
-    if cfg.apm_configured:
-        try:
-            from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-            otlp_endpoint = f"{cfg.oci_apm_endpoint.rstrip('/')}/20200101/opentelemetry/private/v1/metrics"
-            readers.append(PeriodicExportingMetricReader(
-                OTLPMetricExporter(
-                    endpoint=otlp_endpoint,
-                    headers={"Authorization": f"dataKey {cfg.oci_apm_private_datakey}"},
-                ),
-                export_interval_millis=15_000,
-            ))
-            logger.info("OCI APM OTLP metric exporter configured: %s", otlp_endpoint)
-        except ImportError:
-            logger.warning("OTLP metric exporter not available")
+    # NOTE: OCI APM does NOT support OTLP metric ingestion (only traces).
+    # OTLP metric export is disabled to avoid 404 errors every 15s.
+    # Metrics are available via Prometheus /metrics endpoint for Grafana/scraping.
 
     provider = MeterProvider(resource=resource, metric_readers=readers)
     metrics.set_meter_provider(provider)
