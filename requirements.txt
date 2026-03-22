@@ -26,3 +26,4 @@ oci==2.143.0
 # Security (bcrypt for password hashing)
 bcrypt==4.2.1
 
+psutil>=5.9.0
