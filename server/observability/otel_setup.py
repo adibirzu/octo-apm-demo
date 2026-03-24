@@ -5,11 +5,17 @@ APM exporters, process metrics) to shared.observability_lib. Falls back to
 local implementation for standalone use.
 """
 
+from __future__ import annotations
+
 import logging
 import time
+from typing import TYPE_CHECKING
 
 from opentelemetry import trace
 from sqlalchemy import event
+
+if TYPE_CHECKING:
+    from opentelemetry.sdk.resources import Resource
 
 from server.config import cfg
 from server.observability.correlation import current_trace_context, sql_attributes
