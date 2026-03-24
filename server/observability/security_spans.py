@@ -8,23 +8,24 @@ from server.database import sync_engine
 from server.observability.otel_setup import get_tracer
 from server.observability.logging_sdk import log_security_event
 
+# MITRE ATT&CK mapping: vuln_type -> (technique_id, tactic, technique_name)
 MITRE_MAP = {
-    "sqli":           ("T1190", "Exploit Public-Facing Application", "Initial Access"),
-    "xss":            ("T1059.007", "JavaScript", "Execution"),
-    "xxe":            ("T1203", "Exploitation for Client Execution", "Execution"),
-    "ssrf":           ("T1090", "Proxy", "Command and Control"),
-    "path_traversal": ("T1083", "File and Directory Discovery", "Discovery"),
-    "idor":           ("T1078", "Valid Accounts", "Defense Evasion"),
-    "ssti":           ("T1059", "Command and Scripting Interpreter", "Execution"),
-    "csrf":           ("T1185", "Browser Session Hijacking", "Collection"),
-    "auth_bypass":    ("T1556", "Modify Authentication Process", "Credential Access"),
-    "mass_assign":    ("T1098", "Account Manipulation", "Persistence"),
-    "brute_force":    ("T1110", "Brute Force", "Credential Access"),
-    "deserialization": ("T1059", "Command and Scripting Interpreter", "Execution"),
-    "cmd_injection":  ("T1059.004", "Unix Shell", "Execution"),
-    "info_disclosure": ("T1087", "Account Discovery", "Discovery"),
-    "captcha_bypass": ("T1078", "Valid Accounts", "Defense Evasion"),
-    "rate_limit":     ("T1498", "Network Denial of Service", "Impact"),
+    "sqli":           ("T1190", "initial-access", "Exploit Public-Facing Application"),
+    "xss":            ("T1059.007", "execution", "JavaScript"),
+    "xxe":            ("T1203", "execution", "Exploitation for Client Execution"),
+    "ssrf":           ("T1090", "command-and-control", "Proxy"),
+    "path_traversal": ("T1083", "discovery", "File and Directory Discovery"),
+    "idor":           ("T1078", "defense-evasion", "Valid Accounts"),
+    "ssti":           ("T1059", "execution", "Command and Scripting Interpreter"),
+    "csrf":           ("T1185", "collection", "Browser Session Hijacking"),
+    "auth_bypass":    ("T1556", "credential-access", "Modify Authentication Process"),
+    "mass_assign":    ("T1098", "persistence", "Account Manipulation"),
+    "brute_force":    ("T1110", "credential-access", "Brute Force"),
+    "deserialization": ("T1059", "execution", "Command and Scripting Interpreter"),
+    "cmd_injection":  ("T1059.004", "execution", "Unix Shell"),
+    "info_disclosure": ("T1087", "discovery", "Account Discovery"),
+    "captcha_bypass": ("T1078", "defense-evasion", "Valid Accounts"),
+    "rate_limit":     ("T1498", "impact", "Network Denial of Service"),
 }
 
 OWASP_MAP = {
@@ -82,7 +83,7 @@ def _persist_security_event(
                     "details": json.dumps(
                         {
                             "mitre_technique_id": mitre[0],
-                            "mitre_tactic": mitre[2],
+                            "mitre_tactic": mitre[1],
                             "owasp_category": owasp[0],
                             "owasp_name": owasp[1],
                         }
@@ -122,8 +123,8 @@ def security_span(
         "security.product_id": product_id or 0,
         "security.session_id": session_id or "n/a",
         "mitre.technique_id": mitre[0],
-        "mitre.technique_name": mitre[1],
-        "mitre.tactic": mitre[2],
+        "mitre.tactic": mitre[1],
+        "mitre.technique_name": mitre[2],
         "owasp.category": owasp[0],
         "owasp.name": owasp[1],
     })
@@ -138,7 +139,7 @@ def security_span(
         payload=payload,
         endpoint=endpoint,
         mitre_technique_id=mitre[0],
-        mitre_tactic=mitre[2],
+        mitre_tactic=mitre[1],
         owasp_category=owasp[0],
     )
     _persist_security_event(
