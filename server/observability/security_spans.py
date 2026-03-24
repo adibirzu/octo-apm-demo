@@ -1,4 +1,8 @@
-"""Security span helpers — MITRE ATT&CK + OWASP classification for OCTO-CRM-APM."""
+"""Security span helpers — MITRE ATT&CK + OWASP classification for OCTO-CRM-APM.
+
+When running inside OCI-DEMO, uses shared.security_mappings for canonical
+MITRE/OWASP definitions. Falls back to local definitions for standalone use.
+"""
 
 import json
 
@@ -8,44 +12,63 @@ from server.database import sync_engine
 from server.observability.otel_setup import get_tracer
 from server.observability.logging_sdk import log_security_event
 
-# MITRE ATT&CK mapping: vuln_type -> (technique_id, tactic, technique_name)
-MITRE_MAP = {
-    "sqli":           ("T1190", "initial-access", "Exploit Public-Facing Application"),
-    "xss":            ("T1059.007", "execution", "JavaScript"),
-    "xxe":            ("T1203", "execution", "Exploitation for Client Execution"),
-    "ssrf":           ("T1090", "command-and-control", "Proxy"),
-    "path_traversal": ("T1083", "discovery", "File and Directory Discovery"),
-    "idor":           ("T1078", "defense-evasion", "Valid Accounts"),
-    "ssti":           ("T1059", "execution", "Command and Scripting Interpreter"),
-    "csrf":           ("T1185", "collection", "Browser Session Hijacking"),
-    "auth_bypass":    ("T1556", "credential-access", "Modify Authentication Process"),
-    "mass_assign":    ("T1098", "persistence", "Account Manipulation"),
-    "brute_force":    ("T1110", "credential-access", "Brute Force"),
-    "deserialization": ("T1059", "execution", "Command and Scripting Interpreter"),
-    "cmd_injection":  ("T1059.004", "execution", "Unix Shell"),
-    "info_disclosure": ("T1087", "discovery", "Account Discovery"),
-    "captcha_bypass": ("T1078", "defense-evasion", "Valid Accounts"),
-    "rate_limit":     ("T1498", "impact", "Network Denial of Service"),
-}
 
-OWASP_MAP = {
-    "sqli":           ("A03:2021", "Injection"),
-    "xss":            ("A03:2021", "Injection"),
-    "xxe":            ("A05:2021", "Security Misconfiguration"),
-    "ssrf":           ("A10:2021", "Server-Side Request Forgery"),
-    "path_traversal": ("A01:2021", "Broken Access Control"),
-    "idor":           ("A01:2021", "Broken Access Control"),
-    "ssti":           ("A03:2021", "Injection"),
-    "csrf":           ("A01:2021", "Broken Access Control"),
-    "auth_bypass":    ("A07:2021", "Identification and Authentication Failures"),
-    "mass_assign":    ("A04:2021", "Insecure Design"),
-    "brute_force":    ("A07:2021", "Identification and Authentication Failures"),
-    "deserialization": ("A08:2021", "Software and Data Integrity Failures"),
-    "cmd_injection":  ("A03:2021", "Injection"),
-    "info_disclosure": ("A02:2021", "Cryptographic Failures"),
-    "captcha_bypass": ("A07:2021", "Identification and Authentication Failures"),
-    "rate_limit":     ("A04:2021", "Insecure Design"),
-}
+def _build_maps():
+    """Build MITRE_MAP and OWASP_MAP, preferring shared canonical source."""
+    try:
+        from shared.security_mappings import VULNERABILITY_MAP
+        mitre = {}
+        owasp = {}
+        for vuln_type, mapping in VULNERABILITY_MAP.items():
+            m = mapping.mitre
+            mitre[vuln_type] = (m.technique_id, m.tactic, m.technique_name)
+            owasp[vuln_type] = (mapping.owasp.code, mapping.owasp.name)
+        return mitre, owasp
+    except ImportError:
+        pass
+
+    # Standalone fallback: local definitions
+    # MITRE ATT&CK mapping: vuln_type -> (technique_id, tactic, technique_name)
+    mitre = {
+        "sqli":           ("T1190", "initial-access", "Exploit Public-Facing Application"),
+        "xss":            ("T1059.007", "execution", "JavaScript"),
+        "xxe":            ("T1203", "execution", "Exploitation for Client Execution"),
+        "ssrf":           ("T1090", "command-and-control", "Proxy"),
+        "path_traversal": ("T1083", "discovery", "File and Directory Discovery"),
+        "idor":           ("T1078", "defense-evasion", "Valid Accounts"),
+        "ssti":           ("T1059", "execution", "Command and Scripting Interpreter"),
+        "csrf":           ("T1185", "collection", "Browser Session Hijacking"),
+        "auth_bypass":    ("T1556", "credential-access", "Modify Authentication Process"),
+        "mass_assign":    ("T1098", "persistence", "Account Manipulation"),
+        "brute_force":    ("T1110", "credential-access", "Brute Force"),
+        "deserialization": ("T1059", "execution", "Command and Scripting Interpreter"),
+        "cmd_injection":  ("T1059.004", "execution", "Unix Shell"),
+        "info_disclosure": ("T1087", "discovery", "Account Discovery"),
+        "captcha_bypass": ("T1078", "defense-evasion", "Valid Accounts"),
+        "rate_limit":     ("T1498", "impact", "Network Denial of Service"),
+    }
+    owasp = {
+        "sqli":           ("A03:2021", "Injection"),
+        "xss":            ("A03:2021", "Injection"),
+        "xxe":            ("A05:2021", "Security Misconfiguration"),
+        "ssrf":           ("A10:2021", "Server-Side Request Forgery"),
+        "path_traversal": ("A01:2021", "Broken Access Control"),
+        "idor":           ("A01:2021", "Broken Access Control"),
+        "ssti":           ("A03:2021", "Injection"),
+        "csrf":           ("A01:2021", "Broken Access Control"),
+        "auth_bypass":    ("A07:2021", "Identification and Authentication Failures"),
+        "mass_assign":    ("A04:2021", "Insecure Design"),
+        "brute_force":    ("A07:2021", "Identification and Authentication Failures"),
+        "deserialization": ("A08:2021", "Software and Data Integrity Failures"),
+        "cmd_injection":  ("A03:2021", "Injection"),
+        "info_disclosure": ("A02:2021", "Cryptographic Failures"),
+        "captcha_bypass": ("A07:2021", "Identification and Authentication Failures"),
+        "rate_limit":     ("A04:2021", "Insecure Design"),
+    }
+    return mitre, owasp
+
+
+MITRE_MAP, OWASP_MAP = _build_maps()
 
 
 def _persist_security_event(
