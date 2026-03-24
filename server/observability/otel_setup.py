@@ -1,13 +1,14 @@
-"""OpenTelemetry initialization for OCTO Drone Shop."""
+"""OpenTelemetry initialization for OCTO Drone Shop.
+
+When running inside OCI-DEMO, delegates core OTel setup (resource building,
+APM exporters, process metrics) to shared.observability_lib. Falls back to
+local implementation for standalone use.
+"""
 
 import logging
 import time
 
 from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_VERSION
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from sqlalchemy import event
 
 from server.config import cfg
@@ -17,37 +18,41 @@ logger = logging.getLogger(__name__)
 _tracer_provider = None
 
 
-def _register_process_metrics(meter):
-    """Register process runtime metrics for OCI APM App Servers page."""
-    import os, threading
+def _try_shared_init(service_name: str, service_version: str,
+                     apm_endpoint: str, apm_private_key: str) -> bool:
+    """Try to initialize via shared.observability_lib (OCI-DEMO mode)."""
     try:
-        import psutil
-        proc = psutil.Process(os.getpid())
-
-        def _cpu_cb(_options):
-            from opentelemetry.sdk.metrics import Observation
-            yield Observation(proc.cpu_percent(interval=None) / 100.0)
-
-        def _mem_cb(_options):
-            from opentelemetry.sdk.metrics import Observation
-            yield Observation(proc.memory_info().rss)
-
-        def _thread_cb(_options):
-            from opentelemetry.sdk.metrics import Observation
-            yield Observation(threading.active_count())
-
-        meter.create_observable_gauge("process.runtime.cpython.cpu.utilization", callbacks=[_cpu_cb], unit="1")
-        meter.create_observable_gauge("process.runtime.cpython.memory", callbacks=[_mem_cb], unit="By")
-        meter.create_observable_gauge("process.runtime.cpython.thread_count", callbacks=[_thread_cb], unit="{thread}")
+        from shared.observability_lib import init_observability
+        return init_observability(
+            service_name=service_name,
+            service_version=service_version,
+            apm_endpoint=apm_endpoint or None,
+            apm_data_key=apm_private_key or None,
+            extra_attributes={
+                "service.namespace": cfg.service_namespace,
+                "service.instance.id": cfg.service_instance_id,
+                "deployment.environment": cfg.app_env,
+                "app.name": cfg.app_name,
+                "app.brand": cfg.brand_name,
+                "app.runtime": cfg.app_runtime,
+                "cloud.provider": "oci",
+                "oci.demo.stack": cfg.demo_stack_name,
+                "db.target": cfg.database_target_label,
+            },
+        )
     except ImportError:
-        logger.info("psutil not installed — process metrics skipped")
+        return False
 
 
-def init_otel(service_name: str = "octo-crm-apm",
-              service_version: str = "1.0.0",
-              apm_endpoint: str = "", apm_private_key: str = "",
-              sync_engine=None, async_engine=None):
+def _standalone_init(service_name: str, service_version: str,
+                     apm_endpoint: str, apm_private_key: str):
+    """Standalone OTel initialization (no shared library available)."""
     global _tracer_provider
+
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+    from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_VERSION
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
     import os as _os, platform as _platform, sys as _sys
     resource = Resource.create({
@@ -62,7 +67,6 @@ def init_otel(service_name: str = "octo-crm-apm",
         "cloud.provider": "oci",
         "oci.demo.stack": cfg.demo_stack_name,
         "db.target": cfg.database_target_label,
-        # Process/OS attributes for OCI APM App Servers page
         "process.runtime.name": _platform.python_implementation().lower(),
         "process.runtime.version": _platform.python_version(),
         "process.pid": _os.getpid(),
@@ -87,7 +91,6 @@ def init_otel(service_name: str = "octo-crm-apm",
         _tracer_provider.add_span_processor(BatchSpanProcessor(exporter))
         logger.info("OTel OTLP exporter -> OCI APM (%s)", service_name)
 
-        # Metrics export for OCI APM App Servers page
         try:
             from opentelemetry import metrics as otel_metrics
             from opentelemetry.sdk.metrics import MeterProvider
@@ -98,7 +101,7 @@ def init_otel(service_name: str = "octo-crm-apm",
             reader = PeriodicExportingMetricReader(metric_exporter, export_interval_millis=30000)
             meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
             otel_metrics.set_meter_provider(meter_provider)
-            _register_process_metrics(otel_metrics.get_meter(service_name + ".runtime"))
+            _register_process_metrics_standalone(otel_metrics.get_meter(service_name + ".runtime"))
             logger.info("OCI APM metrics exporter configured (App Servers enabled)")
         except Exception as exc:
             logger.warning("OCI APM metrics export failed: %s", exc)
@@ -108,7 +111,48 @@ def init_otel(service_name: str = "octo-crm-apm",
 
     trace.set_tracer_provider(_tracer_provider)
 
-    # Auto-instrument SQLAlchemy for both sync and async execution paths.
+    if apm_endpoint and apm_private_key and cfg.otlp_log_export_enabled:
+        _init_otlp_log_export(resource, apm_endpoint, apm_private_key)
+
+
+def _register_process_metrics_standalone(meter):
+    """Register process runtime metrics (standalone fallback)."""
+    import os, threading
+    try:
+        import psutil
+        proc = psutil.Process(os.getpid())
+        from opentelemetry.sdk.metrics import Observation
+
+        def _cpu_cb(_options):
+            yield Observation(proc.cpu_percent(interval=None) / 100.0)
+        def _mem_cb(_options):
+            yield Observation(proc.memory_info().rss)
+        def _thread_cb(_options):
+            yield Observation(threading.active_count())
+
+        meter.create_observable_gauge("process.runtime.cpython.cpu.utilization", callbacks=[_cpu_cb], unit="1")
+        meter.create_observable_gauge("process.runtime.cpython.memory", callbacks=[_mem_cb], unit="By")
+        meter.create_observable_gauge("process.runtime.cpython.thread_count", callbacks=[_thread_cb], unit="{thread}")
+    except ImportError:
+        logger.info("psutil not installed — process metrics skipped")
+
+
+def init_otel(service_name: str = "octo-crm-apm",
+              service_version: str = "1.0.0",
+              apm_endpoint: str = "", apm_private_key: str = "",
+              sync_engine=None, async_engine=None):
+    """Initialize OpenTelemetry with OCI APM exporter.
+
+    Tries shared.observability_lib first (OCI-DEMO context), then falls
+    back to standalone initialization.
+    """
+    global _tracer_provider
+
+    # Core OTel setup: try shared library, fall back to standalone
+    if not _try_shared_init(service_name, service_version, apm_endpoint, apm_private_key):
+        _standalone_init(service_name, service_version, apm_endpoint, apm_private_key)
+
+    # App-specific instrumentation (always runs regardless of init path)
     try:
         from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
@@ -131,8 +175,6 @@ def init_otel(service_name: str = "octo-crm-apm",
     except Exception:
         logger.debug("SQLAlchemy instrumentation unavailable", exc_info=True)
 
-    # Auto-instrument httpx — injects W3C traceparent on all outbound HTTP calls
-    # This is critical for distributed tracing between OCTO-CRM-APM and CRM
     try:
         from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
         HTTPXClientInstrumentor().instrument()
@@ -140,15 +182,11 @@ def init_otel(service_name: str = "octo-crm-apm",
     except Exception:
         pass
 
-    # Inject trace context into Python logging (for log correlation)
     try:
         from opentelemetry.instrumentation.logging import LoggingInstrumentor
         LoggingInstrumentor().instrument(set_logging_format=True)
     except Exception:
         pass
-
-    if apm_endpoint and apm_private_key and cfg.otlp_log_export_enabled:
-        _init_otlp_log_export(resource, apm_endpoint, apm_private_key)
 
 
 def get_tracer(name: str = "octo-crm-apm") -> trace.Tracer:
