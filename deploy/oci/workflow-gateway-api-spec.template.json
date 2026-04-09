@@ -1,0 +1,67 @@
+{
+  "routes": [
+    {
+      "path": "/health",
+      "methods": ["GET"],
+      "backend": {
+        "type": "HTTP_BACKEND",
+        "url": "__WORKFLOW_BACKEND_URL__/health"
+      },
+      "requestPolicies": {
+        "cors": {
+          "allowedOrigins": ["__ALLOWED_ORIGIN__"],
+          "allowedMethods": ["GET", "POST", "OPTIONS"],
+          "allowedHeaders": ["*"]
+        }
+      }
+    },
+    {
+      "path": "/api/workflows/catalog",
+      "methods": ["GET"],
+      "backend": {
+        "type": "HTTP_BACKEND",
+        "url": "__WORKFLOW_BACKEND_URL__/api/workflows/catalog"
+      }
+    },
+    {
+      "path": "/api/workflows/overview",
+      "methods": ["GET"],
+      "backend": {
+        "type": "HTTP_BACKEND",
+        "url": "__WORKFLOW_BACKEND_URL__/api/workflows/overview"
+      }
+    },
+    {
+      "path": "/api/components/snapshots",
+      "methods": ["GET"],
+      "backend": {
+        "type": "HTTP_BACKEND",
+        "url": "__WORKFLOW_BACKEND_URL__/api/components/snapshots"
+      }
+    },
+    {
+      "path": "/api/query-lab/executions",
+      "methods": ["GET"],
+      "backend": {
+        "type": "HTTP_BACKEND",
+        "url": "__WORKFLOW_BACKEND_URL__/api/query-lab/executions"
+      }
+    },
+    {
+      "path": "/api/query-lab/run",
+      "methods": ["POST", "OPTIONS"],
+      "backend": {
+        "type": "HTTP_BACKEND",
+        "url": "__WORKFLOW_BACKEND_URL__/api/query-lab/run"
+      }
+    },
+    {
+      "path": "/api/selectai/generate",
+      "methods": ["POST", "OPTIONS"],
+      "backend": {
+        "type": "HTTP_BACKEND",
+        "url": "__WORKFLOW_BACKEND_URL__/api/selectai/generate"
+      }
+    }
+  ]
+}

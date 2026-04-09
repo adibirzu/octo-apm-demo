@@ -78,6 +78,12 @@ async def observability_360(request: Request):
                     "prometheus": True,
                     "otlp_export": cfg.apm_configured,
                 },
+                "workflow_gateway": {
+                    "configured": cfg.workflow_gateway_configured,
+                    "base_url": cfg.workflow_api_base_url or None,
+                    "service_name": cfg.workflow_service_name,
+                    "selectai_configured": cfg.selectai_configured,
+                },
                 "opsi": {
                     "console_url": cfg.opsi_console_url or None,
                     "configured": bool(cfg.opsi_console_url),
@@ -185,6 +191,11 @@ def _integration_health_summary() -> dict:
         "shared_atp": {
             "configured": bool(cfg.oracle_dsn),
             "target": cfg.database_target_label,
+        },
+        "workflow_gateway": {
+            "configured": cfg.workflow_gateway_configured,
+            "base_url": cfg.workflow_api_base_url or None,
+            "selectai_profile": cfg.selectai_profile_name or None,
         },
     }
 

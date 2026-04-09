@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from opentelemetry import trace
 from sqlalchemy import text
 
@@ -163,22 +163,37 @@ async def remove_from_cart(item_id: int, request: Request):
 
 
 @router.get("/orders")
-async def list_orders():
-    """List orders with their item details."""
+async def list_orders(limit: int = Query(default=100, ge=1, le=500)):
+    """List recent orders with their item details and pricing breakdown."""
     tracer = get_tracer()
     with tracer.start_as_current_span("orders.list") as span:
+        span.set_attribute("orders.limit", limit)
         async with get_db() as db:
             result = await db.execute(
                 text(
                     "SELECT o.id, o.customer_id, c.name AS customer_name, c.email AS customer_email, "
-                    "o.total, o.status, o.shipping_address, o.created_at "
+                    "o.total, o.status, o.shipping_address, o.created_at, "
+                    "COALESCE((SELECT SUM(oi.quantity * oi.unit_price) FROM order_items oi "
+                    "WHERE oi.order_id = o.id), 0) AS subtotal, "
+                    "COALESCE((SELECT s.shipping_cost FROM shipments s WHERE s.order_id = o.id "
+                    "ORDER BY s.created_at DESC FETCH FIRST 1 ROWS ONLY), 0) AS shipping_cost "
                     "FROM orders o LEFT JOIN customers c ON c.id = o.customer_id "
-                    "ORDER BY o.created_at DESC"
+                    "ORDER BY o.created_at DESC "
+                    f"FETCH FIRST {limit} ROWS ONLY"
                 )
             )
             orders = [dict(row) for row in result.mappings().all()]
 
             for order in orders:
+                shipping_cost = round(float(order.get("shipping_cost") or 0.0), 2)
+                subtotal = round(float(order.get("subtotal") or 0.0), 2)
+                discount = round(
+                    max(subtotal + shipping_cost - float(order.get("total") or 0.0), 0.0),
+                    2,
+                )
+                order["shipping_cost"] = shipping_cost
+                order["discount"] = discount
+                order["subtotal"] = subtotal
                 items = await db.execute(
                     text(
                         "SELECT oi.product_id, oi.quantity, oi.unit_price, p.name, p.sku, p.description, p.stock, p.category, p.image_url "

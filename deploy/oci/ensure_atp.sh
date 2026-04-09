@@ -11,8 +11,8 @@ if ! command -v oci >/dev/null 2>&1; then
 fi
 
 COMPARTMENT_ID="${COMPARTMENT_ID:-}"
-DISPLAY_NAME="${DISPLAY_NAME:-mushop-cloudnative-atp}"
-DB_NAME="${DB_NAME:-mushopcnatp}"
+DISPLAY_NAME="${DISPLAY_NAME:-oci-demo-shared-atp}"
+DB_NAME="${DB_NAME:-ocidemoatp}"
 DB_WORKLOAD="${DB_WORKLOAD:-OLTP}"
 CPU_CORE_COUNT="${CPU_CORE_COUNT:-1}"
 DATA_STORAGE_SIZE_IN_TBS="${DATA_STORAGE_SIZE_IN_TBS:-1}"

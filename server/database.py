@@ -654,6 +654,55 @@ class AssistantMessage(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class WorkflowRun(Base):
+    __tablename__ = "workflow_runs"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    workflow_key = Column(String(100), nullable=False, index=True)
+    workflow_label = Column(String(200))
+    source_service = Column(String(100), nullable=False)
+    schedule_mode = Column(String(30), default="scheduled")
+    status = Column(String(30), default="pending")
+    result_summary = Column(Text)
+    trace_id = Column(String(64))
+    duration_ms = Column(Float, default=0.0)
+    started_at = Column(DateTime, server_default=func.now())
+    completed_at = Column(DateTime)
+
+
+class QueryExecution(Base):
+    __tablename__ = "query_executions"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    workflow_run_id = Column(Integer, ForeignKey("workflow_runs.id"), nullable=True)
+    query_name = Column(String(120), nullable=False, index=True)
+    component_name = Column(String(120))
+    source_service = Column(String(100), nullable=False)
+    schedule_mode = Column(String(30), default="manual")
+    action_name = Column(String(50), default="query")
+    status = Column(String(30), default="pending")
+    expected_failure = Column(Integer, default=0)
+    query_text = Column(Text, nullable=False)
+    prompt_text = Column(Text)
+    row_count = Column(Integer, default=0)
+    duration_ms = Column(Float, default=0.0)
+    error_message = Column(Text)
+    trace_id = Column(String(64))
+    created_at = Column(DateTime, server_default=func.now())
+    workflow_run = relationship("WorkflowRun")
+
+
+class ComponentSnapshot(Base):
+    __tablename__ = "component_snapshots"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    component_name = Column(String(120), nullable=False, index=True)
+    component_type = Column(String(60), nullable=False)
+    status = Column(String(30), default="unknown")
+    source_service = Column(String(100), nullable=False)
+    latency_ms = Column(Float, default=0.0)
+    details = Column(Text)
+    trace_id = Column(String(64))
+    observed_at = Column(DateTime, server_default=func.now())
+
+
 # ── Database Initialization ──────────────────────────────────────
 
 def init_tables():
