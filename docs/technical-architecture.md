@@ -5,14 +5,18 @@
 1. OCI WAF protects the public endpoint.
 2. OCI Load Balancer fronts the OKE service defined in [deploy/k8s/deployment.yaml](../deploy/k8s/deployment.yaml).
 3. The Python app serves the storefront and backend APIs.
-4. Oracle ATP stores the operational data for products, carts, customers, orders, shipments, page views, and assistant conversations.
-5. OCI APM receives backend traces through OTLP and browser telemetry through OCI APM RUM.
-6. OCI Logging stores structured application logs. Log Analytics can ingest those logs for correlation with `oracleApmTraceId`.
+4. A separate Go workflow gateway serves the new backend workflow menus through `WORKFLOW_API_BASE_URL` and is intended to sit behind OCI API Gateway in tenancy deployments.
+5. Oracle ATP stores the operational data for products, carts, customers, orders, shipments, page views, assistant conversations, workflow runs, and query execution history.
+6. OCI APM receives backend traces through OTLP and browser telemetry through OCI APM RUM.
+7. OCI Logging stores structured application logs. Log Analytics can ingest those logs for correlation with `oracleApmTraceId`.
 
 ## Data model additions
 
 - `assistant_sessions`: conversation session metadata for the GenAI advisor.
 - `assistant_messages`: user and assistant turns, provider, model id, and trace id.
+- `workflow_runs`: scheduled and manual backend workflow refresh runs.
+- `query_executions`: successful, failed, and Select AI-backed query executions for investigation and replay.
+- `component_snapshots`: backend component health rollups covering drone shop, CRM, and ATP.
 - Existing tables continue to back catalog, cart, order, shipment, analytics, and audit flows.
 
 ## Trace and log coverage
@@ -20,6 +24,8 @@
 - Middleware traces every request with method, route, status, duration, and client IP.
 - SQLAlchemy auto-instrumentation is enabled by passing the sync engine into OpenTelemetry setup.
 - Store spans cover storefront reads, coupon checks, cart updates, checkout, order persistence, and assistant calls.
+- The Go workflow gateway emits its own HTTP and ATP query traces and tags Oracle sessions so DB Management and Operations Insights can correlate those runs back to APM spans.
+- Query Lab executions are persisted in ATP even when the SQL is intentionally wrong, so investigation history remains visible.
 - Assistant messages and order audit rows store the active trace id for easier cross-correlation.
 - App logs include `oracleApmTraceId`, `trace_id`, and `span_id`.
 
@@ -45,6 +51,7 @@
 - The app uses the OCI Python SDK `GenerativeAiInferenceClient.chat`.
 - Product answers are grounded with catalog snippets sourced from ATP.
 - If OCI GenAI is unavailable, the app falls back to a deterministic grounded responder so the assistant remains usable.
+- ATP Select AI is surfaced through the workflow gateway when `SELECTAI_PROFILE_NAME` points to a valid `DBMS_CLOUD_AI` profile.
 
 ## ATP deployment notes
 
@@ -59,10 +66,11 @@ The application code cannot enable OCI resource logs by itself; enable these in 
 1. On the OCI Load Balancer, enable access logs and error logs to OCI Logging.
 2. On OCI WAF, enable policy logs to OCI Logging.
 3. In OCI Logging Analytics, create a source or ingest pipeline for the LB and WAF log groups.
-4. For external Splunk, choose one of these patterns:
+4. Route workflow gateway logs into OCI Logging so Log Analytics can correlate Query Lab failures with `oracleApmTraceId`.
+5. For external Splunk, choose one of these patterns:
    - Use OCI Logging plus Service Connector Hub to stream logs to OCI Streaming, then run a Splunk forwarder consumer.
    - Or export from OCI Logging/Logging Analytics into your existing external collector pipeline.
-5. The application already supports direct HEC shipping for app logs with `SPLUNK_HEC_URL` and `SPLUNK_HEC_TOKEN`.
+6. The application already supports direct HEC shipping for app logs with `SPLUNK_HEC_URL` and `SPLUNK_HEC_TOKEN`.
 
 ## Validation checklist
 
@@ -70,6 +78,8 @@ The application code cannot enable OCI resource logs by itself; enable these in 
 - `/api/shop/storefront` shows `backend.database = oracle_atp`.
 - `/api/shop/checkout` creates rows in `orders`, `order_items`, `shipments`, and `audit_logs`.
 - `/api/shop/assistant/query` stores rows in `assistant_sessions` and `assistant_messages`.
+- The workflow gateway writes to `workflow_runs`, `query_executions`, and `component_snapshots`.
+- The shop workflow panels call the gateway endpoint configured through `WORKFLOW_API_BASE_URL`.
 - OCI APM shows request, DB, checkout, and assistant spans.
 - OCI Logging and Log Analytics show correlated app logs.
 - OCI LB and WAF logs are enabled in OCI and routed into the selected OCI Logging groups.

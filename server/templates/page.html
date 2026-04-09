@@ -243,7 +243,7 @@ const MODULE_CONFIG = {
             'Supporting sources: `/api/categories` and `/api/products/1/reviews`.',
             'Storefront consumers: `/shop` hero, filters, search, and cart flows.'
         ],
-        runtimeNote: 'Catalogue health is only credible when the active product set remains drone-focused and legacy MuShop inventory is not exposed.',
+        runtimeNote: 'Catalogue health is only credible when the active product set remains drone-focused and no legacy pre-rename inventory is exposed.',
         metrics(data) {
             const products = data.primary || [];
             const categories = data.extras.categories?.categories || [];

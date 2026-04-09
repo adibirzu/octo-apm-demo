@@ -126,15 +126,16 @@ def _register_process_metrics_standalone(meter):
     import os, threading
     try:
         import psutil
+        from opentelemetry import metrics as otel_metrics
+
         proc = psutil.Process(os.getpid())
-        from opentelemetry.sdk.metrics import Observation
 
         def _cpu_cb(_options):
-            yield Observation(proc.cpu_percent(interval=None) / 100.0)
+            yield otel_metrics.Observation(proc.cpu_percent(interval=None) / 100.0)
         def _mem_cb(_options):
-            yield Observation(proc.memory_info().rss)
+            yield otel_metrics.Observation(proc.memory_info().rss)
         def _thread_cb(_options):
-            yield Observation(threading.active_count())
+            yield otel_metrics.Observation(threading.active_count())
 
         meter.create_observable_gauge("process.runtime.cpython.cpu.utilization", callbacks=[_cpu_cb], unit="1")
         meter.create_observable_gauge("process.runtime.cpython.memory", callbacks=[_mem_cb], unit="By")
