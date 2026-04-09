@@ -51,6 +51,16 @@ class Config:
     db_pool_size: int = field(default_factory=lambda: _env_int("DB_POOL_SIZE", 10))
     db_max_overflow: int = field(default_factory=lambda: _env_int("DB_MAX_OVERFLOW", 20))
     db_pool_timeout: int = field(default_factory=lambda: _env_int("DB_POOL_TIMEOUT", 30))
+    # Auth-path sync engine — intentionally separate from the main pool so it
+    # can be tuned (and observed) independently. Small defaults keep the
+    # per-replica Oracle ATP session footprint bounded; see KB-435.
+    db_auth_pool_size: int = field(default_factory=lambda: _env_int("DB_AUTH_POOL_SIZE", 5))
+    db_auth_max_overflow: int = field(default_factory=lambda: _env_int("DB_AUTH_MAX_OVERFLOW", 10))
+    db_auth_pool_timeout: int = field(default_factory=lambda: _env_int("DB_AUTH_POOL_TIMEOUT", 5))
+    # Dedicated executor for auth lookups so cache-miss bursts cannot queue
+    # behind unrelated `asyncio.to_thread` calls. Sized to match the auth pool
+    # + overflow so the executor is never the bottleneck before the DB is.
+    auth_executor_max_workers: int = field(default_factory=lambda: _env_int("AUTH_EXECUTOR_MAX_WORKERS", 15))
     # Oracle ATP
     oracle_dsn: str = field(default_factory=lambda: _env("ORACLE_DSN"))
     oracle_user: str = field(default_factory=lambda: _env("ORACLE_USER", "ADMIN"))

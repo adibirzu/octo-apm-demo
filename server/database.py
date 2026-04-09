@@ -46,6 +46,21 @@ engine = create_async_engine(
 sync_engine = create_engine(
     cfg.database_sync_url,
     connect_args=_connect_args,
+    # Sizing notes (see KB-435):
+    # - This engine is used by the session middleware's per-request auth
+    #   lookup, so it must handle bursts of cache misses without queueing.
+    # - The 30s in-process session cache in auth.py cushions repeat hits, so
+    #   we only need enough capacity for concurrent *new* session validations.
+    # - It must NOT mirror the async pool — doubling the Oracle ATP session
+    #   footprint per replica risks fleet-wide session exhaustion.
+    # - `pool_pre_ping=True` prevents stale connections from silently failing
+    #   after Oracle-side password rotations.
+    # - Pool sizing comes from config (DB_AUTH_POOL_SIZE etc.) so ops can tune
+    #   and observe it independently of the main app pool.
+    pool_pre_ping=True,
+    pool_size=cfg.db_auth_pool_size,
+    max_overflow=cfg.db_auth_max_overflow,
+    pool_timeout=cfg.db_auth_pool_timeout,
 )
 logger.info("Using Oracle ATP backend (DSN: %s)", cfg.oracle_dsn)
 
