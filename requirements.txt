@@ -23,7 +23,8 @@ prometheus-client==0.21.1
 # OCI SDK (for logging)
 oci==2.143.0
 
-# Security (bcrypt for password hashing)
+# Security (bcrypt for password hashing, PyJWT for IDCS SSO ID-token verification)
 bcrypt==4.2.1
+PyJWT[crypto]==2.10.1
 
 psutil>=5.9.0

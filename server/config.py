@@ -37,6 +37,10 @@ class Config:
 
     # ── Cross-service integration ──
     enterprise_crm_url = os.getenv("ENTERPRISE_CRM_URL", "")
+    workflow_api_base_url = os.getenv("WORKFLOW_API_BASE_URL", "").rstrip("/")
+    workflow_service_name = os.getenv("WORKFLOW_SERVICE_NAME", "octo-workflow-gateway")
+    workflow_poll_seconds = int(os.getenv("WORKFLOW_POLL_SECONDS", "90"))
+    workflow_faulty_query_enabled = os.getenv("WORKFLOW_FAULTY_QUERY_ENABLED", "false").lower() in ("1", "true", "yes")
 
     # ── OCI APM ──
     oci_apm_endpoint = os.getenv("OCI_APM_ENDPOINT", "")
@@ -53,12 +57,23 @@ class Config:
     oci_compartment_id = os.getenv("OCI_COMPARTMENT_ID", "")
     oci_genai_endpoint = os.getenv("OCI_GENAI_ENDPOINT", "")
     oci_genai_model_id = os.getenv("OCI_GENAI_MODEL_ID", "")
+    selectai_profile_name = os.getenv("SELECTAI_PROFILE_NAME", "")
 
     # ── OCI Console Drilldown URLs ──
     apm_console_url = os.getenv("APM_CONSOLE_URL", "")
     opsi_console_url = os.getenv("OPSI_CONSOLE_URL", "")
     db_management_console_url = os.getenv("DB_MANAGEMENT_CONSOLE_URL", "")
     log_analytics_console_url = os.getenv("LOG_ANALYTICS_CONSOLE_URL", "")
+
+    # ── IDCS / OCI IAM Identity Domain (OIDC SSO) ──
+    idcs_domain_url = os.getenv("IDCS_DOMAIN_URL", "").rstrip("/")
+    idcs_client_id = os.getenv("IDCS_CLIENT_ID", "")
+    idcs_client_secret = os.getenv("IDCS_CLIENT_SECRET", "")
+    idcs_redirect_uri = os.getenv("IDCS_REDIRECT_URI", "")
+    idcs_scope = os.getenv("IDCS_SCOPE", "openid profile email")
+    idcs_post_logout_redirect = os.getenv("IDCS_POST_LOGOUT_REDIRECT", "/login")
+    # JWKS verification can be disabled in air-gapped dev only.
+    idcs_verify_jwt = os.getenv("IDCS_VERIFY_JWT", "true").lower() in ("1", "true", "yes")
 
     # ── Splunk HEC ──
     splunk_hec_url = os.getenv("SPLUNK_HEC_URL", "")
@@ -84,6 +99,23 @@ class Config:
     @property
     def rum_configured(self) -> bool:
         return bool(self.oci_apm_rum_endpoint and self.oci_apm_public_datakey)
+
+    @property
+    def workflow_gateway_configured(self) -> bool:
+        return bool(self.workflow_api_base_url)
+
+    @property
+    def selectai_configured(self) -> bool:
+        return bool(self.selectai_profile_name)
+
+    @property
+    def idcs_configured(self) -> bool:
+        return bool(
+            self.idcs_domain_url
+            and self.idcs_client_id
+            and self.idcs_client_secret
+            and self.idcs_redirect_uri
+        )
 
     @property
     def logging_configured(self) -> bool:
@@ -130,14 +162,38 @@ class Config:
             "logging_configured": self.logging_configured,
             "splunk_configured": bool(self.splunk_hec_url and self.splunk_hec_token),
             "genai_configured": bool(self.oci_compartment_id and self.oci_genai_endpoint and self.oci_genai_model_id),
+            "selectai_configured": self.selectai_configured,
             "crm_configured": bool(self.enterprise_crm_url),
             "crm_host": self.crm_hostname or None,
+            "workflow_gateway_configured": self.workflow_gateway_configured,
+            "workflow_api_base_url": self.workflow_api_base_url or None,
         }
 
     def validate(self) -> None:
         # ATP credentials are optional — app falls back to PostgreSQL if not set
         if self.oracle_dsn and not self.oracle_password:
             raise RuntimeError("ORACLE_DSN is set but ORACLE_PASSWORD is missing")
+
+        # In production, the bearer-token signing secret MUST be supplied.
+        # Outside production, server.auth_security generates a per-process
+        # random secret with a warning log.
+        if self.is_production and not self.auth_token_secret:
+            raise RuntimeError(
+                "AUTH_TOKEN_SECRET is required when ENVIRONMENT=production. "
+                "Provide it via secret/env so bearer tokens can be signed."
+            )
+
+        # In production with SSO partially configured (some fields set,
+        # others missing), refuse to start so the misconfiguration is loud.
+        partial = any([
+            self.idcs_domain_url, self.idcs_client_id,
+            self.idcs_client_secret, self.idcs_redirect_uri,
+        ])
+        if partial and not self.idcs_configured and self.is_production:
+            raise RuntimeError(
+                "IDCS SSO is partially configured. Set IDCS_DOMAIN_URL, "
+                "IDCS_CLIENT_ID, IDCS_CLIENT_SECRET, IDCS_REDIRECT_URI."
+            )
 
 
 cfg = Config()

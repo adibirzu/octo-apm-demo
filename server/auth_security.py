@@ -1,4 +1,16 @@
-"""Authentication helpers for signed bearer tokens and basic rate limiting."""
+"""Authentication helpers for signed bearer tokens and basic rate limiting.
+
+Security model
+==============
+- The HMAC-SHA256 signing key for issued bearer tokens is derived from
+  ``AUTH_TOKEN_SECRET`` only.
+- In production (``ENVIRONMENT=production``), :func:`server.config.Config.validate`
+  refuses to start if the env var is missing — there is no silent fallback to
+  database credentials or hardcoded literals (CRIT-1).
+- Outside production, a per-process random secret is generated once on first
+  use so local ``docker-compose up`` keeps working without ceremony. A loud
+  warning is logged so operators know tokens won't survive a process restart.
+"""
 
 from __future__ import annotations
 
@@ -6,6 +18,9 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
+import os
+import secrets as _secrets
 import time
 from collections import defaultdict, deque
 from typing import Any
@@ -14,22 +29,41 @@ from fastapi import HTTPException, Request, status
 
 from server.config import cfg
 
+logger = logging.getLogger(__name__)
+
 LOGIN_WINDOW_SECONDS = 300
 MAX_LOGIN_ATTEMPTS = 8
 TOKEN_TTL_SECONDS = 60 * 60 * 8
 
 _login_attempts: dict[str, deque[float]] = defaultdict(deque)
+_ephemeral_secret: bytes | None = None
+
+
+def _resolve_secret_material() -> str:
+    global _ephemeral_secret
+    explicit = (cfg.auth_token_secret or os.getenv("AUTH_TOKEN_SECRET", "")).strip()
+    if explicit:
+        return explicit
+
+    if cfg.is_production:
+        # Defence in depth — Config.validate() should already have raised, but
+        # this guarantees we never sign with a known/empty key in prod.
+        raise RuntimeError(
+            "AUTH_TOKEN_SECRET is required in production but was not provided."
+        )
+
+    if _ephemeral_secret is None:
+        _ephemeral_secret = _secrets.token_bytes(32)
+        logger.warning(
+            "AUTH_TOKEN_SECRET not set — generated an ephemeral signing key for "
+            "this process. Tokens will be invalidated on restart. Set "
+            "AUTH_TOKEN_SECRET in production-like environments."
+        )
+    return _ephemeral_secret.hex()
 
 
 def _secret_bytes() -> bytes:
-    basis = (
-        cfg.auth_token_secret
-        or cfg.oracle_password
-        or cfg.splunk_hec_token
-        or cfg.oracle_dsn
-        or f"{cfg.app_name}:{cfg.environment}:octo-default-secret"
-    )
-    return hashlib.sha256(basis.encode("utf-8")).digest()
+    return hashlib.sha256(_resolve_secret_material().encode("utf-8")).digest()
 
 
 def _b64encode(value: bytes) -> str:

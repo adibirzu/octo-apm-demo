@@ -24,6 +24,7 @@ from server.middleware.geo_latency import GeoLatencyMiddleware
 
 # Module routers
 from server.modules.auth import router as auth_router
+from server.modules.sso import router as sso_router
 from server.modules.catalogue import router as catalogue_router
 from server.modules.orders import router as orders_router
 from server.modules.shipping import router as shipping_router
@@ -92,13 +93,26 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 FastAPIInstrumentor.instrument_app(app)
 
 # ── Middleware (outermost first) ──────────────────────────────
+# CORS — never silently fall back to wildcard. An empty list disables CORS
+# entirely (FastAPI's CORSMiddleware short-circuits when allow_origins is
+# empty), which is the correct safe default. Wildcard with credentials is
+# explicitly forbidden by the CORS spec; we refuse the combination.
+_cors_default = "https://shop.octodemo.cloud,https://crm.octodemo.cloud"
 _cors_origins = [
-    o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "https://shop.octodemo.cloud,https://crm.octodemo.cloud").split(",") if o.strip()
-] or ["*"]
-app.add_middleware(CORSMiddleware,
-    allow_origins=_cors_origins, allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-Correlation-Id", "X-Session-Id"],
-    allow_credentials=True)
+    o.strip()
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", _cors_default).split(",")
+    if o.strip() and o.strip() != "*"
+]
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-Correlation-Id", "X-Session-Id"],
+        allow_credentials=True,
+    )
+else:
+    logger.warning("CORS disabled — CORS_ALLOWED_ORIGINS produced no valid origins")
 app.add_middleware(GeoLatencyMiddleware)
 app.add_middleware(ChaosMiddleware)
 app.add_middleware(MetricsMiddleware)
@@ -116,6 +130,7 @@ templates = Jinja2Templates(directory=_templates_dir) if os.path.isdir(_template
 
 # ── Register API routers ──────────────────────────────────────
 app.include_router(auth_router)
+app.include_router(sso_router)
 app.include_router(catalogue_router)
 app.include_router(orders_router)
 app.include_router(shipping_router)
@@ -164,6 +179,8 @@ async def ready():
             "db_type": cfg.database_target_label,
             "apm_configured": cfg.apm_configured,
             "rum_configured": cfg.rum_configured,
+            "workflow_gateway_configured": cfg.workflow_gateway_configured,
+            "selectai_configured": cfg.selectai_configured,
             "runtime": runtime_snapshot(),
         }
 
@@ -219,6 +236,11 @@ def _render_page(request: Request, page: str, title: str, **ctx):
          "rum_web_application": cfg.oci_apm_web_application,
          "rum_configured": cfg.rum_configured,
          "apm_configured": cfg.apm_configured,
+         "workflow_api_base_url": cfg.workflow_api_base_url,
+         "workflow_gateway_configured": cfg.workflow_gateway_configured,
+         "selectai_profile_name": cfg.selectai_profile_name,
+         "selectai_configured": cfg.selectai_configured,
+         "idcs_configured": cfg.idcs_configured,
          "genai_configured": bool(cfg.oci_genai_endpoint and cfg.oci_genai_model_id),
          "app_name": cfg.app_name, **ctx},
     )
@@ -283,13 +305,22 @@ async def login_page(request: Request):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    push_log("ERROR", f"Unhandled exception: {str(exc)}", **{
+    """Log full detail server-side; return only an opaque error in production."""
+    push_log("ERROR", f"Unhandled exception: {exc}", **{
         "error.type": type(exc).__name__,
         "error.message": str(exc),
         "http.url.path": request.url.path,
     })
-    detail = "Internal server error" if cfg.is_production else str(exc)
+    if cfg.is_production:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal server error"},
+        )
     return JSONResponse(
         status_code=500,
-        content={"error": detail, "type": type(exc).__name__, "path": request.url.path},
+        content={
+            "error": str(exc),
+            "type": type(exc).__name__,
+            "path": request.url.path,
+        },
     )

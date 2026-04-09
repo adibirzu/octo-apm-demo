@@ -34,6 +34,36 @@ spec:
                 secretKeyRef:
                   name: octo-auth
                   key: token-secret
+            # ── IDCS / OCI IAM Identity Domain SSO ──
+            - name: IDCS_DOMAIN_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-domain-url
+                  optional: true
+            - name: IDCS_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-client-id
+                  optional: true
+            - name: IDCS_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-client-secret
+                  optional: true
+            - name: IDCS_REDIRECT_URI
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-redirect-uri
+                  optional: true
+            - name: IDCS_POST_LOGOUT_REDIRECT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-post-logout-redirect
                   optional: true
             - name: OCI_AUTH_MODE
               value: "resource_principal"
@@ -127,12 +157,26 @@ spec:
                   name: octo-genai
                   key: model-id
                   optional: true
+            - name: SELECTAI_PROFILE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: octo-genai
+                  key: selectai-profile-name
+                  optional: true
             - name: ENTERPRISE_CRM_URL
               valueFrom:
                 secretKeyRef:
                   name: octo-integrations
                   key: crm-url
                   optional: true
+            - name: WORKFLOW_API_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: workflow-api-base-url
+                  optional: true
+            - name: WORKFLOW_SERVICE_NAME
+              value: "octo-workflow-gateway"
             # OCI Console drilldown URLs (360 Monitoring)
             - name: APM_CONSOLE_URL
               valueFrom:
@@ -200,7 +244,11 @@ metadata:
     service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
     service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
     service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "10"
-    service.beta.kubernetes.io/oci-load-balancer-subnet1: "ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaa4q6hvwazrbtktsqu57lyjpvggze26hubs566v7zy4eclmjh7x2hq"
+    # Tenancy-portable: substitute ${OCI_LB_SUBNET_OCID} during render (e.g.
+    # `envsubst < deployment.yaml | kubectl apply -f -`). Leave the literal
+    # placeholder so the manifest is safe to commit and isn't pinned to a
+    # single tenancy or region.
+    service.beta.kubernetes.io/oci-load-balancer-subnet1: "${OCI_LB_SUBNET_OCID}"
     oci.oraclecloud.com/oci-load-balancer-health-check-interval: "10000"
     oci.oraclecloud.com/oci-load-balancer-health-check-retries: "3"
     oci.oraclecloud.com/oci-load-balancer-health-check-timeout: "3000"

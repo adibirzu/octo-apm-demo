@@ -38,7 +38,14 @@
             Successful sign-in stores a signed bearer token in local storage so the portal can call protected admin APIs.
             Use an administrator account for the Admin surface.
         </p>
-        <p>Seeded demo access: `admin / OctoAdmin!2026` for admin views, `shopper / OctoUser!2026` for standard-user checks.</p>
+        <p>Seeded demo access: <code>admin / OctoAdmin!2026</code> for admin views, <code>shopper / OctoUser!2026</code> for standard-user checks.</p>
+        {% if idcs_configured %}
+        <a class="btn" href="/api/auth/sso/login" id="ssoLoginBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#c74634;color:#fff;">
+            <span aria-hidden="true">⇄</span>
+            Sign in with OCI IAM (IDCS)
+        </a>
+        <div style="text-align:center;color:var(--muted);font-size:0.85em;">— or use a local account —</div>
+        {% endif %}
         <form id="loginForm" class="login-form">
             <input type="text" id="username" placeholder="Username" autocomplete="username" required>
             <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
@@ -48,6 +55,9 @@
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
             <a class="btn btn-outline" href="/admin-page">Open Admin</a>
             <button type="button" class="btn btn-outline" id="clearTokenBtn">Clear Stored Token</button>
+            {% if idcs_configured %}
+            <a class="btn btn-outline" href="/api/auth/sso/logout">SSO Sign Out</a>
+            {% endif %}
         </div>
     </section>
 </div>
@@ -59,6 +69,12 @@ const result = document.getElementById('result');
 
 function setMessage(message) {
     result.textContent = message;
+}
+
+// Surface SSO callback errors that the server attached as ?sso_error=...
+const _ssoErr = new URLSearchParams(window.location.search).get('sso_error');
+if (_ssoErr) {
+    setMessage(`SSO sign-in failed: ${_ssoErr.replaceAll('_', ' ')}`);
 }
 
 document.getElementById('loginForm').addEventListener('submit', async (event) => {
