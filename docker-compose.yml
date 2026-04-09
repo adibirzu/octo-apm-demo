@@ -24,6 +24,9 @@ services:
       - OCI_COMPARTMENT_ID=${OCI_COMPARTMENT_ID:-}
       - OCI_GENAI_ENDPOINT=${OCI_GENAI_ENDPOINT:-}
       - OCI_GENAI_MODEL_ID=${OCI_GENAI_MODEL_ID:-}
+      - WORKFLOW_API_BASE_URL=${WORKFLOW_API_BASE_URL:-http://localhost:8090}
+      - WORKFLOW_SERVICE_NAME=${WORKFLOW_SERVICE_NAME:-octo-workflow-gateway}
+      - SELECTAI_PROFILE_NAME=${SELECTAI_PROFILE_NAME:-}
       - OCI_APM_ENDPOINT=${OCI_APM_ENDPOINT:-}
       - OCI_APM_PRIVATE_DATAKEY=${OCI_APM_PRIVATE_DATAKEY:-}
       - OCI_APM_PUBLIC_DATAKEY=${OCI_APM_PUBLIC_DATAKEY:-}
@@ -41,4 +44,32 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    restart: unless-stopped
+
+  workflow-gateway:
+    build:
+      context: ./services/workflow-gateway
+    ports:
+      - "8090:8090"
+    env_file:
+      - .env.local
+    environment:
+      - WORKFLOW_APP_NAME=${WORKFLOW_SERVICE_NAME:-octo-workflow-gateway}
+      - WORKFLOW_SERVICE_NAME=${WORKFLOW_SERVICE_NAME:-octo-workflow-gateway}
+      - WORKFLOW_PORT=8090
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - ORACLE_DSN=${ORACLE_DSN:-}
+      - ORACLE_USER=${ORACLE_USER:-ADMIN}
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD:-}
+      - ORACLE_WALLET_DIR=/opt/oracle/wallet
+      - ORACLE_WALLET_PASSWORD=${ORACLE_WALLET_PASSWORD:-}
+      - ENTERPRISE_CRM_URL=${ENTERPRISE_CRM_URL:-}
+      - OCI_APM_ENDPOINT=${OCI_APM_ENDPOINT:-}
+      - OCI_APM_PRIVATE_DATAKEY=${OCI_APM_PRIVATE_DATAKEY:-}
+      - WORKFLOW_POLL_SECONDS=${WORKFLOW_POLL_SECONDS:-90}
+      - WORKFLOW_ALLOWED_ORIGINS=${WORKFLOW_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+      - WORKFLOW_FAULTY_QUERY_ENABLED=${WORKFLOW_FAULTY_QUERY_ENABLED:-false}
+      - SELECTAI_PROFILE_NAME=${SELECTAI_PROFILE_NAME:-}
+    volumes:
+      - ${ORACLE_WALLET_PATH:-./wallet}:/opt/oracle/wallet:ro
     restart: unless-stopped

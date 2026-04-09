@@ -115,6 +115,60 @@ async def _fetch_crm_customers(crm: str, limit: int) -> list[dict]:
     return []
 
 
+async def _find_crm_customer(client: httpx.AsyncClient, crm: str, email: str) -> dict | None:
+    target = (email or "").strip().lower()
+    if not target:
+        return None
+
+    attempts = [
+        (f"{crm}/api/customers", {"search": email, "limit": 25}),
+        (f"{crm}/api/customers", {"limit": 200}),
+        (f"{crm}/customers", {"limit": 200}),
+    ]
+    for url, params in attempts:
+        resp = await client.get(url, params=params)
+        if resp.status_code != 200:
+            continue
+        for item in _extract_customer_list(resp.json()):
+            candidate = (
+                item.get("email")
+                or item.get("email_address")
+                or item.get("contact_email")
+                or ""
+            ).strip().lower()
+            if candidate == target:
+                return item
+    return None
+
+
+async def _ensure_crm_customer(client: httpx.AsyncClient, crm: str, customer_email: str) -> dict | None:
+    customer = await _find_crm_customer(client, crm, customer_email)
+    if customer:
+        return customer
+
+    email = (customer_email or "").strip()
+    if not email:
+        return None
+
+    local_part = email.split("@")[0] or "octo-buyer"
+    create_resp = await client.post(
+        f"{crm}/api/customers",
+        json={
+            "name": local_part.replace(".", " ").replace("-", " ").title(),
+            "email": email,
+            "phone": "",
+            "company": "OCTO Drone Shop",
+            "industry": "Drone Operations",
+            "revenue": 0,
+            "notes": "source=octo-drone-shop",
+        },
+    )
+    if create_resp.status_code not in (200, 201):
+        return None
+
+    return await _find_crm_customer(client, crm, customer_email)
+
+
 async def _upsert_customers(customers: list[dict]) -> dict:
     synced = 0
     updated = 0
@@ -246,13 +300,29 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
         span.set_attribute("integration.order_source", source)
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
+                customer = await _ensure_crm_customer(client, crm, customer_email)
+                if not customer:
+                    return {
+                        "synced": False,
+                        "order_id": order_id,
+                        "reason": "CRM customer lookup/create failed",
+                    }
+
+                customer_id = int(customer.get("id") or customer.get("customer_id") or 0)
+                if customer_id <= 0:
+                    return {
+                        "synced": False,
+                        "order_id": order_id,
+                        "reason": "CRM customer ID missing",
+                    }
+
                 resp = await client.post(
-                    f"{crm}/api/invoices",
+                    f"{crm}/api/orders",
                     json={
-                        "customer_email": customer_email,
-                        "amount": total,
-                        "description": f"OCTO-CRM Order #{order_id}",
-                        "source": "octo-crm-apm",
+                        "customer_id": customer_id,
+                        "items": [{"quantity": 1, "unit_price": float(total or 0)}],
+                        "shipping_address": "Imported from OCTO Drone Shop",
+                        "notes": f"OCTO Drone Shop order #{order_id}; source={source}",
                     },
                 )
             span.set_attribute("integration.crm.status_code", resp.status_code)
