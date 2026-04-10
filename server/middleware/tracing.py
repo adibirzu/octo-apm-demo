@@ -101,9 +101,14 @@ class TracingMiddleware(BaseHTTPMiddleware):
                 response.headers["X-Span-Id"] = trace_ctx["span_id"]
 
             if response.status_code >= 500:
-                span.set_status(Status(StatusCode.ERROR))
+                span.set_status(Status(StatusCode.ERROR, f"HTTP {response.status_code}"))
+            elif response.status_code >= 400:
+                span.add_event("http.client_error", {
+                    "http.status_code": response.status_code,
+                    "http.url.path": request.url.path,
+                })
 
-            log_level = "WARNING" if duration_ms >= 2000 else "INFO"
+            log_level = "WARNING" if duration_ms >= 2000 or response.status_code >= 400 else "INFO"
             push_log(
                 log_level,
                 "Request completed",

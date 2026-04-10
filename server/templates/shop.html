@@ -611,6 +611,7 @@ function renderProducts() {
 function applyFilters() {
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
     const sort = document.getElementById('sortSelect').value;
+    if (q) rumEvent('shop.search', {query: q, category: state.category, sort});
     state.filtered = state.products.filter(p => {
         if (state.category !== 'All' && p.category !== state.category) return false;
         if (q) {
@@ -675,6 +676,14 @@ async function loadCart() {
 }
 
 async function addToCart(productId) {
+    const product = state.products.find(p => p.id === productId);
+    rumEvent('shop.add_to_cart', {
+        product_id: productId,
+        product_name: product?.name || '',
+        product_price: product?.price || 0,
+        category: product?.category || '',
+        cart_size: state.cart.length,
+    });
     const res = await _fetch('/api/cart/add', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -682,6 +691,7 @@ async function addToCart(productId) {
     });
     const data = await res.json();
     if (!res.ok || data.error) {
+        rumEvent('shop.add_to_cart_error', {product_id: productId, error: data.error || 'unknown'});
         document.getElementById('checkoutStatus').textContent = data.error || 'Failed to add item.';
         return;
     }
@@ -704,6 +714,11 @@ async function submitCheckout(e) {
         items: state.cart.map(i => ({product_id: i.product_id, quantity: i.quantity})),
     };
     const status = document.getElementById('checkoutStatus');
+    rumEvent('shop.checkout_start', {
+        cart_items: state.cart.length,
+        cart_total: state.cart.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0),
+        session_id: state.sessionId,
+    });
     status.textContent = 'Placing order…';
     try {
         const res = await _fetch('/api/shop/checkout', {
@@ -713,13 +728,21 @@ async function submitCheckout(e) {
         });
         const result = await res.json();
         if (!res.ok || result.error) {
+            rumEvent('shop.checkout_error', {error: result.error || `HTTP ${res.status}`, cart_items: state.cart.length});
             status.textContent = result.error || `Checkout failed (${res.status})`;
             return;
         }
+        rumEvent('shop.checkout_complete', {
+            order_id: result.order_id,
+            total: result.total,
+            items: state.cart.length,
+            tracking: result.tracking_number,
+        });
         status.textContent = `Order #${result.order_id} placed! Tracking: ${result.tracking_number} — Total: $${result.total.toLocaleString()}`;
         formEl.reset();
         await Promise.all([loadCart(), loadStorefront()]);
     } catch (err) {
+        rumEvent('shop.checkout_exception', {error: err.message});
         status.textContent = `Request failed: ${err.message}`;
     }
 }
@@ -913,6 +936,25 @@ async function submitSelectAi(event) {
     }
 }
 
+/* ── RUM Custom Events (OCI APM user interaction tracing) ────── */
+function rumEvent(name, attrs) {
+    try {
+        if (window.apmrum && typeof window.apmrum.reportError === 'function') {
+            // Use a custom event via the RUM beacon — OCI APM surfaces these
+            // as "User Interaction" spans in the Session Explorer.
+            const payload = {name, ...attrs, timestamp: Date.now()};
+            // OCI APM RUM supports custom actions via the global apmrum object
+            if (window.apmrum.api && window.apmrum.api.addAction) {
+                window.apmrum.api.addAction(name, payload);
+            }
+        }
+        // Also emit a performance mark so browser DevTools shows the event
+        if (window.performance && window.performance.mark) {
+            window.performance.mark(`rum:${name}`, {detail: attrs});
+        }
+    } catch (_) { /* RUM not loaded */ }
+}
+
 /* ── Wire events ─────────────────────────────────────────────── */
 document.getElementById('searchInput').addEventListener('input', applyFilters);
 document.getElementById('sortSelect').addEventListener('change', applyFilters);
@@ -925,6 +967,7 @@ document.querySelectorAll('.query-runner').forEach(btn => {
 
 /* ── Boot ────────────────────────────────────────────────────── */
 (async function init() {
+    const _bootStart = Date.now();
     try {
         await Promise.all([
             loadStorefront(),
@@ -934,7 +977,14 @@ document.querySelectorAll('.query-runner').forEach(btn => {
             loadQueryExecutions(),
             trackPageView().catch(() => {}),
         ]);
+        rumEvent('shop.page_loaded', {
+            load_time_ms: Date.now() - _bootStart,
+            products: state.products.length,
+            cart_items: state.cart.length,
+            categories: document.querySelectorAll('.category-chip').length,
+        });
     } catch (err) {
+        rumEvent('shop.page_load_error', {error: err.message, load_time_ms: Date.now() - _bootStart});
         document.getElementById('productGrid').innerHTML =
             `<div class="helper" style="grid-column:1/-1;color:var(--rose);">Failed to load catalog: ${esc(err.message)}</div>`;
     }

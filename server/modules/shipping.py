@@ -39,37 +39,48 @@ async def list_shipments():
 @router.get("/shipping/{shipment_id}")
 async def get_shipment(shipment_id: int):
     """Get shipment with tracking details."""
-    async with get_db() as db:
-        result = await db.execute(
-            text("SELECT * FROM shipments WHERE id = :id"), {"id": shipment_id}
-        )
-        shipment = result.mappings().first()
+    tracer = get_tracer()
+    with tracer.start_as_current_span("shipping.get") as span:
+        span.set_attribute("shipping.shipment_id", shipment_id)
+        async with get_db() as db:
+            result = await db.execute(
+                text("SELECT * FROM shipments WHERE id = :id"), {"id": shipment_id}
+            )
+            shipment = result.mappings().first()
 
-    if not shipment:
-        return {"error": "Shipment not found"}
-    return dict(shipment)
+        if not shipment:
+            span.set_attribute("shipping.found", False)
+            return {"error": "Shipment not found"}
+        span.set_attribute("shipping.found", True)
+        span.set_attribute("shipping.status", str(shipment.get("status", "")))
+        span.set_attribute("shipping.carrier", str(shipment.get("carrier", "")))
+        return dict(shipment)
 
 
 @router.post("/shipping/{shipment_id}/status")
 async def update_status(shipment_id: int, payload: dict):
     """Update shipment status with validation."""
-    new_status = str(payload.get("status", "")).strip().lower()
-    if new_status not in _VALID_STATUSES:
-        return {"error": f"Invalid status. Must be one of: {', '.join(sorted(_VALID_STATUSES))}"}
+    tracer = get_tracer()
+    with tracer.start_as_current_span("shipping.update_status") as span:
+        new_status = str(payload.get("status", "")).strip().lower()
+        span.set_attribute("shipping.shipment_id", shipment_id)
+        span.set_attribute("shipping.new_status", new_status)
+        if new_status not in _VALID_STATUSES:
+            return {"error": f"Invalid status. Must be one of: {', '.join(sorted(_VALID_STATUSES))}"}
 
-    async with get_db() as db:
-        # Verify shipment exists
-        exists = await db.execute(
-            text("SELECT id FROM shipments WHERE id = :id"), {"id": shipment_id}
-        )
-        if not exists.first():
-            return {"error": "Shipment not found"}
+        async with get_db() as db:
+            exists = await db.execute(
+                text("SELECT id FROM shipments WHERE id = :id"), {"id": shipment_id}
+            )
+            if not exists.first():
+                span.set_attribute("shipping.found", False)
+                return {"error": "Shipment not found"}
 
-        await db.execute(
-            text("UPDATE shipments SET status = :status WHERE id = :id"),
-            {"status": new_status, "id": shipment_id},
-        )
-    return {"status": "updated", "new_status": new_status}
+            await db.execute(
+                text("UPDATE shipments SET status = :status WHERE id = :id"),
+                {"status": new_status, "id": shipment_id},
+            )
+        return {"status": "updated", "new_status": new_status}
 
 
 @router.get("/shipping/by-region")
@@ -98,8 +109,12 @@ async def by_region(region: str = "", request: Request = None):
 @router.get("/shipping/warehouses")
 async def list_warehouses():
     """List warehouses."""
-    async with get_db() as db:
-        result = await db.execute(
-            text("SELECT * FROM warehouses WHERE is_active = 1 ORDER BY region")
-        )
-        return {"warehouses": [dict(r) for r in result.mappings().all()]}
+    tracer = get_tracer()
+    with tracer.start_as_current_span("shipping.warehouses") as span:
+        async with get_db() as db:
+            result = await db.execute(
+                text("SELECT * FROM warehouses WHERE is_active = 1 ORDER BY region")
+            )
+            warehouses = [dict(r) for r in result.mappings().all()]
+            span.set_attribute("db.row_count", len(warehouses))
+        return {"warehouses": warehouses}

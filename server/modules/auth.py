@@ -96,15 +96,22 @@ async def login(request: Request, payload: dict):
 @router.get("/profile")
 async def profile(request: Request):
     """Return the currently authenticated user profile."""
-    token_payload = require_authenticated_user(request)
+    tracer = get_tracer()
+    with tracer.start_as_current_span("auth.profile") as span:
+        token_payload = require_authenticated_user(request)
+        span.set_attribute("auth.user_id", int(token_payload["sub"]))
+        span.set_attribute("auth.method", token_payload.get("auth_method", "unknown"))
 
-    async with get_db() as db:
-        result = await db.execute(
-            text("SELECT id, username, email, role, last_login FROM users WHERE id = :id"),
-            {"id": int(token_payload["sub"])},
-        )
-        user = result.mappings().first()
+        async with get_db() as db:
+            result = await db.execute(
+                text("SELECT id, username, email, role, last_login FROM users WHERE id = :id"),
+                {"id": int(token_payload["sub"])},
+            )
+            user = result.mappings().first()
 
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return dict(user)
+        if not user:
+            span.set_attribute("auth.found", False)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        span.set_attribute("auth.username", str(user["username"]))
+        span.set_attribute("auth.role", str(user["role"]))
+        return dict(user)

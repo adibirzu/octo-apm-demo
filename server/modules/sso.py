@@ -246,8 +246,13 @@ async def sso_status() -> dict:
 
 @router.get("/login")
 async def sso_login(request: Request):
-    if not cfg.idcs_configured:
-        raise HTTPException(status_code=503, detail="SSO is not configured")
+    tracer = get_tracer()
+    with tracer.start_as_current_span("auth.sso.login_initiate") as span:
+        span.set_attribute("auth.method", "idcs_oidc")
+        span.set_attribute("auth.idcs.domain", cfg.idcs_domain_url)
+        if not cfg.idcs_configured:
+            span.set_attribute("auth.sso.error", "not_configured")
+            raise HTTPException(status_code=503, detail="SSO is not configured")
 
     state = secrets.token_urlsafe(32)
     code_verifier = secrets.token_urlsafe(64)
