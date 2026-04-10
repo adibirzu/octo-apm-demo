@@ -17,6 +17,7 @@ from server.observability.correlation import runtime_snapshot
 from server.observability.otel_setup import init_otel, get_tracer
 from server.observability.logging_sdk import push_log
 from server.observability.metrics import init_metrics, runtime_metrics
+from server.observability.oci_monitoring import start_monitoring, stop_monitoring, increment_requests, increment_errors
 from server.middleware.tracing import TracingMiddleware
 from server.middleware.metrics_mw import MetricsMiddleware
 from server.middleware.chaos import ChaosMiddleware
@@ -71,6 +72,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("Database initialization failed: %s (app will still start)", e)
 
+    start_monitoring()  # OCI Monitoring custom metrics (if OCI_COMPARTMENT_ID is set)
+
     push_log("INFO", "OCTO-CRM-APM started", **{
         "app.name": cfg.app_name,
         "app.runtime": cfg.app_runtime,
@@ -78,6 +81,7 @@ async def lifespan(app: FastAPI):
         "app.db_type": cfg.database_target_label,
     })
     yield
+    stop_monitoring()
     push_log("INFO", "OCTO-CRM-APM shutting down")
 
 
@@ -165,12 +169,15 @@ async def ready():
     tracer = get_tracer()
     with tracer.start_as_current_span("health.readiness") as span:
         db_ok = False
+        _db_start = __import__("time").monotonic()
         try:
             async with get_db() as db:
                 await db.execute(text("SELECT 1 FROM DUAL"))
                 db_ok = True
         except Exception as e:
             span.set_attribute("health.db_error", str(e))
+        from server.observability.oci_monitoring import set_db_latency
+        set_db_latency(round((__import__("time").monotonic() - _db_start) * 1000, 2))
 
         return {
             "ready": db_ok,

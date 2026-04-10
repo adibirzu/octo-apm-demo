@@ -67,6 +67,11 @@ def record_order_created(total: float, source: str = "drone-shop"):
     _ensure()
     orders_created.add(1, {"source": source})
     order_value.record(total, {"source": source})
+    try:
+        from server.observability.oci_monitoring import increment_orders
+        increment_orders()
+    except Exception:
+        pass
 
 def record_cart_addition(category: str = ""):
     _ensure()
@@ -77,6 +82,11 @@ def record_checkout(success: bool = True):
     checkout_total.add(1, {"result": "success" if success else "failure"})
     if not success:
         checkout_failures.add(1)
+    try:
+        from server.observability.oci_monitoring import increment_checkouts
+        increment_checkouts()
+    except Exception:
+        pass
 
 def record_product_viewed(category: str = ""):
     _ensure()
