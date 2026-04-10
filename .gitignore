@@ -29,4 +29,6 @@ secrets/
 config/local/
 __pycache__/
 .playwright-cli/
+playwright-report/
+test-results/
 .rlm/
