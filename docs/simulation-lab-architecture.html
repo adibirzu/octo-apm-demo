@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulation Lab Architecture — Enterprise CRM Portal (C27)</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e17;
+  --bg-panel: #111827;
+  --bg-elevated: #1a2235;
+  --bg-code: #0d1321;
+  --border: #1e2d4a;
+  --border-bright: #2a3f6b;
+  --text: #c9d1d9;
+  --text-dim: #6b7b96;
+  --text-bright: #e6edf3;
+  --accent: #58a6ff;
+  --accent-dim: #1a3a5c;
+  --green: #3fb950;
+  --green-dim: #0d3117;
+  --amber: #d29922;
+  --amber-dim: #3b2607;
+  --red: #f85149;
+  --red-dim: #3b1117;
+  --cyan: #39d2c0;
+  --cyan-dim: #0a2e29;
+  --purple: #bc8cff;
+  --purple-dim: #261540;
+  --pink: #f778ba;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 8px;
+  --glow: 0 0 20px rgba(88, 166, 255, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── Layout ────────────────────────────────────────── */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+.hero {
+  padding: 4rem 0 3rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 140%;
+  height: 200%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(88,166,255,0.04) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(57,210,192,0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 0.75rem;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+}
+.hero .subtitle {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  max-width: 700px;
+}
+.hero .meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+.hero .meta span { color: var(--text-dim); }
+.hero .meta span b { color: var(--accent); font-weight: 500; }
+
+/* ── Section ───────────────────────────────────────── */
+section { padding: 3rem 0; border-bottom: 1px solid var(--border); }
+section:last-child { border-bottom: none; }
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+section h2 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 1.5rem;
+}
+section p { max-width: 800px; margin-bottom: 1rem; }
+
+/* ── Architecture Diagram ──────────────────────────── */
+.arch-diagram {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--text-dim);
+  position: relative;
+}
+.arch-diagram .hl-cyan { color: var(--cyan); }
+.arch-diagram .hl-green { color: var(--green); }
+.arch-diagram .hl-amber { color: var(--amber); }
+.arch-diagram .hl-red { color: var(--red); }
+.arch-diagram .hl-purple { color: var(--purple); }
+.arch-diagram .hl-accent { color: var(--accent); }
+.arch-diagram .hl-pink { color: var(--pink); }
+.arch-diagram .hl-bright { color: var(--text-bright); }
+
+/* ── Cards Grid ────────────────────────────────────── */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card:hover { border-color: var(--border-bright); box-shadow: var(--glow); }
+.card h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.card .badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-get { background: var(--green-dim); color: var(--green); }
+.badge-post { background: var(--accent-dim); color: var(--accent); }
+.badge-chaos { background: var(--red-dim); color: var(--red); }
+.badge-data { background: var(--purple-dim); color: var(--purple); }
+.badge-proxy { background: var(--cyan-dim); color: var(--cyan); }
+.badge-amber { background: var(--amber-dim); color: var(--amber); }
+
+.card .path {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+.card .desc { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.75rem; }
+.card .detail {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  color: var(--text-dim);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ── Flow Diagram ──────────────────────────────────── */
+.flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+  margin: 1.5rem 0;
+}
+.flow-node {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-bright);
+  white-space: nowrap;
+}
+.flow-arrow {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
+}
+.flow-node.is-crm { border-color: var(--accent); }
+.flow-node.is-shop { border-color: var(--cyan); }
+.flow-node.is-db { border-color: var(--amber); }
+.flow-node.is-apm { border-color: var(--green); }
+.flow-node.is-chaos { border-color: var(--red); }
+
+/* ── Table ─────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; margin: 1rem 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+th {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 0.6rem 1rem;
+  border-bottom: 2px solid var(--border-bright);
+  white-space: nowrap;
+}
+td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:hover td { background: rgba(88,166,255,0.03); }
+td code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: var(--bg-code);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+td .pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 99px;
+  text-transform: uppercase;
+}
+
+/* ── Collapsible ───────────────────────────────────── */
+details { margin-bottom: 0.75rem; }
+details summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-bright);
+  padding: 0.75rem 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: border-color 0.2s;
+}
+details summary:hover { border-color: var(--border-bright); }
+details summary::before {
+  content: '\25B6';
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+}
+details[open] summary::before { transform: rotate(90deg); }
+details .inner {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--bg-panel);
+}
+
+/* ── Code Block ────────────────────────────────────── */
+pre.code {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  color: var(--text);
+  margin: 1rem 0;
+}
+pre.code .cm { color: var(--text-dim); }
+pre.code .kw { color: var(--accent); }
+pre.code .str { color: var(--green); }
+pre.code .num { color: var(--amber); }
+
+/* ── Nav ───────────────────────────────────────────── */
+.toc {
+  position: fixed;
+  right: 2rem;
+  top: 2rem;
+  width: 200px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  z-index: 100;
+}
+.toc a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 0.25rem 0.75rem;
+  border-left: 2px solid var(--border);
+  transition: color 0.15s, border-color 0.15s;
+}
+.toc a:hover { color: var(--accent); border-color: var(--accent); }
+
+@media (max-width: 1500px) { .toc { display: none; } }
+
+/* ── Span Tree ─────────────────────────────────────── */
+.span-tree {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.8;
+}
+.span-tree .node {
+  color: var(--text-dim);
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--border);
+  margin-left: 0.5rem;
+}
+.span-tree .node::before {
+  content: '\251C\2500';
+  color: var(--border-bright);
+  margin-right: 0.4rem;
+}
+.span-tree .node:last-child::before { content: '\2514\2500'; }
+.span-tree .root { color: var(--accent); font-weight: 500; padding-left: 0; border: none; margin: 0; }
+.span-tree .root::before { content: '\25CF '; color: var(--accent); }
+.span-tree .attr { color: var(--text-dim); font-size: 0.65rem; opacity: 0.7; }
+
+/* ── Footer ────────────────────────────────────────── */
+footer {
+  padding: 2rem 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#data-flows">Data Flows</a>
+  <a href="#endpoints">API Endpoints</a>
+  <a href="#middleware">Middleware</a>
+  <a href="#observability">Observability</a>
+  <a href="#data-model">Data Model</a>
+  <a href="#config">Configuration</a>
+  <a href="#security">Security</a>
+  <a href="#k6">k6 Testing</a>
+</nav>
+
+<div class="container">
+
+<!-- ── Hero ─────────────────────────────────────────── -->
+<header class="hero">
+  <p class="eyebrow">C27 Enterprise CRM Portal</p>
+  <h1>Simulation Lab</h1>
+  <p class="subtitle">
+    Chaos engineering, demo data generation, and cross-service stress testing
+    with full OCI Observability correlation. One-click incident injection for
+    APM trace exploration, Log Analytics correlation, and DB Performance Hub analysis.
+  </p>
+  <div class="meta">
+    <span>Component <b>C27</b></span>
+    <span>Endpoints <b>17</b></span>
+    <span>OTel Spans <b>21</b></span>
+    <span>Route <b>/settings</b></span>
+    <span>Module <b>server/modules/simulation.py</b></span>
+  </div>
+</header>
+
+<!-- ── Section 1: Overview ─────────────────────────── -->
+<section id="overview">
+  <p class="section-label">01 / Overview</p>
+  <h2>What the Simulation Lab Does</h2>
+  <p>
+    The Simulation Lab provides a unified control surface for generating realistic
+    application behavior: infrastructure incidents, database stress, demo data,
+    and cross-service distributed traces. Every action produces correlated telemetry
+    across OCI APM, Logging, Log Analytics, DB Management, and Operations Insights.
+  </p>
+
+  <div class="cards" style="margin-top:1.5rem;">
+    <div class="card">
+      <h3><span class="badge badge-chaos">Chaos</span> Issue Simulation</h3>
+      <p class="desc">One-shot incidents (DB latency, error bursts, N+1 queries, app exceptions)
+      and persistent toggles (DB disconnect, slow responses, error rate injection).</p>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-data">Data</span> Demo Data Generation</h3>
+      <p class="desc">Generate orders, backlog, high-value anomaly orders, and customers.
+      All writes go to Oracle ATP with traceable <code>source_system=crm-simulation</code>.</p>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-proxy">Proxy</span> Cross-Service Control</h3>
+      <p class="desc">Forward simulation commands to the Drone Shop (C28) via the internal
+      service key. Trigger distributed traces that span CRM + Shop + ATP.</p>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-amber">OCI</span> Observability Correlation</h3>
+      <p class="desc">Every endpoint creates OTel spans with simulation-specific attributes.
+      Logs include severity spikes. DB queries appear in Performance Hub.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Section 2: Architecture Diagram ─────────────── -->
+<section id="architecture">
+  <p class="section-label">02 / Architecture</p>
+  <h2>System Architecture</h2>
+
+  <div class="arch-diagram"><span class="hl-bright">Browser (Authenticated User)</span>
+    <span class="hl-accent">|</span>
+    <span class="hl-accent">| GET /settings (simulation.html)</span>
+    <span class="hl-accent">| POST /api/simulate/* (17 endpoints)</span>
+    <span class="hl-accent">v</span>
+<span class="hl-cyan">+------------------------------------------------------------------+</span>
+<span class="hl-cyan">|</span>  <span class="hl-bright">Enterprise CRM Portal (C27)</span>  <span class="hl-accent">FastAPI + Uvicorn</span>          <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>                                                                  <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  <span class="hl-amber">Middleware Pipeline</span>                                            <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  ┌──────────┐ ┌──────────────┐ ┌────────────────┐ ┌──────────┐  <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  │<span class="hl-red"> Chaos MW </span>│→│<span class="hl-accent"> Session Gate </span>│→│<span class="hl-green"> Tracing/Metrics </span>│→│<span class="hl-purple"> GeoLatncy</span>│  <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  └──────────┘ └──────────────┘ └────────────────┘ └──────────┘  <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>       <span class="hl-red">|</span>                                                           <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>       <span class="hl-red">| reads _sim_state</span>                                          <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>       <span class="hl-red">v</span>                                                           <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  <span class="hl-bright">simulation.py</span>     <span class="hl-bright">order_sync.py</span>                              <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  ┌──────────────┐  ┌──────────────┐                              <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  │ <span class="hl-accent">17 Endpoints</span>  │  │ <span class="hl-green">Sync Engine</span>  │                              <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  │ _sim_state{}  │  │ Upsert/Audit │                              <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  │ _safe_json()  │  │ Normalize    │                              <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>  └──────┬───────┘  └──────┬───────┘                              <span class="hl-cyan">|</span>
+<span class="hl-cyan">|</span>         <span class="hl-accent">|</span>                  <span class="hl-green">|</span>                                      <span class="hl-cyan">|</span>
+<span class="hl-cyan">+─────────┼──────────────────┼──────────────────────────────────────+</span>
+          <span class="hl-accent">|</span>                  <span class="hl-green">|</span>
+          <span class="hl-accent">| DB writes</span>        <span class="hl-green">| HTTP fetch + upsert</span>
+          <span class="hl-accent">| (async_session</span>   <span class="hl-green">|</span>
+          <span class="hl-accent">|  _factory)</span>       <span class="hl-green">|</span>
+          <span class="hl-accent">v</span>                  <span class="hl-green">v</span>
+   <span class="hl-amber">+--------------+</span>  <span class="hl-cyan">+------------------+</span>    <span class="hl-green">+-----------------+</span>
+   <span class="hl-amber">| Oracle ATP   |</span>  <span class="hl-cyan">| Drone Shop (C28) |</span>    <span class="hl-green">| OCI APM Domain  |</span>
+   <span class="hl-amber">| Shared DB    |</span>  <span class="hl-cyan">| /api/simulate/*  |</span>    <span class="hl-green">| Traces + Metrics|</span>
+   <span class="hl-amber">| orders       |</span>  <span class="hl-cyan">| /api/orders      |</span>    <span class="hl-green">| via OTel OTLP   |</span>
+   <span class="hl-amber">| customers    |</span>  <span class="hl-cyan">| X-Internal-Svc-  |</span>    <span class="hl-green">+---------+-------+</span>
+   <span class="hl-amber">| order_items  |</span>  <span class="hl-cyan">|  Key auth        |</span>              <span class="hl-green">|</span>
+   <span class="hl-amber">| products     |</span>  <span class="hl-cyan">+------------------+</span>              <span class="hl-green">v</span>
+   <span class="hl-amber">| sync_audit   |</span>                          <span class="hl-green">+-----------------+</span>
+   <span class="hl-amber">+--------------+</span>                          <span class="hl-green">| OCI Log         |</span>
+                                             <span class="hl-green">| Analytics       |</span>
+                                             <span class="hl-green">| (correlation    |</span>
+                                             <span class="hl-green">|  via traceId)   |</span>
+                                             <span class="hl-green">+-----------------+</span></div>
+</section>
+
+<!-- ── Section 3: Data Flows ───────────────────────── -->
+<section id="data-flows">
+  <p class="section-label">03 / Data Flows</p>
+  <h2>Request Paths</h2>
+
+  <h3 style="font-family:var(--font-display);font-size:1rem;color:var(--text-bright);margin:1.5rem 0 0.75rem;">Chaos Injection Flow</h3>
+  <div class="flow">
+    <span class="flow-node is-crm">Browser</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-chaos">ChaosMiddleware</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-crm">SessionGate</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-crm">simulation.py</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-crm">_sim_state{}</span>
+    <span class="flow-arrow">&larr;</span>
+    <span class="flow-node is-chaos">ChaosMiddleware reads</span>
+  </div>
+
+  <h3 style="font-family:var(--font-display);font-size:1rem;color:var(--text-bright);margin:1.5rem 0 0.75rem;">Demo Data Generation Flow</h3>
+  <div class="flow">
+    <span class="flow-node is-crm">Browser</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-crm">simulation.py</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-db">async_session_factory()</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-db">Oracle ATP</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-apm">OTel span + push_log</span>
+  </div>
+
+  <h3 style="font-family:var(--font-display);font-size:1rem;color:var(--text-bright);margin:1.5rem 0 0.75rem;">Cross-Service Proxy Flow</h3>
+  <div class="flow">
+    <span class="flow-node is-crm">Browser</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-crm">simulation.py</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-shop">httpx + X-Internal-Service-Key</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-shop">Drone Shop /api/simulate/*</span>
+  </div>
+
+  <h3 style="font-family:var(--font-display);font-size:1rem;color:var(--text-bright);margin:1.5rem 0 0.75rem;">Order Sync Flow (Distributed Trace)</h3>
+  <div class="flow">
+    <span class="flow-node is-crm">sync-customers</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-crm">order_sync.py</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-shop">Shop /api/orders</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-crm">normalize + upsert</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-node is-db">Oracle ATP</span>
+  </div>
+</section>
+
+<!-- ── Section 4: API Endpoints ────────────────────── -->
+<section id="endpoints">
+  <p class="section-label">04 / API Reference</p>
+  <h2>Simulation Endpoints (17)</h2>
+
+  <details>
+    <summary><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span> Status & Configuration (3 endpoints)</summary>
+    <div class="inner">
+      <div class="tbl-wrap"><table>
+        <tr><th>Method</th><th>Path</th><th>Body</th><th>Effect</th></tr>
+        <tr><td><span class="pill badge-get">GET</span></td><td><code>/api/simulate/status</code></td><td>-</td><td>Returns current <code>_sim_state</code> dict (all chaos flags)</td></tr>
+        <tr><td><span class="pill badge-post">POST</span></td><td><code>/api/simulate/configure</code></td><td><code>{db_latency?, db_disconnect?, slow_queries?, error_rate?}</code></td><td>Updates in-memory chaos state. Returns old/new diff.</td></tr>
+        <tr><td><span class="pill badge-post">POST</span></td><td><code>/api/simulate/reset</code></td><td>-</td><td>Resets all flags to false/0.0</td></tr>
+      </table></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-chaos">Chaos</span> One-Shot Incidents (7 endpoints)</summary>
+    <div class="inner">
+      <div class="tbl-wrap"><table>
+        <tr><th>Path</th><th>Body</th><th>Span</th><th>Internal Behavior</th></tr>
+        <tr><td><code>/db-latency</code></td><td><code>{delay_seconds: 3}</code></td><td><code>simulation.db_latency</code></td><td>asyncio.sleep(delay). No DB writes.</td></tr>
+        <tr><td><code>/db-disconnect</code></td><td>-</td><td><code>simulation.db_disconnect</code></td><td>Sets _sim_state flag for 10s, auto-resets.</td></tr>
+        <tr><td><code>/error-burst</code></td><td><code>{count: 10}</code></td><td><code>simulation.error_burst</code></td><td>N child error spans + ERROR logs. Capped at 100.</td></tr>
+        <tr><td><code>/slow-query</code></td><td><code>{delay_seconds: 2}</code></td><td><code>simulation.slow_query</code></td><td>Python sleep + real <code>COUNT(*) FROM orders</code>.</td></tr>
+        <tr><td><code>/n-plus-one</code></td><td><code>{count: 50}</code></td><td><code>simulation.n_plus_one</code></td><td>N individual <code>SELECT * FROM orders WHERE id=:id</code>.</td></tr>
+        <tr><td><code>/app-exception</code></td><td>-</td><td><code>simulation.app_exception</code></td><td>Raises ValueError, records on span. APM error tracking.</td></tr>
+        <tr><td><code>/db-error</code></td><td>-</td><td><code>simulation.db_error</code></td><td>Sets db_disconnect for 5s, auto-resets.</td></tr>
+      </table></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-data">Data</span> Demo Data Generation (6 endpoints)</summary>
+    <div class="inner">
+      <div class="tbl-wrap"><table>
+        <tr><th>Path</th><th>Body</th><th>DB Writes</th><th>Special Behavior</th></tr>
+        <tr><td><code>/generate-orders</code></td><td><code>{count, customer_id?, status, high_value?}</code></td><td>orders + order_items</td><td>source_system=crm-simulation, uuid source_order_id</td></tr>
+        <tr><td><code>/generate-backlog</code></td><td><code>{count}</code></td><td>orders + order_items</td><td>status=pending, backlog_status=backlog, stale timestamps (2-48h ago)</td></tr>
+        <tr><td><code>/high-value-order</code></td><td><code>{customer_id?}</code></td><td>1 order + 1 item</td><td>Total $55k-$150k. <code>alert_triggered</code> if &gt; threshold ($50k)</td></tr>
+        <tr><td><code>/add-customer</code></td><td>-</td><td>1 customer</td><td>Random from _FAKE_COMPANIES. Unique email: sim.{uuid}@{company}.demo</td></tr>
+        <tr><td><code>/create-customer</code></td><td><code>{company_name, contact_name, email, ...}</code></td><td>1 customer</td><td>Case-insensitive email uniqueness check. Returns 409 on duplicate.</td></tr>
+        <tr><td><code>/sync-customers</code></td><td>-</td><td>upsert orders + customers</td><td>Delegates to order_sync.sync_external_orders(). Full distributed trace.</td></tr>
+      </table></div>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-top:0.75rem;">
+        All data generation uses <code>async_session_factory()</code> directly (bypasses chaos injection in <code>get_db()</code>)
+        so writes succeed even when chaos simulation is active.
+      </p>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-proxy">Proxy</span> Drone Shop Cross-Service (1 endpoint)</summary>
+    <div class="inner">
+      <div class="tbl-wrap"><table>
+        <tr><th>Path</th><th>Allowed Actions</th><th>Auth</th><th>Behavior</th></tr>
+        <tr>
+          <td><code>/drone-shop/{action}</code></td>
+          <td><code>configure, reset, db-latency, error-burst, status</code></td>
+          <td><code>X-Internal-Service-Key</code> header</td>
+          <td>Forwards request body to <code>{drone_shop_url}/api/simulate/{action}</code>. Returns <code>{status: "proxied", data: ...}</code> or <code>{status: "unreachable"}</code>.</td>
+        </tr>
+      </table></div>
+    </div>
+  </details>
+</section>
+
+<!-- ── Section 5: Middleware Pipeline ───────────────── -->
+<section id="middleware">
+  <p class="section-label">05 / Middleware</p>
+  <h2>Chaos Middleware Pipeline</h2>
+
+  <p>The <code>ChaosMiddleware</code> runs before the session gate on every request.
+  It reads both frozen config flags (env vars) and runtime-mutable state (<code>_sim_state</code>).</p>
+
+  <div class="tbl-wrap"><table>
+    <tr><th>Chaos Type</th><th>Source</th><th>Trigger</th><th>Injection</th><th>Path Exclusions</th></tr>
+    <tr><td style="color:var(--red)">CPU Spike</td><td>cfg.simulate_cpu_spike</td><td>30% random</td><td>0.5s busy-loop</td><td>None</td></tr>
+    <tr><td style="color:var(--amber)">Memory Leak</td><td>cfg.simulate_memory_leak</td><td>100%</td><td>+1 MB per request (cumulative)</td><td>None</td></tr>
+    <tr><td style="color:var(--amber)">Slow Queries</td><td>cfg.simulate_slow_queries</td><td>100% on /api/*</td><td>1-5s random sleep</td><td>Non-API paths</td></tr>
+    <tr><td style="color:var(--red)">Error Rate</td><td>_sim_state["error_rate"]</td><td>Configurable %</td><td>HTTP 500 JSON response</td><td>/api/simulate/*</td></tr>
+  </table></div>
+
+  <p style="font-size:0.85rem;color:var(--text-dim);">
+    <strong>Error rate exclusion:</strong> <code>/api/simulate/*</code> paths are always allowed through
+    so the reset/configure endpoints remain reachable during chaos. This is the auto-remediation path
+    that OCI coordinators and k6 teardown use to restore normal operation.
+  </p>
+</section>
+
+<!-- ── Section 6: Observability ─────────────────────── -->
+<section id="observability">
+  <p class="section-label">06 / Observability</p>
+  <h2>OTel Span Tree &amp; Log Correlation</h2>
+
+  <p>Every simulation endpoint creates an OTel span. One-shot incidents generate child spans
+  for each sub-operation. All spans carry <code>simulation.*</code> attributes searchable in
+  OCI APM Trace Explorer.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;">
+    <div>
+      <h3 style="font-family:var(--font-display);font-size:0.95rem;color:var(--text-bright);margin-bottom:0.75rem;">Error Burst Span Tree</h3>
+      <div class="span-tree" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+        <div class="root">simulation.error_burst <span class="attr">error_count=10</span></div>
+        <div class="node">simulation.error_0 <span class="attr">error.simulated=true</span></div>
+        <div class="node">simulation.error_1 <span class="attr">error.simulated=true</span></div>
+        <div class="node" style="color:var(--text-dim);">... (N child spans)</div>
+        <div class="node">simulation.error_9 <span class="attr">error.simulated=true</span></div>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-family:var(--font-display);font-size:0.95rem;color:var(--text-bright);margin-bottom:0.75rem;">N+1 Query Span Tree</h3>
+      <div class="span-tree" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+        <div class="root">simulation.n_plus_one <span class="attr">n_queries=50</span></div>
+        <div class="node">db.select_order_0 <span class="attr">db.statement=SELECT * FROM orders</span></div>
+        <div class="node">db.select_order_1</div>
+        <div class="node" style="color:var(--text-dim);">... (50 individual SELECTs)</div>
+        <div class="node">db.select_order_49</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--font-display);font-size:1rem;color:var(--text-bright);margin:2rem 0 0.75rem;">OCI Observability Verification Checklist</h3>
+  <div class="tbl-wrap"><table>
+    <tr><th>OCI Service</th><th>What to Check</th><th>Filter / Query</th></tr>
+    <tr><td style="color:var(--green)">APM Trace Explorer</td><td>Distributed traces with error/slow spans</td><td><code>serviceName=enterprise-crm-portal</code></td></tr>
+    <tr><td style="color:var(--green)">APM Topology</td><td>CRM &harr; Drone Shop &harr; ATP service graph</td><td>Visual map auto-generated</td></tr>
+    <tr><td style="color:var(--cyan)">Logging</td><td>Structured JSON logs with severity spikes</td><td>Filter by <code>level=ERROR</code> during chaos window</td></tr>
+    <tr><td style="color:var(--cyan)">Log Analytics</td><td>Cross-service trace correlation</td><td><code>oracleApmTraceId=&lt;trace_id&gt;</code></td></tr>
+    <tr><td style="color:var(--amber)">Monitoring</td><td>Custom business metrics</td><td>Namespace: <code>enterprise_crm</code></td></tr>
+    <tr><td style="color:var(--amber)">DB Management</td><td>SQL execution spikes during test window</td><td>Performance Hub &rarr; SQL Monitoring</td></tr>
+    <tr><td style="color:var(--purple)">Ops Insights</td><td>New query patterns from simulation</td><td>SQL Warehouse &rarr; SQL Statistics</td></tr>
+  </table></div>
+</section>
+
+<!-- ── Section 7: Data Model ───────────────────────── -->
+<section id="data-model">
+  <p class="section-label">07 / Data Model</p>
+  <h2>Database Tables &amp; Patterns</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h3>orders</h3>
+      <div class="detail">source_system   = 'crm-simulation'
+source_order_id = 'sim-{uuid12}'     (generate-orders)
+                  'sim-backlog-{u8}'  (generate-backlog)
+                  'sim-hv-{uuid8}'    (high-value-order)
+sync_status     = 'local'
+backlog_status  = 'current' | 'backlog'
+correlation_id  = build_correlation_id("sim")
+UQ: (source_system, source_order_id)</div>
+    </div>
+    <div class="card">
+      <h3>customers</h3>
+      <div class="detail">email = 'sim.{uuid6}@{company}.demo'  (add-customer)
+email = user-provided               (create-customer)
+company = random from _FAKE_COMPANIES
+UQ: email (case-insensitive check)</div>
+    </div>
+    <div class="card">
+      <h3>order_sync_audit</h3>
+      <div class="detail">source_system  = 'octo-drone-shop'
+sync_action    = 'created' | 'updated' | 'skip'
+sync_status    = 'success' | 'failed'
+correlation_id = from sync request
+trace_id       = from OTel context</div>
+    </div>
+  </div>
+
+  <p style="font-size:0.85rem;color:var(--text-dim);margin-top:1rem;">
+    <strong>Chaos bypass:</strong> All demo data endpoints use <code>async_session_factory()</code> directly instead
+    of the <code>get_db()</code> context manager. This bypasses the chaos simulation hooks
+    (<code>simulate_db_disconnect</code>, <code>simulate_db_latency</code>) so data generation always succeeds
+    regardless of active chaos state.
+  </p>
+</section>
+
+<!-- ── Section 8: Configuration ────────────────────── -->
+<section id="config">
+  <p class="section-label">08 / Configuration</p>
+  <h2>Environment Variables</h2>
+
+  <div class="tbl-wrap"><table>
+    <tr><th>Env Var</th><th>Default</th><th>Effect</th></tr>
+    <tr><td><code>SIMULATE_DB_LATENCY</code></td><td>false</td><td>Frozen config: enable DB latency at startup</td></tr>
+    <tr><td><code>SIMULATE_DB_DISCONNECT</code></td><td>false</td><td>Frozen config: enable DB disconnect at startup</td></tr>
+    <tr><td><code>SIMULATE_MEMORY_LEAK</code></td><td>false</td><td>Frozen config: accumulate 1MB per request</td></tr>
+    <tr><td><code>SIMULATE_CPU_SPIKE</code></td><td>false</td><td>Frozen config: 30% chance of 0.5s busy-loop</td></tr>
+    <tr><td><code>SIMULATE_SLOW_QUERIES</code></td><td>false</td><td>Frozen config: 1-5s delay on /api/* paths</td></tr>
+    <tr><td><code>SUSPICIOUS_ORDER_TOTAL_THRESHOLD</code></td><td>50000</td><td>High-value order alert threshold ($)</td></tr>
+    <tr><td><code>BACKLOG_ORDER_AGE_MINUTES</code></td><td>30</td><td>Stale backlog detection window</td></tr>
+    <tr><td><code>DRONE_SHOP_INTERNAL_KEY</code></td><td>(empty)</td><td>X-Internal-Service-Key for proxy auth</td></tr>
+    <tr><td><code>INTERNAL_SERVICE_KEY</code></td><td>(empty)</td><td>Fallback for DRONE_SHOP_INTERNAL_KEY</td></tr>
+    <tr><td><code>EXTERNAL_ORDERS_URL</code></td><td>(empty)</td><td>Drone shop URL for order sync + proxy</td></tr>
+    <tr><td><code>ORDERS_SYNC_ENABLED</code></td><td>true</td><td>Enable background order sync loop</td></tr>
+    <tr><td><code>ORDERS_SYNC_INTERVAL_SECONDS</code></td><td>300</td><td>Background sync interval</td></tr>
+  </table></div>
+
+  <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.5rem;">
+    <strong>Frozen vs Runtime:</strong> <code>SIMULATE_*</code> env vars are read once at startup (frozen config).
+    Runtime-mutable state is controlled via <code>POST /api/simulate/configure</code> and stored in the
+    in-memory <code>_sim_state</code> dict. Both are consumed by <code>ChaosMiddleware</code>.
+  </p>
+</section>
+
+<!-- ── Section 9: Security ─────────────────────────── -->
+<section id="security">
+  <p class="section-label">09 / Security</p>
+  <h2>Authentication &amp; Access Control</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Session Gate</h3>
+      <p class="desc"><code>/api/simulate/*</code> is NOT in the public path list. All simulation endpoints
+      require a valid session cookie (obtained via <code>POST /api/auth/login</code> or SSO).</p>
+    </div>
+    <div class="card">
+      <h3>Admission Control</h3>
+      <p class="desc">Auth lookups run in a dedicated ThreadPoolExecutor with semaphore-based
+      admission control. Overflow returns 503 with Retry-After header.</p>
+    </div>
+    <div class="card">
+      <h3>Proxy Restrictions</h3>
+      <p class="desc">Only 5 actions allowed through the drone shop proxy: <code>configure, reset,
+      db-latency, error-burst, status</code>. All others return 403-equivalent error.</p>
+    </div>
+    <div class="card">
+      <h3>Chaos Self-Protection</h3>
+      <p class="desc"><code>error_rate</code> injection excludes <code>/api/simulate/*</code> paths so the
+      reset endpoint always works — the auto-remediation escape hatch.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Section 10: k6 Testing ──────────────────────── -->
+<section id="k6">
+  <p class="section-label">10 / Stress Testing</p>
+  <h2>k6 Test Coverage</h2>
+
+  <p>Three k6 scripts exercise the Simulation Lab at different scopes:</p>
+
+  <div class="tbl-wrap"><table>
+    <tr><th>Script</th><th>Scope</th><th>Scenarios</th><th>Profiles</th></tr>
+    <tr>
+      <td><code>k6/stress_test.js</code></td>
+      <td>CRM only</td>
+      <td>normal_traffic, chaos_injection, data_generation, cross_service, observability</td>
+      <td>smoke (30s), moderate (4min), heavy (8min)</td>
+    </tr>
+    <tr>
+      <td><code>k6/cross_service_stress.js</code><br><span style="font-size:0.7rem;color:var(--text-dim);">(in octo-drone-shop)</span></td>
+      <td>CRM + Shop</td>
+      <td>browse_both, api_load, cross_service_sync, checkout_flow, observability_poll</td>
+      <td>light, moderate, heavy</td>
+    </tr>
+    <tr>
+      <td><code>OCI-DEMO/k6/oci_demo_stress.js</code></td>
+      <td>Full stack</td>
+      <td>browse_both, api_load, cross_service, chaos_injection, data_generation, observability</td>
+      <td>smoke, moderate, heavy + OKE Job</td>
+    </tr>
+  </table></div>
+
+  <pre class="code"><span class="cm"># Run locally against any tenancy</span>
+<span class="kw">k6 run</span> --env DNS_DOMAIN=<span class="str">mycompany.cloud</span> --env PROFILE=<span class="str">moderate</span> k6/stress_test.js
+
+<span class="cm"># Run inside OKE as a Job</span>
+<span class="kw">./k6/run.sh</span> --oke --profile <span class="str">heavy</span>
+
+<span class="cm"># Verify results in OCI</span>
+<span class="cm"># APM &rarr; Trace Explorer &rarr; serviceName=enterprise-crm-portal</span>
+<span class="cm"># Log Analytics &rarr; oracleApmTraceId=&lt;trace_id&gt;</span>
+<span class="cm"># DB Management &rarr; Performance Hub &rarr; SQL Monitoring</span></pre>
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    Enterprise CRM Portal (C27) &mdash; Simulation Lab Architecture &mdash; OCI-DEMO
+  </div>
+</footer>
+
+</body>
+</html>
