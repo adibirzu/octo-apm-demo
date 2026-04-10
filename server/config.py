@@ -65,6 +65,11 @@ class Config:
     db_management_console_url = os.getenv("DB_MANAGEMENT_CONSOLE_URL", "")
     log_analytics_console_url = os.getenv("LOG_ANALYTICS_CONSOLE_URL", "")
 
+    # ── Internal service-to-service authentication ──
+    # Shared key between CRM and Drone Shop so the CRM backend can proxy
+    # simulation/demo requests without an SSO token. Empty = disabled.
+    internal_service_key = os.getenv("INTERNAL_SERVICE_KEY", "")
+
     # ── IDCS / OCI IAM Identity Domain (OIDC SSO) ──
     idcs_domain_url = os.getenv("IDCS_DOMAIN_URL", "").rstrip("/")
     idcs_client_id = os.getenv("IDCS_CLIENT_ID", "")

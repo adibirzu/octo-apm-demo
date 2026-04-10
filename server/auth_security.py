@@ -173,12 +173,32 @@ def require_authenticated_user(request: Request) -> dict[str, Any]:
     return payload
 
 
+def _is_internal_service_call(request: Request) -> bool:
+    """Check if the request carries a valid internal service-to-service key.
+
+    This allows the CRM backend to proxy simulation/demo calls to the drone
+    shop without an SSO token. The key is set via ``INTERNAL_SERVICE_KEY``
+    env var on both services.
+    """
+    key = cfg.internal_service_key
+    if not key:
+        return False
+    header = (request.headers.get("X-Internal-Service-Key") or "").strip()
+    return bool(header) and hmac.compare_digest(header, key)
+
+
 def require_sso_user(request: Request) -> dict[str, Any]:
-    """Require a valid token that was issued through the IDCS SSO flow.
+    """Require a valid token that was issued through the IDCS SSO flow,
+    OR a valid internal service-to-service key.
 
     The ``auth_method`` claim is embedded at token-issue time by
     ``server.modules.sso`` and cannot be forged (HMAC-signed).
+    The service key path allows CRM-proxied calls where no SSO cookie
+    is available (server-to-server).
     """
+    if _is_internal_service_call(request):
+        return {"sub": 0, "username": "internal-service", "role": "service", "auth_method": "internal"}
+
     payload = require_authenticated_user(request)
     if payload.get("auth_method") != "sso":
         raise HTTPException(

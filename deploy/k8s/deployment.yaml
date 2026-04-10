@@ -34,6 +34,12 @@ spec:
                 secretKeyRef:
                   name: octo-auth
                   key: token-secret
+            - name: INTERNAL_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-auth
+                  key: internal-service-key
+                  optional: true
             # ── IDCS / OCI IAM Identity Domain SSO ──
             - name: IDCS_DOMAIN_URL
               valueFrom:
