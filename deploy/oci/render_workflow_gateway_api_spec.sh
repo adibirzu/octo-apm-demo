@@ -3,7 +3,12 @@ set -euo pipefail
 
 TEMPLATE_PATH="${TEMPLATE_PATH:-$(dirname "$0")/workflow-gateway-api-spec.template.json}"
 WORKFLOW_BACKEND_URL="${WORKFLOW_BACKEND_URL:-}"
-ALLOWED_ORIGIN="${ALLOWED_ORIGIN:-https://shop.octodemo.cloud}"
+_dns="${DNS_DOMAIN:-}"
+ALLOWED_ORIGIN="${ALLOWED_ORIGIN:-${_dns:+https://shop.${_dns}}}"
+if [[ -z "${ALLOWED_ORIGIN}" ]]; then
+  echo "WARN: ALLOWED_ORIGIN not set (set DNS_DOMAIN or ALLOWED_ORIGIN). Defaulting to '*'." >&2
+  ALLOWED_ORIGIN="*"
+fi
 OUTPUT_PATH="${OUTPUT_PATH:-$(dirname "$0")/workflow-gateway-api-spec.rendered.json}"
 
 if [[ -z "${WORKFLOW_BACKEND_URL}" ]]; then

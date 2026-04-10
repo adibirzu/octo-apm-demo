@@ -28,16 +28,28 @@ ATP-backed drone commerce demo for OCI monitored-app scenarios.
 - Workflow gateway: [services/workflow-gateway/cmd/workflow-gateway/main.go](services/workflow-gateway/cmd/workflow-gateway/main.go)
 - OKE deployment: [deploy/k8s/deployment.yaml](deploy/k8s/deployment.yaml)
 
+## Tenancy portability
+
+Set **one variable** — `DNS_DOMAIN` — and all URLs, CORS origins, SSO redirect URIs, and CRM integration endpoints are derived at runtime. No tenancy OCIDs, regions, or hostnames are hardcoded.
+
+```bash
+export DNS_DOMAIN="yourcompany.cloud"
+# → shop.yourcompany.cloud, crm.yourcompany.cloud, SSO callback, CORS
+```
+
+See [docs/install-guide.md § 1b](docs/install-guide.md) for the full standalone deployment quickstart.
+
 ## Required production inputs
 
-- Database prerequisite: provision Oracle ATP and wallet before deploying the application. This repo is intended to run against ATP for OKE and tenancy-to-tenancy installs.
-- ATP: `ORACLE_DSN`, `ORACLE_USER`, `ORACLE_PASSWORD`, `ORACLE_WALLET_PASSWORD`, wallet mounted at `/opt/oracle/wallet`
-- APM: `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY`, `OCI_APM_PUBLIC_DATAKEY`, `OCI_APM_RUM_ENDPOINT`, `OCI_APM_WEB_APPLICATION`
+- **`DNS_DOMAIN`**: your tenancy's DNS zone. All public URLs derive from this.
+- **`AUTH_TOKEN_SECRET`**: bearer-token signing key (required in production, auto-generated in dev).
+- ATP: `ORACLE_DSN`, `ORACLE_USER`, `ORACLE_PASSWORD`, `ORACLE_WALLET_PASSWORD`, wallet at `/opt/oracle/wallet`
+- APM: `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY`, `OCI_APM_PUBLIC_DATAKEY`, `OCI_APM_RUM_ENDPOINT`
+- SSO (optional): `IDCS_DOMAIN_URL`, `IDCS_CLIENT_ID`, `IDCS_CLIENT_SECRET` (redirect URIs auto-derive from DNS_DOMAIN)
+- Service key (optional): `INTERNAL_SERVICE_KEY` for CRM→shop simulation proxy
 - GenAI: `OCI_COMPARTMENT_ID`, `OCI_GENAI_ENDPOINT`, `OCI_GENAI_MODEL_ID`
-- Workflow gateway: `WORKFLOW_API_BASE_URL`, `WORKFLOW_SERVICE_NAME`, `WORKFLOW_POLL_SECONDS`, optional `WORKFLOW_FAULTY_QUERY_ENABLED`
-- Select AI: `SELECTAI_PROFILE_NAME` after the ATP profile is created
+- Workflow gateway: `WORKFLOW_API_BASE_URL`, `WORKFLOW_SERVICE_NAME`, `WORKFLOW_POLL_SECONDS`
 - Logging: `OCI_LOG_ID`, optional `OCI_LOG_GROUP_ID`, `SPLUNK_HEC_URL`, `SPLUNK_HEC_TOKEN`
-- Runtime: `OCI_AUTH_MODE`, optional `AUTH_TOKEN_SECRET`
 
 ## ATP provisioning helper
 
