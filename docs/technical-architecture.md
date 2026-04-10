@@ -2,84 +2,196 @@
 
 ## Runtime topology
 
-1. OCI WAF protects the public endpoint.
-2. OCI Load Balancer fronts the OKE service defined in [deploy/k8s/deployment.yaml](../deploy/k8s/deployment.yaml).
-3. The Python app serves the storefront and backend APIs.
-4. A separate Go workflow gateway serves the new backend workflow menus through `WORKFLOW_API_BASE_URL` and is intended to sit behind OCI API Gateway in tenancy deployments.
-5. Oracle ATP stores the operational data for products, carts, customers, orders, shipments, page views, assistant conversations, workflow runs, and query execution history.
-6. OCI APM receives backend traces through OTLP and browser telemetry through OCI APM RUM.
-7. OCI Logging stores structured application logs. Log Analytics can ingest those logs for correlation with `oracleApmTraceId`.
+```
+                    ┌─────────────┐
+                    │  Browser    │
+                    │  (RUM)      │
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │  OCI WAF    │  detection mode
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │  OCI LB     │  flexible shape, TLS termination
+                    └──────┬──────┘
+                           │
+              ┌────────────┼────────────┐
+              │            │            │
+     ┌────────▼───┐ ┌─────▼─────┐ ┌───▼──────────┐
+     │ Python App │ │ Workflow  │ │ OCI API      │
+     │ (FastAPI)  │ │ Gateway   │ │ Gateway      │
+     │ 98 routes  │ │ (Go)      │ │ (optional)   │
+     └─────┬──────┘ └─────┬─────┘ └──────────────┘
+           │              │
+           │    ┌─────────┘
+           │    │
+     ┌─────▼────▼────┐
+     │  Oracle ATP    │  shared with CRM
+     │  (wallet auth) │
+     └───────┬────────┘
+             │
+    ┌────────┴─────────────────┐
+    │                          │
+┌───▼────────┐  ┌──────────────▼──────────┐
+│ DB Mgmt    │  │ Operations Insights     │
+│ Perf Hub   │  │ SQL Warehouse           │
+└────────────┘  └─────────────────────────┘
+```
 
-## Data model additions
+### Cross-service integration
 
-- `assistant_sessions`: conversation session metadata for the GenAI advisor.
-- `assistant_messages`: user and assistant turns, provider, model id, and trace id.
-- `workflow_runs`: scheduled and manual backend workflow refresh runs.
-- `query_executions`: successful, failed, and Select AI-backed query executions for investigation and replay.
-- `component_snapshots`: backend component health rollups covering drone shop, CRM, and ATP.
-- Existing tables continue to back catalog, cart, order, shipment, analytics, and audit flows.
+```
+Drone Shop ◄──── W3C traceparent ────► Enterprise CRM
+     │                                       │
+     │   /api/integrations/crm/*             │  /api/integrations/drone-shop/*
+     │   (customer sync, order sync,         │  (simulation proxy,
+     │    enrichment, health)                │   service-key auth)
+     │                                       │
+     └─────────► Oracle ATP ◄────────────────┘
+                (shared instance)
+```
 
-## Trace and log coverage
+### IDCS SSO flow
 
-- Middleware traces every request with method, route, status, duration, and client IP.
-- SQLAlchemy auto-instrumentation is enabled by passing the sync engine into OpenTelemetry setup.
-- Store spans cover storefront reads, coupon checks, cart updates, checkout, order persistence, and assistant calls.
-- The Go workflow gateway emits its own HTTP and ATP query traces and tags Oracle sessions so DB Management and Operations Insights can correlate those runs back to APM spans.
-- Query Lab executions are persisted in ATP even when the SQL is intentionally wrong, so investigation history remains visible.
-- Assistant messages and order audit rows store the active trace id for easier cross-correlation.
-- App logs include `oracleApmTraceId`, `trace_id`, and `span_id`.
+```
+Browser → /api/auth/sso/login → IDCS /oauth2/v1/authorize (PKCE S256)
+     ◄── redirect with code ──
+Browser → /api/auth/sso/callback → IDCS /oauth2/v1/token
+     → verify ID token via JWKS (/admin/v1/SigningCert/jwk)
+     → upsert local user → issue HMAC bearer token → httpOnly cookie
+```
 
-## RUM
+## Services
 
-- The browser shell injects OCI APM RUM when `OCI_APM_RUM_ENDPOINT` and `OCI_APM_PUBLIC_DATAKEY` are present.
-- The browser shell also uses `OCI_APM_WEB_APPLICATION` to identify the web application context.
-- The frontend also posts explicit page-view events to `/api/analytics/track` so the backend stores synthetic user activity even when browser agent rollout is still being validated.
+| Service | Tech | Routes | Backend |
+|---|---|---|---|
+| Drone Shop | Python/FastAPI | 98 | Oracle ATP |
+| Workflow Gateway | Go | ~15 | Oracle ATP |
+| Enterprise CRM | Python/FastAPI | ~80 | Oracle ATP (shared) |
+| Ops Portal | Python/FastAPI | ~40 | N/A (proxies to other services) |
 
-## OCI APM endpoint mapping
+## Data model
 
-- Backend traces use `OCI_APM_ENDPOINT` plus the OTLP path:
-  - `/20200101/opentelemetry/private/v1/traces`
-- Browser RUM uses:
-  - `OCI_APM_RUM_ENDPOINT`
-  - `OCI_APM_PUBLIC_DATAKEY`
-  - `OCI_APM_WEB_APPLICATION`
-- The concrete setup steps are in [docs/install-guide.md](install-guide.md#oci-apm-and-rum-configuration).
+### Core tables
+- `users`, `products`, `customers`, `orders`, `order_items`, `shops`
 
-## OCI Generative AI
+### Sales
+- `cart_items`, `reviews`, `coupons`, `shipments`, `warehouses`
 
-- Configure `OCI_COMPARTMENT_ID`, `OCI_GENAI_ENDPOINT`, and `OCI_GENAI_MODEL_ID`.
-- The app uses the OCI Python SDK `GenerativeAiInferenceClient.chat`.
-- Product answers are grounded with catalog snippets sourced from ATP.
-- If OCI GenAI is unavailable, the app falls back to a deterministic grounded responder so the assistant remains usable.
-- ATP Select AI is surfaced through the workflow gateway when `SELECTAI_PROFILE_NAME` points to a valid `DBMS_CLOUD_AI` profile.
+### Marketing
+- `campaigns`, `leads`
 
-## ATP deployment notes
+### Operations
+- `page_views`, `audit_logs`, `security_events`
+- `services`, `tickets`, `ticket_messages`
 
-- Production deployment and local smoke tests are ATP-only.
-- Mount the ATP wallet secret at `/opt/oracle/wallet`.
-- The readiness endpoint validates DB connectivity with `SELECT 1 FROM DUAL` for Oracle.
+### AI assistant
+- `assistant_sessions`, `assistant_messages`
 
-## OCI edge logging
+### Workflow gateway
+- `workflow_runs` — scheduled and manual workflow refresh runs
+- `query_executions` — SQL execution history (including intentional failures for investigation)
+- `component_snapshots` — backend component health rollups
 
-The application code cannot enable OCI resource logs by itself; enable these in OCI for the deployed resources:
+## Observability stack (MELTS)
 
-1. On the OCI Load Balancer, enable access logs and error logs to OCI Logging.
-2. On OCI WAF, enable policy logs to OCI Logging.
-3. In OCI Logging Analytics, create a source or ingest pipeline for the LB and WAF log groups.
-4. Route workflow gateway logs into OCI Logging so Log Analytics can correlate Query Lab failures with `oracleApmTraceId`.
-5. For external Splunk, choose one of these patterns:
-   - Use OCI Logging plus Service Connector Hub to stream logs to OCI Streaming, then run a Splunk forwarder consumer.
-   - Or export from OCI Logging/Logging Analytics into your existing external collector pipeline.
-6. The application already supports direct HEC shipping for app logs with `SPLUNK_HEC_URL` and `SPLUNK_HEC_TOKEN`.
+### Metrics
+
+| Source | Destination | What |
+|---|---|---|
+| Prometheus `/metrics` | Grafana / scraper | HTTP RED, business KPIs, runtime |
+| OCI Monitoring SDK | OCI Monitoring (`octo_drone_shop` namespace) | app.health, requests.rate, errors.rate, checkout.count, orders.count, db.latency_ms, crm.sync_age_s |
+| OCI Alarms | OCI Notifications → email/webhook | Error rate > 5/min, DB p95 > 2s, health down, CRM sync stale |
+| OCI Health Checks | OCI Console | HTTP `/ready` every 30s |
+
+### Events
+
+| Event type | How generated | Where visible |
+|---|---|---|
+| Security spans | 19 MITRE ATT&CK types (`security_span()`) | APM → filter `security.vuln_type` |
+| Span error events | 4xx → `http.client_error` event; 5xx → ERROR status | APM → Error Analysis |
+| OCI Alarms | MQL queries on custom metrics | Monitoring → Alarms |
+
+### Logs
+
+| Log source | Destination | Correlation key |
+|---|---|---|
+| App structured logs | OCI Logging SDK → OCI Logging | `oracleApmTraceId`, `trace_id`, `span_id`, `correlation.id` |
+| App structured logs | Splunk HEC (optional) | Same fields |
+| LB access logs | OCI Logging (manual enable) | Request ID |
+| WAF logs | OCI Logging (manual enable) | Request ID |
+| Log Analytics | OCI Log Analytics | `oracleApmTraceId` JOIN with APM traces |
+
+### Traces
+
+| Instrumentation | Span examples | Attributes |
+|---|---|---|
+| FastAPI middleware | Every HTTP request | method, route, status, duration_ms, client_ip, correlation.id |
+| SQLAlchemy | Every SQL query | db.statement, db.client.execution_time_ms, db.row_count, DbOracleSqlId |
+| httpx | Every outbound HTTP (CRM calls) | W3C traceparent, peer.service |
+| Custom spans | 50+ across 13 modules | Domain-specific (shop.checkout, auth.login, shipping.get, etc.) |
+| Oracle session tags | Per-connection | MODULE, ACTION, CLIENT_IDENTIFIER=trace_id |
+| SSO spans | Login initiate, callback | auth.method, auth.idcs.domain |
+
+### Security
+
+| Control | Implementation |
+|---|---|
+| CORS | Strict origin list from `DNS_DOMAIN`, no wildcard, no credentials with `*` |
+| Auth | HMAC-SHA256 bearer tokens; `AUTH_TOKEN_SECRET` required in production |
+| SSO | IDCS OIDC + PKCE (S256), JWKS-verified RS256 ID tokens |
+| Simulation auth | `require_sso_user` OR `X-Internal-Service-Key` |
+| WAF | OCI WAF in detection mode on the Load Balancer |
+| Secrets | All via K8s Secrets or env vars; no hardcoded values |
+
+## RUM (Real User Monitoring)
+
+- OCI APM RUM beacon injected via `base.html` when `rum_configured=True`
+- Custom RUM events emitted from `shop.html`:
+  - `shop.add_to_cart` — product_id, name, price, category, cart_size
+  - `shop.checkout_start` — cart_items, cart_total, session_id
+  - `shop.checkout_complete` — order_id, total, tracking_number
+  - `shop.checkout_error` — error message, cart_items
+  - `shop.search` — query, category, sort
+  - `shop.page_loaded` — load_time_ms, product count, cart items
+
+## APM topology
+
+When all services are deployed, OCI APM Topology shows:
+
+```
+Browser (RUM) → Drone Shop → Oracle ATP
+                    ├──→ Enterprise CRM → Oracle ATP
+                    └──→ IDCS (SSO login spans)
+```
+
+Each edge is a real W3C traceparent-propagated distributed trace. Clicking an edge in APM Topology shows the specific spans crossing that boundary.
+
+## Testing infrastructure
+
+| Test type | Tool | Test count | What it covers |
+|---|---|---|---|
+| E2E | Playwright | 237 | Health, shopping, cross-service, MELTS, auth, simulation, availability, k6 |
+| Load (shop-only) | k6 | 4 scenarios | Browse, API load, geo-latency, security probes |
+| Load (cross-service) | k6 | 5 scenarios | Shop+CRM browse, API, distributed traces, checkout, observability |
+| Load (DB stress) | k6 | 6 scenarios | Bulk writes, aggregations, N+1, slow queries, checkout storms, CRM sync |
+
+All k6 tests accept `DNS_DOMAIN` and `PROFILE` (light/moderate/heavy) environment variables.
 
 ## Validation checklist
 
-- `/ready` returns `database: connected` and `db_type: oracle_atp`.
-- `/api/shop/storefront` shows `backend.database = oracle_atp`.
-- `/api/shop/checkout` creates rows in `orders`, `order_items`, `shipments`, and `audit_logs`.
-- `/api/shop/assistant/query` stores rows in `assistant_sessions` and `assistant_messages`.
-- The workflow gateway writes to `workflow_runs`, `query_executions`, and `component_snapshots`.
-- The shop workflow panels call the gateway endpoint configured through `WORKFLOW_API_BASE_URL`.
-- OCI APM shows request, DB, checkout, and assistant spans.
-- OCI Logging and Log Analytics show correlated app logs.
-- OCI LB and WAF logs are enabled in OCI and routed into the selected OCI Logging groups.
+- [ ] `/ready` returns `database: connected` and `db_type: oracle_atp`
+- [ ] `/api/shop/storefront` shows `backend.database = oracle_atp`
+- [ ] `/api/shop/checkout` creates rows in `orders`, `order_items`, `shipments`, `audit_logs`
+- [ ] `/api/auth/sso/status` returns `configured: true` (if IDCS is set)
+- [ ] `/api/observability/360` returns all pillar statuses
+- [ ] `/api/integrations/crm/health` returns `crm_configured: true`
+- [ ] OCI APM shows distributed traces spanning Shop → CRM → ATP
+- [ ] OCI APM Topology shows edges between all services
+- [ ] OCI APM RUM shows shop.add_to_cart and shop.checkout events
+- [ ] OCI Log Analytics: `oracleApmTraceId=<trace_id>` returns correlated logs
+- [ ] OCI Monitoring: `octo_drone_shop` namespace has metrics
+- [ ] OCI DB Management Performance Hub shows SQL from the app
+- [ ] `npm run test:e2e` passes all 237 tests
+- [ ] `k6 run --env DNS_DOMAIN=<domain> k6/cross_service_stress.js` completes without threshold violations

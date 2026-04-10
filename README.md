@@ -1,111 +1,163 @@
 # OCTO Drone Shop
 
-ATP-backed drone commerce demo for OCI monitored-app scenarios.
+ATP-backed drone commerce platform with full OCI observability, IDCS SSO, cross-service CRM integration, chaos engineering, and automated remediation.
+
+**OCI-DEMO Component: C28** — Drone Shop Portal (OKE)
 
 ## What is in this repo
 
-- Oracle ATP is the primary backend for products, customers, carts, orders, shipments, page views, and assistant conversations.
-- A separate Go workflow gateway adds backend workflow menus, scheduled ATP query sweeps, query-lab probes, and Select AI execution paths for the shop UI.
-- OCI APM captures backend traces through OpenTelemetry and browser telemetry through OCI APM RUM.
-- OCI Logging receives structured app logs with `oracleApmTraceId` correlation fields.
-- OCI Generative AI powers the drone technical assistant when configured, with a grounded fallback when it is not.
-- OCI Load Balancer stays in front of the app in OKE. WAF, LB logs, and forwarding guidance are documented in [docs/technical-architecture.md](docs/technical-architecture.md).
+### Application
+- **Oracle ATP** backend for products, customers, carts, orders, shipments, page views, workflows, and AI assistant conversations.
+- **Go workflow gateway** for backend workflow menus, scheduled ATP query sweeps, query-lab probes, and Select AI execution paths.
+- **IDCS OIDC SSO** (Authorization Code + PKCE) with JWKS-verified ID tokens (RS256). SSO users auto-provisioned; password users coexist.
+- **Cross-service CRM integration** — bidirectional customer/order sync with enterprise-crm-portal via W3C traceparent-propagated distributed traces.
 
-## Documentation
+### Observability (MELTS)
+- **Metrics** — Prometheus `/metrics` + OCI Monitoring custom metrics (app.health, error rate, checkout count, DB latency, CRM sync age)
+- **Events** — OCI Alarms on error rate, DB latency, health-down, CRM sync staleness; OCI Notifications delivery
+- **Logs** — OCI Logging SDK with `oracleApmTraceId` correlation; Splunk HEC; structured JSON with trace/span/correlation IDs
+- **Traces** — OCI APM via OpenTelemetry (50+ custom spans across 13 modules); SQLAlchemy + httpx + logging auto-instrumentation; Oracle session tagging for DB Management/OPSI drill-down
+- **Security** — 19 MITRE ATT&CK security span types with OWASP codes; WAF detection mode; rate limiting
 
-- Install guide: [docs/install-guide.md](docs/install-guide.md)
-- Technical architecture: [docs/technical-architecture.md](docs/technical-architecture.md)
-- OKE deployment manifest: [deploy/k8s/deployment.yaml](deploy/k8s/deployment.yaml)
-- Workflow gateway manifest: [deploy/k8s/workflow-gateway.yaml](deploy/k8s/workflow-gateway.yaml)
-- API Gateway renderer: [deploy/oci/render_workflow_gateway_api_spec.sh](deploy/oci/render_workflow_gateway_api_spec.sh)
+### Frontend
+- **RUM** — OCI APM Real User Monitoring with custom events: add-to-cart, checkout funnel (start/complete/error), search, page load timing
+- **Shop UI** — product grid, cart, checkout, dealer locations, workflow panels, Select AI, query lab
 
-## Key files
+### Testing
+- **E2E** — 237 Playwright tests across 8 dimensions (health, shopping, cross-service, MELTS, auth, simulation, availability, k6)
+- **k6 stress tests** — 3 suites (shop-only, cross-service, ATP database) with light/moderate/heavy profiles
+- **OCI Health Checks** — HTTP `/ready` probe every 30s
 
-- App entry: [server/main.py](server/main.py)
-- Store backend helpers: [server/store_service.py](server/store_service.py)
-- Storefront presentation: [server/storefront.py](server/storefront.py)
-- Drone assistant integration: [server/genai_service.py](server/genai_service.py)
-- Workflow gateway: [services/workflow-gateway/cmd/workflow-gateway/main.go](services/workflow-gateway/cmd/workflow-gateway/main.go)
-- OKE deployment: [deploy/k8s/deployment.yaml](deploy/k8s/deployment.yaml)
+### Infrastructure
+- **Chaos engineering** — simulation controls (error burst, DB latency, slow responses, DB disconnect) gated behind IDCS SSO + internal service key; controlled from CRM portal
+- **Tenancy portable** — single `DNS_DOMAIN` variable derives all URLs, CORS, SSO redirects
+- **OKE deployment** — K8s manifests with `envsubst` templating, no hardcoded OCIDs
 
 ## Tenancy portability
 
-Set **one variable** — `DNS_DOMAIN` — and all URLs, CORS origins, SSO redirect URIs, and CRM integration endpoints are derived at runtime. No tenancy OCIDs, regions, or hostnames are hardcoded.
+Set **one variable** and everything derives:
 
 ```bash
 export DNS_DOMAIN="yourcompany.cloud"
-# → shop.yourcompany.cloud, crm.yourcompany.cloud, SSO callback, CORS
+# → shop.yourcompany.cloud (shop URL, CORS, SSO callback)
+# → crm.yourcompany.cloud (CRM URL, customer sync)
+# → All IDCS redirect URIs auto-derived
+# → All CORS origins auto-derived
 ```
 
-See [docs/install-guide.md § 1b](docs/install-guide.md) for the full standalone deployment quickstart.
+No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.
+
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [docs/install-guide.md](docs/install-guide.md) | Full install guide with standalone quickstart (§1b), ATP, APM, SSO, OKE |
+| [docs/technical-architecture.md](docs/technical-architecture.md) | Runtime topology, data model, trace coverage, observability stack |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System diagram + database ERD |
+| [deploy/k8s/deployment.yaml](deploy/k8s/deployment.yaml) | OKE deployment (envsubst-templated) |
+| [deploy/oci/ensure_monitoring.sh](deploy/oci/ensure_monitoring.sh) | OCI Monitoring alarms + health checks + notifications |
+
+## Key files
+
+| File | Purpose |
+|---|---|
+| `server/main.py` | FastAPI app entry — 98 routes, middleware stack, lifespan |
+| `server/modules/sso.py` | IDCS OIDC + PKCE + JWKS verification (382 lines) |
+| `server/modules/simulation.py` | Chaos controls (SSO + service key auth) |
+| `server/auth_security.py` | Bearer token HMAC, strict secret validation, SSO/service-key auth |
+| `server/observability/otel_setup.py` | OTel init (shared lib + standalone), SQLAlchemy/httpx instrumentation |
+| `server/observability/oci_monitoring.py` | OCI Monitoring custom metrics publisher |
+| `server/observability/security_spans.py` | 19 MITRE ATT&CK security span types |
+| `services/workflow-gateway/` | Go workflow gateway (Select AI, query lab, ATP sweeps) |
+| `k6/cross_service_stress.js` | k6: Shop + CRM + ATP distributed trace stress test |
+| `k6/db_stress.js` | k6: ATP database stress (writes, N+1, slow queries, checkout storms) |
+| `tests/e2e/` | 237 Playwright E2E tests (8 spec files) |
 
 ## Required production inputs
 
-- **`DNS_DOMAIN`**: your tenancy's DNS zone. All public URLs derive from this.
-- **`AUTH_TOKEN_SECRET`**: bearer-token signing key (required in production, auto-generated in dev).
-- ATP: `ORACLE_DSN`, `ORACLE_USER`, `ORACLE_PASSWORD`, `ORACLE_WALLET_PASSWORD`, wallet at `/opt/oracle/wallet`
-- APM: `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY`, `OCI_APM_PUBLIC_DATAKEY`, `OCI_APM_RUM_ENDPOINT`
-- SSO (optional): `IDCS_DOMAIN_URL`, `IDCS_CLIENT_ID`, `IDCS_CLIENT_SECRET` (redirect URIs auto-derive from DNS_DOMAIN)
-- Service key (optional): `INTERNAL_SERVICE_KEY` for CRM→shop simulation proxy
-- GenAI: `OCI_COMPARTMENT_ID`, `OCI_GENAI_ENDPOINT`, `OCI_GENAI_MODEL_ID`
-- Workflow gateway: `WORKFLOW_API_BASE_URL`, `WORKFLOW_SERVICE_NAME`, `WORKFLOW_POLL_SECONDS`
-- Logging: `OCI_LOG_ID`, optional `OCI_LOG_GROUP_ID`, `SPLUNK_HEC_URL`, `SPLUNK_HEC_TOKEN`
+| Variable | Required | What it does |
+|---|---|---|
+| `DNS_DOMAIN` | Yes | All public URLs, CORS, SSO redirects derive from this |
+| `AUTH_TOKEN_SECRET` | Yes (prod) | Bearer token signing key. Auto-generated in dev with warning. |
+| `ORACLE_DSN` | Yes | ATP TNS alias (e.g. `myatp_low`) |
+| `ORACLE_PASSWORD` | Yes | ATP admin password |
+| `ORACLE_WALLET_DIR` | Yes | Path to ATP wallet (mounted in K8s) |
+| `OCI_APM_ENDPOINT` | Recommended | OCI APM data upload endpoint |
+| `OCI_APM_PRIVATE_DATAKEY` | Recommended | APM private data key for trace export |
+| `OCI_COMPARTMENT_ID` | Recommended | Target compartment for OCI Monitoring custom metrics |
+| `IDCS_DOMAIN_URL` | Optional | OCI IAM Identity Domain URL for SSO |
+| `IDCS_CLIENT_ID` | Optional | IDCS Confidential App client ID |
+| `IDCS_CLIENT_SECRET` | Optional | IDCS Confidential App client secret |
+| `INTERNAL_SERVICE_KEY` | Optional | CRM→Shop service-to-service simulation proxy key |
+| `ENTERPRISE_CRM_URL` | Optional | CRM portal URL for cross-service integration |
 
-## ATP provisioning helper
-
-Use `deploy/oci/ensure_atp.sh` to verify or create the ATP for this component. In the
-customer-facing OCI-DEMO deployment, CRM and Drone Shop share `oci-demo-shared-atp`.
-
-Example:
-
-```bash
-COMPARTMENT_ID="<database compartment ocid>" \
-DISPLAY_NAME="oci-demo-shared-atp" \
-DB_NAME="ocidemoatp" \
-./deploy/oci/ensure_atp.sh
-```
-
-After ATP creation, download the wallet, mount it into the runtime, and populate:
+## Quick start
 
 ```bash
-export ORACLE_DSN="<atp_low or atp_tp alias>"
-export ORACLE_USER="ADMIN"
-export ORACLE_PASSWORD="<admin password>"
-export ORACLE_WALLET_DIR="/opt/oracle/wallet"
-export ORACLE_WALLET_PASSWORD="<wallet password>"
+# Local dev
+cp .env.local.example .env.local
+docker compose up --build
+
+# Any OCI tenancy
+export DNS_DOMAIN="mytenancy.cloud"
+export AUTH_TOKEN_SECRET="$(openssl rand -hex 32)"
+# Set ATP + APM env vars...
+envsubst < deploy/k8s/deployment.yaml | kubectl apply -f -
 ```
 
-For OCI observability drill-downs, also enable native ADB services:
+## Testing
 
 ```bash
-oci db autonomous-database enable-autonomous-database-management --autonomous-database-id <atp_ocid>
-oci db autonomous-database enable-operations-insights --autonomous-database-id <atp_ocid>
+# E2E (237 tests)
+npm run test:e2e
+
+# Against live tenancy
+SHOP_URL=https://shop.mytenancy.cloud CRM_URL=https://crm.mytenancy.cloud npm run test:e2e
+
+# k6 stress tests
+k6 run --env DNS_DOMAIN=mytenancy.cloud k6/cross_service_stress.js
+k6 run --env DNS_DOMAIN=mytenancy.cloud --env PROFILE=heavy k6/db_stress.js
 ```
 
-## Local env templates
+## OCI observability stack
 
-- Copy `.env.local.example` to `.env.local` and fill in values.
-- Keep `.env.local` and any local overrides out of Git; `.gitignore` excludes local env files and wallet artifacts.
+| Layer | Service | How to verify |
+|---|---|---|
+| Traces | OCI APM | APM → Trace Explorer → filter `serviceName=octo-drone-shop-oke` |
+| Topology | OCI APM | APM → Topology → CRM ↔ Shop ↔ ATP ↔ IDCS edges |
+| RUM | OCI APM | APM → Real User Monitoring → Session Explorer (add-to-cart, checkout events) |
+| Logs | OCI Logging + Log Analytics | Log Analytics → search `oracleApmTraceId=<trace_id>` |
+| Metrics | OCI Monitoring | Monitoring → Metric Explorer → namespace `octo_drone_shop` |
+| Alarms | OCI Monitoring | Monitoring → Alarms (error-rate, db-latency, health-down, crm-sync) |
+| DB | OCI DB Management | DB Management → Performance Hub → SQL Monitor |
+| DB insights | OCI Operations Insights | OPSI → SQL Warehouse → filter by `MODULE=octo-drone-shop` |
+| Security | OCI WAF | WAF → Logs (detection mode on LB) |
+| Health | OCI Health Checks | Health Checks → HTTP Monitors → `/ready` |
 
-## Git leak guard
+## OCI-DEMO integration (C28)
 
-Enable repo hooks so commits are blocked when `gitleaks` detects secrets:
+When deployed as part of OCI-DEMO, the `c28_deploy_drone_shop.sh` script handles everything automatically:
+- Derives `AUTH_TOKEN_SECRET` and `INTERNAL_SERVICE_KEY` from ATP password
+- Injects `DNS_DOMAIN` into ConfigMap
+- Wires IDCS SSO if `IDCS_DOMAIN_URL` / `IDCS_CLIENT_ID` / `IDCS_CLIENT_SECRET` are set
+- Creates dedicated APM domain, OCI Logging resources, WAF policy, and health checks
+- The CRM portal (C27) gets `INTERNAL_SERVICE_KEY` for the simulation proxy
 
 ```bash
-./scripts/setup-hooks.sh
+python deploy.py c28  # deploys everything
 ```
 
-The pre-commit hook scans staged changes using `.gitleaks.toml`.
+## Autoremediation (OCI Coordinator)
 
-## Install paths
+The OCI Coordinator's **Remediation Agent v2** can scan this app's OCI services for errors, correlate with APM traces and logs, consult the LLM for diagnosis, generate runbooks, and optionally execute fixes:
 
-- OKE and ATP install/config steps are in [docs/install-guide.md](docs/install-guide.md).
-- OCI APM endpoint and data key configuration is documented in [docs/install-guide.md](docs/install-guide.md#oci-apm-and-rum-configuration).
-- OCI API Gateway, workflow gateway, Select AI, and DB observability steps are documented in [docs/install-guide.md](docs/install-guide.md).
-
-## Store flows
-
-- `/api/shop/storefront` reads the full catalog from ATP and enriches products with generated visuals and technical summaries.
-- `/api/cart/*`, `/api/shop/checkout`, and `/api/orders` persist cart and order activity in the backend.
-- `/api/shop/assistant/query` stores conversation turns in ATP and emits traceable assistant activity.
-- The new shop workflow menus call the Go workflow gateway through `WORKFLOW_API_BASE_URL` to inspect order/CRM/component rollups, execute investigation queries, and submit Select AI prompts to ATP.
+```
+User: "Check for issues and create runbooks"
+→ Scans Cloud Guard, VSS, Data Safe, Audit
+→ Correlates with APM traces
+→ LLM diagnosis + proposed commands
+→ Structured runbooks (troubleshoot → fix → rollback → verify)
+→ Human approval gate (or YOLO mode for sandbox)
+→ Execute via SSH / kubectl / OCI CLI
+→ Verify fix
+```

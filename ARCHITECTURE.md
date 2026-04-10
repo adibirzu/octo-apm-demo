@@ -1,56 +1,101 @@
 # OCTO Drone Shop Architecture
 
-This document describes the high-level architecture of the OCTO Drone Shop application, its integrations with external systems (like the Enterprise CRM Portal), and its database schema.
+This document describes the high-level architecture of the OCTO Drone Shop application, its integrations with the Enterprise CRM Portal, OCI Observability services, IDCS SSO, and the OCI Coordinator's Remediation Agent.
 
 ## High-Level System Architecture
 
-The OCTO Drone Shop is a cloud-native e-commerce portal built using FastAPI. It operates alongside the `enterprise-crm-portal` and relies heavily on the Oracle Cloud Infrastructure (OCI) stack for observability and data persistence.
+The OCTO Drone Shop is a cloud-native e-commerce portal built using FastAPI with 98 routes, a Go workflow gateway, IDCS OIDC SSO, and a full OCI observability stack. It operates alongside the `enterprise-crm-portal` and shares an Oracle ATP database. All URLs derive from a single `DNS_DOMAIN` variable for tenancy portability.
 
 ```mermaid
 flowchart TD
     %% Actors
-    Customer(["Customer \n (Browser/Mobile)"])
-    Admin(["Admin / Support Agent \n (Browser)"])
+    Customer(["Customer<br>(Browser + RUM)"])
+    Admin(["Operator<br>(IDCS SSO)"])
+    K6(["k6 Stress Tests<br>(3 suites)"])
+    Coordinator(["OCI Coordinator<br>(Remediation Agent v2)"])
+
+    %% Identity
+    IDCS["OCI IAM Identity Domain<br>(OIDC + PKCE + JWKS)"]
 
     %% Applications
-    subgraph K8S_Cluster ["OCI OKE (Kubernetes)"]
-        DroneShop["<b>OCTO Drone Shop</b><br>(FastAPI App)"]
-        CRM["<b>Enterprise CRM Portal</b><br>(Spring/FastAPI/Other)"]
+    subgraph K8S_Cluster ["OCI OKE Cluster"]
+        DroneShop["<b>OCTO Drone Shop</b><br>FastAPI · 98 routes · 13 modules"]
+        WorkflowGW["<b>Workflow Gateway</b><br>Go · Select AI · Query Lab"]
+        CRM["<b>Enterprise CRM Portal</b><br>FastAPI · Simulation Proxy"]
+        OpsPortal["<b>Ops Portal</b><br>Tenancy Config · k6 · Health Matrix"]
     end
 
     %% Observability Stack
-    subgraph Observability ["OCI Observability (Control Plane)"]
-        APM["OCI APM <br>(Traces & Metrics)"]
-        Logging["OCI Logging SDK"]
-        RUM["OCI RUM <br>(Real User Monitoring)"]
+    subgraph Observability ["OCI Observability"]
+        APM["OCI APM<br>(Traces + Topology)"]
+        RUM["OCI APM RUM<br>(Session Explorer)"]
+        Logging["OCI Logging<br>+ Log Analytics"]
+        Monitoring["OCI Monitoring<br>(Custom Metrics + Alarms)"]
         Splunk["Splunk HEC"]
     end
 
     %% Data Layer
     subgraph DataLayer ["Oracle Cloud Infrastructure"]
-        DB[(Oracle ATP DB)]
-        GenAI["OCI GenAI Service"]
+        DB[(Oracle ATP<br>shared instance)]
+        DBMgmt["DB Management<br>Performance Hub"]
+        OPSI["Operations Insights<br>SQL Warehouse"]
+        GenAI["OCI GenAI"]
+        WAF["OCI WAF"]
+        HealthCheck["OCI Health Checks"]
     end
 
-    %% Connections - User traffic
-    Customer -->|HTTP/HTTPS| DroneShop
-    Customer -.->|Frontend metrics| RUM
-    Admin -->|HTTP/HTTPS| CRM
-    Admin -->|HTTP/HTTPS| DroneShop
+    %% User traffic
+    Customer -->|HTTPS| WAF -->|HTTP| DroneShop
+    Customer -.->|RUM beacon| RUM
+    Admin -->|IDCS SSO| IDCS -->|OIDC callback| DroneShop
+    Admin -->|Session auth| CRM
+    Admin -->|Session auth| OpsPortal
+    K6 -->|HTTP load| DroneShop
+    K6 -->|HTTP load| CRM
 
-    %% Inter-service
-    DroneShop <-->|Sync Customers & Orders| CRM
+    %% Inter-service (distributed traces)
+    DroneShop <-->|"W3C traceparent<br>customer sync · order sync"| CRM
+    CRM -->|"X-Internal-Service-Key<br>simulation proxy"| DroneShop
+    DroneShop -->|WORKFLOW_API_BASE_URL| WorkflowGW
+    Coordinator -->|"MCP tools<br>Cloud Guard · VSS · Audit"| DroneShop
 
     %% To Data layer
-    DroneShop <-->|SQLAlchemy / oracledb| DB
-    CRM <-->|Shared Tables| DB
-    DroneShop <-->|GenAI Prompts| GenAI
+    DroneShop -->|"SQLAlchemy<br>session tags"| DB
+    CRM -->|shared tables| DB
+    WorkflowGW -->|"Select AI<br>query sweeps"| DB
+    DB --> DBMgmt
+    DB --> OPSI
+    DroneShop -->|GenAI chat| GenAI
 
     %% To Observability
-    DroneShop -.->|Traces| APM
-    DroneShop -.->|Logs| Logging
-    DroneShop -.->|Logs & Events| Splunk
+    DroneShop -.->|"OTLP traces<br>50+ spans"| APM
+    CRM -.->|OTLP traces| APM
+    DroneShop -.->|structured logs| Logging
+    DroneShop -.->|"custom metrics<br>8 gauges/counters"| Monitoring
+    DroneShop -.->|HEC events| Splunk
+    HealthCheck -.->|"/ready probe"| DroneShop
 ```
+
+## Component summary
+
+| Component | Tech | Routes | Key features |
+|---|---|---|---|
+| Drone Shop | Python/FastAPI | 98 | Commerce, SSO, chaos, observability, CRM sync |
+| Workflow Gateway | Go | ~15 | Select AI, query lab, ATP sweeps, component health |
+| Enterprise CRM | Python/FastAPI | ~80 | CRM, simulation proxy, SSO, distributed traces |
+| Ops Portal | Python/FastAPI | ~40 | Tenancy config, k6 launcher, health matrix, monitoring |
+| OCI Coordinator | Python/LangGraph | 10 agents | Remediation Agent v2: detect → correlate → LLM → runbook → approve → execute |
+
+## Testing infrastructure
+
+| Type | Tool | Coverage |
+|---|---|---|
+| E2E | Playwright | 237 tests × 8 dimensions |
+| Load (cross-service) | k6 | 5 scenarios (shop+CRM+ATP+traces) |
+| Load (DB stress) | k6 | 6 scenarios (writes, N+1, slow queries, checkout storms) |
+| Load (shop-only) | k6 | 4 scenarios (browse, API, geo, security) |
+| OCI Health Checks | OCI | HTTP `/ready` every 30s |
+| OCI Alarms | OCI Monitoring | 4 alarms (error rate, DB latency, health, CRM sync) |
 
 ## Database Entity-Relationship Diagram (ERD)
 
