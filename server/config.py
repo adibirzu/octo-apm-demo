@@ -115,6 +115,10 @@ class Config:
     session_timeout_seconds: int = field(default_factory=lambda: _env_int("SESSION_TIMEOUT_SECONDS", 3600))
     max_login_attempts: int = field(default_factory=lambda: _env_int("MAX_LOGIN_ATTEMPTS", 5))
 
+    # Cross-service simulation proxy — shared key so the CRM backend can
+    # proxy simulation/demo requests to the drone shop without SSO.
+    drone_shop_internal_key: str = field(default_factory=lambda: _env("DRONE_SHOP_INTERNAL_KEY", _env("INTERNAL_SERVICE_KEY")))
+
     # IDCS / OCI Identity Domain SSO
     idcs_domain_url: str = field(default_factory=lambda: _env("IDCS_DOMAIN_URL"))
     idcs_client_id: str = field(default_factory=lambda: _env("IDCS_CLIENT_ID"))

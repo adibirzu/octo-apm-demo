@@ -310,7 +310,7 @@ async def files_page(request: Request):
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
-    return _render_page(request, "page", "Settings", module="settings", nav_key="settings")
+    return _render_page(request, "simulation", "Simulation Lab", nav_key="settings")
 
 
 @app.get("/campaigns", response_class=HTMLResponse)
