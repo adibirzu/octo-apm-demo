@@ -52,7 +52,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import text
 
-from server.auth_security import _secret_bytes, issue_token
+from server.auth_security import SESSION_COOKIE_NAME, _secret_bytes, issue_token
 from server.config import cfg
 from server.database import get_db
 from server.observability.logging_sdk import push_log
@@ -63,7 +63,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth/sso", tags=["sso"])
 
 _PKCE_COOKIE = "octo_sso_pkce"
-_TOKEN_COOKIE = "octo_session"
 _PKCE_TTL_SECONDS = 600  # 10 minutes — IDCS authorize → callback round-trip
 _JWKS_CACHE: dict[str, tuple[float, dict]] = {}
 _JWKS_TTL_SECONDS = 3600
@@ -355,6 +354,7 @@ async def sso_callback(request: Request, code: str = "", state: str = "", error:
             user_id=int(user["id"]),
             username=str(user["username"]),
             role=str(user["role"]),
+            auth_method="sso",
         )
 
         push_log(
@@ -376,7 +376,7 @@ async def sso_callback(request: Request, code: str = "", state: str = "", error:
         redirect = RedirectResponse(url="/", status_code=302)
         redirect.delete_cookie(_PKCE_COOKIE, path="/")
         redirect.set_cookie(
-            _TOKEN_COOKIE,
+            SESSION_COOKIE_NAME,
             bearer,
             httponly=True,
             secure=is_https,
@@ -397,6 +397,6 @@ async def sso_logout(request: Request):
         response = RedirectResponse(url=logout_url, status_code=302)
     else:
         response = JSONResponse({"status": "logged_out"})
-    response.delete_cookie(_TOKEN_COOKIE, path="/")
+    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
     response.delete_cookie(_PKCE_COOKIE, path="/")
     return response

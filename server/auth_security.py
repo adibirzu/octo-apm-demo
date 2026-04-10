@@ -80,11 +80,22 @@ def _sign(value: str) -> str:
     return _b64encode(digest)
 
 
-def issue_token(*, user_id: int, username: str, role: str, ttl_seconds: int = TOKEN_TTL_SECONDS) -> str:
+SESSION_COOKIE_NAME = "octo_session"
+
+
+def issue_token(
+    *,
+    user_id: int,
+    username: str,
+    role: str,
+    auth_method: str = "password",
+    ttl_seconds: int = TOKEN_TTL_SECONDS,
+) -> str:
     payload = {
         "sub": user_id,
         "username": username,
         "role": role,
+        "auth_method": auth_method,
         "exp": int(time.time()) + ttl_seconds,
     }
     body = _b64encode(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8"))
@@ -127,14 +138,28 @@ def register_login_attempt(source_ip: str, success: bool) -> None:
     attempts.append(time.time())
 
 
-def get_bearer_token(request: Request) -> str:
+def _extract_token(request: Request) -> str | None:
+    """Extract a bearer token from either the Authorization header or the
+    ``octo_session`` httpOnly cookie (set by the SSO callback).
+
+    Returns ``None`` if neither source contains a token.
+    """
     auth_header = request.headers.get("Authorization", "").strip()
-    if not auth_header.startswith("Bearer "):
+    if auth_header.startswith("Bearer "):
+        return auth_header.replace("Bearer ", "", 1).strip() or None
+
+    cookie_token = request.cookies.get(SESSION_COOKIE_NAME, "").strip()
+    return cookie_token or None
+
+
+def get_bearer_token(request: Request) -> str:
+    token = _extract_token(request)
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required",
         )
-    return auth_header.replace("Bearer ", "", 1).strip()
+    return token
 
 
 def require_authenticated_user(request: Request) -> dict[str, Any]:
@@ -144,6 +169,21 @@ def require_authenticated_user(request: Request) -> dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
+        )
+    return payload
+
+
+def require_sso_user(request: Request) -> dict[str, Any]:
+    """Require a valid token that was issued through the IDCS SSO flow.
+
+    The ``auth_method`` claim is embedded at token-issue time by
+    ``server.modules.sso`` and cannot be forged (HMAC-signed).
+    """
+    payload = require_authenticated_user(request)
+    if payload.get("auth_method") != "sso":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint requires IDCS SSO authentication",
         )
     return payload
 
