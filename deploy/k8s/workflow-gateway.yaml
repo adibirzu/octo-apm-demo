@@ -72,7 +72,7 @@ spec:
             - name: WORKFLOW_POLL_SECONDS
               value: "90"
             - name: WORKFLOW_ALLOWED_ORIGINS
-              value: "https://shop.octodemo.cloud"
+              value: "${WORKFLOW_ALLOWED_ORIGINS}"
             - name: WORKFLOW_FAULTY_QUERY_ENABLED
               value: "false"
             - name: SELECTAI_PROFILE_NAME

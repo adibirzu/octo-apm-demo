@@ -97,10 +97,9 @@ FastAPIInstrumentor.instrument_app(app)
 # entirely (FastAPI's CORSMiddleware short-circuits when allow_origins is
 # empty), which is the correct safe default. Wildcard with credentials is
 # explicitly forbidden by the CORS spec; we refuse the combination.
-_cors_default = "https://shop.octodemo.cloud,https://crm.octodemo.cloud"
 _cors_origins = [
     o.strip()
-    for o in os.getenv("CORS_ALLOWED_ORIGINS", _cors_default).split(",")
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", cfg.cors_origins_default).split(",")
     if o.strip() and o.strip() != "*"
 ]
 if _cors_origins:

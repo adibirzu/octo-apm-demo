@@ -2,12 +2,73 @@
 
 ## 1. Repository
 
-Clone the renamed repository:
-
 ```bash
 git clone https://github.com/adibirzu/octo-drone-shop.git
 cd octo-drone-shop
 ```
+
+## 1b. Standalone deployment (any OCI tenancy, without OCI-DEMO)
+
+The app is fully portable — set **one domain variable** and all URLs, CORS
+origins, and SSO redirects are derived automatically. No hardcoded tenancy
+OCIDs, IPs, or hostnames remain in the codebase.
+
+### Prerequisites
+
+| Prerequisite | What to set | Notes |
+|---|---|---|
+| DNS domain | `DNS_DOMAIN=yourcompany.cloud` | All `shop.<domain>` and `crm.<domain>` URLs derive from this |
+| Oracle ATP | `ORACLE_DSN`, `ORACLE_PASSWORD`, wallet | See section 4 |
+| OCI APM domain | `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY` | Create via OCI Console → APM → Create domain |
+| Auth secret | `AUTH_TOKEN_SECRET` | Required in production; 32+ random bytes |
+| IDCS SSO (optional) | `IDCS_DOMAIN_URL`, `IDCS_CLIENT_ID`, `IDCS_CLIENT_SECRET` | See section 11; `IDCS_REDIRECT_URI` auto-derives from `DNS_DOMAIN` |
+| CRM integration (optional) | `ENTERPRISE_CRM_URL` | Internal or public URL of the CRM portal |
+| Service key (optional) | `INTERNAL_SERVICE_KEY` | For CRM→shop simulation proxy; auto-derived in OCI-DEMO |
+
+### Quick start — standalone on OKE
+
+```bash
+# 1. Set your domain and OCI resources
+export DNS_DOMAIN="yourcompany.cloud"
+export AUTH_TOKEN_SECRET="$(openssl rand -hex 32)"
+export ORACLE_DSN="myatp_low"
+export ORACLE_PASSWORD="<your-atp-password>"
+export OCI_APM_ENDPOINT="https://<apm-data-upload-endpoint>"
+export OCI_APM_PRIVATE_DATAKEY="<private-data-key>"
+export OCI_LB_SUBNET_OCID="ocid1.subnet.oc1.<region>...."
+
+# 2. Build and push (on an x86 build VM or CI)
+docker build -t <region>.ocir.io/<namespace>/octo-drone-shop:latest .
+docker push <region>.ocir.io/<namespace>/octo-drone-shop:latest
+
+# 3. Render and apply K8s manifests
+export OCIR_REPO="<region>.ocir.io/<namespace>"
+export SHOP_HOST="shop.${DNS_DOMAIN}"
+export TLS_SECRET_NAME="shop-tls"
+export WORKFLOW_ALLOWED_ORIGINS="https://shop.${DNS_DOMAIN},https://crm.${DNS_DOMAIN}"
+envsubst < deploy/k8s/deployment.yaml | kubectl apply -f -
+
+# 4. Optional: SSO (IDCS) — set these 3 and the rest auto-derives
+export IDCS_DOMAIN_URL="https://idcs-xxxxx.identity.oraclecloud.com"
+export IDCS_CLIENT_ID="<from IDCS app>"
+export IDCS_CLIENT_SECRET="<from IDCS app>"
+kubectl -n octo-drone-shop create secret generic octo-sso \
+  --from-literal=idcs-domain-url="${IDCS_DOMAIN_URL}" \
+  --from-literal=idcs-client-id="${IDCS_CLIENT_ID}" \
+  --from-literal=idcs-client-secret="${IDCS_CLIENT_SECRET}" \
+  --from-literal=idcs-redirect-uri="https://shop.${DNS_DOMAIN}/api/auth/sso/callback"
+kubectl -n octo-drone-shop rollout restart deploy/octo-drone-shop
+```
+
+All CORS origins, SSO redirect URIs, and CRM integration URLs are derived from
+`DNS_DOMAIN` at runtime — no code changes needed per tenancy.
+
+### When deployed as part of OCI-DEMO (C28)
+
+The `c28_deploy_drone_shop.sh` script handles all of the above automatically:
+it reads `DNS_DOMAIN` from the OCI-DEMO `.env.local`, derives `AUTH_TOKEN_SECRET`
+and `INTERNAL_SERVICE_KEY` if not explicitly set, and injects everything into
+the K8s manifests. Just run `python deploy.py c28`.
 
 ## 2. Python environment
 

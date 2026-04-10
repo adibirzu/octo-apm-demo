@@ -12,6 +12,7 @@ class Config:
     app_version = os.getenv("APP_VERSION", "1.2.0")
     app_runtime = os.getenv("APP_RUNTIME", "oke")
     app_env = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", "production"))
+    dns_domain = os.getenv("DNS_DOMAIN", "")
     service_namespace = os.getenv("SERVICE_NAMESPACE", "octo")
     service_instance_id = os.getenv("SERVICE_INSTANCE_ID", os.getenv("HOSTNAME", "local-dev"))
     demo_stack_name = os.getenv("DEMO_STACK_NAME", "octo-demo")
@@ -74,9 +75,9 @@ class Config:
     idcs_domain_url = os.getenv("IDCS_DOMAIN_URL", "").rstrip("/")
     idcs_client_id = os.getenv("IDCS_CLIENT_ID", "")
     idcs_client_secret = os.getenv("IDCS_CLIENT_SECRET", "")
-    idcs_redirect_uri = os.getenv("IDCS_REDIRECT_URI", "")
+    _idcs_redirect_uri = os.getenv("IDCS_REDIRECT_URI", "")
     idcs_scope = os.getenv("IDCS_SCOPE", "openid profile email")
-    idcs_post_logout_redirect = os.getenv("IDCS_POST_LOGOUT_REDIRECT", "/login")
+    _idcs_post_logout_redirect = os.getenv("IDCS_POST_LOGOUT_REDIRECT", "")
     # JWKS verification can be disabled in air-gapped dev only.
     idcs_verify_jwt = os.getenv("IDCS_VERIFY_JWT", "true").lower() in ("1", "true", "yes")
 
@@ -86,6 +87,27 @@ class Config:
     # OCI APM does not support OTLP log ingestion — logs go via OCI Logging SDK.
     # Set to "true" only if a third-party OTLP log collector is configured.
     otlp_log_export_enabled = os.getenv("OTLP_LOG_EXPORT_ENABLED", "false").lower() in ("1", "true", "yes")
+
+    @property
+    def shop_public_url(self) -> str:
+        """Derive the shop's public URL from DNS_DOMAIN if set."""
+        if self.dns_domain:
+            return f"https://shop.{self.dns_domain}"
+        return ""
+
+    @property
+    def crm_public_url(self) -> str:
+        """Derive the CRM's public URL from DNS_DOMAIN if set."""
+        if self.dns_domain:
+            return f"https://crm.{self.dns_domain}"
+        return ""
+
+    @property
+    def cors_origins_default(self) -> str:
+        """Build default CORS origins from DNS_DOMAIN or fall back to empty."""
+        if self.dns_domain:
+            return f"https://shop.{self.dns_domain},https://crm.{self.dns_domain}"
+        return ""
 
     @property
     def is_production(self) -> bool:
@@ -112,6 +134,22 @@ class Config:
     @property
     def selectai_configured(self) -> bool:
         return bool(self.selectai_profile_name)
+
+    @property
+    def idcs_redirect_uri(self) -> str:
+        if self._idcs_redirect_uri:
+            return self._idcs_redirect_uri
+        if self.dns_domain:
+            return f"https://shop.{self.dns_domain}/api/auth/sso/callback"
+        return "http://localhost:8080/api/auth/sso/callback"
+
+    @property
+    def idcs_post_logout_redirect(self) -> str:
+        if self._idcs_post_logout_redirect:
+            return self._idcs_post_logout_redirect
+        if self.dns_domain:
+            return f"https://shop.{self.dns_domain}/login"
+        return "/login"
 
     @property
     def idcs_configured(self) -> bool:

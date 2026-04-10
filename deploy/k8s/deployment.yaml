@@ -21,6 +21,8 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            - name: DNS_DOMAIN
+              value: "${DNS_DOMAIN}"
             - name: APP_NAME
               value: "octo-drone-shop"
             - name: OTEL_SERVICE_NAME
