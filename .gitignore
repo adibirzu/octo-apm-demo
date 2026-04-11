@@ -32,3 +32,4 @@ __pycache__/
 playwright-report/
 test-results/
 .rlm/
+build/
