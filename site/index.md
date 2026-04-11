@@ -1,17 +1,24 @@
-# OCTO Drone Shop
+# OCTO Cloud-Native Platform
 
-**Cloud-native e-commerce platform with full OCI observability, IDCS SSO, cross-service CRM integration, and automated remediation.**
+**Two-service cloud-native platform with shared Oracle ATP, full OCI observability (MELTS), IDCS SSO, cross-service distributed tracing, and automated remediation.**
 
-[:octicons-mark-github-16: View on GitHub](https://github.com/adibirzu/octo-drone-shop){ .md-button .md-button--primary }
-[:material-rocket-launch: Live Demo](https://shop.octodemo.cloud){ .md-button }
+[:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-drone-shop){ .md-button .md-button--primary }
+[:octicons-mark-github-16: CRM Portal](https://github.com/adibirzu/enterprise-crm-portal){ .md-button .md-button--primary }
+[:material-rocket-launch: Live Shop](https://shop.octodemo.cloud){ .md-button }
+[:material-rocket-launch: Live CRM](https://crm.octodemo.cloud){ .md-button }
 
 ---
 
-## What is OCTO Drone Shop?
+## What is OCTO?
 
-OCTO Drone Shop is an **ATP-backed drone commerce platform** purpose-built to demonstrate how Oracle Cloud Infrastructure's observability, security, and AI services integrate with cloud-native applications running on OKE.
+The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.
 
-It serves as both a **working e-commerce demo** and a **reference architecture** for customers deploying enterprise workloads on Oracle Cloud Infrastructure.
+| Service | Purpose | Routes |
+|---|---|---|
+| **[OCTO Drone Shop](drone-shop/index.md)** | E-commerce with AI assistant, MELTS observability, security controls | 98 |
+| **[Enterprise CRM Portal](crm/index.md)** | CRM with OWASP security training, simulation lab, order sync | 73 |
+
+Both services share a **single Oracle ATP database**, enabling cross-service data correlation and distributed tracing visible in OCI APM Topology.
 
 <div class="grid cards" markdown>
 
@@ -47,6 +54,22 @@ It serves as both a **working e-commerce demo** and a **reference architecture**
 
     [:octicons-arrow-right-24: Integrations](integrations/index.md)
 
+-   :material-database:{ .lg .middle } **Shared Oracle ATP**
+
+    ---
+
+    Single database instance with session tagging, SQL_ID bridging to OPSI, and cross-service data correlation.
+
+    [:octicons-arrow-right-24: Database Integration](architecture/database-integration.md)
+
+-   :material-bug:{ .lg .middle } **Security Training**
+
+    ---
+
+    CRM Portal includes intentional OWASP Top 10 vulnerabilities with 24 MITRE ATT&CK security span types for detection training.
+
+    [:octicons-arrow-right-24: Security Vulns](crm/security-vulns.md)
+
 </div>
 
 ## Architecture at a Glance
@@ -57,41 +80,52 @@ flowchart TD
     IDCS["OCI IAM Identity Domain"]
 
     subgraph OKE ["OCI OKE Cluster"]
-        DroneShop["OCTO Drone Shop<br/>FastAPI · 98 routes"]
-        WorkflowGW["Workflow Gateway<br/>Go · Select AI"]
-        CRM["Enterprise CRM Portal"]
+        subgraph NS1 ["octo-drone-shop"]
+            DroneShop["OCTO Drone Shop<br/>FastAPI · 98 routes"]
+            WGW["Workflow Gateway<br/>Go · Select AI"]
+        end
+        subgraph NS2 ["enterprise-crm"]
+            CRM["Enterprise CRM Portal<br/>FastAPI · 73 routes"]
+        end
     end
 
-    subgraph Observability ["OCI Observability"]
-        APM["OCI APM (Traces)"]
+    subgraph OCI ["OCI Observability"]
+        APM["OCI APM"]
         Logging["OCI Logging"]
         Monitoring["OCI Monitoring"]
+        WAF["OCI WAF"]
+        CloudGuard["Cloud Guard"]
     end
 
-    DB[(Oracle ATP)]
+    DB[(Oracle ATP<br/>shared)]
 
-    Customer -->|HTTPS| DroneShop
-    Customer -.->|SSO| IDCS --> DroneShop
-    DroneShop <-->|W3C traceparent| CRM
+    Customer -->|HTTPS| WAF --> DroneShop
+    Customer -->|HTTPS| CRM
+    Customer -.->|SSO| IDCS
+    DroneShop <-->|"W3C traceparent"| CRM
+    DroneShop --> WGW
     DroneShop --> DB
     CRM --> DB
+    WGW --> DB
     DroneShop -.-> APM
+    CRM -.-> APM
     DroneShop -.-> Logging
+    CRM -.-> Logging
     DroneShop -.-> Monitoring
 ```
 
 ## Key Capabilities
 
-| Capability | Details |
-|---|---|
-| **Application** | 98 API routes, 13 modules, FastAPI + Go workflow gateway |
-| **Database** | Oracle ATP with session tagging, DB Management, Operations Insights |
-| **Authentication** | IDCS OIDC + PKCE with JWKS-verified RS256 ID tokens |
-| **Observability** | 50+ OpenTelemetry spans, Prometheus metrics, OCI Monitoring custom metrics |
-| **Security** | WAF, Cloud Guard, Security Zones, Vault, 19 MITRE ATT&CK security types |
-| **Testing** | 237 Playwright E2E tests, 3 k6 load test suites |
-| **Deployment** | Tenancy-portable OKE manifests, single `DNS_DOMAIN` variable |
-| **Resilience** | Circuit breakers, chaos engineering, OCI Health Checks, 5 alarms |
+| Capability | Drone Shop | CRM Portal |
+|---|---|---|
+| **Routes** | 98 (13 modules) | 73 (12 modules) |
+| **Database** | Oracle ATP (shared) | Oracle ATP (shared) |
+| **Authentication** | IDCS OIDC + PKCE | IDCS OIDC + PKCE |
+| **Traces** | 50+ custom spans | 8+ spans/request |
+| **Security** | 19 MITRE ATT&CK types | 24 MITRE ATT&CK types |
+| **Testing** | 237 Playwright + 3 k6 | 82 E2E + 3 k6 |
+| **Chaos** | SSO-gated simulation | 15+ chaos endpoints |
+| **Special** | AI assistant, WAF, Vault | OWASP vulns, order sync |
 
 ## Tenancy Portability
 
@@ -106,8 +140,11 @@ export DNS_DOMAIN="yourcompany.cloud"
 
 No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.
 
-## OCI-DEMO Component
+## OCI-DEMO Components
 
-**Component ID: C28** — Drone Shop Portal (OKE)
+| ID | Component | Repository |
+|---|---|---|
+| **C28** | Drone Shop Portal (OKE) | [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) |
+| **C27** | Enterprise CRM Portal (OKE) | [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) |
 
-Part of the OCI-DEMO ecosystem alongside Enterprise CRM Portal (C27), Ops Portal, and OCI Coordinator with Remediation Agent v2.
+Part of the OCI-DEMO ecosystem alongside Ops Portal and OCI Coordinator with Remediation Agent v2.
