@@ -113,6 +113,7 @@ nav:
     - integrations/index.md
     - CRM Integration: integrations/crm.md
     - OCI Services: integrations/oci-services.md
+    - OCI Coordinator: integrations/coordinator.md
     - Circuit Breaker: integrations/circuit-breaker.md
   - Testing:
     - testing/index.md
