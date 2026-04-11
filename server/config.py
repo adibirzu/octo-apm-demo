@@ -228,9 +228,12 @@ class Config:
 
         # In production with SSO partially configured (some fields set,
         # others missing), refuse to start so the misconfiguration is loud.
+        # Use raw env vars (not properties with fallbacks) to detect
+        # partial SSO config. idcs_redirect_uri has a DNS_DOMAIN fallback
+        # that would make this always True.
         partial = any([
             self.idcs_domain_url, self.idcs_client_id,
-            self.idcs_client_secret, self.idcs_redirect_uri,
+            self.idcs_client_secret, self._idcs_redirect_uri,
         ])
         if partial and not self.idcs_configured and self.is_production:
             raise RuntimeError(
