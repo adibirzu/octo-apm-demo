@@ -1,27 +1,34 @@
-# Security Vulnerabilities
+# Security Testing Add-On
 
-The CRM Portal includes **intentional OWASP Top 10 vulnerabilities** for security training. Every exploitation attempt generates security spans with MITRE ATT&CK classification.
+!!! info "Optional Module"
+    Security testing is an **optional add-on** for security workshops and detection training. The CRM Portal is fully secured by default. Enable this module when running security training exercises.
 
-!!! warning "Intentional Vulnerabilities"
-    These vulnerabilities exist for **security training and observability demonstration only**. The Drone Shop implements production-grade security controls.
+## Purpose
 
-## OWASP Top 10 (2021) Coverage
+When enabled, the security testing module provides intentional OWASP Top 10 vulnerabilities that generate security spans with MITRE ATT&CK classification. This allows security teams to:
 
-| OWASP | Category | Affected Modules | Example |
-|---|---|---|---|
-| **A01** | Broken Access Control | customers, orders, invoices, admin | IDOR: `GET /api/customers/{id}` without auth |
-| **A02** | Cryptographic Failures | auth, api_keys | Weak MD5 session hashing, timing attack on API key validation |
-| **A03** | Injection | customers, products, reports, files | SQLi in search/sort, command injection in reports, XXE in files |
-| **A04** | Insecure Design | orders, invoices | Price manipulation, no request signing |
-| **A05** | Security Misconfiguration | products, admin | Verbose errors, config endpoint, debug info |
-| **A07** | Auth Failures | auth, api_keys | Brute force (no rate limit), mass assignment (role) |
-| **A08** | Data Integrity | reports | Pickle deserialization |
-| **A09** | Logging Failures | tickets | Log injection via description |
-| **A10** | SSRF | files | `POST /api/files/import-url` |
+1. **Test detection** — Verify that OCI APM captures attack patterns
+2. **Train analysts** — Practice identifying security events in OCI Log Analytics
+3. **Validate WAF rules** — Confirm WAF protection rules block common attacks
+4. **Demonstrate MELTS correlation** — Show how security events correlate across traces, logs, and metrics
+
+## OWASP Top 10 Coverage
+
+| OWASP | Category | Detection Span |
+|---|---|---|
+| A01 | Broken Access Control | `ATTACK:IDOR`, `ATTACK:PRIVILEGE_ESCALATION` |
+| A02 | Cryptographic Failures | `ATTACK:TIMING_ATTACK` |
+| A03 | Injection | `ATTACK:SQLI`, `ATTACK:XSS_REFLECTED`, `ATTACK:XXE` |
+| A04 | Insecure Design | `ATTACK:MASS_ASSIGNMENT` |
+| A05 | Security Misconfiguration | `ATTACK:INFO_DISCLOSURE` |
+| A07 | Auth Failures | `ATTACK:BRUTE_FORCE` |
+| A08 | Data Integrity | `ATTACK:DESERIALIZATION` |
+| A09 | Logging Failures | `ATTACK:LOG_INJECTION` |
+| A10 | SSRF | `ATTACK:SSRF` |
 
 ## Security Span Detection
 
-Every detected attack generates:
+Every detected attack generates a traced span:
 
 ```
 ATTACK:{TYPE}
@@ -30,42 +37,39 @@ ATTACK:{TYPE}
 ├── mitre.technique_id: "T1190"
 ├── mitre.tactic: "initial-access"
 ├── owasp.category: "A03:2021"
-├── security.payload: "1' OR '1'='1"
-├── security.source_ip: "10.244.0.1"
 └── status: ERROR
 ```
 
-**24 vulnerability types detected**: sqli, xss_reflected, xss_stored, xss_dom, xxe, ssrf, idor, path_traversal, command_injection, ssti, csrf, broken_auth, jwt_bypass, mass_assignment, brute_force, deserialization, captcha_bypass, rate_limit, info_disclosure, open_redirect, log_injection, file_upload, timing_attack, privilege_escalation
+24 vulnerability types are detected and classified against both MITRE ATT&CK and OWASP frameworks.
 
-## Demo Scenarios
-
-### SQL Injection
-```bash
-curl "https://crm.octodemo.cloud/api/customers?search=1'%20OR%20'1'='1"
-# → Parameterized query prevents actual injection
-# → Security span: ATTACK:SQLI with full classification
-# → Visible in OCI APM → filter security.vuln_type=sqli
-```
-
-### XSS
-```bash
-curl -X POST "https://crm.octodemo.cloud/api/customers" \
-  -d '{"name": "Test", "notes": "<script>alert(1)</script>"}'
-# → Input stored (intentionally vulnerable)
-# → Security span: ATTACK:XSS_STORED
-```
-
-### Path Traversal
-```bash
-curl "https://crm.octodemo.cloud/api/files/download?path=../../etc/passwd"
-# → Security span: ATTACK:PATH_TRAVERSAL
-```
-
-## Correlation
-
-All security events correlate across the MELTS stack:
+## OCI Correlation Path
 
 1. **APM** → Trace Explorer → filter `security.vuln_type`
 2. **Log Analytics** → search `oracleApmTraceId` from the span
-3. **Monitoring** → `crm.business.security.events` counter
+3. **Monitoring** → security events counter
 4. **Cloud Guard** → Problems feed from compartment activity
+
+## Demo Scenarios
+
+=== "SQL Injection"
+
+    ```bash
+    curl "https://crm.example.com/api/customers?search=1'%20OR%20'1'='1"
+    # → Security span: ATTACK:SQLI
+    # → Visible in OCI APM Trace Explorer
+    ```
+
+=== "XSS"
+
+    ```bash
+    curl -X POST "https://crm.example.com/api/tickets" \
+      -d '{"subject": "<script>alert(1)</script>"}'
+    # → Security span: ATTACK:XSS_REFLECTED
+    ```
+
+=== "Path Traversal"
+
+    ```bash
+    curl "https://crm.example.com/api/files/download?path=../../etc/passwd"
+    # → Security span: ATTACK:PATH_TRAVERSAL
+    ```
