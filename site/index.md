@@ -22,13 +22,13 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 
 <div class="grid cards" markdown>
 
--   :material-telescope:{ .lg .middle } **Full MELTS Observability**
+-   :material-telescope:{ .lg .middle } **Modular OCI Observability**
 
     ---
 
-    Metrics, Events, Logs, Traces, and Security — all correlated through OCI APM, Logging, Monitoring, and Log Analytics.
+    APM, RUM, Logging, Log Analytics, Stack Monitoring, DB Management, Ops Insights — each activatable independently as add-ons.
 
-    [:octicons-arrow-right-24: Observability](observability/index.md)
+    [:octicons-arrow-right-24: Add-Ons Guide](observability/addons.md)
 
 -   :material-shield-check:{ .lg .middle } **Security-First Design**
 
@@ -62,13 +62,13 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 
     [:octicons-arrow-right-24: Database Integration](architecture/database-integration.md)
 
--   :material-bug:{ .lg .middle } **Security Training**
+-   :material-flask:{ .lg .middle } **Simulation Lab**
 
     ---
 
-    CRM Portal includes intentional OWASP Top 10 vulnerabilities with 24 MITRE ATT&CK security span types for detection training.
+    15+ chaos injection endpoints, cross-service proxy, data generation. Optional security testing add-on for OWASP training.
 
-    [:octicons-arrow-right-24: Security Vulns](crm/security-vulns.md)
+    [:octicons-arrow-right-24: Simulation](crm/simulation.md)
 
 </div>
 

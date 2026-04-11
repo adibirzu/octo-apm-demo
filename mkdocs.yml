@@ -101,6 +101,7 @@ nav:
     - Simulation Lab: crm/simulation.md
   - Observability:
     - observability/index.md
+    - Add-Ons Guide: observability/addons.md
     - MELTS Overview: observability/melts.md
     - Traces (APM): observability/traces.md
     - Metrics: observability/metrics.md
