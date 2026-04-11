@@ -1,5 +1,5 @@
-site_name: OCTO Drone Shop
-site_description: Cloud-native e-commerce platform with full OCI observability (MELTS), IDCS SSO, cross-service CRM integration, and automated remediation
+site_name: OCTO Cloud-Native Platform
+site_description: Cloud-native e-commerce and CRM platform with full OCI observability (MELTS), shared Oracle ATP, IDCS SSO, and automated remediation
 site_url: https://adibirzu.github.io/octo-drone-shop
 repo_url: https://github.com/adibirzu/octo-drone-shop
 repo_name: adibirzu/octo-drone-shop
@@ -71,6 +71,8 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/adibirzu/octo-drone-shop
+    - icon: fontawesome/brands/github
+      link: https://github.com/adibirzu/enterprise-crm-portal
 
 nav:
   - Home: index.md
@@ -81,9 +83,22 @@ nav:
     - OKE Deployment: getting-started/oke-deployment.md
   - Architecture:
     - architecture/index.md
+    - Platform Overview: architecture/platform-overview.md
     - System Design: architecture/system-design.md
     - Data Model: architecture/data-model.md
+    - Database Integration: architecture/database-integration.md
     - Framework Approach: architecture/framework.md
+  - Drone Shop:
+    - drone-shop/index.md
+    - Modules: drone-shop/modules.md
+    - Checkout Flow: drone-shop/checkout.md
+    - AI Assistant: drone-shop/assistant.md
+  - Enterprise CRM:
+    - crm/index.md
+    - Modules: crm/modules.md
+    - Order Sync: crm/order-sync.md
+    - Security Vulnerabilities: crm/security-vulns.md
+    - Simulation Lab: crm/simulation.md
   - Observability:
     - observability/index.md
     - MELTS Overview: observability/melts.md
@@ -92,6 +107,7 @@ nav:
     - Logs: observability/logs.md
     - Security Events: observability/security.md
     - RUM: observability/rum.md
+    - Cross-Service Tracing: observability/distributed-traces.md
   - Integrations:
     - integrations/index.md
     - CRM Integration: integrations/crm.md
