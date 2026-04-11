@@ -28,15 +28,20 @@ def _get_vss_client():
     try:
         import oci
         auth_mode = cfg.oci_auth_mode.lower()
-        if auth_mode == "resource_principal":
-            signer = oci.auth.signers.get_resource_principals_signer()
-            return oci.vulnerability_scanning.VulnerabilityScanningClient(config={}, signer=signer)
-        elif auth_mode == "instance_principal":
+        if auth_mode == "instance_principal":
             signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
             return oci.vulnerability_scanning.VulnerabilityScanningClient(config={}, signer=signer)
+        elif auth_mode == "resource_principal":
+            signer = oci.auth.signers.get_resource_principals_signer()
+            return oci.vulnerability_scanning.VulnerabilityScanningClient(config={}, signer=signer)
         else:
-            config = oci.config.from_file()
-            return oci.vulnerability_scanning.VulnerabilityScanningClient(config)
+            # Auto mode: try instance principal, fall back to config file
+            try:
+                signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+                return oci.vulnerability_scanning.VulnerabilityScanningClient(config={}, signer=signer)
+            except Exception:
+                config = oci.config.from_file()
+                return oci.vulnerability_scanning.VulnerabilityScanningClient(config)
     except Exception as exc:
         logger.debug("VSS client init failed: %s", exc)
         return None

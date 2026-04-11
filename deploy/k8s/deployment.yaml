@@ -74,7 +74,7 @@ spec:
                   key: idcs-post-logout-redirect
                   optional: true
             - name: OCI_AUTH_MODE
-              value: "resource_principal"
+              value: "instance_principal"
             - name: ORACLE_DSN
               valueFrom:
                 secretKeyRef:
