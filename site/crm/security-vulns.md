@@ -10,7 +10,7 @@ When enabled, the security testing module provides intentional OWASP Top 10 vuln
 1. **Test detection** — Verify that OCI APM captures attack patterns
 2. **Train analysts** — Practice identifying security events in OCI Log Analytics
 3. **Validate WAF rules** — Confirm WAF protection rules block common attacks
-4. **Demonstrate MELTS correlation** — Show how security events correlate across traces, logs, and metrics
+4. **Demonstrate MELTS correlation** — Show how security events correlate across traces, logs, metrics, and SQL
 
 ## OWASP Top 10 Coverage
 

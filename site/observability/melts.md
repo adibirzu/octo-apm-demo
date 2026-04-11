@@ -40,16 +40,16 @@
 | Custom spans | 50+ across 13 modules | shop.checkout, auth.login, shipping.get, etc. |
 | Oracle session tags | Per-connection | MODULE, ACTION, CLIENT_IDENTIFIER=trace_id |
 
-## Security (S)
+## SQL (S)
 
-| Control | Implementation |
-|---|---|
-| WAF | OCI WAF with SQLi, XSS, CmdInj, PathTraversal block rules + rate limiting |
-| Cloud Guard | Target + detector recipes for compartment monitoring |
-| Security Zones | Compliance recipe enforcing encryption and Vault policies |
-| Vault | OCI Vault for secret management (HSM-backed AES-256 keys) |
-| VSS | OCI Vulnerability Scanning integration in 360 dashboard |
-| Security Spans | 19 MITRE ATT&CK types with OWASP 2021 codes |
+| Capability | OCI Service | What You See |
+|---|---|---|
+| SQL Instrumentation | OCI APM | `db.statement`, `db.client.execution_time_ms`, `db.row_count` per query |
+| SQL_ID Bridging | APM → DB Management | `DbOracleSqlId` span attribute links APM trace to Performance Hub |
+| Session Tagging | DB Management / OPSI | `MODULE`, `ACTION`, `CLIENT_IDENTIFIER=trace_id` in V$SESSION |
+| Performance Hub | DB Management | Real-time SQL monitoring, ASH analytics, AWR reports |
+| SQL Warehouse | Operations Insights | Top SQL aggregation, capacity planning, fleet summary |
+| Query Lab | Workflow Gateway | Interactive SQL execution with span recording |
 
 ## OCI Console Verification
 

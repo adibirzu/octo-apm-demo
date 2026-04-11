@@ -17,7 +17,7 @@
 
 | URL | Status |
 |---|---|
-| [crm.octodemo.cloud](https://crm.octodemo.cloud) | Production (OKE) |
+| [crm.example.cloud](https://crm.example.cloud) | Production (OKE) |
 
 ## Observability-First Design
 
