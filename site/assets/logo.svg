@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#7C3AED"/>
+  <g transform="translate(8, 12)" fill="white">
+    <!-- Drone body -->
+    <ellipse cx="24" cy="20" rx="12" ry="6" opacity="0.9"/>
+    <!-- Propeller arms -->
+    <line x1="12" y1="20" x2="4" y2="12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="36" y1="20" x2="44" y2="12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="12" y1="20" x2="4" y2="28" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="36" y1="20" x2="44" y2="28" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Propellers -->
+    <ellipse cx="4" cy="12" rx="6" ry="2" opacity="0.6"/>
+    <ellipse cx="44" cy="12" rx="6" ry="2" opacity="0.6"/>
+    <ellipse cx="4" cy="28" rx="6" ry="2" opacity="0.6"/>
+    <ellipse cx="44" cy="28" rx="6" ry="2" opacity="0.6"/>
+    <!-- Camera/package -->
+    <rect x="20" y="24" width="8" height="10" rx="2" opacity="0.7"/>
+  </g>
+</svg>

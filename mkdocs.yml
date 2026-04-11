@@ -1,0 +1,111 @@
+site_name: OCTO Drone Shop
+site_description: Cloud-native e-commerce platform with full OCI observability (MELTS), IDCS SSO, cross-service CRM integration, and automated remediation
+site_url: https://adibirzu.github.io/octo-drone-shop
+repo_url: https://github.com/adibirzu/octo-drone-shop
+repo_name: adibirzu/octo-drone-shop
+edit_uri: edit/main/site/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+  logo: assets/logo.svg
+  favicon: assets/favicon.ico
+
+plugins:
+  - search
+  - mermaid2
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.mark
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/adibirzu/octo-drone-shop
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Prerequisites: getting-started/prerequisites.md
+    - Quick Start: getting-started/quickstart.md
+    - OKE Deployment: getting-started/oke-deployment.md
+  - Architecture:
+    - architecture/index.md
+    - System Design: architecture/system-design.md
+    - Data Model: architecture/data-model.md
+    - Framework Approach: architecture/framework.md
+  - Observability:
+    - observability/index.md
+    - MELTS Overview: observability/melts.md
+    - Traces (APM): observability/traces.md
+    - Metrics: observability/metrics.md
+    - Logs: observability/logs.md
+    - Security Events: observability/security.md
+    - RUM: observability/rum.md
+  - Integrations:
+    - integrations/index.md
+    - CRM Integration: integrations/crm.md
+    - OCI Services: integrations/oci-services.md
+    - Circuit Breaker: integrations/circuit-breaker.md
+  - Testing:
+    - testing/index.md
+    - E2E Tests: testing/e2e.md
+    - Load Tests: testing/load-tests.md
+  - Operations:
+    - operations/index.md
+    - Deployment: operations/deployment.md
+    - Chaos Engineering: operations/chaos.md
+    - Alarms & Health: operations/alarms.md
+
+docs_dir: site
+site_dir: build
