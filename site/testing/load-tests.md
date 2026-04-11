@@ -7,7 +7,7 @@ Three k6 test suites with configurable intensity profiles (light/moderate/heavy)
 ### 1. Shop-Only (`k6/load_test.js`)
 
 ```bash
-k6 run --env BASE_URL=https://shop.octodemo.cloud k6/load_test.js
+k6 run --env BASE_URL=https://shop.example.cloud k6/load_test.js
 ```
 
 | Scenario | Pattern | Duration |
@@ -20,7 +20,7 @@ k6 run --env BASE_URL=https://shop.octodemo.cloud k6/load_test.js
 ### 2. Cross-Service (`k6/cross_service_stress.js`)
 
 ```bash
-k6 run --env DNS_DOMAIN=octodemo.cloud k6/cross_service_stress.js
+k6 run --env DNS_DOMAIN=example.cloud k6/cross_service_stress.js
 ```
 
 Hits both `shop.{domain}` and `crm.{domain}` simultaneously. Every request includes `X-Correlation-Id` for trace correlation.
@@ -36,7 +36,7 @@ Hits both `shop.{domain}` and `crm.{domain}` simultaneously. Every request inclu
 ### 3. Database Stress (`k6/db_stress.js`)
 
 ```bash
-k6 run --env DNS_DOMAIN=octodemo.cloud k6/db_stress.js
+k6 run --env DNS_DOMAIN=example.cloud k6/db_stress.js
 ```
 
 | Scenario | SQL Pattern | Purpose |

@@ -1,11 +1,11 @@
 # OCTO Cloud-Native Platform
 
-**Two-service cloud-native platform with shared Oracle ATP, full OCI observability (MELTS), IDCS SSO, cross-service distributed tracing, and automated remediation.**
+**Two-service cloud-native platform with shared Oracle ATP, full OCI observability (MELTS: Metrics, Events, Logs, Traces, SQL), IDCS SSO, cross-service distributed tracing, and automated remediation.**
 
 [:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-drone-shop){ .md-button .md-button--primary }
 [:octicons-mark-github-16: CRM Portal](https://github.com/adibirzu/enterprise-crm-portal){ .md-button .md-button--primary }
-[:material-rocket-launch: Live Shop](https://shop.octodemo.cloud){ .md-button }
-[:material-rocket-launch: Live CRM](https://crm.octodemo.cloud){ .md-button }
+[:material-rocket-launch: Live Shop](https://shop.example.cloud){ .md-button }
+[:material-rocket-launch: Live CRM](https://crm.example.cloud){ .md-button }
 
 ---
 
@@ -15,7 +15,7 @@ The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle
 
 | Service | Purpose | Routes |
 |---|---|---|
-| **[OCTO Drone Shop](drone-shop/index.md)** | E-commerce with AI assistant, MELTS observability, security controls | 98 |
+| **[OCTO Drone Shop](drone-shop/index.md)** | E-commerce with AI assistant, MELTS observability (Metrics, Events, Logs, Traces, SQL), security controls | 98 |
 | **[Enterprise CRM Portal](crm/index.md)** | CRM with OWASP security training, simulation lab, order sync | 73 |
 
 Both services share a **single Oracle ATP database**, enabling cross-service data correlation and distributed tracing visible in OCI APM Topology.

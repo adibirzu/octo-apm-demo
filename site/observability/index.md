@@ -1,6 +1,6 @@
 # Observability
 
-The OCTO Drone Shop implements **MELTS** — a complete observability stack covering Metrics, Events, Logs, Traces, and Security. All pillars are correlated through shared trace IDs and `oracleApmTraceId` for end-to-end visibility.
+The OCTO Drone Shop implements **MELTS** — a complete observability stack covering Metrics, Events, Logs, Traces, and SQL. All pillars are correlated through shared trace IDs and `oracleApmTraceId` for end-to-end visibility.
 
 ## MELTS Correlation Matrix
 
@@ -10,8 +10,9 @@ Every pillar links to every other pillar through shared identifiers:
 |---|---|
 | Traces → Logs | `oracleApmTraceId` in every log entry |
 | Traces → Metrics | Request counting increments business counters |
-| Traces → Security | Security events create spans AND log entries |
-| Logs → Security | Security events table stores `trace_id` |
+| Traces → SQL | `DbOracleSqlId` span attribute → DB Management Performance Hub |
+| SQL → Traces | Oracle `CLIENT_IDENTIFIER=trace_id` in V$SESSION |
+| Logs → SQL | Log entries include `db.connection_name` and `db.target` |
 | Metrics → Alarms | OCI Monitoring MQL queries trigger notifications |
 
 ## 360 Observability Dashboard

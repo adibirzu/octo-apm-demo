@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-OCIR_REPO="${OCIR_REPO:-eu-frankfurt-1.ocir.io/fr4zqfimuxtr/octo-drone-shop}"
+OCIR_REPO="${OCIR_REPO:?Set OCIR_REPO (e.g. <region>.ocir.io/<namespace>/octo-drone-shop)}"
 REMOTE_HOST="${REMOTE_HOST:-control-plane-oci}"
 REMOTE_DIR="/tmp/octo-drone-shop"
 NAMESPACE="${K8S_NAMESPACE:-octo-drone-shop}"
