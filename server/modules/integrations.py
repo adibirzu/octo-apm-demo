@@ -22,6 +22,7 @@ from sqlalchemy import text
 
 from server.config import cfg
 from server.database import get_db
+from server.middleware.circuit_breaker import crm_breaker
 from server.observability.otel_setup import get_tracer
 from server.observability.logging_sdk import push_log
 
@@ -230,6 +231,17 @@ async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, sour
             **_sync_state_payload(),
         }
 
+    # Circuit breaker — reject fast if CRM is known-down
+    if not crm_breaker.allow_request():
+        return {
+            "configured": True,
+            "synced": False,
+            "crm_host": cfg.crm_hostname or "configured",
+            "reason": f"circuit breaker OPEN ({crm_breaker.name})",
+            "circuit_breaker": crm_breaker.status(),
+            **_sync_state_payload(),
+        }
+
     tracer = get_tracer()
     with tracer.start_as_current_span("integration.crm.sync_customers") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
@@ -237,9 +249,11 @@ async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, sour
         span.set_attribute("component", "http")
         span.set_attribute("integration.sync_source", source)
         span.set_attribute("integration.sync_limit", limit)
+        span.set_attribute("integration.circuit_breaker.state", crm_breaker.state.value)
         try:
             customers = await _fetch_crm_customers(crm, max(1, min(limit, 500)))
             upsert = await _upsert_customers(customers)
+            crm_breaker.record_success()
             CRM_SYNC_STATE["last_sync_ts"] = now
             CRM_SYNC_STATE["last_count"] = upsert["synced"]
             CRM_SYNC_STATE["last_error"] = ""
@@ -263,13 +277,16 @@ async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, sour
                 **_sync_state_payload(),
             }
         except Exception as exc:
+            crm_breaker.record_failure()
             CRM_SYNC_STATE["last_error"] = str(exc)
             span.set_attribute("integration.error", str(exc))
+            span.set_attribute("integration.circuit_breaker.state", crm_breaker.state.value)
             return {
                 "configured": True,
                 "synced": False,
                 "crm_host": cfg.crm_hostname or "configured",
                 "reason": str(exc),
+                "circuit_breaker": crm_breaker.status(),
                 **_sync_state_payload(),
             }
 
@@ -291,6 +308,15 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
     if not crm:
         return {"synced": False, "reason": "CRM not configured"}
 
+    # Circuit breaker — reject fast if CRM is known-down
+    if not crm_breaker.allow_request():
+        return {
+            "synced": False,
+            "order_id": order_id,
+            "reason": f"circuit breaker OPEN ({crm_breaker.name})",
+            "circuit_breaker": crm_breaker.status(),
+        }
+
     with tracer.start_as_current_span("integration.crm.sync_order") as span:
         span.set_attribute("integration.target_service", "enterprise-crm-portal")
         span.set_attribute("peer.service", "enterprise-crm-portal")
@@ -298,6 +324,7 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
         span.set_attribute("integration.order_id", order_id)
         span.set_attribute("integration.order_total", total)
         span.set_attribute("integration.order_source", source)
+        span.set_attribute("integration.circuit_breaker.state", crm_breaker.state.value)
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 customer = await _ensure_crm_customer(client, crm, customer_email)
@@ -325,6 +352,7 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
                         "notes": f"OCTO Drone Shop order #{order_id}; source={source}",
                     },
                 )
+            crm_breaker.record_success()
             span.set_attribute("integration.crm.status_code", resp.status_code)
             push_log(
                 "INFO",
@@ -342,8 +370,15 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
                 "crm_response": resp.json() if resp.status_code in (200, 201) else None,
             }
         except Exception as exc:
+            crm_breaker.record_failure()
             span.set_attribute("integration.error", str(exc))
-            return {"synced": False, "order_id": order_id, "reason": str(exc)}
+            span.set_attribute("integration.circuit_breaker.state", crm_breaker.state.value)
+            return {
+                "synced": False,
+                "order_id": order_id,
+                "reason": str(exc),
+                "circuit_breaker": crm_breaker.status(),
+            }
 
 
 # ── Cross-service: OCTO-CRM → CRM ──────────────────────────────────
@@ -538,6 +573,7 @@ async def integration_status():
                 "type": "cross-service",
                 "configured": bool(crm),
                 "host": cfg.crm_hostname or None,
+                "circuit_breaker": crm_breaker.status(),
                 "endpoints": [
                     "/api/integrations/crm/customer-enrichment",
                     "/api/integrations/crm/sync-order",

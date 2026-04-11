@@ -25,6 +25,7 @@ Metrics published
 - ``app.db.latency_ms``    (last readiness-check round-trip)
 - ``app.crm.sync_age_s``   (seconds since last CRM sync)
 - ``app.sessions.active``  (active session gauge)
+- ``app.inventory.low_stock_products`` (products with stock < 10)
 """
 
 from __future__ import annotations
@@ -47,6 +48,7 @@ _error_count = 0
 _checkout_count = 0
 _order_count = 0
 _last_db_latency_ms = 0.0
+_low_stock_count = 0
 _lock = threading.Lock()
 
 PUBLISH_INTERVAL = int(os.getenv("OCI_MONITORING_INTERVAL_SECONDS", "60"))
@@ -83,6 +85,12 @@ def set_db_latency(ms: float):
         _last_db_latency_ms = ms
 
 
+def set_low_stock_count(count: int):
+    global _low_stock_count
+    with _lock:
+        _low_stock_count = count
+
+
 def _collect_and_reset() -> dict[str, float]:
     """Collect current counters and reset them for the next interval."""
     global _request_count, _error_count, _checkout_count, _order_count
@@ -93,6 +101,7 @@ def _collect_and_reset() -> dict[str, float]:
             "checkouts": _checkout_count,
             "orders": _order_count,
             "db_latency_ms": _last_db_latency_ms,
+            "low_stock": _low_stock_count,
         }
         _request_count = 0
         _error_count = 0
@@ -145,6 +154,7 @@ def _build_metric_data(snapshot: dict[str, float], start_time: float) -> list[di
         _point("app.orders.count", snapshot["orders"]),
         _point("app.db.latency_ms", snapshot["db_latency_ms"], "milliseconds"),
         _point("app.crm.sync_age_s", crm_sync_age, "seconds"),
+        _point("app.inventory.low_stock_products", snapshot["low_stock"]),
     ]
 
 
@@ -185,6 +195,19 @@ def _publisher_loop(compartment_id: str, start_time: float):
             time.sleep(PUBLISH_INTERVAL)
             if not _running:
                 break
+
+            # Check low-stock products
+            try:
+                from server.database import sync_engine as _sync_engine
+                if _sync_engine is not None:
+                    from sqlalchemy import text as _text
+                    with _sync_engine.connect() as conn:
+                        row = conn.execute(
+                            _text("SELECT COUNT(*) FROM products WHERE is_active = 1 AND stock < 10")
+                        ).scalar()
+                        set_low_stock_count(int(row or 0))
+            except Exception:
+                pass
 
             snapshot = _collect_and_reset()
             metrics_data = _build_metric_data(snapshot, start_time)

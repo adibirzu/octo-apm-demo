@@ -14,11 +14,13 @@ fi
 
 echo "Enabling Autonomous Database Management..."
 oci db autonomous-database enable-autonomous-database-management \
-  --autonomous-database-id "${AUTONOMOUS_DATABASE_ID}"
+  --autonomous-database-id "${AUTONOMOUS_DATABASE_ID}" 2>/dev/null || \
+  echo "  (already enabled or not supported on this ATP edition)"
 
 echo "Enabling Operations Insights..."
 oci db autonomous-database enable-operations-insights \
-  --autonomous-database-id "${AUTONOMOUS_DATABASE_ID}"
+  --autonomous-database-id "${AUTONOMOUS_DATABASE_ID}" 2>/dev/null || \
+  echo "  (already enabled or not supported on this ATP edition)"
 
 cat <<'EOF'
 

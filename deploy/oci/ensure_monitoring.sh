@@ -150,6 +150,11 @@ create_alarm "octo-shop-crm-sync-stale" \
     "WARNING" \
     "CRM customer sync hasn't run in >10 minutes — check integration health"
 
+create_alarm "octo-shop-low-stock" \
+    "app.inventory.low_stock_products[5m]{serviceName = \"octo-drone-shop-oke\"}.max() > 3" \
+    "WARNING" \
+    "More than 3 products have stock < 10 — replenishment needed"
+
 echo "[monitoring] Done. Alarms and health checks configured."
 echo ""
 echo "Outputs:"

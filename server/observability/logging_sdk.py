@@ -6,6 +6,7 @@ Supports trace-log correlation for OCI Log Analytics via oracleApmTraceId.
 import json
 import logging
 import queue
+import re
 import sys
 import threading
 import time
@@ -13,6 +14,48 @@ from datetime import datetime, timezone
 
 from server.config import cfg
 from server.observability.correlation import current_trace_context, service_metadata
+
+
+# ── PII masking ──────────────────────────────────────────────────
+_EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+_PHONE_RE = re.compile(r"\+?\d[\d\s\-().]{7,}\d")
+_PII_KEYS = frozenset({
+    "customer_email", "email", "customer.email", "security.username",
+    "customer_phone", "phone", "customer.phone",
+})
+
+
+def _mask_email(email: str) -> str:
+    """user@example.com → u***@example.com"""
+    if "@" not in email:
+        return email
+    local, domain = email.rsplit("@", 1)
+    return f"{local[0]}***@{domain}" if local else f"***@{domain}"
+
+
+def _mask_phone(phone: str) -> str:
+    """+1-555-867-5309 → ***5309"""
+    digits = re.sub(r"\D", "", phone)
+    return f"***{digits[-4:]}" if len(digits) >= 4 else "***"
+
+
+def _mask_pii(data: dict) -> dict:
+    """Return a new dict with PII fields masked. Does not mutate input."""
+    masked = {}
+    for key, value in data.items():
+        if not isinstance(value, str):
+            masked[key] = value
+            continue
+        if key in _PII_KEYS:
+            if "@" in value:
+                masked[key] = _mask_email(value)
+            elif _PHONE_RE.search(value):
+                masked[key] = _mask_phone(value)
+            else:
+                masked[key] = "***"
+        else:
+            masked[key] = value
+    return masked
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +139,7 @@ def push_log(level: str, message: str, **kwargs):
     """Push a structured log to OCI Logging and optionally Splunk.
 
     Injects trace_id and oracleApmTraceId for APM ↔ Log Analytics correlation.
+    PII fields (email, phone) are masked before external push.
     """
     trace_ctx = current_trace_context()
     if trace_ctx["trace_id"]:
@@ -111,15 +155,18 @@ def push_log(level: str, message: str, **kwargs):
     if cfg.oracle_dsn:
         kwargs["db.connection_name"] = cfg.oracle_dsn
 
+    # Mask PII before logging to external systems
+    safe_kwargs = _mask_pii(kwargs)
+
     # Write to structured logger (stdout)
     record = logging.LogRecord(
         name="security.events", level=getattr(logging, level.upper(), logging.INFO),
         pathname="", lineno=0, msg=message, args=(), exc_info=None,
     )
-    record.extra_fields = kwargs
+    record.extra_fields = safe_kwargs
     _security_logger.handle(record)
 
-    _log_queue.put((level, message, dict(kwargs)))
+    _log_queue.put((level, message, dict(safe_kwargs)))
 
 
 def _push_to_oci_logging(level: str, message: str, extra: dict):
