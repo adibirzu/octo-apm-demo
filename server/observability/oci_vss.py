@@ -1,7 +1,7 @@
 """OCI Vulnerability Scanning Service (VSS) integration.
 
 Fetches host and container scan results from OCI VSS and surfaces them
-in the 360 observability dashboard for MELTS-Security correlation.
+in the 360 observability dashboard for MELTS-SQL correlation.
 
 When deployed on OKE, uses resource principal auth. Falls back to
 config file auth for local development.
