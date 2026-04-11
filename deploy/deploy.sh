@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Deploy OCTO Drone Shop to OKE via control-plane VM build.
+#
+# Builds on the remote x86_64 VM (no QEMU), pushes to OCIR,
+# and rolls out on OKE with zero-downtime rolling update.
+#
+# Usage:
+#   ./deploy/deploy.sh                  # Build + push + rollout
+#   ./deploy/deploy.sh --build-only     # Build + push, no rollout
+#   ./deploy/deploy.sh --rollout-only   # Rollout existing latest tag
+#
+# Prerequisites:
+#   - SSH access to control-plane-oci
+#   - OCIR login configured on the VM
+#   - kubectl context set to OKE cluster
+
+set -euo pipefail
+
+OCIR_REPO="${OCIR_REPO:-eu-frankfurt-1.ocir.io/fr4zqfimuxtr/octo-drone-shop}"
+REMOTE_HOST="${REMOTE_HOST:-control-plane-oci}"
+REMOTE_DIR="/tmp/octo-drone-shop"
+NAMESPACE="${K8S_NAMESPACE:-octo-drone-shop}"
+DEPLOYMENT="${K8S_DEPLOYMENT:-octo-drone-shop}"
+CONTAINER="${K8S_CONTAINER:-app}"
+TAG=$(date +%Y%m%d%H%M%S)
+
+BUILD=true
+ROLLOUT=true
+for arg in "$@"; do
+    case "$arg" in
+        --build-only)  ROLLOUT=false ;;
+        --rollout-only) BUILD=false ;;
+    esac
+done
+
+echo "================================================"
+echo " OCTO Drone Shop Deploy"
+echo " OCIR:  ${OCIR_REPO}"
+echo " Tag:   ${TAG}"
+echo " Build: ${BUILD}"
+echo " Roll:  ${ROLLOUT}"
+echo "================================================"
+
+if $BUILD; then
+    # ── 1. Sync code to control-plane VM ────────────────
+    echo ""
+    echo "[1/4] Syncing code to ${REMOTE_HOST}:${REMOTE_DIR}..."
+    rsync -az --delete \
+        --exclude '.git' \
+        --exclude '__pycache__' \
+        --exclude '.env' \
+        --exclude '.env.*' \
+        --exclude 'node_modules' \
+        --exclude 'tests' \
+        --exclude 'k6' \
+        --exclude 'docs' \
+        --exclude '.pytest_cache' \
+        --exclude 'playwright-report' \
+        --exclude 'test-results' \
+        --exclude '.claude' \
+        --exclude '*.log' \
+        . "${REMOTE_HOST}:${REMOTE_DIR}/"
+
+    echo "[1/4] Sync complete"
+
+    # ── 2. Build on VM (native x86_64) ─────────────────
+    echo ""
+    echo "[2/4] Building Docker image on ${REMOTE_HOST}..."
+    ssh "${REMOTE_HOST}" "cd ${REMOTE_DIR} && docker build -t ${OCIR_REPO}:${TAG} -t ${OCIR_REPO}:latest ."
+    echo "[2/4] Build complete: ${OCIR_REPO}:${TAG}"
+
+    # ── 3. Push to OCIR ────────────────────────────────
+    echo ""
+    echo "[3/4] Pushing to OCIR..."
+    ssh "${REMOTE_HOST}" "docker push ${OCIR_REPO}:${TAG} && docker push ${OCIR_REPO}:latest"
+    echo "[3/4] Push complete"
+
+    # ── Cleanup old images on VM (keep last 3) ─────────
+    ssh "${REMOTE_HOST}" "docker images ${OCIR_REPO} --format '{{.Tag}} {{.ID}}' | \
+        grep -v latest | sort -r | tail -n +4 | awk '{print \$2}' | \
+        xargs -r docker rmi 2>/dev/null" || true
+fi
+
+if $ROLLOUT; then
+    # ── 4. Rolling update on OKE ───────────────────────
+    IMAGE="${OCIR_REPO}:${TAG}"
+    if ! $BUILD; then
+        IMAGE="${OCIR_REPO}:latest"
+    fi
+
+    echo ""
+    echo "[4/4] Rolling out ${DEPLOYMENT} → ${IMAGE}..."
+    kubectl set image "deployment/${DEPLOYMENT}" \
+        "${CONTAINER}=${IMAGE}" \
+        -n "${NAMESPACE}"
+
+    echo "[4/4] Waiting for rollout..."
+    kubectl rollout status "deployment/${DEPLOYMENT}" \
+        -n "${NAMESPACE}" \
+        --timeout=180s
+
+    echo ""
+    echo "Verifying pod health..."
+    kubectl get pods -n "${NAMESPACE}" -l "app=${DEPLOYMENT}" \
+        -o wide --no-headers
+
+    echo ""
+    echo "Checking /ready endpoint..."
+    sleep 5
+    READY=$(curl -s --max-time 10 "https://shop.octodemo.cloud/ready" 2>/dev/null || echo '{"ready": false}')
+    echo "$READY" | python3 -m json.tool 2>/dev/null || echo "$READY"
+fi
+
+echo ""
+echo "================================================"
+echo " Deploy complete!"
+echo " Image: ${OCIR_REPO}:${TAG}"
+echo " Verify: https://shop.octodemo.cloud/api/observability/360"
+echo "================================================"
