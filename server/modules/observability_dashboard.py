@@ -20,8 +20,10 @@ from server.database import (
     Shipment, Warehouse, Campaign, Lead, PageView, AuditLog,
     SecurityEvent, engine, get_db, AsyncSessionLocal,
 )
+from server.middleware.circuit_breaker import crm_breaker, workflow_breaker
 from server.observability.correlation import build_correlation_id, current_trace_context, service_metadata
 from server.observability.logging_sdk import push_log
+from server.observability.oci_vss import get_vulnerability_summary
 from server.observability.otel_setup import get_tracer
 
 logger = logging.getLogger(__name__)
@@ -43,6 +45,7 @@ async def observability_360(request: Request):
         db_health = await _db_health_summary()
         integration_health = _integration_health_summary()
         security_summary = await _security_summary()
+        vss_summary = get_vulnerability_summary()
 
         elapsed_ms = round((time.time() - start) * 1000, 2)
         span.set_attribute("dashboard.query_time_ms", elapsed_ms)
@@ -97,6 +100,11 @@ async def observability_360(request: Request):
             "db_health": db_health,
             "integration_health": integration_health,
             "security": security_summary,
+            "vulnerability_scanning": vss_summary,
+            "circuit_breakers": {
+                "crm": crm_breaker.status(),
+                "workflow_gateway": workflow_breaker.status(),
+            },
             "dashboard_meta": {"query_time_ms": elapsed_ms},
         }
 
