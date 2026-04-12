@@ -190,3 +190,38 @@ enterprise-crm-portal/
 ├── docker-compose.yml       # App + PostgreSQL
 └── requirements.txt
 ```
+
+---
+
+## Observability + Security v2 (wave 1 + 2)
+
+Additive enhancement layer shared with the Octo Drone Shop and the OCI
+Coordinator. The CRM is the **sole controller** of chaos scenarios — the
+Shop has zero write endpoints.
+
+### What changed
+
+* **Workflow-aware logs + traces** — same contract as the shop:
+  `trace_id`, `span_id`, `request_id`, `workflow_id`, `workflow_step`.
+* **Chaos admin surface** — `/admin/chaos` (role: `chaos-operator`).
+  Presets, TTL-bounded apply, clear, and an audit log consumed by the
+  `octo-chaos-audit` Log Analytics parser.
+* **Security headers** — HSTS, CSP nonce, `X-Frame-Options` allowing
+  the ops portal (via `OPS_DOMAIN`) to embed the admin page.
+* **WAF + LA pipelines** — same Terraform module as the shop, via
+  `deploy/env.template` and the root-stack variables.
+* **CI gates** — `.github/workflows/security-gates.yml`.
+
+### Replicate in your tenancy
+
+Same steps as the Shop README — the two apps share `deploy/env.template`
+schema and the same Terraform variables. Set `CHAOS_ADMIN_ROLE` if you
+want a different IDCS role name than the default (`chaos-operator`).
+
+### Safe defaults
+
+- `CHAOS_ENABLED=false`
+- `WAF_MODE=DETECTION`
+- `AUTOREMEDIATE_ENABLED=false`
+
+Further detail: `docs/observability-v2/` (mkdocs nav).
