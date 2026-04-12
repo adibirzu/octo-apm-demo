@@ -1,0 +1,12 @@
+{
+  "displayName": "Workflow Command Center",
+  "description": "Latency + error-rate + chaos + WAF overlay per workflow.",
+  "freeformTags": {"octo-demo": "true", "stage": "wave1"},
+  "widgets": [
+    {"title": "Requests by workflow (1h)",      "search": "workflow-health"},
+    {"title": "DB slowness hotspots",           "search": "db-slowness-hotspots"},
+    {"title": "Chaos vs organic errors",        "search": "chaos-vs-organic"},
+    {"title": "WAF ↔ app 5xx correlation",     "search": "waf-vs-app-errors"},
+    {"title": "Trace drill-down (parameterised)", "search": "trace-drilldown"}
+  ]
+}

@@ -22,6 +22,10 @@ from server.middleware.tracing import TracingMiddleware
 from server.middleware.metrics_mw import MetricsMiddleware
 from server.middleware.chaos import ChaosMiddleware
 from server.middleware.geo_latency import GeoLatencyMiddleware
+from server.security.headers import SecurityHeadersMiddleware
+from server.security.request_id import RequestIdMiddleware
+from server.observability.workflow_context import WorkflowContextMiddleware
+from server.observability.log_enricher import install_enricher
 
 # Module routers
 from server.modules.auth import router as auth_router
@@ -120,6 +124,21 @@ app.add_middleware(GeoLatencyMiddleware)
 app.add_middleware(ChaosMiddleware)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(TracingMiddleware)
+# Security layer (outermost so headers wrap all responses incl. errors).
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(WorkflowContextMiddleware)
+app.add_middleware(RequestIdMiddleware)
+
+install_enricher()
+
+# Chaos DB fault hooks (no-op unless CHAOS_ENABLED + active scenario).
+try:
+    from server.chaos.db_faults import install as _install_chaos_db
+    _install_chaos_db(sync_engine)
+    if engine is not None:
+        _install_chaos_db(engine)
+except Exception as _exc:  # defensive — chaos must never break boot
+    logger.warning("chaos db hook install failed: %s", _exc)
 
 # ── Static files and templates ────────────────────────────────
 _server_dir = os.path.dirname(os.path.abspath(__file__))
@@ -146,6 +165,10 @@ app.include_router(dashboard_router)
 app.include_router(integrations_router)
 app.include_router(services_router)
 app.include_router(observability_dashboard_router)
+
+# Chaos readers (shop is reader-only; control surface lives on CRM + Ops).
+from server.chaos.router import router as chaos_reader_router
+app.include_router(chaos_reader_router)
 
 
 # ── Prometheus /metrics endpoint ──────────────────────────────

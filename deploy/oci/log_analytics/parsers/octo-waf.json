@@ -1,0 +1,20 @@
+{
+  "name": "octo-waf",
+  "description": "OCI WAF event log — request, rule, client, and correlation.",
+  "type": "JSON",
+  "isEnabled": true,
+  "fieldMaps": [
+    {"sourcePath": "$.time",                       "logFieldName": "Time"},
+    {"sourcePath": "$.data.httpHost",              "logFieldName": "HTTP Host"},
+    {"sourcePath": "$.data.requestUrl",            "logFieldName": "URL Path"},
+    {"sourcePath": "$.data.httpMethod",            "logFieldName": "HTTP Request Method"},
+    {"sourcePath": "$.data.responseCode",          "logFieldName": "HTTP Status Code"},
+    {"sourcePath": "$.data.clientAddress",         "logFieldName": "Client IP"},
+    {"sourcePath": "$.data.countryCode",           "logFieldName": "Country Code"},
+    {"sourcePath": "$.data.action",                "logFieldName": "WAF Action"},
+    {"sourcePath": "$.data.ruleName",              "logFieldName": "WAF Rule Name"},
+    {"sourcePath": "$.data.ruleType",              "logFieldName": "WAF Rule Type"},
+    {"sourcePath": "$.data.requestHeaders.x-request-id", "logFieldName": "Request ID"},
+    {"sourcePath": "$.data.requestHeaders.traceparent",  "logFieldName": "Trace ID"}
+  ]
+}

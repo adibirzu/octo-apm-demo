@@ -161,3 +161,63 @@ User: "Check for issues and create runbooks"
 → Execute via SSH / kubectl / OCI CLI
 → Verify fix
 ```
+
+---
+
+## Observability + Security v2 (wave 1 + 2)
+
+Additive enhancement layer — existing capabilities unchanged, all new behavior
+guarded by feature flags in `deploy/env.template`.
+
+### What changed
+
+* **Unified correlation contract** — every request carries `trace_id`,
+  `span_id`, `request_id`, `workflow_id`, `workflow_step`. Logs are
+  stamped by `server/observability/log_enricher.py` so Log Analytics
+  can join Shop ↔ CRM ↔ DB ↔ WAF along any of those keys.
+* **Workflow middleware** — `server/observability/workflow_context.py`
+  maps URL → logical workflow (`browse-catalog`, `checkout`,
+  `crm-lead-capture`, …). OTel spans and logs are tagged.
+* **Security headers + request id** — `server/security/headers.py`,
+  `server/security/request_id.py` attach HSTS, CSP nonce,
+  X-Request-Id to every response.
+* **Chaos — reader only on Shop.** Control surface lives on CRM
+  (`/admin/chaos`) and the Ops portal. Shop exposes only
+  `GET /api/chaos/state` + `/api/chaos/presets`. See
+  `server/chaos/` for details.
+* **SQLAlchemy fault hooks** — `server/chaos/db_faults.py` injects
+  slow queries, deadlocks, and pool holds inside existing DB spans
+  so APM sees the faults as first-class events.
+* **WAF in DETECTION mode** — `deploy/terraform/modules/waf/` creates
+  one policy per frontend with OWASP CRS, admin-CIDR guard, login
+  rate limit. Flip `waf_mode = BLOCK` after a 7-day soak.
+* **Log Analytics v2** — parsers, saved searches, and the Workflow
+  Command Center dashboard in `deploy/oci/log_analytics/`.
+* **CI security gates** — `.github/workflows/security-gates.yml`
+  runs bandit, pip-audit, ruff (S-rules), semgrep (OWASP),
+  gitleaks, tflint, trivy.
+
+### Replicate in your tenancy
+
+1. Copy `deploy/env.template` → `.env` and fill **every** OCID.
+2. `cd deploy/terraform && cp terraform.tfvars.example terraform.tfvars`
+   and fill variables.
+3. `terraform init && terraform apply` — creates WAF + log pipelines.
+4. Upload Log Analytics parsers:
+   ```bash
+   for p in deploy/oci/log_analytics/parsers/*.json; do
+     oci log-analytics parser upload \
+       --namespace-name "$OCI_LA_NAMESPACE" --from-json "file://$p"
+   done
+   ```
+5. Helm install / `kubectl apply` the app — the middleware auto-enables
+   when the new env vars are present. `CHAOS_ENABLED=false` by default.
+
+### Verifying end-to-end
+
+```bash
+scripts/demo/full_workflow.sh        # applies chaos via CRM, runs k6,
+                                     # polls Log Analytics + Coordinator
+```
+
+Further detail: `docs/observability-v2/` (mkdocs nav).
