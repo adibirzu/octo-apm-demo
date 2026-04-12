@@ -326,3 +326,43 @@ erDiagram
     services ||--o{ tickets : "related to (optional)"
     tickets ||--|{ ticket_messages : "contains"
 ```
+
+## Observability v2 overlay
+
+```
+End user ──► WAF (DETECT) ──► LB ──► Shop (FastAPI)
+                │                     │
+                │                     ├─ OTel → APM (trace_id, workflow.id)
+                │                     ├─ JSON logs (workflow_id, request_id)
+                │                     └─ SQLAlchemy span events (incl. chaos faults)
+                │
+                └─ WAF events ─┐
+                               ▼
+                 OCI Logging ──► Service Connector ──► Log Analytics
+                                                      │
+                               ┌──────────────────────┴──────────────────────┐
+                               ▼                                             ▼
+         Saved searches (workflow-health, trace-drilldown,        Coordinator MCP tools
+         db-slowness-hotspots, waf-vs-app-errors, chaos-vs-organic)  (la_trace_fetch, …)
+                               │                                             │
+                               ▼                                             ▼
+                    Workflow Command Center dashboard          drilldown_pivot node →
+                                                               playbook (approval gated)
+```
+
+### Chaos control plane
+
+- Control: `CRM /admin/chaos` + Ops portal proxy.
+- Store: `chaos_state` table (or Object Storage, configurable).
+- Shop: reader only — polls every `CHAOS_STATE_POLL_SECONDS`.
+- Faults: injected inside SQLAlchemy `before_cursor_execute` so they
+  appear in APM spans as first-class events with `chaos.injected=true`.
+
+### Correlation keys
+
+| key | source | used by |
+| --- | --- | --- |
+| `trace_id` (`oracleApmTraceId`) | OTel | APM, all logs, Coordinator |
+| `request_id` (`X-Request-Id`) | Shop middleware | WAF ↔ app join |
+| `workflow_id` / `workflow_step` | Shop middleware | LA dashboards, playbooks |
+| `client_ip_hash` | WAF | Security correlation |
