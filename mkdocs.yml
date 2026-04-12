@@ -76,6 +76,7 @@ extra:
 
 nav:
   - Home: index.md
+  - Introduction: introduction.md
   - Getting Started:
     - getting-started/index.md
     - Prerequisites: getting-started/prerequisites.md
