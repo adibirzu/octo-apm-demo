@@ -8,8 +8,12 @@
 # Prerequisites:
 #   - kubectl configured for your OKE cluster
 #   - Oracle ATP provisioned with a wallet downloaded
+#     (use deploy/oci/ensure_atp.sh to create one if needed)
 #   - OCIR login configured (docker login <region>.ocir.io)
 #   - Docker available for building (or use a pre-built image)
+#
+# Optional post-deploy:
+#   deploy/oci/ensure_db_observability.sh — enables DB Management + OPSI
 #
 # Required env vars:
 #   DNS_DOMAIN          — your DNS domain (e.g., mycompany.cloud)

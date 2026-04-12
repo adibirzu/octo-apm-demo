@@ -1,0 +1,28 @@
+site_name: Enterprise CRM Portal
+site_description: Octo Demo — CRM portal (chaos controller + shared observability).
+repo_url: https://github.com/octodemo/enterprise-crm-portal
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.expand
+    - toc.integrate
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Observability v2:
+      - observability-v2/index.md
+      - Golden workflows: observability-v2/workflows.md
+      - Chaos playbook: observability-v2/chaos-playbook.md
+      - Security hardening: observability-v2/security.md
+      - WAF observability: observability-v2/waf-observability.md
+  - Operations:
+      - operations/chaos-admin.md
+docs_dir: docs-site
+site_dir: build

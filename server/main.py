@@ -7,6 +7,7 @@ structured security logging, and chaos engineering capabilities.
 
 import asyncio
 import logging
+import os
 import time
 from contextlib import asynccontextmanager, suppress
 
@@ -125,9 +126,31 @@ app.add_middleware(ChaosMiddleware)
 app.add_middleware(SessionGateMiddleware)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(TracingMiddleware)
+# Security layer (additive).
+from server.security.headers import SecurityHeadersMiddleware as _SecHeaders
+from server.security.request_id import RequestIdMiddleware as _ReqId
+from server.observability.workflow_context import WorkflowContextMiddleware as _WfCtx
+from server.observability.log_enricher import install_enricher as _install_enricher
+_ops_domain = os.getenv("OPS_DOMAIN", "")
+app.add_middleware(
+    _SecHeaders,
+    allow_framing_from=(f"https://{_ops_domain}" if _ops_domain else None),
+)
+app.add_middleware(_WfCtx)
+app.add_middleware(_ReqId)
+_install_enricher()
+
+# Chaos DB fault hooks.
+try:
+    from server.chaos.db_faults import install as _install_chaos_db
+    if _sync_engine is not None:
+        _install_chaos_db(_sync_engine)
+    if engine is not None:
+        _install_chaos_db(engine)
+except Exception as _exc:
+    logger.warning("chaos db hook install failed: %s", _exc)
 
 # ── Mount static files and templates ─────────────────────────────
-import os
 _server_dir = os.path.dirname(os.path.abspath(__file__))
 _static_dir = os.path.join(_server_dir, "static")
 _templates_dir = os.path.join(_server_dir, "templates")
@@ -156,6 +179,11 @@ app.include_router(analytics_router)
 app.include_router(integrations_router)
 app.include_router(observability_router)
 app.include_router(observability_dashboard_router)
+
+# Chaos control surface (CRM only — shop has no write endpoints).
+from server.chaos.admin import router as chaos_admin_router, page_router as chaos_admin_page_router
+app.include_router(chaos_admin_router)
+app.include_router(chaos_admin_page_router)
 
 
 # ── Prometheus /metrics endpoint ──────────────────────────────────

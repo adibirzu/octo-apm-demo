@@ -16,6 +16,15 @@
         window.apmrum.webApplication = '{{ app_name }}-frontend';
         window.apmrum.ociDataUploadEndpoint = '{{ rum_endpoint }}';
         window.apmrum.OracleAPMPublicDataKey = '{{ rum_public_key }}';
+        /* Observability v2 — surface workflow_id + request_id as RUM custom
+           dimensions so RUM sessions join backend traces by workflow. */
+        window.apmrum.customDimensions = Object.assign(
+            window.apmrum.customDimensions || {},
+            {
+                workflow_id: '{{ (request.state.workflow.workflow_id if request and request.state and request.state.workflow else "") }}',
+                request_id: '{{ (request.state.request_id if request and request.state and request.state.request_id else "") }}',
+            }
+        );
         /* Prevent RUM from adding tracing headers to app API calls */
         window.apmrum.traceSupportingEndpoints = [
             { hostPattern: '.*', headers: [] }
