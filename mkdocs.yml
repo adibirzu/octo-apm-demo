@@ -110,6 +110,15 @@ nav:
     - Security Events: observability/security.md
     - RUM: observability/rum.md
     - Cross-Service Tracing: observability/distributed-traces.md
+  - Observability v2:
+    - observability-v2/index.md
+    - Golden workflows: observability-v2/workflows.md
+    - Chaos playbook: observability-v2/chaos-playbook.md
+    - Log Analytics dashboards: observability-v2/log-analytics-dashboards.md
+    - APM drill-down: observability-v2/apm-drilldown.md
+    - WAF observability: observability-v2/waf-observability.md
+    - Auto-remediation flow: observability-v2/autoremediation-flow.md
+    - Demo script: observability-v2/demo-script.md
   - Integrations:
     - integrations/index.md
     - CRM Integration: integrations/crm.md
