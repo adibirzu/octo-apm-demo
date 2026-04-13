@@ -8,7 +8,7 @@ The OCI Coordinator's Remediation Agent v2 consumes telemetry from both services
 flowchart TD
     subgraph Apps ["Monitored Applications"]
         Shop["Drone Shop<br/>98 routes"]
-        CRM["CRM Portal<br/>73 routes"]
+        CRM["CRM Portal<br/>~80 routes"]
     end
 
     subgraph OCI ["OCI Telemetry Sources"]

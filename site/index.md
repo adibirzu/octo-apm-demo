@@ -4,8 +4,8 @@
 
 [:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-drone-shop){ .md-button .md-button--primary }
 [:octicons-mark-github-16: CRM Portal](https://github.com/adibirzu/enterprise-crm-portal){ .md-button .md-button--primary }
-[:material-rocket-launch: Live Shop](https://shop.example.cloud){ .md-button }
-[:material-rocket-launch: Live CRM](https://crm.example.cloud){ .md-button }
+[:material-rocket-launch: Live Shop](https://shop.octodemo.cloud){ .md-button }
+[:material-rocket-launch: Live CRM](https://crm.octodemo.cloud){ .md-button }
 
 ---
 
@@ -16,9 +16,16 @@ The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle
 | Service | Purpose | Routes |
 |---|---|---|
 | **[OCTO Drone Shop](drone-shop/index.md)** | E-commerce with AI assistant, MELTS observability (Metrics, Events, Logs, Traces, SQL), security controls | 98 |
-| **[Enterprise CRM Portal](crm/index.md)** | CRM with OWASP security training, simulation lab, order sync | 73 |
+| **[Enterprise CRM Portal](crm/index.md)** | CRM with OWASP security training, simulation lab, order sync | ~80 |
 
 Both services share a **single Oracle ATP database**, enabling cross-service data correlation and distributed tracing visible in OCI APM Topology.
+
+## Recent Architecture Updates
+
+- **CRM owns catalog and storefront administration** — products, stock, pricing, category changes, shop assignment, and storefront metadata are now managed from the CRM control plane.
+- **Shop stays customer-facing** — the public storefront remains focused on browse, cart, checkout, and shipment flows; operational edits are intentionally removed from the customer frontend.
+- **Public and private CRM URLs are split** — browser-visible links use `https://crm.octodemo.cloud`, while backend service-to-service calls may continue to use the internal cluster-local CRM endpoint.
+- **Frontend hardening is live** — CRM page rendering, observability beacon ingestion, CSP-safe scripts, and favicon handling were updated to remove recent runtime errors.
 
 <div class="grid cards" markdown>
 
@@ -85,7 +92,7 @@ flowchart TD
             WGW["Workflow Gateway<br/>Go · Select AI"]
         end
         subgraph NS2 ["enterprise-crm"]
-            CRM["Enterprise CRM Portal<br/>FastAPI · 73 routes"]
+            CRM["Enterprise CRM Portal<br/>FastAPI · ~80 routes"]
         end
     end
 
@@ -102,7 +109,7 @@ flowchart TD
     Customer -->|HTTPS| WAF --> DroneShop
     Customer -->|HTTPS| CRM
     Customer -.->|SSO| IDCS
-    DroneShop <-->|"W3C traceparent"| CRM
+    DroneShop <-->|"W3C traceparent<br/>orders + customer enrichment"| CRM
     DroneShop --> WGW
     DroneShop --> DB
     CRM --> DB
@@ -118,14 +125,14 @@ flowchart TD
 
 | Capability | Drone Shop | CRM Portal |
 |---|---|---|
-| **Routes** | 98 (13 modules) | 73 (12 modules) |
+| **Primary role** | Customer storefront + checkout | Operations console + catalog admin |
 | **Database** | Oracle ATP (shared) | Oracle ATP (shared) |
 | **Authentication** | IDCS OIDC + PKCE | IDCS OIDC + PKCE |
 | **Traces** | 50+ custom spans | 8+ spans/request |
 | **Security** | 19 MITRE ATT&CK types | 24 MITRE ATT&CK types |
-| **Testing** | 237 Playwright + 3 k6 | 82 E2E + 3 k6 |
-| **Chaos** | SSO-gated simulation | 15+ chaos endpoints |
-| **Special** | AI assistant, WAF, Vault | OWASP vulns, order sync |
+| **Catalog ownership** | Reads synced catalog data | Source of truth for products + shops |
+| **Operational edits** | Cart, checkout, order origination | Customers, orders, invoices, products, shops |
+| **Special** | AI assistant, WAF, Vault | Storefront Operations, order sync, simulation lab |
 
 ## Tenancy Portability
 

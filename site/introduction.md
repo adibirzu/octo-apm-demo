@@ -8,7 +8,7 @@ The **OCTO Cloud-Native Platform** is a reference implementation of enterprise a
 2. **Demonstrate cloud-native patterns** — FastAPI + Go microservices, shared Oracle ATP database, IDCS SSO, distributed tracing, circuit breakers
 3. **Provide a framework architecture** — add new features without breaking existing capabilities; each module is independent
 4. **Enable AI-driven operations** — integration with OCI Coordinator's Remediation Agent v2 for automated detection → diagnosis → remediation
-5. **Serve as a reference implementation** — tenancy-portable OKE manifests, security best practices, comprehensive test coverage (237 E2E + 3 k6 load suites)
+5. **Serve as a reference implementation** — tenancy-portable OKE manifests, security best practices, comprehensive test coverage, and a clear split between public storefront and internal operations control planes
 
 ## Architecture Summary
 
@@ -16,10 +16,21 @@ Two application services share a single Oracle ATP database:
 
 | Service | Role | Tech | Routes |
 |---|---|---|---|
-| [**OCTO Drone Shop**](drone-shop/index.md) | E-commerce frontend with AI assistant | Python/FastAPI + Go | 98 |
-| [**Enterprise CRM Portal**](crm/index.md) | CRM with simulation lab and order sync | Python/FastAPI | 73 |
+| [**OCTO Drone Shop**](drone-shop/index.md) | Customer storefront, checkout, AI assistant, observability surfaces | Python/FastAPI + Go | 98 |
+| [**Enterprise CRM Portal**](crm/index.md) | CRM operations console, catalog admin, storefront control, simulation lab | Python/FastAPI | ~80 |
 
 Both services integrate with the full OCI observability stack through modular add-ons that activate via environment variables or console configuration — no code changes required.
+
+## Current Runtime Model
+
+- **Shop frontend**: `https://shop.octodemo.cloud`
+- **CRM frontend**: `https://crm.octodemo.cloud`
+- **Shared database**: Oracle ATP
+- **Catalog source of truth**: CRM
+- **Browser-visible CRM links**: public URL only
+- **Backend CRM calls from shop**: may use the internal cluster-local CRM service URL
+
+This split matters operationally: the shop renders customer-facing catalog and checkout experiences, while the CRM is where operators edit customers, orders, invoices, storefronts, and product inventory.
 
 ## OCI Services
 
@@ -157,9 +168,9 @@ flowchart TD
 
 | Component | Service | Cloud Services Used | Description |
 |---|---|---|---|
-| **Drone Shop** | Python/FastAPI | ATP, APM, RUM, Logging, Monitoring, WAF, Cloud Guard, Vault, IDCS, GenAI | E-commerce storefront with 13 modules, checkout flow, AI assistant, chaos controls |
+| **Drone Shop** | Python/FastAPI | ATP, APM, RUM, Logging, Monitoring, WAF, Cloud Guard, Vault, IDCS, GenAI | E-commerce storefront with checkout flow, AI assistant, customer-facing catalog, and distributed trace integration into CRM |
 | **Workflow Gateway** | Go | ATP, APM, Select AI | Scheduled ATP query sweeps, query lab, Select AI execution |
-| **Enterprise CRM** | Python/FastAPI | ATP, APM, RUM, Logging, IDCS | 12 CRM modules with order sync, simulation lab, OIDC SSO |
+| **Enterprise CRM** | Python/FastAPI | ATP, APM, RUM, Logging, IDCS | Operational control plane with order sync, storefront management, catalog editing, simulation lab, and OIDC SSO |
 
 ## Deployment Options
 

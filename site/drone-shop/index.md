@@ -6,19 +6,26 @@
 
 ## Key Features
 
-- **E-commerce** — Product catalog (56 drones + accessories), shopping cart, checkout with shipment tracking
+- **E-commerce** — Customer-facing product catalog, shopping cart, checkout with shipment tracking
 - **AI Assistant** — OCI GenAI-powered drone advisor with ATP conversation history
 - **Workflow Gateway** — Go service for Select AI queries, query lab, scheduled ATP sweeps
 - **RUM** — Custom browser events: add-to-cart, checkout funnel, search, page load
 - **Security** — 19 MITRE ATT&CK security span types, WAF protection rules, Cloud Guard, Vault
 - **Resilience** — Circuit breakers on CRM calls, chaos engineering controls, 5 OCI alarms
+- **CRM-Controlled Catalog** — Shop consumes products and storefront metadata managed from the CRM control plane
 
 ## Live Instance
 
 | URL | Status |
 |---|---|
-| [shop.example.cloud](https://shop.example.cloud) | Production (OKE) |
-| [shop.example.cloud/api/observability/360](https://shop.example.cloud/api/observability/360) | 360 Dashboard |
+| [shop.octodemo.cloud](https://shop.octodemo.cloud) | Production (OKE) |
+| [shop.octodemo.cloud/api/observability/360](https://shop.octodemo.cloud/api/observability/360) | 360 Dashboard |
+
+## Current Boundary
+
+- The shop is intentionally **not** the place for catalog or storefront administration.
+- Operators manage products, stock, and shop metadata in the CRM.
+- The shop renders the synchronized catalog as a customer-facing read model and remains focused on browse, cart, checkout, and shipping flows.
 
 ## Sections
 

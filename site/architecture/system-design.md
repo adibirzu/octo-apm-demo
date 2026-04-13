@@ -11,9 +11,9 @@ flowchart TD
     IDCS["OCI IAM Identity Domain<br/>(OIDC + PKCE + JWKS)"]
 
     subgraph K8S_Cluster ["OCI OKE Cluster"]
-        DroneShop["OCTO Drone Shop<br/>FastAPI · 98 routes · 13 modules"]
+        DroneShop["OCTO Drone Shop<br/>FastAPI · browse/cart/checkout"]
         WorkflowGW["Workflow Gateway<br/>Go · Select AI · Query Lab"]
-        CRM["Enterprise CRM Portal<br/>FastAPI · Simulation Proxy"]
+        CRM["Enterprise CRM Portal<br/>FastAPI · catalog + operations control plane"]
     end
 
     subgraph Observability ["OCI Observability"]
@@ -35,7 +35,7 @@ flowchart TD
     Admin -->|IDCS SSO| IDCS -->|OIDC callback| DroneShop
     K6 -->|HTTP load| DroneShop
     K6 -->|HTTP load| CRM
-    DroneShop <-->|"W3C traceparent"| CRM
+    DroneShop <-->|"W3C traceparent<br/>orders, customer enrichment, catalog sync"| CRM
     DroneShop -->|WORKFLOW_API| WorkflowGW
     Coordinator -->|"MCP tools"| DroneShop
     DroneShop -->|SQLAlchemy| DB
@@ -57,11 +57,18 @@ Drone Shop ◄──── W3C traceparent ────► Enterprise CRM
      │                                       │
      │   /api/integrations/crm/*             │
      │   (customer sync, order sync,         │
-     │    enrichment, health)                │
+     │    enrichment, health, catalog sync)  │
      │                                       │
      └─────────► Oracle ATP ◄────────────────┘
                 (shared instance)
 ```
+
+## Operational Ownership
+
+- **Shop** owns customer browsing, cart state, checkout, order origination, and storefront-side observability.
+- **CRM** owns customer operations, invoices, support workflows, storefront metadata, and catalog inventory updates.
+- **Oracle ATP** remains the shared persistence layer, which is why topology, traces, and SQL drill-down continue to show both services against the same database.
+- **Public CRM links** use `CRM_PUBLIC_URL=https://crm.octodemo.cloud`; private cluster-local CRM hostnames are intentionally kept out of browser-facing responses.
 
 ### Integration Endpoints
 
@@ -71,6 +78,7 @@ Drone Shop ◄──── W3C traceparent ────► Enterprise CRM
 | `/api/integrations/crm/sync-order` | Shop → CRM | Push orders as CRM tickets |
 | `/api/integrations/crm/customer-enrichment` | Shop → CRM | Enrich local customer profile |
 | `/api/integrations/crm/health` | Shop → CRM | Health check with distributed trace |
+| CRM product/shop sync → shop catalog | CRM → Shop | Publish CRM-managed product and storefront changes into the shop |
 | Simulation proxy | CRM → Shop | Chaos control via `X-Internal-Service-Key` |
 
 ## IDCS SSO Flow
