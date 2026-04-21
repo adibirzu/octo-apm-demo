@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ensure OCI WAF (Web Application Firewall) for OCTO Drone Shop (C28).
+# Ensure OCI WAF (Web Application Firewall) for OCTO Drone Shop (Shop service).
 #
 # Creates (idempotently):
 #   1. WAF Policy with protection rules (SQLi, XSS, rate limiting)

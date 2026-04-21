@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ensure OCI Security Zone for OCTO Drone Shop (C28).
+# Ensure OCI Security Zone for OCTO Drone Shop (Shop service).
 #
 # Creates (idempotently):
 #   1. Security Zone Recipe with compliance policies
@@ -68,7 +68,7 @@ else
         RECIPE_OCID=$(oci cloud-guard security-recipe create \
             --compartment-id "${COMPARTMENT_ID}" \
             --display-name "${RECIPE_NAME}" \
-            --description "Security policies for OCTO Drone Shop (C28): encryption, vault, network controls" \
+            --description "Security policies for OCTO Drone Shop (Shop service): encryption, vault, network controls" \
             --security-policies '[]' \
             --query "data.id" \
             --raw-output 2>/dev/null || echo "")
@@ -77,7 +77,7 @@ else
         RECIPE_OCID=$(oci cloud-guard security-recipe create \
             --compartment-id "${COMPARTMENT_ID}" \
             --display-name "${RECIPE_NAME}" \
-            --description "Security policies for OCTO Drone Shop (C28): encryption, vault, network controls" \
+            --description "Security policies for OCTO Drone Shop (Shop service): encryption, vault, network controls" \
             --security-policies '[]' \
             --query "data.id" \
             --raw-output 2>/dev/null || echo "")
@@ -116,7 +116,7 @@ else
     ZONE_OCID=$(oci cloud-guard security-zone create \
         --compartment-id "${COMPARTMENT_ID}" \
         --display-name "${ZONE_NAME}" \
-        --description "Security zone for OCTO Drone Shop (C28) — enforces encryption, vault, and network policies" \
+        --description "Security zone for OCTO Drone Shop (Shop service) — enforces encryption, vault, and network policies" \
         --security-zone-recipe-id "${RECIPE_OCID}" \
         --query "data.id" \
         --raw-output 2>/dev/null || echo "")

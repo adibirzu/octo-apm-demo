@@ -1,7 +1,7 @@
 {
   "displayName": "Workflow Command Center",
   "description": "Latency + error-rate + chaos + WAF overlay per workflow.",
-  "freeformTags": {"octo-demo": "true", "stage": "wave1"},
+  "freeformTags": {"deployment-profile": "portable", "stage": "wave1"},
   "widgets": [
     {"title": "Requests by workflow (1h)",      "search": "workflow-health"},
     {"title": "DB slowness hotspots",           "search": "db-slowness-hotspots"},

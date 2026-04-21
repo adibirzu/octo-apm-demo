@@ -37,7 +37,7 @@ variable "display_name" {
 
 variable "domain" {
   type        = string
-  description = "Public hostname the policy protects (e.g. shop.octodemo.cloud)."
+  description = "Public hostname the policy protects (e.g. shop.example.cloud)."
 }
 
 variable "mode" {
@@ -135,9 +135,9 @@ resource "oci_waf_web_app_firewall_policy" "this" {
   }
 
   freeform_tags = {
-    "octo-demo"  = "true"
-    "waf-mode"   = upper(var.mode)
-    "waf-domain" = var.domain
+    "deployment-profile" = "portable"
+    "waf-mode"           = upper(var.mode)
+    "waf-domain"         = var.domain
   }
 }
 
