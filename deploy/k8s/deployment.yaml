@@ -26,7 +26,7 @@ spec:
             - name: APP_NAME
               value: "octo-drone-shop"
             - name: OTEL_SERVICE_NAME
-              value: "octo-drone-shop-oke"
+              value: "octo-drone-shop"
             - name: APP_RUNTIME
               value: "oke"
             - name: ENVIRONMENT
@@ -177,11 +177,19 @@ spec:
                   name: octo-integrations
                   key: crm-url
                   optional: true
+            - name: CRM_PUBLIC_URL
+              value: "${CRM_PUBLIC_URL}"
             - name: WORKFLOW_API_BASE_URL
               valueFrom:
                 secretKeyRef:
                   name: octo-integrations
                   key: workflow-api-base-url
+                  optional: true
+            - name: WORKFLOW_PUBLIC_API_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: workflow-public-api-base-url
                   optional: true
             - name: WORKFLOW_SERVICE_NAME
               value: "octo-workflow-gateway"
