@@ -8,11 +8,18 @@ auto-remediation.
 
 - [Golden workflows](workflows.md)
 - [Chaos playbook (CRM-only)](chaos-playbook.md)
-- [Log Analytics dashboards](log-analytics-dashboards.md)
-- [APM drill-down](apm-drilldown.md)
-- [Auto-remediation flow](autoremediation-flow.md)
 - [Security + WAF observability](waf-observability.md)
-- [Demo script](demo-script.md)
+
+### Shop-side observability (cross-reference)
+
+Log Analytics dashboards, APM drill-down, auto-remediation flow, and the
+end-to-end demo script live on the shop's docs site since the shop owns
+the ingestion pipeline:
+
+- [Log Analytics dashboards](https://adibirzu.github.io/octo-drone-shop/observability-v2/log-analytics-dashboards/)
+- [APM drill-down](https://adibirzu.github.io/octo-drone-shop/observability-v2/apm-drilldown/)
+- [Auto-remediation flow](https://adibirzu.github.io/octo-drone-shop/observability-v2/autoremediation-flow/)
+- [Demo script](https://adibirzu.github.io/octo-drone-shop/observability-v2/demo-script/)
 
 ## One-paragraph overview
 
