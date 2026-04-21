@@ -74,7 +74,29 @@ flowchart TD
     DroneShop -.->|"custom metrics<br>8 gauges/counters"| Monitoring
     DroneShop -.->|HEC events| Splunk
     HealthCheck -.->|"/ready probe"| DroneShop
+
+    %% Log Analytics ingestion (Service Connector)
+    Logging -.->|Service Connector| LogAnalytics[OCI Log Analytics]
+    LogAnalytics -.->|source: octo-shop-app-json| Dashboards[LA Dashboards]
+
+    %% Stack Monitoring topology
+    DB -.->|MonitoredResource: octo-atp| StackMonitoring[OCI Stack Monitoring]
+    DroneShop -.-> StackMonitoring
 ```
+
+## Provisioning & portability artifacts
+
+| File | Responsibility |
+|---|---|
+| `deploy/pre-flight-check.sh` | Fail fast on missing env vars or placeholder leaks before any infra call |
+| `deploy/init-tenancy.sh` | Idempotent bootstrap: OCIR repo, K8s namespace, initial `octo-auth`/`octo-atp` Secrets |
+| `deploy/terraform/modules/apm_domain/` | APM Domain + RUM Web Application + data keys (outputs) |
+| `deploy/terraform/main.tf` (`la_pipeline_app_logs`) | Service Connector: `OCI_LOG_ID` → OCI Log Analytics |
+| `deploy/oci/ensure_apm.sh` | Wraps `terraform plan/apply/print` for the APM module |
+| `deploy/oci/ensure_stack_monitoring.sh` | Registers ATP as Stack Monitoring `MonitoredResource` |
+| `deploy/k8s/secret-provider-class.yaml` | OCI Vault → pod via Secrets Store CSI (template) |
+| `deploy/terraform/backend.tf` | OCI Object Storage remote-state stub (commented) |
+| `tools/create_la_source.py` | Registers LA source `octo-shop-app-json` + JSON parser |
 
 ## Component summary
 
