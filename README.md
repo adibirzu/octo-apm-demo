@@ -2,7 +2,7 @@
 
 Cloud-native CRM application built for **OCI Observability** demonstration. Showcases APM, Stack Monitoring, Logging, Log Analytics, Operations Insights, and DB Management integration as modular add-ons.
 
-**OCI-DEMO Component: C27** — Enterprise CRM Portal (OKE)
+**Deployment profile:** CRM operations portal on OKE with shared-DB shop integration
 
 ## Architecture
 
@@ -38,6 +38,23 @@ Cloud-native CRM application built for **OCI Observability** demonstration. Show
     └── Prometheus ────────── /metrics endpoint (always on)
 ```
 
+## Cross-service integration contract
+
+This service pairs with the [OCTO Drone Shop](https://github.com/adibirzu/octo-drone-shop). The integration is symmetric on both sides:
+
+| Concern | Value |
+|---|---|
+| Canonical shop URL env var | `SERVICE_SHOP_URL` (legacy aliases: `OCTO_DRONE_SHOP_URL`, `MUSHOP_CLOUDNATIVE_URL`) |
+| Canonical shared-key env var | `INTERNAL_SERVICE_KEY` (legacy alias: `DRONE_SHOP_INTERNAL_KEY`) |
+| Required header on cross-service POST | `X-Internal-Service-Key: $INTERNAL_SERVICE_KEY` |
+| Order dedup fields (accepted + stored verbatim) | `source_system`, `source_order_id`, `idempotency_token` |
+| Machine-readable contract | `GET /api/integrations/schema` (OpenAPI 3.1 subset) |
+
+`POST /api/orders` refuses unauthenticated callers whenever
+`INTERNAL_SERVICE_KEY` is configured; when the key is empty the endpoint
+continues to accept anonymous traffic for back-compat with existing
+deployments. See [docs-site/integrations/cross-service-contract.md](docs-site/integrations/cross-service-contract.md) for the full protocol.
+
 ## OCI Observability Add-Ons
 
 Each observability service is **independently activatable** — deploy the app first, enable observability later. No code changes required.
@@ -59,8 +76,10 @@ Each observability service is **independently activatable** — deploy the app f
 
 ```bash
 # Works with just database — all observability is optional
+cp deploy/credentials.template deploy/credentials.env
 export ORACLE_DSN="myatp_low"
 export ORACLE_PASSWORD="<password>"
+export BOOTSTRAP_ADMIN_PASSWORD="<bootstrap-admin-password>"
 docker compose up -d
 ```
 
@@ -121,14 +140,28 @@ Integrates with [OCTO Drone Shop](https://github.com/adibirzu/octo-drone-shop) v
 git clone https://github.com/adibirzu/enterprise-crm-portal.git
 cd enterprise-crm-portal
 cp .env.example .env
+cp deploy/credentials.template deploy/credentials.env
+set -a
+source deploy/credentials.env
+set +a
 docker compose up -d
 open http://localhost:8080
 ```
 
+Keep non-secret settings in `.env` and keep secrets in `deploy/credentials.env`
+or mounted `*_FILE` secret paths. The runtime now supports both direct env vars
+and `*_FILE` variants for `APP_SECRET_KEY`, DB credentials, APM keys, Splunk
+tokens, SSO client secrets, the bootstrap admin password, and the cross-service
+integration key.
+
+Deployments stay tenancy-portable by using generic endpoint variables such as
+`OCTO_DRONE_SHOP_URL`, `CONTROL_PLANE_URL`, and `PLATFORM_BACKEND_URL` rather
+than embedding live environment hostnames in tracked files.
+
 ## Load Testing (k6)
 
 ```bash
-k6 run --env BASE_URL=http://localhost:8080 k6/load_test.js
+k6 run --env BASE_URL=http://localhost:8080 --env LOGIN_PASS='<password>' k6/load_test.js
 ```
 
 3 scenarios: user browsing (ramp 1→25 VUs), API throughput (20 req/s), security probes.
@@ -214,9 +247,9 @@ Shop has zero write endpoints.
 
 ### Replicate in your tenancy
 
-Same steps as the Shop README — the two apps share `deploy/env.template`
-schema and the same Terraform variables. Set `CHAOS_ADMIN_ROLE` if you
-want a different IDCS role name than the default (`chaos-operator`).
+Same steps as the Shop README — the two apps share the same deployment
+shape and secret-handling model. Set `CHAOS_ADMIN_ROLE` if you want a
+different IDCS role name than the default (`chaos-operator`).
 
 ### Safe defaults
 
