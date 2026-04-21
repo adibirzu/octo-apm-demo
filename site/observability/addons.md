@@ -119,7 +119,7 @@ AUTONOMOUS_DATABASE_ID="ocid1.autonomousdatabase.oc1...." \
     - **SQL Warehouse** — Top SQL aggregation across time
     - **Capacity Planning** — CPU, storage, I/O projections
     - **Fleet Summary** — Multi-database health overview
-    - Filter by `MODULE=octo-drone-shop-oke` or `MODULE=enterprise-crm-portal`
+    - Filter by `MODULE=octo-drone-shop` or `MODULE=enterprise-crm-portal`
 
 ### Level 7: Stack Monitoring
 

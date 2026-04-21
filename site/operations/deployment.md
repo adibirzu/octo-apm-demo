@@ -14,14 +14,14 @@
 
 ```bash
 rsync -az --exclude '.git' --exclude '__pycache__' \
-  . control-plane-oci:/tmp/octo-drone-shop/
+  . remote-builder:/tmp/octo-drone-shop/
 ```
 
 ### 2. Build (Native x86_64)
 
 ```bash
 TAG=$(date +%Y%m%d%H%M%S)
-ssh control-plane-oci "cd /tmp/octo-drone-shop && \
+ssh remote-builder "cd /tmp/octo-drone-shop && \
   docker build -t ${OCIR_REPO}/octo-drone-shop:${TAG} \
                -t ${OCIR_REPO}/octo-drone-shop:latest ."
 ```
@@ -29,7 +29,7 @@ ssh control-plane-oci "cd /tmp/octo-drone-shop && \
 ### 3. Push to OCIR
 
 ```bash
-ssh control-plane-oci "docker push ${OCIR_REPO}/octo-drone-shop:${TAG} && \
+ssh remote-builder "docker push ${OCIR_REPO}/octo-drone-shop:${TAG} && \
   docker push ${OCIR_REPO}/octo-drone-shop:latest"
 ```
 

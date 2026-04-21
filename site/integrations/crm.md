@@ -6,6 +6,7 @@ The Drone Shop connects to the Enterprise CRM Portal for customer enrichment, or
 
 | Endpoint | Method | Purpose |
 |---|---|---|
+| `/api/integrations/schema` | GET | Machine-readable cross-service contract (OpenAPI 3.1 subset) |
 | `/api/integrations/crm/sync-customers` | POST | Pull CRM customers → local DB |
 | `/api/integrations/crm/sync-order` | POST | Push order → CRM as ticket |
 | `/api/integrations/crm/customer-enrichment` | GET | Enrich local customer with CRM data |
@@ -13,12 +14,38 @@ The Drone Shop connects to the Enterprise CRM Portal for customer enrichment, or
 | `/api/integrations/crm/health` | GET | Health check with distributed trace |
 | `/api/integrations/crm/customers` | GET | List local customers (optional CRM refresh) |
 
+## Cross-service authentication
+
+All cross-service calls carry the shared `X-Internal-Service-Key` header
+whenever `INTERNAL_SERVICE_KEY` is configured:
+
+```http
+POST /api/orders HTTP/1.1
+Host: crm.<tenancy>
+Content-Type: application/json
+X-Internal-Service-Key: <shared-secret>
+```
+
+- Both services read `INTERNAL_SERVICE_KEY` from their own secret store
+  (in OKE: `octo-auth/internal-service-key`).
+- If either side has the key unset, that side silently allows unauthenticated
+  traffic — the `integration_schema` endpoint will not advertise the scheme.
+- Rotate by updating the shared secret on both deployments within the
+  same rollout window; old/new keys are not supported simultaneously.
+
+## Idempotency
+
+Order sync payloads include a stable `idempotency_token` computed as
+`uuid5(namespace, "<order_id>:<source>")`. CRM SHOULD use the composite
+`(source_system, source_order_id, idempotency_token)` to deduplicate
+retries — re-posting the same order MUST NOT create a second invoice.
+
 ## Current Ownership Model
 
 - **CRM is the source of truth** for products, stock, price, category, storefront assignment, and storefront metadata.
 - **Shop is the source of truth** for cart, checkout, and storefront session behavior.
 - **Shared Oracle ATP** allows both services to correlate the same order, customer, and product lifecycle from different operational surfaces.
-- **Public CRM URLs stay public**: browser responses and docs point to `https://crm.octodemo.cloud`, while backend service-to-service calls may still target the in-cluster CRM service URL.
+- **Public CRM URLs stay public**: browser responses and docs point to `https://crm.example.cloud`, while backend service-to-service calls may still target the in-cluster CRM service URL.
 
 ## Distributed Tracing
 
@@ -64,19 +91,19 @@ CRM product/storefront edit → CRM DB write → POST /api/integrations/crm/cata
 ## Configuration
 
 ```bash
-ENTERPRISE_CRM_URL="http://enterprise-crm-portal.enterprise-crm.svc.cluster.local"
-CRM_PUBLIC_URL="https://crm.octodemo.cloud"
-
-# If the backend can call the public CRM directly instead of the in-cluster
-# service, ENTERPRISE_CRM_URL may also be public:
-ENTERPRISE_CRM_URL="https://crm.octodemo.cloud"
+# Canonical name used by new tenancies. Falls back to ENTERPRISE_CRM_URL
+# when SERVICE_CRM_URL is unset (legacy alias).
+SERVICE_CRM_URL="<internal-crm-base-url>"
+CRM_PUBLIC_URL="https://crm.<your-tenancy-domain>"
+INTERNAL_SERVICE_KEY="<shared-secret-between-shop-and-crm>"
 ```
 
-### Why both URLs exist
+### Env var naming across the two services
 
 | Variable | Audience | Purpose |
 |---|---|---|
-| `ENTERPRISE_CRM_URL` | Backend service-to-service | Private or public URL used by the shop server when calling CRM APIs |
+| `SERVICE_CRM_URL` (preferred) / `ENTERPRISE_CRM_URL` (legacy alias) | Backend service-to-service | URL used by the shop server when calling CRM APIs |
 | `CRM_PUBLIC_URL` | Browser/public docs | Public CRM URL used for links, redirects, and user-visible integration surfaces |
+| `INTERNAL_SERVICE_KEY` | Both sides | Shared secret attached as `X-Internal-Service-Key` header |
 
-This prevents internal `.svc.cluster.local` hostnames from leaking into storefront responses while still allowing efficient in-cluster traffic.
+This prevents internal service hostnames from leaking into storefront responses while still allowing efficient private network traffic.

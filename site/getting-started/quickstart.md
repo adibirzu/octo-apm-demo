@@ -54,5 +54,5 @@ npm install
 npm run test:e2e
 
 # Against live deployment
-SHOP_URL=https://shop.yourcompany.cloud npm run test:e2e
+SHOP_URL=https://shop.<your-domain> npm run test:e2e
 ```
