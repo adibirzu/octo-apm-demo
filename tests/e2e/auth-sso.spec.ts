@@ -21,6 +21,12 @@ import {
   assertObject,
 } from './helpers';
 
+function expectNoPrivateClusterLeak(body: unknown): void {
+  const serialized = JSON.stringify(body).toLowerCase();
+  expect(serialized).not.toContain('.svc.cluster.local');
+  expect(serialized).not.toContain('.cluster.local');
+}
+
 // ── SSO Status ────────────────────────────────────────────────────────────────
 
 test.describe('SSO Status', () => {
@@ -140,6 +146,16 @@ test.describe('Auth profile endpoint', () => {
     });
     expect([401, 403]).toContain(status);
   });
+
+  test('GET /api/orders returns 401 without Bearer token', async ({ request }) => {
+    const { status } = await apiGet(request, `${SHOP_URL}/api/orders`);
+    expect([401, 403]).toContain(status);
+  });
+
+  test('GET /api/orders/1 returns 401 without Bearer token', async ({ request }) => {
+    const { status } = await apiGet(request, `${SHOP_URL}/api/orders/1`);
+    expect([401, 403]).toContain(status);
+  });
 });
 
 // ── Login page UI ─────────────────────────────────────────────────────────────
@@ -199,5 +215,27 @@ test.describe('Token validation edge cases', () => {
       Authorization: 'Basic dXNlcjpwYXNz',
     });
     expect([401, 403]).toContain(status);
+  });
+});
+
+// ── Public payloads must not leak private service DNS ────────────────────────
+
+test.describe('Public responses redact private service hosts', () => {
+  test('GET /api/integrations/status does not expose cluster-local CRM hostnames', async ({ request }) => {
+    const { status, body } = await apiGet(request, `${SHOP_URL}/api/integrations/status`);
+    expect(status).toBe(200);
+    expectNoPrivateClusterLeak(body);
+  });
+
+  test('GET /api/integrations/crm/health does not expose cluster-local CRM hostnames', async ({ request }) => {
+    const { status, body } = await apiGet(request, `${SHOP_URL}/api/integrations/crm/health`);
+    expect([200, 503]).toContain(status);
+    expectNoPrivateClusterLeak(body);
+  });
+
+  test('GET /api/observability/360 does not expose cluster-local integration URLs', async ({ request }) => {
+    const { status, body } = await apiGet(request, `${SHOP_URL}/api/observability/360`);
+    expect(status).toBe(200);
+    expectNoPrivateClusterLeak(body);
   });
 });

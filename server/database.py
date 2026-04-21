@@ -511,6 +511,25 @@ class Shipment(Base):
     order = relationship("Order")
 
 
+class Invoice(Base):
+    __tablename__ = "invoices"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    invoice_number = Column(String(100), unique=True, nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
+    amount = Column(Float, nullable=False)
+    currency = Column(String(10), default="USD")
+    status = Column(String(50), default="draft")
+    issued_at = Column(DateTime, server_default=func.now())
+    due_at = Column(DateTime, nullable=True)
+    paid_at = Column(DateTime, nullable=True)
+    notes = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    customer = relationship("Customer")
+    order = relationship("Order")
+
+
 class Warehouse(Base):
     __tablename__ = "warehouses"
     id = Column(Integer, Identity(always=False), primary_key=True)
@@ -735,7 +754,8 @@ def init_tables():
 def _ensure_missing_columns(engine) -> None:
     """Add columns that were introduced after initial table creation."""
     insp = inspect(engine)
-    if "products" not in insp.get_table_names():
+    table_names = set(insp.get_table_names())
+    if "products" not in table_names:
         return
     existing = {col["name"] for col in insp.get_columns("products")}
     dialect = engine.dialect.name
@@ -773,6 +793,49 @@ def _ensure_missing_columns(engine) -> None:
                         logger.info("Added missing column orders.%s", col_name)
                 except Exception:
                     logger.debug("Column orders.%s may already exist (concurrent DDL)", col_name)
+
+    if "invoices" in table_names:
+        invoice_cols = {col["name"] for col in insp.get_columns("invoices")}
+        invoice_migrations = {
+            "customer_id": "NUMBER" if dialect == "oracle" else "INTEGER",
+            "currency": "VARCHAR2(10 CHAR) DEFAULT 'USD'" if dialect == "oracle" else "VARCHAR(10) DEFAULT 'USD'",
+            "issued_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP" if dialect == "oracle" else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            "due_at": "TIMESTAMP",
+            "paid_at": "TIMESTAMP",
+            "notes": "CLOB" if dialect == "oracle" else "TEXT",
+            "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP" if dialect == "oracle" else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        }
+        for col_name, col_type in invoice_migrations.items():
+            if col_name not in invoice_cols:
+                try:
+                    with engine.begin() as conn:
+                        stmt = (
+                            f"ALTER TABLE invoices ADD ({col_name} {col_type})"
+                            if dialect == "oracle"
+                            else f"ALTER TABLE invoices ADD COLUMN {col_name} {col_type}"
+                        )
+                        conn.execute(text(stmt))
+                        logger.info("Added missing column invoices.%s", col_name)
+                except Exception:
+                    logger.debug("Column invoices.%s may already exist (concurrent DDL)", col_name)
+
+        with engine.begin() as conn:
+            if "customer_id" not in invoice_cols:
+                conn.execute(
+                    text(
+                        "UPDATE invoices i SET customer_id = ("
+                        "SELECT o.customer_id FROM orders o WHERE o.id = i.order_id"
+                        ") WHERE i.customer_id IS NULL"
+                    )
+                )
+            if "currency" not in invoice_cols:
+                conn.execute(text("UPDATE invoices SET currency = 'USD' WHERE currency IS NULL"))
+            if "issued_at" not in invoice_cols:
+                conn.execute(text("UPDATE invoices SET issued_at = created_at WHERE issued_at IS NULL"))
+            if "updated_at" not in invoice_cols:
+                conn.execute(text("UPDATE invoices SET updated_at = created_at WHERE updated_at IS NULL"))
+            if "due_at" not in invoice_cols and "due_date" in invoice_cols:
+                conn.execute(text("UPDATE invoices SET due_at = due_date WHERE due_at IS NULL"))
 
     # Ensure 'shops' table exists (not in ORM, needed for /api/shop/locations)
     if "shops" not in insp.get_table_names():
@@ -861,6 +924,20 @@ def _reconcile_services(session) -> None:
         existing.is_active = 1
 
 
+def _reconcile_invoices(session) -> None:
+    if session.query(Invoice).count() > 0 or session.query(Order).count() == 0:
+        return
+
+    session.add_all([
+        Invoice(invoice_number="INV-OCTO-1001", customer_id=1, order_id=1, amount=25199.00,
+                currency="USD", status="paid", notes="Settled after delivery."),
+        Invoice(invoice_number="INV-OCTO-1002", customer_id=2, order_id=2, amount=11548.00,
+                currency="USD", status="issued", notes="Awaiting wire settlement."),
+        Invoice(invoice_number="INV-OCTO-1003", customer_id=5, order_id=6, amount=4798.99,
+                currency="USD", status="overdue", notes="Collections follow-up queued."),
+    ])
+
+
 def _reconcile_seed_users(session) -> None:
     desired_by_username = {user["username"]: user for user in SEED_USERS}
     existing_users = {user.username: user for user in session.query(User).all()}
@@ -896,8 +973,9 @@ def seed_data():
                 _reconcile_seed_users(session)
                 _reconcile_product_catalog(session)
                 _reconcile_services(session)
+                _reconcile_invoices(session)
                 session.commit()
-                logger.info("Database already seeded — reconciled users, catalog, and services")
+                logger.info("Database already seeded — reconciled users, catalog, services, and invoices")
                 return
 
             # Users
@@ -1033,6 +1111,15 @@ def seed_data():
                          origin_region="us-west-2", destination_region="us-east-1", weight_kg=7.0, shipping_cost=59.99),
                 Shipment(order_id=8, tracking_number="DHL-OCTO-004", carrier="dhl", status="shipped",
                          origin_region="eu-central-1", destination_region="eu-north-1", weight_kg=5.8, shipping_cost=69.99),
+            ])
+
+            session.add_all([
+                Invoice(invoice_number="INV-OCTO-1001", customer_id=1, order_id=1, amount=25199.00,
+                        currency="USD", status="paid", notes="Settled after delivery."),
+                Invoice(invoice_number="INV-OCTO-1002", customer_id=2, order_id=2, amount=11548.00,
+                        currency="USD", status="issued", notes="Awaiting wire settlement."),
+                Invoice(invoice_number="INV-OCTO-1003", customer_id=5, order_id=6, amount=4798.99,
+                        currency="USD", status="overdue", notes="Collections follow-up queued."),
             ])
 
             # Warehouses (5) — drone fulfillment centers

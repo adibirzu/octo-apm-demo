@@ -1,10 +1,9 @@
 # RLM Audit Report — octo-drone-shop Security, SSO, OTel & Portability
 
 **Date**: 2026-04-09 | **Commit**: aa5940499 (HEAD) | **Mode**: Full
-**OCI-DEMO Component**: **C28** — Drone Shop Portal (OKE)
+**Deployment profile**: Shop storefront on OKE
 **Repo**: `https://github.com/adibirzu/octo-drone-shop`
-**Local path**: `/Users/abirzu/dev/octo-drone-shop`
-**Vendored into**: `OCI-DEMO/external/octo-drone-shop` (`external-projects.lock.yaml` key `octo-drone-shop`, components `[c28]`)
+**Repository layout note**: this report describes the standalone shop repo only
 
 ## Executive Summary
 SSO is not "broken" — it had never been implemented. The shop only had a custom HMAC bearer-token login (`server/modules/auth.py`) wired into `main.py`. This audit found three security issues (CRIT) and three code-portability gaps (HIGH) and fixes all of them with a fresh, hardened OIDC + PKCE + JWKS-verified SSO module ported from the working `enterprise-crm-portal` flow but stripped of its intentional vulnerabilities.
@@ -14,7 +13,7 @@ After the changes:
 - CORS no longer falls back to wildcard.
 - Bearer-token signing key requires `AUTH_TOKEN_SECRET` in production (fail-fast).
 - Standalone K8s manifest is tenancy-portable via `${OCI_LB_SUBNET_OCID}`.
-- OCI-DEMO C28 deployment path is unchanged (it generates its own manifest).
+- Any external deployment wrapper remains free to render its own manifest.
 - Existing OTel→APM wiring (with `shared.observability_lib` fallback) is correct and untouched.
 
 ## Findings
@@ -37,7 +36,7 @@ After the changes:
 - **Fix**: Strip `*`, never default to `["*"]`. If filtering produces an empty list, **don't install** the CORS middleware at all and log a `WARNING` so operators see what happened. Wildcard with credentials is now structurally impossible.
 - **Verified**:
   - `CORS_ALLOWED_ORIGINS="" → middleware not installed, warning logged`
-  - `CORS_ALLOWED_ORIGINS=https://shop.octodemo.cloud → middleware installed with that exact origin + credentials`
+  - `CORS_ALLOWED_ORIGINS=https://shop.example.cloud → middleware installed with that exact origin + credentials`
 
 **CRIT-3: SSO not implemented**
 - **Where**: nowhere — entire `server/` tree had no OIDC/IDCS code.
@@ -62,7 +61,7 @@ After the changes:
 
 **HIGH-2: Hardcoded subnet OCID makes standalone deploy not portable**
 - **Where**: `deploy/k8s/deployment.yaml:217` had a literal Frankfurt subnet OCID.
-- **Fix**: Replaced with `${OCI_LB_SUBNET_OCID}`. Install guide section 9 now documents the `envsubst` render pattern. OCI-DEMO C28's own deployment script generates a separate manifest from `${subnet_lb}` so the C28 path is unchanged.
+- **Fix**: Replaced with `${OCI_LB_SUBNET_OCID}`. Install guide section 9 now documents the `envsubst` render pattern, and any deployment wrapper can inject its own subnet value at render time.
 - **Verified**: `grep "ocid1.subnet" deploy/k8s/deployment.yaml` returns nothing; only the placeholder remains.
 
 **HIGH-3: AUTH_TOKEN_SECRET silently optional in K8s deployment**
@@ -79,7 +78,7 @@ After the changes:
 
 ## OTel → OCI APM verification
 `server/observability/otel_setup.py` is **correct as-is** and was not modified by this audit:
-1. Tries `shared.observability_lib.init_observability()` first (the OCI-DEMO path that gives traces, metrics, and a unified Resource).
+1. Tries `shared.observability_lib.init_observability()` first (the shared deployment path that gives traces, metrics, and a unified Resource).
 2. Falls back to a local standalone init that:
    - Builds a `Resource` with full service/host/runtime attributes
    - Configures `OTLPSpanExporter` → `${APM_BASE}/20200101/opentelemetry/private/v1/traces` with `Authorization: dataKey ${KEY}`

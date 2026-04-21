@@ -1,6 +1,6 @@
 """Security span helpers — MITRE ATT&CK + OWASP classification for OCTO-CRM-APM.
 
-When running inside OCI-DEMO, uses shared.security_mappings for canonical
+When running with the shared platform libraries available, uses shared.security_mappings for canonical
 MITRE/OWASP definitions. Falls back to local definitions for standalone use.
 """
 

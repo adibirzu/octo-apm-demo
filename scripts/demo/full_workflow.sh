@@ -6,7 +6,7 @@
 #   - `.env` at the repo root (see deploy/env.template)
 #   - a CRM operator session cookie: export CRM_SESSION_COOKIE=...
 #   - k6 installed locally
-#   - `oci` CLI configured for the demo tenancy
+#   - `oci` CLI configured for the target tenancy
 # ============================================================================
 set -euo pipefail
 

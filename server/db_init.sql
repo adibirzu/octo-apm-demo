@@ -144,6 +144,22 @@ CREATE TABLE IF NOT EXISTS shipments (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS invoices (
+    id SERIAL PRIMARY KEY,
+    invoice_number VARCHAR(100) UNIQUE NOT NULL,
+    customer_id INTEGER REFERENCES customers(id),
+    order_id INTEGER REFERENCES orders(id),
+    amount FLOAT NOT NULL,
+    currency VARCHAR(10) DEFAULT 'USD',
+    status VARCHAR(50) DEFAULT 'draft',
+    issued_at TIMESTAMP DEFAULT NOW(),
+    due_at TIMESTAMP,
+    paid_at TIMESTAMP,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS warehouses (
     id SERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -247,6 +263,12 @@ INSERT INTO orders (customer_id, total, status, shipping_address) VALUES
     (4, 79.99, 'shipped', '10880 Malibu Point, CA'),
     (1, 29.99, 'completed', '123 Industrial Way, Springfield'),
     (5, 134.97, 'processing', '1007 Mountain Drive, Gotham')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO invoices (invoice_number, customer_id, order_id, amount, currency, status, notes) VALUES
+    ('INV-OCTO-1001', 1, 1, 89.97, 'USD', 'paid', 'Settled after delivery.'),
+    ('INV-OCTO-1002', 2, 2, 159.97, 'USD', 'issued', 'Awaiting wire settlement.'),
+    ('INV-OCTO-1003', 5, 6, 134.97, 'USD', 'overdue', 'Collections follow-up queued.')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO tickets (customer_id, title, status, priority, product_id, service_id) VALUES

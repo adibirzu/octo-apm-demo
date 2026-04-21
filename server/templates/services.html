@@ -47,7 +47,7 @@
     </div>
 </main>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     /* Restore native fetch — APM RUM agent patches fetch/XHR and can break API calls */
     const _fetch = window.__nativeFetch || window.fetch.bind(window);
 

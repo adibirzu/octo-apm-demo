@@ -64,7 +64,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 const result = document.getElementById('result');
 
 function setMessage(message) {

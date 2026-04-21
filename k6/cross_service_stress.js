@@ -14,19 +14,19 @@
  *
  * Usage:
  *   # Against live OKE deployment
- *   k6 run --env DNS_DOMAIN=octodemo.cloud k6/cross_service_stress.js
+ *   k6 run --env DNS_DOMAIN=example.cloud k6/cross_service_stress.js
  *
  *   # Against local docker-compose
  *   k6 run --env SHOP_URL=http://localhost:8080 --env CRM_URL=http://localhost:8081 k6/cross_service_stress.js
  *
  *   # Moderate load (default)
- *   k6 run --env DNS_DOMAIN=octodemo.cloud k6/cross_service_stress.js
+ *   k6 run --env DNS_DOMAIN=example.cloud k6/cross_service_stress.js
  *
  *   # Heavy load
- *   k6 run --env DNS_DOMAIN=octodemo.cloud --env PROFILE=heavy k6/cross_service_stress.js
+ *   k6 run --env DNS_DOMAIN=example.cloud --env PROFILE=heavy k6/cross_service_stress.js
  *
  * OCI Observability verification after the run:
- *   1. OCI APM → Trace Explorer: filter by serviceName=octo-drone-shop-oke
+ *   1. OCI APM → Trace Explorer: filter by serviceName=octo-drone-shop
  *      → verify distributed traces spanning both CRM and Drone Shop
  *   2. OCI APM → Topology: verify CRM ↔ Drone Shop ↔ ATP graph edges
  *   3. OCI Log Analytics: search oracleApmTraceId=<any trace_id from step 1>
@@ -359,7 +359,7 @@ export function handleSummary(data) {
         crm_p95_ms: data.metrics.crm_latency_ms ? Math.round(data.metrics.crm_latency_ms.values['p(95)']) : 'N/A',
         cross_service_p95_ms: data.metrics.cross_service_latency_ms ? Math.round(data.metrics.cross_service_latency_ms.values['p(95)']) : 'N/A',
         verification: {
-            apm: `OCI APM → Trace Explorer → filter serviceName=octo-drone-shop-oke → verify distributed traces`,
+            apm: `OCI APM → Trace Explorer → filter serviceName=octo-drone-shop → verify distributed traces`,
             topology: `OCI APM → Topology → verify CRM ↔ Drone Shop ↔ ATP edges`,
             logs: `OCI Log Analytics → search oracleApmTraceId=<trace_id> → verify correlated logs`,
             db: `OCI DB Management → Performance Hub → verify SQL activity during test window`,

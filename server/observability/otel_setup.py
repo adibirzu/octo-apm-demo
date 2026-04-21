@@ -1,6 +1,6 @@
 """OpenTelemetry initialization for OCTO Drone Shop.
 
-When running inside OCI-DEMO, delegates core OTel setup (resource building,
+When running with the shared platform libraries available, delegates core OTel setup (resource building,
 APM exporters, process metrics) to shared.observability_lib. Falls back to
 local implementation for standalone use.
 """
@@ -26,7 +26,7 @@ _tracer_provider = None
 
 def _try_shared_init(service_name: str, service_version: str,
                      apm_endpoint: str, apm_private_key: str) -> bool:
-    """Try to initialize via shared.observability_lib (OCI-DEMO mode)."""
+    """Try to initialize via shared.observability_lib when the shared library is available."""
     try:
         from shared.observability_lib import init_observability
         return init_observability(
@@ -150,7 +150,7 @@ def init_otel(service_name: str = "octo-crm-apm",
               sync_engine=None, async_engine=None):
     """Initialize OpenTelemetry with OCI APM exporter.
 
-    Tries shared.observability_lib first (OCI-DEMO context), then falls
+    Tries shared.observability_lib first (shared-platform context), then falls
     back to standalone initialization.
     """
     global _tracer_provider

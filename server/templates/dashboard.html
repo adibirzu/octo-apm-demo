@@ -215,7 +215,7 @@
 </div>
 
 <!-- Simulation and demo data controls have been moved to the CRM portal
-     (crm.octodemo.cloud → Integrations page). The backend APIs remain here
+     (crm.example.cloud → Integrations page). The backend APIs remain here
      and are SSO+service-key protected. -->
 
 <div class="dashboard-row dashboard-row-wide">
@@ -227,7 +227,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 function money(value) {
     return '$' + Number(value || 0).toLocaleString();
 }
@@ -280,7 +280,7 @@ async function loadDashboard() {
         ).join('') || '<tr><td colspan="4" class="muted">No orders yet.</td></tr>';
 
         renderStatusGrid(ready, crm, summary, integrations);
-        renderDrilldowns(ready, crm);
+        renderDrilldowns(ready, crm, integrations);
         renderFeaturedProducts(summary.featured_products || []);
         renderCatalog(catalog);
         document.getElementById('correlation-output').textContent = JSON.stringify({
@@ -311,7 +311,7 @@ function renderStatusGrid(ready, crm, summary, integrations) {
         {
             label: 'CRM Sync',
             status: crm.status || 'unknown',
-            body: crm.crm_host || 'Not configured',
+            body: crm.crm_url || (crm.crm_configured ? 'Configured for server-side sync' : 'Not configured'),
         },
         {
             label: 'Shared Customers',
@@ -326,7 +326,7 @@ function renderStatusGrid(ready, crm, summary, integrations) {
         {
             label: 'Integration API',
             status: integration.configured ? 'configured' : 'pending',
-            body: integration.host || 'Not configured',
+            body: integration.url || (integration.configured ? 'Configured for server-side sync' : 'Not configured'),
         },
     ];
 
@@ -339,12 +339,14 @@ function renderStatusGrid(ready, crm, summary, integrations) {
     `).join('');
 }
 
-function renderDrilldowns(ready, crm) {
+function renderDrilldowns(ready, crm, integrations) {
+    const integration = (integrations.integrations || [])[0] || {};
+    const crmPortalUrl = crm.crm_url || integration.url || '';
     const drilldowns = [
         { name: 'Shop Frontend', url: '/shop', configured: true },
         { name: 'Service Catalog', url: '/services', configured: true },
-        { name: 'CRM Portal', url: crm.crm_host ? `https://${crm.crm_host}` : '', configured: Boolean(crm.crm_host) },
-        { name: 'Orders API', url: '/api/orders', configured: true },
+        { name: 'CRM Portal', url: crmPortalUrl, configured: Boolean(crmPortalUrl) },
+        { name: 'Orders Console', url: '/orders-page', configured: true },
         { name: 'ATP Readiness', url: '/ready', configured: true },
         { name: 'CRM Integration Health', url: '/api/integrations/crm/health', configured: true },
     ];
@@ -381,6 +383,7 @@ function renderFeaturedProducts(products) {
 function renderCatalog(catalog) {
     const customerSelect = document.getElementById('order-customer');
     const productSelect = document.getElementById('order-product');
+    if (!customerSelect || !productSelect) return;
     customerSelect.innerHTML = ['<option value="">Random customer</option>']
         .concat((catalog.customers || []).map(customer =>
             `<option value="${customer.id}">${customer.name}${customer.company ? ' | ' + customer.company : ''}</option>`
