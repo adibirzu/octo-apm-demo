@@ -1,4 +1,9 @@
-FROM python:3.12-slim
+# Pin the base image per tenancy build. For reproducibility, override
+# PYTHON_BASE at build time with a digest-locked reference:
+#   docker build --build-arg PYTHON_BASE=python:3.12-slim@sha256:<digest> .
+# The floating tag below is acceptable for local development only.
+ARG PYTHON_BASE=python:3.12-slim
+FROM ${PYTHON_BASE}
 
 WORKDIR /app
 
