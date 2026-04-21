@@ -8,6 +8,7 @@ from fastapi import APIRouter, Query, Request
 from opentelemetry import trace
 from sqlalchemy import text
 
+from server.auth_security import require_authenticated_or_internal_service, require_authenticated_user
 from server.database import get_db
 from server.modules.integrations import sync_customers_from_crm, sync_order_to_crm
 from server.observability.logging_sdk import push_log
@@ -163,10 +164,13 @@ async def remove_from_cart(item_id: int, request: Request):
 
 
 @router.get("/orders")
-async def list_orders(limit: int = Query(default=100, ge=1, le=500)):
+async def list_orders(request: Request, limit: int = Query(default=100, ge=1, le=500)):
     """List recent orders with their item details and pricing breakdown."""
     tracer = get_tracer()
     with tracer.start_as_current_span("orders.list") as span:
+        user = require_authenticated_or_internal_service(request)
+        span.set_attribute("auth.user_id", int(user["sub"]))
+        span.set_attribute("auth.role", str(user.get("role", "unknown")))
         span.set_attribute("orders.limit", limit)
         async with get_db() as db:
             result = await db.execute(
@@ -209,10 +213,13 @@ async def list_orders(limit: int = Query(default=100, ge=1, le=500)):
 
 
 @router.get("/orders/{order_id}")
-async def get_order(order_id: int):
+async def get_order(order_id: int, request: Request):
     """Get a single order and its shipment detail."""
     tracer = get_tracer()
     with tracer.start_as_current_span("orders.get") as span:
+        user = require_authenticated_user(request)
+        span.set_attribute("auth.user_id", int(user["sub"]))
+        span.set_attribute("auth.role", str(user.get("role", "unknown")))
         span.set_attribute("orders.order_id", order_id)
         async with get_db() as db:
             result = await db.execute(
@@ -254,6 +261,9 @@ async def create_order(payload: dict, request: Request):
     """Create an order from either the cart session or a direct item list."""
     tracer = get_tracer()
     with tracer.start_as_current_span("orders.create") as span:
+        user = require_authenticated_user(request)
+        span.set_attribute("auth.user_id", int(user["sub"]))
+        span.set_attribute("auth.role", str(user.get("role", "unknown")))
         session_id = payload.get("session_id") or request.cookies.get("session_id", "")
         coupon_code = payload.get("coupon_code", "")
         shipping_address = payload.get("shipping_address", "")

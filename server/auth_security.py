@@ -173,6 +173,12 @@ def require_authenticated_user(request: Request) -> dict[str, Any]:
     return payload
 
 
+def require_authenticated_or_internal_service(request: Request) -> dict[str, Any]:
+    if _is_internal_service_call(request):
+        return require_internal_service(request)
+    return require_authenticated_user(request)
+
+
 def _is_internal_service_call(request: Request) -> bool:
     """Check if the request carries a valid internal service-to-service key.
 
@@ -187,6 +193,20 @@ def _is_internal_service_call(request: Request) -> bool:
     return bool(header) and hmac.compare_digest(header, key)
 
 
+def require_internal_service(request: Request) -> dict[str, Any]:
+    if not cfg.internal_service_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Internal service authentication is not configured",
+        )
+    if not _is_internal_service_call(request):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Internal service authentication required",
+        )
+    return {"sub": 0, "username": "internal-service", "role": "service", "auth_method": "internal"}
+
+
 def require_sso_user(request: Request) -> dict[str, Any]:
     """Require a valid token that was issued through the IDCS SSO flow,
     OR a valid internal service-to-service key.
@@ -197,7 +217,7 @@ def require_sso_user(request: Request) -> dict[str, Any]:
     is available (server-to-server).
     """
     if _is_internal_service_call(request):
-        return {"sub": 0, "username": "internal-service", "role": "service", "auth_method": "internal"}
+        return require_internal_service(request)
 
     payload = require_authenticated_user(request)
     if payload.get("auth_method") != "sso":

@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
@@ -60,6 +60,8 @@ init_metrics()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     cfg.validate()
+    for warning in cfg.warn_deprecations():
+        logger.warning(warning)
     runtime_metrics.setup()
     logger.info(
         "OCTO Drone Shop starting — APM: %s, RUM: %s, Metrics: enabled, DB: %s",
@@ -187,6 +189,11 @@ async def health():
     return {"status": "ok", "service": cfg.app_name}
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return RedirectResponse(url="/static/img/octo-logo.png", status_code=307)
+
+
 @app.get("/ready")
 async def ready():
     tracer = get_tracer()
@@ -260,12 +267,13 @@ def _render_page(request: Request, page: str, title: str, **ctx):
     return templates.TemplateResponse(
         f"{page}.html",
         {"request": request, "title": title,
+         "csp_nonce": getattr(request.state, "csp_nonce", ""),
          "rum_endpoint": cfg.oci_apm_rum_endpoint,
          "rum_public_key": cfg.oci_apm_public_datakey,
          "rum_web_application": cfg.oci_apm_web_application,
          "rum_configured": cfg.rum_configured,
          "apm_configured": cfg.apm_configured,
-         "workflow_api_base_url": cfg.workflow_api_base_url,
+         "workflow_api_base_url": cfg.workflow_public_api_base_url,
          "workflow_gateway_configured": cfg.workflow_gateway_configured,
          "selectai_profile_name": cfg.selectai_profile_name,
          "selectai_configured": cfg.selectai_configured,

@@ -48,8 +48,8 @@ class DemoOrderRequest(BaseModel):
 
 
 def _make_unique_email(company: str, contact_name: str) -> str:
-    base = (contact_name or company or "octo-demo").strip().lower()
-    slug = "".join(ch if ch.isalnum() else "." for ch in base).strip(".") or "octo-demo"
+    base = (contact_name or company or "octo").strip().lower()
+    slug = "".join(ch if ch.isalnum() else "." for ch in base).strip(".") or "octo"
     slug = ".".join(filter(None, slug.split(".")))
     email_domain = cfg.dns_domain or os.getenv("SEED_USER_EMAIL_DOMAIN", "example.invalid")
     return f"{slug}.{uuid4().hex[:6]}@{email_domain}"

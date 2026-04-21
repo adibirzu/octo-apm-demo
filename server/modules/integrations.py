@@ -12,15 +12,27 @@ Endpoints:
   GET  /api/integrations/status
 """
 
+import hashlib
 import logging
 import os
+import re
 import time
+import uuid
 
 import httpx
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
 
+# Deterministic namespace for order idempotency tokens. Combining this
+# namespace with (order_id, source) yields the same UUID on every retry,
+# which lets the CRM side deduplicate without per-request state on our
+# end. Do NOT change this value — it would break deduplication for
+# historical orders.
+_ORDER_IDEMPOTENCY_NS = uuid.UUID("5e1a6db6-8c0e-4f1c-9c9a-3b0c2a1f0f01")
+
+from server.auth_security import require_internal_service
 from server.config import cfg
+from server.crm_catalog_sync import apply_catalog_sync
 from server.database import get_db
 from server.middleware.circuit_breaker import crm_breaker
 from server.observability.otel_setup import get_tracer
@@ -30,6 +42,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
 CRM_BASE_URL = os.getenv("ENTERPRISE_CRM_URL", "")
+_PRIVATE_CLUSTER_HOST_RE = re.compile(r"\b[a-z0-9.-]+\.(?:svc\.)?cluster\.local\b", re.IGNORECASE)
 CRM_SYNC_STATE = {
     "last_sync_ts": 0.0,
     "last_count": 0,
@@ -38,7 +51,18 @@ CRM_SYNC_STATE = {
 
 
 def _crm_url() -> str:
-    return CRM_BASE_URL or os.getenv("C27_CRM_URL", "")
+    return CRM_BASE_URL or os.getenv("CRM_SERVICE_URL", "")
+
+
+def _sanitize_public_text(value: object) -> str:
+    return _PRIVATE_CLUSTER_HOST_RE.sub("[internal-service]", str(value or ""))
+
+
+def _public_crm_metadata() -> dict:
+    return {
+        "crm_url": cfg.crm_public_url or None,
+        "crm_host": cfg.crm_public_hostname or None,
+    }
 
 
 def _sync_state_payload() -> dict:
@@ -236,9 +260,9 @@ async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, sour
         return {
             "configured": True,
             "synced": False,
-            "crm_host": cfg.crm_hostname or "configured",
             "reason": f"circuit breaker OPEN ({crm_breaker.name})",
             "circuit_breaker": crm_breaker.status(),
+            **_public_crm_metadata(),
             **_sync_state_payload(),
         }
 
@@ -271,22 +295,23 @@ async def sync_customers_from_crm(*, force: bool = False, limit: int = 200, sour
             return {
                 "configured": True,
                 "synced": True,
-                "crm_host": cfg.crm_hostname or "configured",
                 "customers_seen": len(customers),
+                **_public_crm_metadata(),
                 **upsert,
                 **_sync_state_payload(),
             }
         except Exception as exc:
             crm_breaker.record_failure()
-            CRM_SYNC_STATE["last_error"] = str(exc)
-            span.set_attribute("integration.error", str(exc))
+            safe_error = _sanitize_public_text(exc)
+            CRM_SYNC_STATE["last_error"] = safe_error
+            span.set_attribute("integration.error", safe_error)
             span.set_attribute("integration.circuit_breaker.state", crm_breaker.state.value)
             return {
                 "configured": True,
                 "synced": False,
-                "crm_host": cfg.crm_hostname or "configured",
-                "reason": str(exc),
+                "reason": safe_error,
                 "circuit_breaker": crm_breaker.status(),
+                **_public_crm_metadata(),
                 **_sync_state_payload(),
             }
 
@@ -343,6 +368,13 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
                         "reason": "CRM customer ID missing",
                     }
 
+                # Stable per (order_id, source) so CRM retries deduplicate.
+                idempotency_token = str(
+                    uuid.uuid5(_ORDER_IDEMPOTENCY_NS, f"{order_id}:{source}")
+                )
+                headers: dict[str, str] = {}
+                if cfg.internal_service_key:
+                    headers["X-Internal-Service-Key"] = cfg.internal_service_key
                 resp = await client.post(
                     f"{crm}/api/orders",
                     json={
@@ -350,7 +382,11 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
                         "items": [{"quantity": 1, "unit_price": float(total or 0)}],
                         "shipping_address": "Imported from OCTO Drone Shop",
                         "notes": f"OCTO Drone Shop order #{order_id}; source={source}",
+                        "idempotency_token": idempotency_token,
+                        "source_system": "octo-drone-shop",
+                        "source_order_id": str(order_id),
                     },
+                    headers=headers or None,
                 )
             crm_breaker.record_success()
             span.set_attribute("integration.crm.status_code", resp.status_code)
@@ -371,12 +407,13 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
             }
         except Exception as exc:
             crm_breaker.record_failure()
-            span.set_attribute("integration.error", str(exc))
+            safe_error = _sanitize_public_text(exc)
+            span.set_attribute("integration.error", safe_error)
             span.set_attribute("integration.circuit_breaker.state", crm_breaker.state.value)
             return {
                 "synced": False,
                 "order_id": order_id,
-                "reason": str(exc),
+                "reason": safe_error,
                 "circuit_breaker": crm_breaker.status(),
             }
 
@@ -431,9 +468,116 @@ async def crm_customer_enrichment(customer_id: int, request: Request):
             return {"customer_id": customer_id, "enriched": False,
                     "reason": "CRM unreachable"}
         except Exception as e:
-            span.set_attribute("integration.error", str(e))
+            safe_error = _sanitize_public_text(e)
+            span.set_attribute("integration.error", safe_error)
             return {"customer_id": customer_id, "enriched": False,
-                    "reason": str(e)}
+                    "reason": safe_error}
+
+
+INTEGRATION_SCHEMA: dict = {
+    "openapi": "3.1.0",
+    "info": {
+        "title": "OCTO Drone Shop ↔ Enterprise CRM integration",
+        "version": "1",
+        "description": (
+            "Cross-service contract published so the Enterprise CRM side "
+            "knows how to call us (and vice versa) without reading source. "
+            "All cross-service calls SHOULD carry X-Internal-Service-Key; "
+            "order payloads SHOULD include idempotency_token to deduplicate "
+            "retries."
+        ),
+    },
+    "components": {
+        "securitySchemes": {
+            "InternalServiceKey": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "X-Internal-Service-Key",
+                "description": "Shared secret between Drone Shop and Enterprise CRM (env INTERNAL_SERVICE_KEY).",
+            }
+        },
+        "schemas": {
+            "OrderSyncPayload": {
+                "type": "object",
+                "required": ["customer_id", "items", "idempotency_token"],
+                "properties": {
+                    "customer_id": {"type": "integer"},
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "quantity": {"type": "integer"},
+                                "unit_price": {"type": "number"},
+                            },
+                        },
+                    },
+                    "shipping_address": {"type": "string"},
+                    "notes": {"type": "string"},
+                    "idempotency_token": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Stable per (order_id, source). Retries MUST reuse the same value.",
+                    },
+                    "source_system": {"type": "string"},
+                    "source_order_id": {"type": "string"},
+                },
+            }
+        },
+    },
+    "paths": {
+        "/api/integrations/crm/sync-order": {
+            "post": {
+                "summary": "Relay an order from Drone Shop to Enterprise CRM",
+                "security": [{"InternalServiceKey": []}],
+                "requestBody": {
+                    "required": True,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["order_id", "customer_email", "total"],
+                                "properties": {
+                                    "order_id": {"type": "integer"},
+                                    "customer_email": {"type": "string", "format": "email"},
+                                    "total": {"type": "number"},
+                                    "source": {"type": "string"},
+                                    "idempotency_token": {
+                                        "type": "string",
+                                        "description": "Added downstream on the POST to CRM /api/orders.",
+                                    },
+                                },
+                            }
+                        }
+                    },
+                },
+                "responses": {
+                    "200": {"description": "Synced (or soft-failed with reason)."}
+                },
+            }
+        },
+        "/api/integrations/crm/sync-customers": {
+            "post": {
+                "summary": "Force a customer pull from Enterprise CRM",
+                "security": [{"InternalServiceKey": []}],
+            }
+        },
+        "/api/integrations/crm/catalog-sync": {
+            "post": {
+                "summary": "Receive a catalog sync push from Enterprise CRM",
+                "security": [{"InternalServiceKey": []}],
+            }
+        },
+    },
+}
+
+
+@router.get("/schema")
+async def integration_schema() -> dict:
+    """Published cross-service contract. Consumed by the CRM side and by
+    new-tenancy deploy tooling that needs to know the auth header name +
+    payload shape without reading the app source."""
+    return INTEGRATION_SCHEMA
 
 
 @router.post("/crm/sync-order")
@@ -525,8 +669,55 @@ async def crm_ticket_products(ticket_id: int, request: Request):
             }
 
         except Exception as e:
-            span.set_attribute("integration.error", str(e))
-            return {"ticket_id": ticket_id, "products": [], "reason": str(e)}
+            safe_error = _sanitize_public_text(e)
+            span.set_attribute("integration.error", safe_error)
+            return {"ticket_id": ticket_id, "products": [], "reason": safe_error}
+
+
+@router.post("/crm/catalog-sync")
+async def crm_catalog_sync(payload: dict, request: Request):
+    """Apply CRM-managed catalog mutations into the shop catalog."""
+    service_identity = require_internal_service(request)
+    tracer = get_tracer()
+
+    action = payload.get("action", "upsert")
+    products = payload.get("products")
+    source = str(payload.get("source", "enterprise-crm-portal") or "").strip() or "enterprise-crm-portal"
+
+    if not isinstance(products, list):
+        raise HTTPException(status_code=400, detail="products must be a list")
+    if len(products) > 500:
+        raise HTTPException(status_code=400, detail="products batch is limited to 500 items")
+
+    with tracer.start_as_current_span("integration.crm.catalog_sync") as span:
+        span.set_attribute("integration.target_service", "enterprise-crm-portal")
+        span.set_attribute("integration.catalog.action", str(action or "upsert"))
+        span.set_attribute("integration.catalog.batch_size", len(products))
+
+        try:
+            async with get_db() as db:
+                result = await apply_catalog_sync(
+                    db,
+                    products=products,
+                    action=action,
+                    source=source,
+                )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        push_log(
+            "INFO",
+            "CRM catalog sync applied",
+            **{
+                "integration.type": "crm_catalog_sync",
+                "integration.catalog.action": result["action"],
+                "integration.catalog.processed_count": result["processed_count"],
+                "integration.catalog.created": result["created"],
+                "integration.catalog.updated": result["updated"],
+                "integration.catalog.deactivated": result["deactivated"],
+            },
+        )
+        return {**result, "authenticated_as": service_identity["username"]}
 
 
 @router.get("/crm/health")
@@ -550,14 +741,19 @@ async def crm_health():
 
             return {
                 "crm_configured": True,
-                "crm_host": cfg.crm_hostname or "configured",
                 "status": "healthy" if resp.status_code == 200 else "unhealthy",
                 "crm_response": resp.json() if resp.status_code == 200 else None,
+                **_public_crm_metadata(),
             }
         except Exception as e:
-            span.set_attribute("integration.error", str(e))
-            return {"crm_configured": True, "crm_host": cfg.crm_hostname or "configured",
-                    "status": "unreachable", "error": str(e)}
+            safe_error = _sanitize_public_text(e)
+            span.set_attribute("integration.error", safe_error)
+            return {
+                "crm_configured": True,
+                "status": "unreachable",
+                "error": safe_error,
+                **_public_crm_metadata(),
+            }
 
 
 # ── Integration status ────────────────────────────────────────────
@@ -572,7 +768,8 @@ async def integration_status():
                 "name": "enterprise-crm-portal",
                 "type": "cross-service",
                 "configured": bool(crm),
-                "host": cfg.crm_hostname or None,
+                "host": cfg.crm_public_hostname or None,
+                "url": cfg.crm_public_url or None,
                 "circuit_breaker": crm_breaker.status(),
                 "endpoints": [
                     "/api/integrations/crm/customer-enrichment",
