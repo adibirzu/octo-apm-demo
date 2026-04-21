@@ -20,10 +20,10 @@
  * app.logical_endpoint and see exactly which query pattern caused the load.
  *
  * Usage:
- *   k6 run --env DNS_DOMAIN=octodemo.cloud k6/db_stress.js
+ *   k6 run --env DNS_DOMAIN=example.cloud k6/db_stress.js
  *   k6 run --env SHOP_URL=http://localhost:8080 k6/db_stress.js
- *   k6 run --env DNS_DOMAIN=octodemo.cloud --env PROFILE=heavy k6/db_stress.js
- *   k6 run --env DNS_DOMAIN=octodemo.cloud --env CRM_URL=https://crm.octodemo.cloud k6/db_stress.js
+ *   k6 run --env DNS_DOMAIN=example.cloud --env PROFILE=heavy k6/db_stress.js
+ *   k6 run --env DNS_DOMAIN=example.cloud --env CRM_URL=https://crm.example.cloud k6/db_stress.js
  *
  * OCI verification after the run:
  *   1. DB Management → Performance Hub → SQL Monitoring: look for the test

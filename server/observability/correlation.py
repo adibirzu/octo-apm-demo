@@ -135,7 +135,7 @@ def sql_attributes(statement: str, *, connection_name: str = "", database_target
     """Return normalized SQL metadata for span enrichment.
 
     Emits OCI APM Trace Explorer attributes (DbStatement, DbOracleSqlId) so the
-    SQL drilldown works for both octo-drone-shop and octo-drone-shop-oke deployments
+    SQL drilldown works for both octo-drone-shop and octo-drone-shop deployments
     against Autonomous Database.
     """
     normalized = re.sub(r"\s+", " ", (statement or "").strip())

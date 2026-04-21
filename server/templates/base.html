@@ -330,7 +330,7 @@
     </div>
 
     {% if rum_configured and rum_endpoint and rum_public_key %}
-    <script>
+    <script nonce="{{ csp_nonce }}">
       window.__nativeFetch = window.fetch.bind(window);
       window.__NativeXHR = window.XMLHttpRequest;
       window.apmrum = window.apmrum || {};
@@ -354,6 +354,7 @@
       ];
     </script>
     <script
+      nonce="{{ csp_nonce }}"
       async
       crossorigin="anonymous"
       src="{{ rum_endpoint }}/static/jslib/apmrum.min.js"

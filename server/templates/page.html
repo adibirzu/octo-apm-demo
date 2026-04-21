@@ -188,13 +188,21 @@
             <h3>Admin DB Controls</h3>
         </div>
         <div class="detail-grid">
-            <form id="createPartnerForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
-                <p><strong>Create Partner (Shop)</strong></p>
-                <input type="text" name="name" placeholder="Partner Name" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+            <form id="shopEditorForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
+                <p><strong>Create / Update Shop</strong></p>
+                <select name="shop_id" id="shopRecordSelect" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="">Create new shop</option>
+                </select>
+                <input type="text" name="name" placeholder="Shop Name" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
                 <input type="text" name="address" placeholder="Address" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="coordinates" placeholder="Coordinates (lat,lng)" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
                 <input type="email" name="contact_email" placeholder="Contact Email" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
                 <input type="text" name="contact_phone" placeholder="Contact Phone" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
-                <button type="submit" class="btn">Create Partner & Trace</button>
+                <select name="is_active" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+                <button type="submit" class="btn">Save Shop</button>
             </form>
             <form id="createUserForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
                 <p><strong>Create User</strong></p>
@@ -207,6 +215,93 @@
                 </select>
                 <button type="submit" class="btn">Create User & Trace</button>
             </form>
+            <form id="productEditorForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
+                <p><strong>Create / Update Product</strong></p>
+                <select name="product_id" id="productRecordSelect" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="">Create new product</option>
+                </select>
+                <input type="text" name="name" placeholder="Product Name" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="sku" placeholder="SKU" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <textarea name="description" placeholder="Description" rows="3" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;"></textarea>
+                <input type="number" name="price" placeholder="Price" step="0.01" min="0" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="number" name="stock" placeholder="Stock" step="1" min="0" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="category" placeholder="Category" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="image_url" placeholder="Image URL" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <select name="is_active" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+                <button type="submit" class="btn">Save Product</button>
+            </form>
+            <form id="customerEditorForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
+                <p><strong>Create / Update Customer</strong></p>
+                <select name="customer_id" id="customerRecordSelect" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="">Create new customer</option>
+                </select>
+                <input type="text" name="name" placeholder="Customer Name" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="email" name="email" placeholder="Customer Email" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="phone" placeholder="Phone" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="company" placeholder="Company" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="industry" placeholder="Industry" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="number" name="revenue" placeholder="Revenue" step="0.01" min="0" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <textarea name="notes" placeholder="Notes" rows="3" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;"></textarea>
+                <button type="submit" class="btn">Save Customer</button>
+            </form>
+            <form id="orderEditorForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
+                <p><strong>Create / Update Order</strong></p>
+                <select name="order_id" id="orderRecordSelect" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="">Create new order</option>
+                </select>
+                <select name="customer_id" id="orderCustomerSelect" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="">Select customer</option>
+                </select>
+                <input type="number" name="total" placeholder="Total" step="0.01" min="0" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <select name="status" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="pending">pending</option>
+                    <option value="queued">queued</option>
+                    <option value="processing">processing</option>
+                    <option value="completed">completed</option>
+                    <option value="shipped">shipped</option>
+                    <option value="cancelled">cancelled</option>
+                </select>
+                <input type="text" name="payment_method" placeholder="Payment Method" value="credit_card" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <select name="payment_status" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="pending">pending</option>
+                    <option value="paid">paid</option>
+                    <option value="failed">failed</option>
+                    <option value="refunded">refunded</option>
+                </select>
+                <textarea name="shipping_address" placeholder="Shipping Address" rows="3" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;"></textarea>
+                <textarea name="notes" placeholder="Notes" rows="3" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;"></textarea>
+                <button type="submit" class="btn">Save Order</button>
+            </form>
+            <form id="invoiceEditorForm" class="auth-callout" style="display:grid; gap: 10px; align-items: stretch; background: rgba(108, 210, 224, 0.08); border-color: rgba(108, 210, 224, 0.2);">
+                <p><strong>Create / Update Invoice</strong></p>
+                <select name="invoice_id" id="invoiceRecordSelect" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="">Create new invoice</option>
+                </select>
+                <input type="text" name="invoice_number" placeholder="Invoice Number (auto-generated if blank)" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <select name="customer_id" id="invoiceCustomerSelect" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="">Select customer</option>
+                </select>
+                <select name="order_id" id="invoiceOrderSelect" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="">No order attached</option>
+                </select>
+                <input type="number" name="amount" placeholder="Amount (optional when order selected)" step="0.01" min="0" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="text" name="currency" placeholder="Currency" value="USD" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <select name="status" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <option value="draft">draft</option>
+                    <option value="issued">issued</option>
+                    <option value="paid">paid</option>
+                    <option value="overdue">overdue</option>
+                    <option value="void">void</option>
+                </select>
+                <input type="datetime-local" name="issued_at" placeholder="Issued At" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="datetime-local" name="due_at" placeholder="Due At" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <input type="datetime-local" name="paid_at" placeholder="Paid At" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                <textarea name="notes" placeholder="Notes" rows="3" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;"></textarea>
+                <button type="submit" class="btn">Save Invoice</button>
+            </form>
         </div>
         <p id="adminStatusMsg" style="margin-top: 10px; color: var(--ok);"></p>
     </section>
@@ -214,7 +309,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 const MODULE = "{{ module }}";
 
 const MODULE_CONFIG = {
@@ -276,7 +371,7 @@ const MODULE_CONFIG = {
         eyebrow: 'Transaction Flow',
         title: 'Order operations that map storefront actions to persisted business records.',
         copy: 'Orders are the center of the commercial trace. This view keeps the current queue, revenue, and item mix visible so checkout changes can be validated quickly.',
-        primary: { url: '/api/orders', key: 'orders' },
+        primary: { url: '/api/orders', key: 'orders', requiresAuth: true },
         extras: [
             { name: 'cart', url: '/api/cart?session_id=ops-preview' }
         ],
@@ -501,52 +596,74 @@ const MODULE_CONFIG = {
     },
     admin: {
         eyebrow: 'Governed Control',
-        title: 'Administrative access that now requires authenticated operator context.',
-        copy: 'The admin surface is intended for governed operational use. It now hides secrets, requires a signed admin token, and blocks destructive resets in production.',
+        title: 'Administrative access for governed CRM-side operations across shops, products, customers, orders, and invoices.',
+        copy: 'The admin surface is intended for governed operational use. It requires a signed admin token, hides secrets, and keeps catalog and shop management on the CRM/admin page instead of the storefront-facing views.',
         primary: { url: '/api/admin/users', key: 'users', requiresAuth: true },
         extras: [
             { name: 'audit', url: '/api/admin/audit-logs', requiresAuth: true },
-            { name: 'config', url: '/api/admin/config', requiresAuth: true }
+            { name: 'config', url: '/api/admin/config', requiresAuth: true },
+            { name: 'shops', url: '/api/admin/shops', requiresAuth: true },
+            { name: 'products', url: '/api/admin/products', requiresAuth: true },
+            { name: 'customers', url: '/api/admin/customers', requiresAuth: true },
+            { name: 'orders', url: '/api/admin/orders', requiresAuth: true },
+            { name: 'invoices', url: '/api/admin/invoices', requiresAuth: true }
         ],
         signals: [
             { label: 'Admin auth', state: 'healthy', copy: 'Signed bearer tokens gate the administrative endpoints.' },
             { label: 'Secret exposure', state: 'healthy', copy: 'Runtime config now exposes state only, not raw secrets or connection strings.' },
             { label: 'Audit visibility', state: 'healthy', copy: 'Recent audit entries stay available for operational review.' },
-            { label: 'Mutation safety', state: 'healthy', copy: 'Destructive reseed operations are blocked in production.' }
+            { label: 'Mutation safety', state: 'healthy', copy: 'Destructive reseed operations are blocked in production while governed CRUD remains available.' }
         ],
         insights: [
             'Current user roster and role distribution.',
-            'Recent audit activity.',
-            'Runtime feature toggles without secret disclosure.'
+            'Shop locations and product catalog entries are managed from this CRM/admin surface, not the storefront pages.',
+            'Customer and order master data can be edited without leaving the app.',
+            'Invoices can be created and updated against the shared database.',
+            'Recent audit activity and runtime feature toggles stay visible without secret disclosure.'
         ],
         sources: [
             'Primary source: `/api/admin/users` with admin bearer token.',
-            'Supporting sources: `/api/admin/audit-logs` and `/api/admin/config`.',
+            'Supporting sources: `/api/admin/shops`, `/api/admin/products`, `/api/admin/customers`, `/api/admin/orders`, `/api/admin/invoices`, `/api/admin/audit-logs`, and `/api/admin/config`.',
             'Authentication source: `/api/auth/login`.'
         ],
-        runtimeNote: 'If this page shows an auth prompt, the portal is behaving as intended. Sign in as an admin to preview the governed data surfaces.',
+        runtimeNote: 'If this page shows an auth prompt, the portal is behaving as intended. Sign in as an admin to browse and modify governed CRM records without exposing those controls in the public shop experience.',
         metrics(data) {
             const users = data.primary || [];
             const config = data.extras.config || {};
+            const shops = data.extras.shops?.shops || [];
+            const products = data.extras.products?.products || [];
+            const customers = data.extras.customers?.customers || [];
+            const orders = data.extras.orders?.orders || [];
+            const invoices = data.extras.invoices?.invoices || [];
             return [
                 { label: 'Users', value: users.length, copy: 'Governed user roster visible to admin operators.' },
-                { label: 'Admins', value: users.filter((item) => item.role === 'admin').length, copy: 'Administrators currently present in the user table.' },
-                { label: 'Audit rows', value: (data.extras.audit?.audit_logs || []).length, copy: 'Recent audit entries available for review.' },
+                { label: 'Shops', value: shops.length, copy: 'Shop locations managed from the admin page.' },
+                { label: 'Products', value: products.length, copy: 'Catalog entries managed from the admin page.' },
+                { label: 'Customers', value: customers.length, copy: 'Customer records available for governed editing.' },
+                { label: 'Orders', value: orders.length, copy: 'Order records available for status and billing updates.' },
+                { label: 'Invoices', value: invoices.length, copy: 'Invoice records available for creation and settlement updates.' },
                 { label: 'Runtime', value: config.app_runtime || 'n/a', copy: 'Current deployment runtime reported by the app.' }
             ];
         },
         table(data) {
             return {
-                title: 'Governed user roster',
-                chip: `${(data.primary || []).length} users`,
-                columns: ['username', 'email', 'role', 'is_active', 'last_login'],
-                rows: (data.primary || []).slice(0, 12)
+                title: 'Operational records snapshot',
+                chip: `${(data.extras.orders?.orders || []).length} recent orders`,
+                columns: ['id', 'customer_name', 'status', 'payment_status', 'total', 'created_at'],
+                rows: (data.extras.orders?.orders || []).slice(0, 12)
             };
         },
         details(data) {
             const config = data.extras.config || {};
+            const audits = data.extras.audit?.audit_logs || [];
+            const shops = data.extras.shops?.shops || [];
+            const products = data.extras.products?.products || [];
             return [
                 { title: 'Database backend', value: config.database_backend || 'n/a', copy: 'Reported operational data backend.' },
+                { title: 'Admins', value: (data.primary || []).filter((item) => item.role === 'admin').length, copy: 'Administrators currently present in the user table.' },
+                { title: 'Active shops', value: shops.filter((item) => Number(item.is_active) === 1).length, copy: 'Currently enabled shop locations.' },
+                { title: 'Active products', value: products.filter((item) => Number(item.is_active) === 1).length, copy: 'Currently enabled product catalog entries.' },
+                { title: 'Audit rows', value: audits.length, copy: 'Recent audit entries available for review.' },
                 { title: 'APM status', value: config.apm_configured ? 'enabled' : 'pending', copy: 'Whether backend trace export is configured.' },
                 { title: 'RUM status', value: config.rum_configured ? 'enabled' : 'pending', copy: 'Whether browser telemetry is configured.' }
             ];
@@ -666,7 +783,7 @@ function renderDetails(items) {
 function renderAuthCallout() {
     document.getElementById('authCallout').innerHTML = `
         <div class="auth-callout">
-            <p>Admin data requires a signed bearer token. Sign in with an admin account, then reload this view.</p>
+            <p>This module requires a signed bearer token. Sign in, then reload this view.</p>
             <a class="btn btn-outline" href="/login">Open Login</a>
         </div>
     `;
@@ -674,6 +791,242 @@ function renderAuthCallout() {
 
 function clearAuthCallout() {
     document.getElementById('authCallout').innerHTML = '';
+}
+
+const ADMIN_STATE = {
+    shops: [],
+    products: [],
+    customers: [],
+    orders: [],
+    invoices: []
+};
+
+function toDateTimeLocal(value) {
+    if (!value) return '';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const pad = (item) => String(item).padStart(2, '0');
+    return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+}
+
+function populateSelect(selectId, items, labelFn, emptyLabel) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = `<option value="">${emptyLabel}</option>` + items.map((item) =>
+        `<option value="${escapeHtml(item.id)}">${escapeHtml(labelFn(item))}</option>`
+    ).join('');
+    if (items.some((item) => String(item.id) === String(current))) {
+        select.value = current;
+    }
+}
+
+function fillForm(form, values) {
+    Object.entries(values).forEach(([key, value]) => {
+        const field = form.elements.namedItem(key);
+        if (field) {
+            field.value = value ?? '';
+        }
+    });
+}
+
+async function submitAdminForm({ form, idField, baseUrl, entityKey, successLabel }) {
+    const formData = new FormData(form);
+    const recordId = String(formData.get(idField) || '').trim();
+    formData.delete(idField);
+    const payload = Object.fromEntries(formData.entries());
+    Object.keys(payload).forEach((key) => {
+        if (payload[key] === '') delete payload[key];
+    });
+
+    const targetUrl = recordId ? `${baseUrl}/${recordId}` : baseUrl;
+    const method = recordId ? 'PUT' : 'POST';
+    const response = await fetch(targetUrl, {
+        method,
+        headers: { 'Content-Type': 'application/json', ...authHeaders(true) },
+        body: JSON.stringify(payload)
+    });
+    const body = await response.json();
+    if (!response.ok) {
+        throw new Error(body.detail || body.error || `Failed to save ${successLabel.toLowerCase()}`);
+    }
+    document.getElementById('adminStatusMsg').textContent = body.message || `${successLabel} saved`;
+    form.reset();
+    const idSelect = form.elements.namedItem(idField);
+    if (idSelect) idSelect.value = '';
+    await loadModule();
+    return body[entityKey];
+}
+
+function bindAdminControls(data) {
+    ADMIN_STATE.shops = data.extras.shops?.shops || [];
+    ADMIN_STATE.products = data.extras.products?.products || [];
+    ADMIN_STATE.customers = data.extras.customers?.customers || [];
+    ADMIN_STATE.orders = data.extras.orders?.orders || [];
+    ADMIN_STATE.invoices = data.extras.invoices?.invoices || [];
+
+    populateSelect('shopRecordSelect', ADMIN_STATE.shops, (item) => `#${item.id} ${item.name}`, 'Create new shop');
+    populateSelect('productRecordSelect', ADMIN_STATE.products, (item) => `${item.sku} · ${item.name}`, 'Create new product');
+    populateSelect('customerRecordSelect', ADMIN_STATE.customers, (item) => `#${item.id} ${item.name} (${item.email})`, 'Create new customer');
+    populateSelect('orderRecordSelect', ADMIN_STATE.orders, (item) => `#${item.id} ${item.customer_name || 'Unknown'} · ${item.status} · ${money(item.total)}`, 'Create new order');
+    populateSelect('invoiceRecordSelect', ADMIN_STATE.invoices, (item) => `${item.invoice_number} · ${item.status} · ${money(item.amount)}`, 'Create new invoice');
+    populateSelect('orderCustomerSelect', ADMIN_STATE.customers, (item) => `#${item.id} ${item.name}`, 'Select customer');
+    populateSelect('invoiceCustomerSelect', ADMIN_STATE.customers, (item) => `#${item.id} ${item.name}`, 'Select customer');
+    populateSelect('invoiceOrderSelect', ADMIN_STATE.orders, (item) => `#${item.id} ${item.customer_name || 'Unknown'} · ${money(item.total)}`, 'No order attached');
+
+    const shopForm = document.getElementById('shopEditorForm');
+    const productForm = document.getElementById('productEditorForm');
+    const customerForm = document.getElementById('customerEditorForm');
+    const orderForm = document.getElementById('orderEditorForm');
+    const invoiceForm = document.getElementById('invoiceEditorForm');
+
+    document.getElementById('shopRecordSelect').onchange = (event) => {
+        const selected = ADMIN_STATE.shops.find((item) => String(item.id) === String(event.target.value));
+        fillForm(shopForm, {
+            shop_id: selected?.id || '',
+            name: selected?.name || '',
+            address: selected?.address || '',
+            coordinates: selected?.coordinates || '',
+            contact_email: selected?.contact_email || '',
+            contact_phone: selected?.contact_phone || '',
+            is_active: String(selected?.is_active ?? 1)
+        });
+    };
+
+    document.getElementById('productRecordSelect').onchange = (event) => {
+        const selected = ADMIN_STATE.products.find((item) => String(item.id) === String(event.target.value));
+        fillForm(productForm, {
+            product_id: selected?.id || '',
+            name: selected?.name || '',
+            sku: selected?.sku || '',
+            description: selected?.description || '',
+            price: selected?.price ?? '',
+            stock: selected?.stock ?? '',
+            category: selected?.category || '',
+            image_url: selected?.image_url || '',
+            is_active: String(selected?.is_active ?? 1)
+        });
+    };
+
+    document.getElementById('customerRecordSelect').onchange = (event) => {
+        const selected = ADMIN_STATE.customers.find((item) => String(item.id) === String(event.target.value));
+        fillForm(customerForm, {
+            customer_id: selected?.id || '',
+            name: selected?.name || '',
+            email: selected?.email || '',
+            phone: selected?.phone || '',
+            company: selected?.company || '',
+            industry: selected?.industry || '',
+            revenue: selected?.revenue ?? '',
+            notes: selected?.notes || ''
+        });
+    };
+
+    document.getElementById('orderRecordSelect').onchange = (event) => {
+        const selected = ADMIN_STATE.orders.find((item) => String(item.id) === String(event.target.value));
+        fillForm(orderForm, {
+            order_id: selected?.id || '',
+            customer_id: selected?.customer_id || '',
+            total: selected?.total ?? '',
+            status: selected?.status || 'pending',
+            payment_method: selected?.payment_method || 'credit_card',
+            payment_status: selected?.payment_status || 'pending',
+            shipping_address: selected?.shipping_address || '',
+            notes: selected?.notes || ''
+        });
+    };
+
+    document.getElementById('invoiceRecordSelect').onchange = (event) => {
+        const selected = ADMIN_STATE.invoices.find((item) => String(item.id) === String(event.target.value));
+        fillForm(invoiceForm, {
+            invoice_id: selected?.id || '',
+            invoice_number: selected?.invoice_number || '',
+            customer_id: selected?.customer_id || '',
+            order_id: selected?.order_id || '',
+            amount: selected?.amount ?? '',
+            currency: selected?.currency || 'USD',
+            status: selected?.status || 'draft',
+            issued_at: toDateTimeLocal(selected?.issued_at),
+            due_at: toDateTimeLocal(selected?.due_at),
+            paid_at: toDateTimeLocal(selected?.paid_at),
+            notes: selected?.notes || ''
+        });
+    };
+
+    shopForm.onsubmit = async (event) => {
+        event.preventDefault();
+        try {
+            await submitAdminForm({
+                form: shopForm,
+                idField: 'shop_id',
+                baseUrl: '/api/admin/shops',
+                entityKey: 'shop',
+                successLabel: 'Shop'
+            });
+        } catch (error) {
+            document.getElementById('adminStatusMsg').textContent = error.message;
+        }
+    };
+
+    productForm.onsubmit = async (event) => {
+        event.preventDefault();
+        try {
+            await submitAdminForm({
+                form: productForm,
+                idField: 'product_id',
+                baseUrl: '/api/admin/products',
+                entityKey: 'product',
+                successLabel: 'Product'
+            });
+        } catch (error) {
+            document.getElementById('adminStatusMsg').textContent = error.message;
+        }
+    };
+
+    customerForm.onsubmit = async (event) => {
+        event.preventDefault();
+        try {
+            await submitAdminForm({
+                form: customerForm,
+                idField: 'customer_id',
+                baseUrl: '/api/admin/customers',
+                entityKey: 'customer',
+                successLabel: 'Customer'
+            });
+        } catch (error) {
+            document.getElementById('adminStatusMsg').textContent = error.message;
+        }
+    };
+
+    orderForm.onsubmit = async (event) => {
+        event.preventDefault();
+        try {
+            await submitAdminForm({
+                form: orderForm,
+                idField: 'order_id',
+                baseUrl: '/api/admin/orders',
+                entityKey: 'order',
+                successLabel: 'Order'
+            });
+        } catch (error) {
+            document.getElementById('adminStatusMsg').textContent = error.message;
+        }
+    };
+
+    invoiceForm.onsubmit = async (event) => {
+        event.preventDefault();
+        try {
+            await submitAdminForm({
+                form: invoiceForm,
+                idField: 'invoice_id',
+                baseUrl: '/api/admin/invoices',
+                entityKey: 'invoice',
+                successLabel: 'Invoice'
+            });
+        } catch (error) {
+            document.getElementById('adminStatusMsg').textContent = error.message;
+        }
+    };
 }
 
 function pickFastestRegion(regions) {
@@ -707,7 +1060,7 @@ async function loadModule() {
         data.primary = config.primary.key ? (primaryPayload[config.primary.key] || []) : primaryPayload;
         clearAuthCallout();
     } catch (error) {
-        if (MODULE === 'admin' && error.message === 'Authentication required') {
+        if (Boolean(config.primary.requiresAuth) && error.message === 'Authentication required') {
             renderAuthCallout();
             data.primary = [];
         } else {
@@ -719,7 +1072,7 @@ async function loadModule() {
         try {
             data.extras[extra.name] = await fetchJson(extra.url, Boolean(extra.requiresAuth));
         } catch (error) {
-            if (!(MODULE === 'admin' && error.message === 'Authentication required')) {
+            if (!(Boolean(extra.requiresAuth) && error.message === 'Authentication required')) {
                 data.extras[extra.name] = null;
             }
         }
@@ -745,18 +1098,7 @@ async function loadModule() {
         const controls = document.getElementById('adminControls');
         if (controls) {
             controls.style.display = 'block';
-            document.getElementById('createPartnerForm').onsubmit = async (e) => {
-                e.preventDefault();
-                const f = new FormData(e.target);
-                try {
-                    const p = Object.fromEntries(f.entries());
-                    const res = await fetch('/api/admin/partners', { method: 'POST', headers: {'Content-Type': 'application/json', ...authHeaders(true)}, body: JSON.stringify(p)});
-                    const j = await res.json();
-                    document.getElementById('adminStatusMsg').textContent = j.message || ('Error: ' + j.detail);
-                    e.target.reset();
-                    loadModule();
-                } catch(err) { document.getElementById('adminStatusMsg').textContent = err.message; }
-            };
+            bindAdminControls(data);
             document.getElementById('createUserForm').onsubmit = async (e) => {
                 e.preventDefault();
                 const f = new FormData(e.target);

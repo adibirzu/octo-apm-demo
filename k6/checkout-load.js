@@ -3,12 +3,12 @@
 // Checkout load scenario — drives the `checkout` workflow_id hard enough to
 // produce a p95 signal in Log Analytics when chaos is active.
 //
-// Usage: k6 run -e SHOP_DOMAIN=shop.octodemo.cloud k6/checkout-load.js
+// Usage: k6 run -e SHOP_DOMAIN=shop.example.cloud k6/checkout-load.js
 // ----------------------------------------------------------------------------
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 
-const SHOP = __ENV.SHOP_DOMAIN || 'shop.octodemo.cloud';
+const SHOP = __ENV.SHOP_DOMAIN || 'shop.example.cloud';
 const BASE = `https://${SHOP}`;
 
 export const options = {
@@ -24,7 +24,7 @@ export default function () {
   const params = {
     headers: {
       'X-Request-Id': `k6-${__VU}-${__ITER}`,
-      'User-Agent': 'k6/octo-demo',
+      'User-Agent': 'k6/octo-drone-shop',
     },
     tags: { workflow: 'checkout' },
   };

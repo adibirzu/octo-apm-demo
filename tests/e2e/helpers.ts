@@ -78,6 +78,32 @@ export async function apiPost(
   };
 }
 
+/**
+ * Perform a PUT request using Playwright's API context.
+ */
+export async function apiPut(
+  request: APIRequestContext,
+  url: string,
+  payload?: unknown,
+  headers?: Record<string, string>,
+): Promise<JsonResponse> {
+  const response = await request.put(url, {
+    data: payload,
+    headers: { 'Content-Type': 'application/json', ...headers },
+  });
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    body = await response.text();
+  }
+  return {
+    status: response.status(),
+    body,
+    headers: response.headers() as Record<string, string>,
+  };
+}
+
 // ── Assertion helpers ─────────────────────────────────────────────────────────
 
 /**

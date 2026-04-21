@@ -9,26 +9,56 @@ from __future__ import annotations
 import os
 import secrets
 from collections.abc import Awaitable, Callable
+from urllib.parse import urlparse
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
-_DEFAULT_CSP_PARTS = (
-    "default-src 'self'",
-    "img-src 'self' data: https:",
-    "connect-src 'self' https:",
-    "style-src 'self' 'unsafe-inline'",  # Jinja templates currently rely on inline styles
-    "script-src 'self' 'nonce-{nonce}' https://static.oracle.com",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-)
+def _origin_from_url(value: str) -> str:
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    parsed = urlparse(raw if "://" in raw else f"https://{raw}")
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _parse_source_list(raw: str) -> list[str]:
+    return [item.strip() for item in raw.replace(",", " ").split() if item.strip()]
+
+
+def _unique_sources(*groups: list[str]) -> list[str]:
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for group in groups:
+        for item in group:
+            if item not in seen:
+                seen.add(item)
+                ordered.append(item)
+    return ordered
+
+
+def _script_src_sources() -> list[str]:
+    rum_origin = _origin_from_url(os.getenv("OCI_APM_RUM_ENDPOINT", ""))
+    extra = _parse_source_list(os.getenv("CSP_SCRIPT_SRC_EXTRA", ""))
+    return _unique_sources(["https://static.oracle.com"], [rum_origin] if rum_origin else [], extra)
 
 
 def _build_csp(nonce: str, report_uri: str | None) -> str:
-    parts = [p.format(nonce=nonce) for p in _DEFAULT_CSP_PARTS]
+    script_sources = " ".join(["'self'", f"'nonce-{nonce}'", *_script_src_sources()])
+    parts = [
+        "default-src 'self'",
+        "img-src 'self' data: https:",
+        "connect-src 'self' https:",
+        "style-src 'self' 'unsafe-inline'",
+        f"script-src {script_sources}",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+    ]
     if report_uri:
         parts.append(f"report-uri {report_uri}")
     return "; ".join(parts)

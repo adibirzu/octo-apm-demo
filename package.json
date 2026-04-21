@@ -2,7 +2,7 @@
   "name": "octo-drone-shop-e2e",
   "version": "1.0.0",
   "private": true,
-  "description": "E2E test suite for OCTO Drone Shop + CRM + OCI-DEMO stack",
+  "description": "E2E test suite for OCTO Drone Shop and the companion CRM",
   "scripts": {
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
@@ -14,6 +14,7 @@
     "test:e2e:cross-service": "playwright test tests/e2e/cross-service.spec.ts",
     "test:e2e:melts": "playwright test tests/e2e/melts.spec.ts",
     "test:e2e:auth": "playwright test tests/e2e/auth-sso.spec.ts",
+    "test:e2e:admin": "playwright test tests/e2e/admin-data-management.spec.ts",
     "test:e2e:simulation": "playwright test tests/e2e/simulation.spec.ts",
     "test:e2e:availability": "playwright test tests/e2e/availability.spec.ts",
     "test:e2e:k6": "playwright test tests/e2e/k6-integration.spec.ts"
