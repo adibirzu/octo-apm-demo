@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - {{ brand_name }}</title>
+    <link rel="icon" type="image/png" href="/static/img/octo-icon.png">
     <link rel="stylesheet" href="/static/css/style.css">
 
     {% if rum_configured %}
-    <script>
+    <script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
         window.__nativeFetch = window.fetch.bind(window);
         window.__NativeXHR = window.XMLHttpRequest;
         window._fetch = window.__nativeFetch;
@@ -30,7 +31,7 @@
             { hostPattern: '.*', headers: [] }
         ];
     </script>
-    <script async crossorigin="anonymous" src="{{ rum_endpoint }}/static/jslib/apmrum.min.js"></script>
+    <script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}" async crossorigin="anonymous" src="{{ rum_endpoint }}/static/jslib/apmrum.min.js"></script>
     {% endif %}
 </head>
 <body>
@@ -38,7 +39,7 @@
         <div class="sidebar-header">
             <img src="/static/img/octo-icon.png" alt="OCTO" class="sidebar-logo">
             <div>
-                <p class="eyebrow">OCI-DEMO application</p>
+                <p class="eyebrow">Platform application</p>
                 <h2>{{ brand_name }}</h2>
                 <div class="sidebar-meta">
                     <span class="version">v{{ app_version }}</span>
@@ -52,6 +53,7 @@
             <li><a href="/customers" data-journey="nav_customers" class="{% if nav_key == 'customers' %}active{% endif %}">Customers</a></li>
             <li><a href="/orders" data-journey="nav_orders" class="{% if nav_key == 'orders' %}active{% endif %}">Orders</a></li>
             <li><a href="/products" data-journey="nav_products" class="{% if nav_key == 'products' %}active{% endif %}">Products</a></li>
+            <li><a href="/catalog" data-journey="nav_catalog" class="{% if nav_key == 'catalog' %}active{% endif %}">Storefront</a></li>
             <li><a href="/invoices" data-journey="nav_invoices" class="{% if nav_key == 'invoices' %}active{% endif %}">Invoices</a></li>
             <li><a href="/tickets" data-journey="nav_tickets" class="{% if nav_key == 'tickets' %}active{% endif %}">Support</a></li>
             <li><a href="/campaigns" data-journey="nav_campaigns" class="{% if nav_key == 'campaigns' %}active{% endif %}">Campaigns</a></li>
@@ -94,7 +96,7 @@
         </div>
     </main>
 
-    <script>
+    <script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
         window.OCTO_CONFIG = {
             appName: {{ app_name | tojson }},
             brandName: {{ brand_name | tojson }},

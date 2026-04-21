@@ -49,5 +49,5 @@ Recommended next steps:
   4. Set ATP_OCID in CRM config to enable OCID-based span enrichment
   5. Run CRM and check that db.oracle.sql_id attributes appear in APM traces
 
-If using OCI-DEMO, these are configured automatically by c27_deploy_enterprise_crm.sh.
+If you use a higher-level deployment wrapper, these can be configured there automatically.
 EOF

@@ -1,6 +1,6 @@
 """OpenTelemetry initialization for OCI APM backend tracing.
 
-When running inside OCI-DEMO, delegates core OTel setup (resource building,
+When running with the shared platform libraries available, delegates core OTel setup (resource building,
 APM exporters, process metrics) to shared.observability_lib. Falls back to
 local implementation for standalone use.
 """
@@ -24,7 +24,7 @@ _initialized = False
 
 
 def _try_shared_init() -> bool:
-    """Try to initialize via shared.observability_lib (OCI-DEMO mode)."""
+    """Try to initialize via shared.observability_lib when the shared library is available."""
     try:
         from shared.observability_lib import init_observability, instrument_fastapi_app
         return init_observability(
@@ -140,7 +140,7 @@ def _register_process_metrics_standalone(meter):
 def init_otel(app=None, sync_engine=None):
     """Initialize OpenTelemetry with OCI APM exporter.
 
-    Tries shared.observability_lib first (OCI-DEMO context), then falls
+    Tries shared.observability_lib first (shared platform context), then falls
     back to standalone initialization.
     """
     global _tracer, _initialized

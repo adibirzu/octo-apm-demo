@@ -39,7 +39,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
 const MODULE = '{{ module }}';
 
 const MODULE_CONFIG = {

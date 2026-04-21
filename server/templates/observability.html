@@ -237,7 +237,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
 let _dashboardData = null;
 
 async function refresh360() {

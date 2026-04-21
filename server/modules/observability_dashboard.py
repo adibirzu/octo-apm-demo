@@ -225,7 +225,7 @@ async def _integration_health_summary() -> dict:
             "configured": bool(cfg.c22_skp_url),
         },
         "control_plane": {
-            "configured": bool(cfg.oci_demo_control_plane_url),
+            "configured": bool(cfg.control_plane_url),
         },
         "atp": {
             "configured": bool(cfg.atp_ocid or cfg.atp_connection_name),

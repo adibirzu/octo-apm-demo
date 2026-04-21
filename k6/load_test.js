@@ -25,6 +25,12 @@ const geoLatency = new Trend('geo_latency');
 const apiCalls = new Counter('api_calls');
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+const LOGIN_USER = __ENV.LOGIN_USER || 'admin';
+const LOGIN_PASS = __ENV.LOGIN_PASS || __ENV.BOOTSTRAP_ADMIN_PASSWORD || '';
+
+if (!LOGIN_PASS) {
+    throw new Error('Set LOGIN_PASS or BOOTSTRAP_ADMIN_PASSWORD before running this script.');
+}
 
 export const options = {
     // Ramp-up scenario simulating real user patterns
@@ -93,7 +99,7 @@ export default function() {
         group('Login', () => {
             const start = Date.now();
             const res = http.post(`${BASE_URL}/api/auth/login`,
-                JSON.stringify({ username: 'admin', password: 'admin123' }),
+                JSON.stringify({ username: LOGIN_USER, password: LOGIN_PASS }),
                 { headers: { 'Content-Type': 'application/json' } }
             );
             loginDuration.add(Date.now() - start);

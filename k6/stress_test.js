@@ -12,13 +12,13 @@
  *
  * Usage:
  *   # Smoke test (1 VU, 30s)
- *   k6 run --env BASE_URL=https://crm.octodemo.cloud --env PROFILE=smoke k6/stress_test.js
+ *   k6 run --env BASE_URL=https://crm.example.cloud --env LOGIN_PASS='<password>' --env PROFILE=smoke k6/stress_test.js
  *
- *   # Against any tenancy
- *   k6 run --env DNS_DOMAIN=mycompany.cloud k6/stress_test.js
+ *   # Against any domain
+ *   k6 run --env DNS_DOMAIN=example.cloud --env LOGIN_PASS='<password>' k6/stress_test.js
  *
  *   # Heavy load
- *   k6 run --env DNS_DOMAIN=octodemo.cloud --env PROFILE=heavy k6/stress_test.js
+ *   k6 run --env DNS_DOMAIN=example.cloud --env LOGIN_PASS='<password>' --env PROFILE=heavy k6/stress_test.js
  *
  * After the run, verify in OCI Console:
  *   1. APM → Trace Explorer → filter serviceName=enterprise-crm-portal
@@ -42,7 +42,11 @@ const BASE_URL = __ENV.BASE_URL || (DNS_DOMAIN ? `https://crm.${DNS_DOMAIN}` : '
 const SHOP_URL = __ENV.SHOP_URL || (DNS_DOMAIN ? `https://shop.${DNS_DOMAIN}` : '');
 const PROFILE = (__ENV.PROFILE || 'moderate').toLowerCase();
 const LOGIN_USER = __ENV.LOGIN_USER || 'admin';
-const LOGIN_PASS = __ENV.LOGIN_PASS || 'admin123';
+const LOGIN_PASS = __ENV.LOGIN_PASS || __ENV.BOOTSTRAP_ADMIN_PASSWORD || '';
+
+if (!LOGIN_PASS) {
+    throw new Error('Set LOGIN_PASS or BOOTSTRAP_ADMIN_PASSWORD before running this script.');
+}
 
 // ── Custom Metrics ──────────────────────────────────────────────
 const errorRate = new Rate('errors');

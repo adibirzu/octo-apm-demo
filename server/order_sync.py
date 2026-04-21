@@ -191,7 +191,11 @@ async def list_backlog_orders(limit: int = 50) -> list[Order]:
 
 
 async def _fetch_external_orders(base_url: str, correlation_id: str, limit: int) -> list[dict[str, Any]]:
-    async with httpx.AsyncClient(timeout=15.0, headers=outbound_headers(correlation_id)) as client:
+    headers = outbound_headers(correlation_id)
+    if cfg.drone_shop_internal_key:
+        headers["X-Internal-Service-Key"] = cfg.drone_shop_internal_key
+
+    async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
         response = await client.get(f"{base_url.rstrip('/')}{cfg.external_orders_path}", params={"limit": limit})
     response.raise_for_status()
     payload = response.json()

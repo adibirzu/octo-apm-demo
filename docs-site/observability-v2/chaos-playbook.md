@@ -3,7 +3,7 @@
 !!! warning "Shop has no chaos write endpoints"
     The Octo Drone Shop is a **reader** only. Chaos scenarios can be
     applied from either the Enterprise CRM admin page
-    (`https://crm.octodemo.cloud/admin/chaos`) or from the Ops / cp
+    (`https://crm.example.cloud/admin/chaos`) or from the optional ops
     portal. Any POST to `/api/admin/chaos/*` on the shop is a 404.
 
 ## Presets
@@ -20,7 +20,7 @@
 ## Apply (CRM operator only)
 
 ```bash
-curl -sS https://crm.octodemo.cloud/api/admin/chaos/apply \
+curl -sS https://crm.example.cloud/api/admin/chaos/apply \
   -H 'Content-Type: application/json' \
   -b session.cookie \
   -d '{"scenario_id":"db-slow-checkout","target":"shop","ttl_seconds":300,"note":"demo"}'
@@ -29,7 +29,7 @@ curl -sS https://crm.octodemo.cloud/api/admin/chaos/apply \
 ## Clear
 
 ```bash
-curl -sS -X POST https://crm.octodemo.cloud/api/admin/chaos/clear -b session.cookie
+curl -sS -X POST https://crm.example.cloud/api/admin/chaos/clear -b session.cookie
 ```
 
 The `chaos-cleanup` Coordinator playbook also auto-clears stale scenarios

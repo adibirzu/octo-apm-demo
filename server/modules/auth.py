@@ -1,14 +1,4 @@
-"""Authentication module — OWASP A07: Identification and Authentication Failures.
-
-Vulnerabilities:
-- Weak password hashing (intentionally uses md5 fallback)
-- No rate limiting on login endpoint
-- JWT with weak secret
-- Session fixation via cookie
-- Username enumeration through different error messages
-
-Includes IDCS SSO integration via OIDC Authorization Code + PKCE.
-"""
+"""Authentication module with local login and IDCS SSO support."""
 
 import base64
 import hashlib
@@ -35,9 +25,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 tracer_fn = get_tracer
 
+import hmac
+
 # DB-backed session store — shared across all OKE replicas via ATP
 _login_attempts: dict[str, list[float]] = {}
-import hmac
+LOGIN_WINDOW_SECONDS = 300
 
 
 class LoginRequest(BaseModel):
@@ -53,7 +45,7 @@ class RegisterRequest(BaseModel):
 
 @router.post("/login")
 async def login(req: LoginRequest, request: Request, response: Response):
-    """Login endpoint — vulnerable to brute force (no rate limiting)."""
+    """Login endpoint with rate limiting and httpOnly session cookies."""
     tracer = tracer_fn()
     client_ip = request.client.host if request.client else "unknown"
 
@@ -61,16 +53,26 @@ async def login(req: LoginRequest, request: Request, response: Response):
         span.set_attribute("auth.username", req.username)
         span.set_attribute("auth.client_ip", client_ip)
 
-        # Track attempts (but don't enforce — intentional vuln)
-        _login_attempts.setdefault(client_ip, []).append(time.time())
-
-        if len(_login_attempts.get(client_ip, [])) > cfg.max_login_attempts:
-            with security_span("broken_auth", severity="high",
-                             payload=f"brute force: {len(_login_attempts[client_ip])} attempts",
-                             source_ip=client_ip, username=req.username):
-                log_security_event("broken_auth", "high",
-                    f"Brute force detected from {client_ip}: {len(_login_attempts[client_ip])} attempts",
-                    source_ip=client_ip, username=req.username)
+        attempts = _login_attempts.setdefault(client_ip, [])
+        now = time.time()
+        attempts[:] = [ts for ts in attempts if now - ts <= LOGIN_WINDOW_SECONDS]
+        if len(attempts) >= cfg.max_login_attempts:
+            with security_span(
+                "broken_auth",
+                severity="high",
+                payload=f"rate limit: {len(attempts)} attempts",
+                source_ip=client_ip,
+                username=req.username,
+            ):
+                log_security_event(
+                    "broken_auth",
+                    "high",
+                    f"Login rate limit exceeded from {client_ip}",
+                    source_ip=client_ip,
+                    username=req.username,
+                )
+            response.status_code = 429
+            return {"error": "Too many login attempts. Try again later.", "status": "rate_limited"}
 
         async with get_db() as db:
             with tracer.start_as_current_span("db.user_lookup") as db_span:
@@ -89,16 +91,18 @@ async def login(req: LoginRequest, request: Request, response: Response):
             if user is None:
                 span.set_attribute("auth.result", "user_not_found")
                 business_metrics.record_login_failure(reason="user_not_found")
+                attempts.append(time.time())
                 return {"error": "Invalid credentials", "status": "failed"}
 
             with tracer.start_as_current_span("auth.password_verify") as pw_span:
                 if not _check_bcrypt(req.password, user.password_hash):
                     span.set_attribute("auth.result", "invalid_password")
                     business_metrics.record_login_failure(reason="invalid_password")
+                    attempts.append(time.time())
                     return {"error": "Invalid credentials", "status": "failed"}
 
             # Create session in ATP — shared across all OKE replicas
-            session_id = hashlib.md5(f"{user.username}{time.time()}".encode()).hexdigest()
+            session_id = secrets.token_hex(32)
             await db.execute(
                 text(
                     "INSERT INTO user_sessions (session_id, user_id, username, role, auth_method) "
@@ -112,10 +116,12 @@ async def login(req: LoginRequest, request: Request, response: Response):
             is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
             response.set_cookie(
                 "session_id", session_id,
-                httponly=False,
-                samesite="none" if is_https else "lax",
+                httponly=True,
+                samesite="lax",
                 secure=is_https,
+                max_age=cfg.session_timeout_seconds,
             )
+            _login_attempts.pop(client_ip, None)
 
             business_metrics.record_login_success(method="password", role=user.role or "user")
             push_log("INFO", f"User {req.username} logged in", **{
@@ -126,32 +132,40 @@ async def login(req: LoginRequest, request: Request, response: Response):
 
             return {
                 "status": "success",
-                "session_id": session_id,  # VULN: exposing session ID in response body
                 "user": {"id": user.id, "username": user.username, "role": user.role}
             }
 
 
 @router.post("/register")
 async def register(req: RegisterRequest, request: Request):
-    """Register — vulnerable to mass assignment (role field accepted from request)."""
+    """Register a local CRM user with a fixed non-admin role."""
     tracer = tracer_fn()
     client_ip = request.client.host if request.client else "unknown"
 
     with tracer.start_as_current_span("auth.register") as span:
         body = await request.json()
 
-        # VULN: Mass assignment — accepts 'role' from user input
-        role = body.get("role", "user")
-        if role == "admin":
-            with security_span("mass_assignment", severity="critical",
-                             payload=f"role escalation attempt: {role}",
-                             source_ip=client_ip, username=req.username):
-                log_security_event("mass_assignment", "critical",
-                    f"Admin role assignment attempt by {req.username}",
-                    source_ip=client_ip, username=req.username)
+        role = "user"
+        requested_role = str(body.get("role", "")).strip().lower()
+        if requested_role and requested_role != role:
+            with security_span(
+                "mass_assignment",
+                severity="high",
+                payload=f"ignored requested role: {requested_role}",
+                source_ip=client_ip,
+                username=req.username,
+            ):
+                log_security_event(
+                    "mass_assignment",
+                    "high",
+                    f"Ignored role assignment attempt by {req.username}",
+                    source_ip=client_ip,
+                    username=req.username,
+                )
 
-        # VULN: Weak password hashing (md5)
-        password_hash = hashlib.md5(req.password.encode()).hexdigest()
+        from passlib.hash import bcrypt
+
+        password_hash = bcrypt.hash(req.password)
 
         async with get_db() as db:
             with tracer.start_as_current_span("db.user_create"):
@@ -166,7 +180,7 @@ async def register(req: RegisterRequest, request: Request):
 @router.get("/session")
 async def get_session(request: Request):
     """Return session info from ATP database."""
-    session_id = request.cookies.get("session_id") or request.query_params.get("session_id", "")
+    session_id = request.cookies.get("session_id", "")
     if not session_id:
         return {"authenticated": False}
     async with get_db() as db:

@@ -7,11 +7,13 @@ services:
     ports:
       - "${APP_PORT:-8081}:8080"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://crm_user:crm_password@postgres:5432/crm_db
-      - DATABASE_SYNC_URL=postgresql://crm_user:crm_password@postgres:5432/crm_db
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${CRM_DB_USER:-crm_user}:${CRM_DB_PASSWORD:-change-me-local}@postgres:5432/${CRM_DB_NAME:-crm_db}}
+      - DATABASE_SYNC_URL=${DATABASE_SYNC_URL:-postgresql://${CRM_DB_USER:-crm_user}:${CRM_DB_PASSWORD:-change-me-local}@postgres:5432/${CRM_DB_NAME:-crm_db}}
+      - APP_ENV=${APP_ENV:-development}
       - APP_RUNTIME=${APP_RUNTIME:-docker}
     env_file:
       - .env
+      - deploy/credentials.env
     depends_on:
       postgres:
         condition: service_healthy
@@ -29,16 +31,16 @@ services:
     image: postgres:16-alpine
     container_name: crm-postgres
     environment:
-      POSTGRES_DB: crm_db
-      POSTGRES_USER: crm_user
-      POSTGRES_PASSWORD: crm_password
+      POSTGRES_DB: ${CRM_DB_NAME:-crm_db}
+      POSTGRES_USER: ${CRM_DB_USER:-crm_user}
+      POSTGRES_PASSWORD: ${CRM_DB_PASSWORD:-change-me-local}
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./server/db_init.sql:/docker-entrypoint-initdb.d/01_init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U crm_user -d crm_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${CRM_DB_USER:-crm_user} -d ${CRM_DB_NAME:-crm_db}"]
       interval: 5s
       timeout: 3s
       retries: 5

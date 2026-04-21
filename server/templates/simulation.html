@@ -109,7 +109,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
 const POLL_MS = 2000;
 let _lastState = {};
 let _poller = null;

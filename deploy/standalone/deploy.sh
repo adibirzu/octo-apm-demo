@@ -3,7 +3,6 @@
 # Enterprise CRM Portal — Standalone OKE Deployment
 #
 # Deploys the CRM portal to any OCI tenancy with Oracle ATP.
-# This script is self-contained and does NOT depend on OCI-DEMO.
 #
 # Prerequisites:
 #   - kubectl configured for your OKE cluster
@@ -16,25 +15,24 @@
 #   deploy/oci/ensure_db_observability.sh — enables DB Management + OPSI
 #
 # Required env vars:
-#   DNS_DOMAIN          — your DNS domain (e.g., mycompany.cloud)
+#   DNS_DOMAIN          — your DNS domain (e.g., <your-domain>)
 #   ORACLE_DSN          — ATP TNS name (e.g., myatp_low)
 #   ORACLE_PASSWORD     — ATP admin password
 #   ORACLE_WALLET_DIR   — local path to unzipped wallet
 #   ORACLE_WALLET_PASSWORD — wallet password
-#   OCIR_REGION         — OCI region (e.g., eu-frankfurt-1)
+#   OCIR_REGION         — OCI region (e.g., <region-key>)
 #   OCIR_TENANCY        — OCIR tenancy namespace
 #
 # Optional env vars:
 #   IDCS_DOMAIN_URL, IDCS_CLIENT_ID, IDCS_CLIENT_SECRET — enables SSO
 #   OCI_APM_ENDPOINT, OCI_APM_PRIVATE_DATAKEY — enables OTel/APM
 #   OCTO_DRONE_SHOP_URL — enables order sync integration
-#   INTERNAL_SERVICE_KEY — enables simulation proxy (auto-derived if empty)
+#   INTERNAL_SERVICE_KEY — enables simulation proxy (must match the shop)
 #   NAMESPACE           — k8s namespace (default: enterprise-crm)
 #   IMAGE_TAG           — image tag (default: timestamp)
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-# ── Validate required inputs ──────────────────────────────────────
 _require() {
     local name="$1"
     if [[ -z "${!name:-}" ]]; then
@@ -43,6 +41,43 @@ _require() {
     fi
 }
 
+_resolve_secret() {
+    local name="$1"
+    local file_var="${name}_FILE"
+    local current="${!name:-}"
+    if [[ -n "$current" ]]; then
+        return
+    fi
+    local file_path="${!file_var:-}"
+    if [[ -n "$file_path" ]]; then
+        export "$name"="$(python3 - "$file_path" <<'PY'
+from pathlib import Path
+import sys
+
+print(Path(sys.argv[1]).read_text(encoding="utf-8").strip())
+PY
+)"
+    fi
+}
+
+_generate_secret() {
+    openssl rand -hex 32 2>/dev/null || python3 - <<'PY'
+import secrets
+print(secrets.token_hex(32))
+PY
+}
+
+_resolve_secret ORACLE_PASSWORD
+_resolve_secret ORACLE_WALLET_PASSWORD
+_resolve_secret APP_SECRET_KEY
+_resolve_secret INTERNAL_SERVICE_KEY
+_resolve_secret IDCS_CLIENT_SECRET
+_resolve_secret SPLUNK_HEC_TOKEN
+_resolve_secret OCI_APM_PRIVATE_DATAKEY
+_resolve_secret OCI_APM_PUBLIC_DATAKEY
+_resolve_secret OCI_APM_RUM_PUBLIC_DATAKEY
+
+# ── Validate required inputs ──────────────────────────────────────
 _require DNS_DOMAIN
 _require ORACLE_DSN
 _require ORACLE_PASSWORD
@@ -56,12 +91,11 @@ ORACLE_USER="${ORACLE_USER:-ADMIN}"
 IMAGE_TAG="${IMAGE_TAG:-$(date +%Y%m%d%H%M%S)}"
 IMAGE="${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal"
 CRM_URL="https://crm.${DNS_DOMAIN}"
-APP_SECRET_KEY="${APP_SECRET_KEY:-$(echo -n "crm-${ORACLE_PASSWORD}-${DNS_DOMAIN}" | openssl dgst -sha256 -hex 2>/dev/null | awk '{print $NF}')}"
+APP_SECRET_KEY="${APP_SECRET_KEY:-$(_generate_secret)}"
 
-# Auto-derive INTERNAL_SERVICE_KEY if not set
-if [[ -z "${INTERNAL_SERVICE_KEY:-}" ]]; then
-    INTERNAL_SERVICE_KEY="$(echo -n "crm-svc-key-${APP_SECRET_KEY}" | openssl dgst -sha256 -hex 2>/dev/null | awk '{print $NF}')"
-    echo "[standalone] INTERNAL_SERVICE_KEY auto-derived (deterministic per tenancy)"
+if [[ -n "${OCTO_DRONE_SHOP_URL:-}" && -z "${INTERNAL_SERVICE_KEY:-}" ]]; then
+    echo "ERROR: INTERNAL_SERVICE_KEY (or INTERNAL_SERVICE_KEY_FILE) is required when OCTO_DRONE_SHOP_URL is set." >&2
+    exit 1
 fi
 
 # Auto-derive IDCS redirect URI
@@ -98,7 +132,7 @@ kubectl create secret generic crm-secrets \
     --from-literal="ORACLE_PASSWORD=${ORACLE_PASSWORD}" \
     --from-literal="ORACLE_WALLET_PASSWORD=${ORACLE_WALLET_PASSWORD}" \
     --from-literal="APP_SECRET_KEY=${APP_SECRET_KEY}" \
-    --from-literal="INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}" \
+    ${INTERNAL_SERVICE_KEY:+--from-literal="INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}"} \
     ${IDCS_CLIENT_SECRET:+--from-literal="IDCS_CLIENT_SECRET=${IDCS_CLIENT_SECRET}"} \
     ${SPLUNK_HEC_TOKEN:+--from-literal="SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}"} \
     ${OCI_APM_PRIVATE_DATAKEY:+--from-literal="OCI_APM_PRIVATE_DATAKEY=${OCI_APM_PRIVATE_DATAKEY}"} \
@@ -226,12 +260,12 @@ echo ""
 echo "╔══════════════════════════════════════════════════════════════════╗"
 echo "║  Deployment complete!                                           ║"
 echo "║                                                                 ║"
-echo "║  Service: enterprise-crm-portal.${NAMESPACE}.svc.cluster.local  ║"
+echo "║  Service: ClusterIP/enterprise-crm-portal in namespace ${NAMESPACE} ║"
 echo "║  Health:  kubectl exec -n ${NAMESPACE} deploy/enterprise-crm-portal -- curl -s localhost:8080/health"
 echo "║                                                                 ║"
 echo "║  Next steps:                                                    ║"
 echo "║  1. Create an OKE Ingress or LB Service pointing to port 80    ║"
 echo "║  2. Configure DNS: crm.${DNS_DOMAIN} → LB IP                   ║"
 echo "║  3. (Optional) Add TLS cert via cert-manager or OCI LB cert    ║"
-echo "║  4. Login at https://crm.${DNS_DOMAIN} with admin / admin123   ║"
+echo "║  4. Login with the bootstrap admin credential from your secret ║"
 echo "╚══════════════════════════════════════════════════════════════════╝"
