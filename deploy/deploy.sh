@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy OCTO Drone Shop to OKE via control-plane VM build.
+# Deploy OCTO Drone Shop to OKE via a remote build host.
 #
 # Builds on the remote x86_64 VM (no QEMU), pushes to OCIR,
 # and rolls out on OKE with zero-downtime rolling update.
@@ -10,14 +10,14 @@
 #   ./deploy/deploy.sh --rollout-only   # Rollout existing latest tag
 #
 # Prerequisites:
-#   - SSH access to control-plane-oci
+#   - SSH access to the remote build host
 #   - OCIR login configured on the VM
 #   - kubectl context set to OKE cluster
 
 set -euo pipefail
 
 OCIR_REPO="${OCIR_REPO:?Set OCIR_REPO (e.g. <region>.ocir.io/<namespace>/octo-drone-shop)}"
-REMOTE_HOST="${REMOTE_HOST:-control-plane-oci}"
+REMOTE_HOST="${REMOTE_HOST:-remote-builder}"
 REMOTE_DIR="/tmp/octo-drone-shop"
 NAMESPACE="${K8S_NAMESPACE:-octo-drone-shop}"
 DEPLOYMENT="${K8S_DEPLOYMENT:-octo-drone-shop}"
@@ -33,6 +33,17 @@ for arg in "$@"; do
     esac
 done
 
+# DNS_DOMAIN is only needed when rolling out (deriving SHOP/CRM URLs); a
+# pure build can skip it. No example.cloud fallback — a wrong DNS default
+# has historically caused CRM/shop URLs to publish placeholder hostnames in
+# production, so we refuse to guess.
+if $ROLLOUT; then
+    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (e.g. tenant-a.example.invalid) for SHOP/CRM URL derivation, or pass --build-only.}"
+    SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}"
+    CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}"
+    VERIFY_URL="${VERIFY_URL:-${SHOP_PUBLIC_URL}/ready}"
+fi
+
 echo "================================================"
 echo " OCTO Drone Shop Deploy"
 echo " OCIR:  ${OCIR_REPO}"
@@ -42,7 +53,7 @@ echo " Roll:  ${ROLLOUT}"
 echo "================================================"
 
 if $BUILD; then
-    # ── 1. Sync code to control-plane VM ────────────────
+    # ── 1. Sync code to the remote build host ──────────
     echo ""
     echo "[1/4] Syncing code to ${REMOTE_HOST}:${REMOTE_DIR}..."
     rsync -az --delete \
@@ -90,6 +101,10 @@ if $ROLLOUT; then
 
     echo ""
     echo "[4/4] Rolling out ${DEPLOYMENT} → ${IMAGE}..."
+    echo "[4/4] Setting CRM_PUBLIC_URL=${CRM_PUBLIC_URL}"
+    kubectl set env "deployment/${DEPLOYMENT}" \
+        "CRM_PUBLIC_URL=${CRM_PUBLIC_URL}" \
+        -n "${NAMESPACE}" >/dev/null
     kubectl set image "deployment/${DEPLOYMENT}" \
         "${CONTAINER}=${IMAGE}" \
         -n "${NAMESPACE}"
@@ -107,7 +122,7 @@ if $ROLLOUT; then
     echo ""
     echo "Checking /ready endpoint..."
     sleep 5
-    READY=$(curl -s --max-time 10 "https://shop.octodemo.cloud/ready" 2>/dev/null || echo '{"ready": false}')
+    READY=$(curl -s --max-time 10 "${VERIFY_URL}" 2>/dev/null || echo '{"ready": false}')
     echo "$READY" | python3 -m json.tool 2>/dev/null || echo "$READY"
 fi
 
@@ -115,5 +130,5 @@ echo ""
 echo "================================================"
 echo " Deploy complete!"
 echo " Image: ${OCIR_REPO}:${TAG}"
-echo " Verify: https://shop.octodemo.cloud/api/observability/360"
+echo " Verify: ${SHOP_PUBLIC_URL}/api/observability/360"
 echo "================================================"

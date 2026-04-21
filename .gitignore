@@ -15,6 +15,7 @@ __pycache__/
 dist/
 build/
 .venv/
+.venv311/
 node_modules/
 .DS_Store
 *.pem
@@ -26,10 +27,18 @@ wallet/
 *.jks
 *.kdbx
 secrets/
+credentials/
+*.log
 config/local/
+.terraform/
+*.tfstate
+*.tfstate.backup
 __pycache__/
 .playwright-cli/
 playwright-report/
 test-results/
 .rlm/
 build/
+.claude/
+firebase-debug.log
+deploy/credentials.env
