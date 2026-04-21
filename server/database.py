@@ -27,54 +27,78 @@ _engine_kwargs = {
     "echo": False,
 }
 
-import oracledb
+_connect_args: dict = {}
+_oracle_configured = bool(cfg.oracle_dsn and cfg.oracle_password)
+if not cfg.use_postgres and _oracle_configured:
+    import oracledb
 
-oracledb.defaults.config_dir = cfg.oracle_wallet_dir or ""
-oracledb.defaults.fetch_lobs = False
+    oracledb.defaults.config_dir = cfg.oracle_wallet_dir or ""
+    oracledb.defaults.fetch_lobs = False
+    _connect_args = {"dsn": cfg.oracle_dsn}
+    if cfg.oracle_wallet_dir:
+        _connect_args["config_dir"] = cfg.oracle_wallet_dir
+        _connect_args["wallet_location"] = cfg.oracle_wallet_dir
+        _connect_args["wallet_password"] = cfg.oracle_wallet_password
 
-_connect_args: dict = {"dsn": cfg.oracle_dsn}
-if cfg.oracle_wallet_dir:
-    _connect_args["config_dir"] = cfg.oracle_wallet_dir
-    _connect_args["wallet_location"] = cfg.oracle_wallet_dir
-    _connect_args["wallet_password"] = cfg.oracle_wallet_password
+_database_configured = bool(cfg._database_url) if cfg.use_postgres else _oracle_configured
 
-engine = create_async_engine(
-    cfg.database_url,
-    connect_args=_connect_args,
-    **_engine_kwargs,
-)
-sync_engine = create_engine(
-    cfg.database_sync_url,
-    connect_args=_connect_args,
-    # Sizing notes (see KB-435):
-    # - This engine is used by the session middleware's per-request auth
-    #   lookup, so it must handle bursts of cache misses without queueing.
-    # - The 30s in-process session cache in auth.py cushions repeat hits, so
-    #   we only need enough capacity for concurrent *new* session validations.
-    # - It must NOT mirror the async pool — doubling the Oracle ATP session
-    #   footprint per replica risks fleet-wide session exhaustion.
-    # - `pool_pre_ping=True` prevents stale connections from silently failing
-    #   after Oracle-side password rotations.
-    # - Pool sizing comes from config (DB_AUTH_POOL_SIZE etc.) so ops can tune
-    #   and observe it independently of the main app pool.
-    pool_pre_ping=True,
-    pool_size=cfg.db_auth_pool_size,
-    max_overflow=cfg.db_auth_max_overflow,
-    pool_timeout=cfg.db_auth_pool_timeout,
-)
-logger.info("Using Oracle ATP backend (DSN: %s)", cfg.oracle_dsn)
+engine = None
+sync_engine = None
+async_session_factory = None
 
-async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
+if _database_configured:
+    try:
+        engine = create_async_engine(
+            cfg.database_url,
+            connect_args=_connect_args,
+            **_engine_kwargs,
+        )
+        sync_engine = create_engine(
+            cfg.database_sync_url,
+            connect_args=_connect_args,
+            # Sizing notes (see KB-435):
+            # - This engine is used by the session middleware's per-request auth
+            #   lookup, so it must handle bursts of cache misses without queueing.
+            # - The 30s in-process session cache in auth.py cushions repeat hits, so
+            #   we only need enough capacity for concurrent *new* session validations.
+            # - It must NOT mirror the async pool — doubling the Oracle ATP session
+            #   footprint per replica risks fleet-wide session exhaustion.
+            # - `pool_pre_ping=True` prevents stale connections from silently failing
+            #   after Oracle-side password rotations.
+            # - Pool sizing comes from config (DB_AUTH_POOL_SIZE etc.) so ops can tune
+            #   and observe it independently of the main app pool.
+            pool_pre_ping=True,
+            pool_size=cfg.db_auth_pool_size,
+            max_overflow=cfg.db_auth_max_overflow,
+            pool_timeout=cfg.db_auth_pool_timeout,
+        )
+        async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
+        if cfg.use_postgres:
+            logger.info("Using PostgreSQL backend for local/standalone workflow")
+        else:
+            logger.info("Using Oracle ATP backend (DSN: %s)", cfg.oracle_dsn)
+    except ModuleNotFoundError as exc:
+        engine = None
+        sync_engine = None
+        async_session_factory = None
+        logger.warning(
+            "Database engine not initialized because the configured driver is unavailable: %s",
+            exc,
+        )
+else:
+    logger.warning("Database engine not initialized because no database credentials were configured")
 
 # Enrich every DB query with db.statement + db.oracle.sql_id for APM Trace Explorer
 from server.observability.db_spans import register_db_span_events
-register_db_span_events(engine)
-register_db_span_events(sync_engine)
+if not cfg.use_postgres and engine is not None and sync_engine is not None:
+    register_db_span_events(engine)
+    register_db_span_events(sync_engine)
 
 # Tag Oracle sessions with MODULE/ACTION/CLIENT_IDENTIFIER for OPSI + DB Management correlation
 from server.observability.db_session_tagging import register_session_tagging
-register_session_tagging(engine)
-register_session_tagging(sync_engine)
+if not cfg.use_postgres and engine is not None and sync_engine is not None:
+    register_session_tagging(engine)
+    register_session_tagging(sync_engine)
 
 
 @asynccontextmanager
@@ -84,6 +108,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         raise ConnectionError("Simulated database disconnect")
     if cfg.simulate_db_latency:
         await asyncio.sleep(2.5)
+    if async_session_factory is None:
+        raise RuntimeError("Database engine is not configured")
     async with async_session_factory() as session:
         try:
             yield session
@@ -117,9 +143,31 @@ class Customer(Base):
     tickets = relationship("SupportTicket", back_populates="customer")
 
 
+class Shop(Base):
+    __tablename__ = "shops"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    name = Column(String(200), nullable=False)
+    address = Column(Text, default="")
+    coordinates = Column(String(100), default="")
+    contact_email = Column(String(200), default="")
+    contact_phone = Column(String(50), default="")
+    is_active = Column(Integer, default=1)
+    slug = Column(String(80), unique=True, nullable=False)
+    storefront_url = Column(String(500), nullable=False)
+    crm_base_url = Column(String(500), nullable=False)
+    region = Column(String(80), nullable=False)
+    currency = Column(String(10), default="USD")
+    status = Column(String(50), default="active")
+    notes = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    products = relationship("Product", back_populates="shop")
+
+
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, Identity(always=False), primary_key=True)
+    shop_id = Column(Integer, ForeignKey("shops.id"))
     name = Column(String(200), nullable=False)
     sku = Column(String(50), unique=True, nullable=False)
     description = Column(Text)
@@ -129,6 +177,7 @@ class Product(Base):
     image_url = Column(String(500))
     is_active = Column(Integer, default=1)
     created_at = Column(DateTime, server_default=func.now())
+    shop = relationship("Shop", back_populates="products")
 
 
 class Order(Base):

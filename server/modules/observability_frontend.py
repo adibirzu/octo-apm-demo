@@ -5,10 +5,11 @@ the frontend observability.js script. Events are recorded as metrics and
 forwarded to the structured log pipeline.
 """
 
+import json
 import logging
 
 from fastapi import APIRouter, Request, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from server.observability.metrics import get_meter
 from server.observability.logging_sdk import push_log
@@ -59,9 +60,39 @@ class FrontendEvent(BaseModel):
     payload: dict = {}
 
 
+async def _parse_frontend_event(request: Request) -> FrontendEvent | None:
+    """Parse telemetry sent via fetch(JSON) or sendBeacon(text/plain/application-json).
+
+    The browser `sendBeacon()` API commonly sends string bodies as
+    `text/plain;charset=UTF-8`. FastAPI's normal body-model binding rejects
+    those before the route runs, which turns harmless telemetry into visible
+    `422` errors in the browser console. This parser accepts both formats and
+    silently drops malformed telemetry with a warning.
+    """
+    raw_body = await request.body()
+    if not raw_body:
+        return None
+
+    try:
+        data = json.loads(raw_body)
+    except json.JSONDecodeError:
+        logger.warning("Dropping malformed frontend telemetry payload")
+        return None
+
+    try:
+        return FrontendEvent.model_validate(data)
+    except ValidationError:
+        logger.warning("Dropping invalid frontend telemetry event", exc_info=True)
+        return None
+
+
 @router.post("/frontend", status_code=204)
-async def ingest_frontend_event(event: FrontendEvent, request: Request):
+async def ingest_frontend_event(request: Request):
     """Ingest a single frontend telemetry event."""
+    event = await _parse_frontend_event(request)
+    if event is None:
+        return Response(status_code=204)
+
     _ensure_metrics()
     page = event.page.split("?")[0]  # strip query params
 

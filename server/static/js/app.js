@@ -21,6 +21,8 @@ async function checkSession() {
     try {
         const resp = await _fetch('/api/auth/session');
         const data = await resp.json();
+        window.OCTO_SESSION = data;
+        window.dispatchEvent(new CustomEvent('octo:session', {detail: data}));
         const userInfo = document.getElementById('user-info');
         const authBtn = document.getElementById('auth-btn');
         if (data.authenticated && userInfo) {
@@ -45,6 +47,8 @@ async function checkSession() {
             }
         }
     } catch (error) {
+        window.OCTO_SESSION = {authenticated: false};
+        window.dispatchEvent(new CustomEvent('octo:session', {detail: {authenticated: false}}));
         console.error('Session check failed:', error);
     }
 }

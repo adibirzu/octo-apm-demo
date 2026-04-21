@@ -21,6 +21,7 @@ _DEFAULT_CSP_PARTS = (
     "connect-src 'self' https:",
     "style-src 'self' 'unsafe-inline'",  # Jinja templates currently rely on inline styles
     "script-src 'self' 'nonce-{nonce}' https://static.oracle.com",
+    "script-src-attr 'unsafe-inline'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

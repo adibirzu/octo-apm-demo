@@ -27,9 +27,25 @@ CREATE TABLE IF NOT EXISTS customers (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Shops
+CREATE TABLE IF NOT EXISTS shops (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    slug VARCHAR(80) UNIQUE NOT NULL,
+    storefront_url VARCHAR(500) NOT NULL,
+    crm_base_url VARCHAR(500) NOT NULL,
+    region VARCHAR(80) NOT NULL,
+    currency VARCHAR(10) DEFAULT 'USD',
+    status VARCHAR(50) DEFAULT 'active',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Products
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
+    shop_id INTEGER REFERENCES shops(id),
     name VARCHAR(200) NOT NULL,
     sku VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
@@ -184,14 +200,8 @@ CREATE TABLE IF NOT EXISTS warehouses (
 
 -- ── Seed Data ────────────────────────────────────────────────────
 
--- Default users (passwords are bcrypt hashes of the plaintext shown in comments)
--- admin / admin123  |  user1 / password1  |  viewer / viewer123
-INSERT INTO users (username, email, password_hash, role) VALUES
-    ('admin', 'admin@crm-enterprise.local', '$2b$12$QbLKByNORy6wzKQezx/oVeCrN3FM/Et84lcTnzyT8MpMaDF0edJZO', 'admin'),
-    ('user1', 'user1@crm-enterprise.local', '$2b$12$xpSaTDtKv.151u3S6sdtnODYM10tmPB0WtU.IzK2N.O2nR6DN8nOC', 'user'),
-    ('manager', 'manager@crm-enterprise.local', '$2b$12$OZxWwmIVi9GmuK3ufTu8/Ok3Taxg.WuROnhXuBQj2SC/36.lzbjE.', 'manager'),
-    ('viewer', 'viewer@crm-enterprise.local', '$2b$12$489tW2MVycVEyyf77oFG/ePNja48qf8IsXP80yFnzlP9PQ4lCUeTS', 'viewer')
-ON CONFLICT DO NOTHING;
+-- Bootstrap users are created by the application at runtime using
+-- BOOTSTRAP_ADMIN_PASSWORD or BOOTSTRAP_ADMIN_PASSWORD_FILE.
 
 -- Customers
 INSERT INTO customers (name, email, phone, company, industry, revenue) VALUES
@@ -207,18 +217,24 @@ INSERT INTO customers (name, email, phone, company, industry, revenue) VALUES
     ('Weyland-Yutani', 'corp@weyland.com', '+1-555-0110', 'Weyland', 'Space/Mining', 150000000)
 ON CONFLICT DO NOTHING;
 
+-- Shops
+INSERT INTO shops (name, slug, storefront_url, crm_base_url, region, currency, status, notes) VALUES
+    ('Primary Storefront', 'primary-store', 'https://shop.example.cloud', 'https://crm.example.cloud', 'eu-central', 'USD', 'active', 'Primary public storefront managed from CRM.'),
+    ('Lab Storefront', 'lab-store', 'https://shop-lab.example.cloud', 'https://crm.example.cloud', 'us-east', 'USD', 'maintenance', 'Sandbox storefront for catalog rehearsals.')
+ON CONFLICT DO NOTHING;
+
 -- Products
-INSERT INTO products (name, sku, description, price, stock, category) VALUES
-    ('Enterprise License', 'ENT-001', 'Full enterprise software license', 99999.00, 100, 'License'),
-    ('Professional License', 'PRO-001', 'Professional tier license', 29999.00, 500, 'License'),
-    ('Basic License', 'BAS-001', 'Basic tier license', 9999.00, 1000, 'License'),
-    ('Premium Support', 'SUP-001', '24/7 premium support package', 14999.00, 200, 'Support'),
-    ('Standard Support', 'SUP-002', 'Business hours support', 4999.00, 500, 'Support'),
-    ('Cloud Hosting', 'CLD-001', 'Managed cloud hosting per year', 19999.00, 300, 'Infrastructure'),
-    ('Data Migration', 'SRV-001', 'Data migration service', 24999.00, 50, 'Services'),
-    ('Training Package', 'TRN-001', 'On-site training (5 days)', 7999.00, 100, 'Training'),
-    ('API Access', 'API-001', 'API integration tier', 5999.00, 1000, 'Integration'),
-    ('Security Audit', 'SEC-001', 'Comprehensive security audit', 34999.00, 20, 'Security')
+INSERT INTO products (shop_id, name, sku, description, price, stock, category) VALUES
+    (1, 'Enterprise License', 'ENT-001', 'Full enterprise software license', 99999.00, 100, 'License'),
+    (1, 'Professional License', 'PRO-001', 'Professional tier license', 29999.00, 500, 'License'),
+    (1, 'Basic License', 'BAS-001', 'Basic tier license', 9999.00, 1000, 'License'),
+    (1, 'Premium Support', 'SUP-001', '24/7 premium support package', 14999.00, 200, 'Support'),
+    (1, 'Standard Support', 'SUP-002', 'Business hours support', 4999.00, 500, 'Support'),
+    (1, 'Cloud Hosting', 'CLD-001', 'Managed cloud hosting per year', 19999.00, 300, 'Infrastructure'),
+    (1, 'Data Migration', 'SRV-001', 'Data migration service', 24999.00, 50, 'Services'),
+    (1, 'Training Package', 'TRN-001', 'On-site training (5 days)', 7999.00, 100, 'Training'),
+    (1, 'API Access', 'API-001', 'API integration tier', 5999.00, 1000, 'Integration'),
+    (1, 'Security Audit', 'SEC-001', 'Comprehensive security audit', 34999.00, 20, 'Security')
 ON CONFLICT DO NOTHING;
 
 -- Orders

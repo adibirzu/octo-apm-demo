@@ -69,7 +69,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
 async function loadSummary() {
     const data = await _fetch('/api/orders/security/summary').then(r => r.json());
     document.getElementById('orders-total').textContent = data.total_orders ?? 0;

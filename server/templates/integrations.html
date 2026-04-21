@@ -7,7 +7,7 @@
 <section class="hero-panel compact">
     <div>
         <p class="hero-kicker">Platform architecture &amp; service topology</p>
-        <h2>OCI-DEMO full-stack observability: CRM, Drone Shop, ATP, and OCI backends.</h2>
+        <h2>Full-stack observability: CRM, Drone Shop, ATP, and OCI backends.</h2>
         <p class="hero-copy">Live service health, cross-service distributed traces, and drilldown navigation into APM, Log Analytics, DB Management, and Operations Insights.</p>
     </div>
 </section>
@@ -15,7 +15,7 @@
 <!-- ── Architecture Topology ──────────────────────────────── -->
 <div class="card">
     <h3>Service Architecture</h3>
-    <p class="card-subtitle">OCI-DEMO stack — click a node for details</p>
+    <p class="card-subtitle">Platform topology — click a node for details</p>
     <div class="arch-topology" id="arch-topology">
         <svg viewBox="0 0 920 520" class="arch-svg" id="arch-svg">
             <defs>
@@ -94,7 +94,7 @@
             <!-- OCI Backends -->
             <g class="arch-node" data-node="backends" transform="translate(640,35)">
                 <rect width="170" height="60" rx="14" fill="rgba(4,14,23,0.6)" stroke="rgba(117,217,227,0.18)" stroke-width="1"/>
-                <text x="85" y="25" text-anchor="middle" fill="var(--text-muted)" font-size="10" letter-spacing="0.08em">OCI-DEMO BACKENDS</text>
+                <text x="85" y="25" text-anchor="middle" fill="var(--text-muted)" font-size="10" letter-spacing="0.08em">PLATFORM BACKENDS</text>
                 <text x="85" y="44" text-anchor="middle" fill="var(--text-secondary)" font-size="12">Control Plane · APIs</text>
                 <circle cx="158" cy="10" r="4" class="health-dot" id="health-backends"/>
             </g>
@@ -408,7 +408,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
 const TELEMETRY_ICONS = {
     apm_configured: ['APM', 'Distributed tracing via OCI APM'],
     rum_configured: ['RUM', 'Real User Monitoring in browser'],
@@ -452,7 +452,7 @@ async function refreshTopology() {
 
     const deps = data.dependencies || [];
     const droneShop = deps.find(d => d.name === 'drone-shop-portal') || deps.find(d => d.name === 'octo-drone-shop');
-    const backends = deps.find(d => d.name === 'oci-demo-control-plane') || deps.find(d => d.name === 'oci-demo-backend');
+    const backends = deps.find(d => d.name === 'platform-control-plane') || deps.find(d => d.name === 'platform-backend');
     updateHealthDot('health-drone-shop', droneShop ? droneShop.status : 'unknown');
     updateHealthDot('health-backends', backends ? backends.status : 'unknown');
 
@@ -552,7 +552,7 @@ async function loadConsoleAccess() {
         const cfgResp = await _fetch('/api/integrations/console/config');
         const cfgData = await cfgResp.json();
         if (!cfgData.available) {
-            container.innerHTML = '<div class="console-not-configured">Control Plane not configured — set <code>OCI_DEMO_CONTROL_PLANE_URL</code> to enable Browser Remote Access.</div>';
+            container.innerHTML = '<div class="console-not-configured">Control Plane not configured — set <code>CONTROL_PLANE_URL</code> to enable Browser Remote Access.</div>';
             return;
         }
 

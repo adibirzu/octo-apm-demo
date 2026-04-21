@@ -17,13 +17,12 @@
             <button type="submit" class="btn btn-primary btn-block">Login</button>
         </form>
         <div id="login-error" class="error-message hidden"></div>
-        <p class="login-hint">Demo: admin / admin123</p>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
 async function doLogin(e) {
     e.preventDefault();
     const username = document.getElementById('login-username').value;

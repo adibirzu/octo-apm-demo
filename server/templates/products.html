@@ -1,176 +1,461 @@
 {% extends "base.html" %}
 {% block header_actions %}
 <div class="toolbar">
-    <select id="category-filter" class="search-input" onchange="loadProducts()">
+    <input id="product-search" class="search-input" placeholder="Search name, SKU, category">
+    <select id="category-filter" class="search-input">
         <option value="">All Categories</option>
     </select>
-    <button onclick="loadProducts()" class="btn btn-primary">Refresh</button>
+    <select id="status-filter" class="search-input">
+        <option value="all">All Statuses</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+    </select>
+    <a href="/catalog" class="btn">Manage Storefronts</a>
+    <button onclick="loadProductsWorkspace()" class="btn btn-primary">Refresh</button>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="page-container">
-    <div class="product-stats" id="product-stats"></div>
-    <div class="product-grid" id="product-grid">
-        <div class="card" style="grid-column: 1/-1; text-align:center; padding:40px;">
-            Loading catalog...
-        </div>
+<div class="hero-panel compact">
+    <div>
+        <p class="hero-kicker">CRM-managed inventory control</p>
+        <h2>Edit products directly from CRM.</h2>
+        <p class="hero-copy">Use this workspace to adjust stock, pricing, descriptions, categories, and shop assignment. Every save updates the database and publishes the change to the shop integration.</p>
     </div>
-    <div id="detail-panel" class="detail-panel hidden">
-        <div class="detail-header">
-            <h3 id="detail-title">Product Details</h3>
-            <button onclick="closeDetail()" class="btn-close">&times;</button>
+</div>
+
+<div class="dashboard-grid" id="product-stats">
+    <div class="card metric-card"><h3>Total Products</h3><div class="metric-value">-</div></div>
+    <div class="card metric-card"><h3>Active Products</h3><div class="metric-value">-</div></div>
+    <div class="card metric-card"><h3>Low Stock</h3><div class="metric-value">-</div></div>
+    <div class="card metric-card"><h3>Inventory Value</h3><div class="metric-value">-</div></div>
+</div>
+
+<div class="dashboard-row catalog-row">
+    <section class="card catalog-table-card">
+        <div class="section-heading">
+            <div>
+                <h2>Catalog Inventory</h2>
+                <p class="catalog-subtitle">Browse the live CRM inventory and open any product into the editor.</p>
+            </div>
         </div>
-        <div id="detail-body"></div>
+        <div class="product-grid" id="product-grid">
+            <div class="card" style="grid-column: 1/-1; text-align:center; padding:40px;">
+                Loading catalog...
+            </div>
+        </div>
+    </section>
+
+    <aside class="card catalog-form-card">
+        <div class="section-heading">
+            <div>
+                <h2 id="product-form-title">New Product</h2>
+                <p class="catalog-subtitle" id="product-form-subtitle">Create or update CRM-managed catalog inventory.</p>
+            </div>
+            <button class="btn" type="button" onclick="resetProductForm()">Reset</button>
+        </div>
+        <p class="helper-text" id="product-readonly-note">Only `admin` and `manager` roles can save product changes.</p>
+        <form id="product-form" class="stack-form">
+            <input type="hidden" id="product-id">
+            <div class="catalog-quick-picks">
+                <button class="btn btn-secondary" type="button" onclick="applyProductPreset('Complete Drones', '/static/img/products/drn_001.jpg')">New Drone</button>
+                <button class="btn btn-secondary" type="button" onclick="applyProductPreset('Batteries', '/static/img/products/bat_001.jpg')">New Battery</button>
+                <button class="btn btn-secondary" type="button" onclick="applyProductPreset('Accessories', '/static/img/products/acc_001.jpg')">New Accessory</button>
+            </div>
+            <p class="helper-text">Use this form to add new drones, batteries, accessories, or update any existing product record.</p>
+            <label>Name</label>
+            <input id="product-name" class="form-input" required>
+            <label>SKU</label>
+            <input id="product-sku" class="form-input" required pattern="[A-Za-z0-9._-]+">
+            <label>Shop</label>
+            <select id="product-shop-id" class="form-input">
+                <option value="">Unassigned</option>
+            </select>
+            <label>Category</label>
+            <input id="product-category" class="form-input" list="product-category-options" placeholder="Complete Drones, Batteries, Accessories">
+            <datalist id="product-category-options">
+                <option value="Complete Drones"></option>
+                <option value="Batteries"></option>
+                <option value="Accessories"></option>
+                <option value="Frames"></option>
+                <option value="Motors & ESCs"></option>
+                <option value="Flight Controllers"></option>
+                <option value="Cameras & Gimbals"></option>
+                <option value="Propellers"></option>
+                <option value="FPV Gear"></option>
+            </datalist>
+            <label>Price</label>
+            <input id="product-price" class="form-input" type="number" step="0.01" min="0" required>
+            <label>Stock</label>
+            <input id="product-stock" class="form-input" type="number" step="1" min="0" required>
+            <label>Status</label>
+            <select id="product-is-active" class="form-input">
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+            </select>
+            <label>Image URL</label>
+            <input id="product-image-url" class="form-input" placeholder="/static/img/products/octo_001.jpg">
+            <label>Description</label>
+            <textarea id="product-description" class="form-input form-textarea" rows="5"></textarea>
+            <div class="toolbar">
+                <button class="btn btn-success" type="submit" id="product-submit-btn">Save Product</button>
+                <button class="btn" type="button" onclick="resetProductForm()">Clear</button>
+            </div>
+        </form>
+    </aside>
+</div>
+
+<div class="card" id="product-feedback-card">
+    <h3>Product Status</h3>
+    <p id="product-feedback" class="catalog-feedback">Loading product management workspace...</p>
+</div>
+
+<div id="detail-panel" class="detail-panel hidden">
+    <div class="detail-header">
+        <h3 id="detail-title">Product Details</h3>
+        <button onclick="closeDetail()" class="btn-close">&times;</button>
     </div>
+    <div id="detail-body"></div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-let allProducts = [];
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+const productState = {
+    products: [],
+    shops: [],
+    canManage: false,
+};
 
-function loadProducts() {
-    const cat = document.getElementById('category-filter').value;
-    let url = '/api/products';
-    if (cat) url += '?category=' + encodeURIComponent(cat);
-
-    _fetch(url)
-        .then(r => r.json())
-        .then(data => {
-            allProducts = data.products || [];
-            renderGrid(allProducts);
-            buildCategoryFilter(allProducts);
-            renderStats(allProducts);
-        })
-        .catch(e => {
-            document.getElementById('product-grid').innerHTML =
-                `<div class="card" style="grid-column:1/-1;padding:40px;text-align:center;color:var(--danger)">Error loading products: ${e.message}</div>`;
-        });
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
-function buildCategoryFilter(products) {
-    const sel = document.getElementById('category-filter');
-    const current = sel.value;
-    const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
-    if (sel.options.length <= 1) {
-        cats.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c;
-            opt.textContent = c;
-            if (c === current) opt.selected = true;
-            sel.appendChild(opt);
-        });
+function formatMoney(value) {
+    return '$' + Number(value || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function canManageCatalog(role) {
+    return ['admin', 'manager'].includes((role || '').toLowerCase());
+}
+
+function setFeedback(message, kind = 'info') {
+    const feedback = document.getElementById('product-feedback');
+    feedback.textContent = message;
+    feedback.className = `catalog-feedback is-${kind}`;
+}
+
+function readJsonResponse(resp) {
+    return resp.json().then((data) => {
+        if (!resp.ok || data.error) {
+            const message = data.detail || data.error || `Request failed with status ${resp.status}`;
+            throw new Error(message);
+        }
+        return data;
+    });
+}
+
+function describeShopSync(sync, fallbackLabel = 'Product change') {
+    if (!sync) {
+        return {message: `${fallbackLabel} saved locally.`, kind: 'success'};
     }
+    if (sync.synced) {
+        const count = sync.count ?? sync.processed_count ?? 0;
+        return {
+            message: `${fallbackLabel} saved locally and synced ${count} product${count === 1 ? '' : 's'} to the shop.`,
+            kind: 'success',
+        };
+    }
+    if (sync.configured === false) {
+        return {
+            message: `${fallbackLabel} saved locally. Shop sync is not configured in this environment.`,
+            kind: 'warning',
+        };
+    }
+    return {
+        message: `${fallbackLabel} saved locally, but shop sync failed: ${sync.reason || sync.response?.detail || 'unknown error'}`,
+        kind: 'warning',
+    };
+}
+
+function updateAccessState(session = window.OCTO_SESSION || {}) {
+    productState.canManage = Boolean(session.authenticated && canManageCatalog(session.role));
+    document.getElementById('product-readonly-note').style.display = productState.canManage ? 'none' : '';
+    document.getElementById('product-submit-btn').disabled = !productState.canManage;
+    Array.from(document.querySelectorAll('#product-form input, #product-form select, #product-form textarea')).forEach((element) => {
+        if (element.id !== 'product-id') element.disabled = !productState.canManage;
+    });
+    Array.from(document.querySelectorAll('.catalog-quick-picks button')).forEach((element) => {
+        element.disabled = !productState.canManage;
+    });
 }
 
 function renderStats(products) {
-    const cats = {};
-    let totalStock = 0;
-    let totalValue = 0;
-    products.forEach(p => {
-        cats[p.category] = (cats[p.category] || 0) + 1;
-        totalStock += (p.stock || 0);
-        totalValue += (p.price || 0) * (p.stock || 0);
-    });
+    const activeProducts = products.filter((product) => product.is_active).length;
+    const lowStockProducts = products.filter((product) => Number(product.stock || 0) < 25).length;
+    const inventoryValue = products.reduce((sum, product) => sum + (Number(product.price || 0) * Number(product.stock || 0)), 0);
 
     document.getElementById('product-stats').innerHTML = `
-        <div class="dashboard-grid">
-            <div class="card metric-card">
-                <h3>Total Products</h3>
-                <div class="metric-value">${products.length}</div>
-            </div>
-            <div class="card metric-card">
-                <h3>Categories</h3>
-                <div class="metric-value">${Object.keys(cats).length}</div>
-            </div>
-            <div class="card metric-card">
-                <h3>Total Stock</h3>
-                <div class="metric-value">${totalStock.toLocaleString()}</div>
-            </div>
-            <div class="card metric-card">
-                <h3>Inventory Value</h3>
-                <div class="metric-value">$${totalValue.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0})}</div>
-            </div>
-        </div>
+        <div class="card metric-card"><h3>Total Products</h3><div class="metric-value">${products.length}</div></div>
+        <div class="card metric-card"><h3>Active Products</h3><div class="metric-value">${activeProducts}</div></div>
+        <div class="card metric-card"><h3>Low Stock</h3><div class="metric-value">${lowStockProducts}</div></div>
+        <div class="card metric-card"><h3>Inventory Value</h3><div class="metric-value">${formatMoney(inventoryValue)}</div></div>
     `;
 }
 
+function buildCategoryFilter(products) {
+    const select = document.getElementById('category-filter');
+    const current = select.value;
+    const categories = [...new Set(products.map((product) => product.category).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">All Categories</option>' + categories.map((category) => (
+        `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`
+    )).join('');
+    if ([...select.options].some((option) => option.value === current)) {
+        select.value = current;
+    }
+}
+
+function populateShopSelect() {
+    const select = document.getElementById('product-shop-id');
+    const current = select.value;
+    const options = productState.shops.map((shop) => `<option value="${shop.id}">${escapeHtml(shop.name)}</option>`).join('');
+    select.innerHTML = `<option value="">Unassigned</option>${options}`;
+    if ([...select.options].some((option) => option.value === current)) {
+        select.value = current;
+    }
+}
+
+async function loadShops() {
+    const data = await _fetch('/api/shops').then(readJsonResponse);
+    productState.shops = data.shops || [];
+    populateShopSelect();
+}
+
+async function loadProducts() {
+    const params = new URLSearchParams({include_inactive: 'true'});
+    const search = document.getElementById('product-search').value.trim();
+    const category = document.getElementById('category-filter').value;
+    const status = document.getElementById('status-filter').value;
+    if (search) params.set('search', search);
+    if (category) params.set('category', category);
+    if (status && status !== 'all') params.set('status', status);
+
+    const data = await _fetch(`/api/products?${params.toString()}`).then(readJsonResponse);
+    productState.products = data.products || [];
+    buildCategoryFilter(productState.products);
+    renderStats(productState.products);
+    renderGrid(productState.products);
+}
+
 function renderGrid(products) {
+    const grid = document.getElementById('product-grid');
     if (!products.length) {
-        document.getElementById('product-grid').innerHTML =
-            '<div class="card" style="grid-column:1/-1;padding:40px;text-align:center;">No products found</div>';
+        grid.innerHTML = '<div class="card" style="grid-column:1/-1;padding:40px;text-align:center;">No products found</div>';
         return;
     }
 
-    document.getElementById('product-grid').innerHTML = products.map(p => `
-        <div class="product-card" onclick="showProductDetail(${p.id})">
-            <div class="product-image">
-                ${p.image_url
-                    ? `<img src="${p.image_url}" alt="${p.name}" loading="lazy">`
-                    : `<div class="product-image-placeholder">${p.name.charAt(0)}</div>`}
-            </div>
+    grid.innerHTML = products.map((product) => `
+        <article class="product-card">
+            <button class="product-preview-btn" type="button" onclick="showProductDetail(${product.id})">
+                <div class="product-image">
+                    ${product.image_url
+                        ? `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}" loading="lazy">`
+                        : `<div class="product-image-placeholder">${escapeHtml((product.name || '?').charAt(0))}</div>`}
+                </div>
+            </button>
             <div class="product-info">
-                <span class="product-category">${p.category || 'Uncategorized'}</span>
-                <h4 class="product-name">${p.name}</h4>
-                <p class="product-sku">${p.sku || ''}</p>
+                <div class="product-card-topline">
+                    <span class="product-category">${escapeHtml(product.category || 'Uncategorized')}</span>
+                    <span class="badge badge-${product.is_active ? 'active' : 'cancelled'}">${product.is_active ? 'active' : 'inactive'}</span>
+                </div>
+                <h4 class="product-name">${escapeHtml(product.name)}</h4>
+                <p class="product-sku">${escapeHtml(product.sku || '')}</p>
+                <div class="product-meta-list">
+                    <span>${escapeHtml(product.shop_name || 'Unassigned')}</span>
+                    <span>${Number(product.stock || 0).toLocaleString()} in stock</span>
+                </div>
                 <div class="product-footer">
-                    <span class="product-price">$${Number(p.price).toLocaleString(undefined, {minimumFractionDigits:2})}</span>
-                    <span class="product-stock ${p.stock < 60 ? 'low-stock' : ''}">${p.stock} in stock</span>
+                    <span class="product-price">${formatMoney(product.price)}</span>
+                    <button class="btn" type="button" onclick="showProductDetail(${product.id})">Details</button>
+                </div>
+                <div class="product-card-actions" style="${productState.canManage ? '' : 'display:none'}">
+                    <button class="btn btn-primary" type="button" onclick="editProduct(${product.id})">Edit</button>
+                    <button class="btn btn-warning" type="button" onclick="removeProduct(${product.id})">${product.is_active ? 'Archive' : 'Delete'}</button>
                 </div>
             </div>
-        </div>
+        </article>
     `).join('');
 }
 
+function resetProductForm() {
+    document.getElementById('product-form').reset();
+    document.getElementById('product-id').value = '';
+    document.getElementById('product-form-title').textContent = 'New Product';
+    document.getElementById('product-form-subtitle').textContent = 'Create or update CRM-managed catalog inventory.';
+    document.getElementById('product-is-active').value = '1';
+    document.getElementById('product-stock').value = '0';
+}
+
+function applyProductPreset(category, imageUrl = '') {
+    if (!productState.canManage) return;
+    document.getElementById('product-category').value = category;
+    if (!document.getElementById('product-image-url').value.trim() && imageUrl) {
+        document.getElementById('product-image-url').value = imageUrl;
+    }
+    document.getElementById('product-is-active').value = '1';
+    document.getElementById('product-stock').value = document.getElementById('product-stock').value || '0';
+    document.getElementById('product-name').focus();
+}
+
+function editProduct(id) {
+    const product = productState.products.find((entry) => entry.id === id);
+    if (!product) return;
+    document.getElementById('product-id').value = product.id;
+    document.getElementById('product-name').value = product.name || '';
+    document.getElementById('product-sku').value = product.sku || '';
+    document.getElementById('product-shop-id').value = product.shop_id || '';
+    document.getElementById('product-category').value = product.category || '';
+    document.getElementById('product-price').value = Number(product.price || 0);
+    document.getElementById('product-stock').value = Number(product.stock || 0);
+    document.getElementById('product-is-active').value = String(product.is_active ? 1 : 0);
+    document.getElementById('product-image-url').value = product.image_url || '';
+    document.getElementById('product-description').value = product.description || '';
+    document.getElementById('product-form-title').textContent = `Edit Product #${product.id}`;
+    document.getElementById('product-form-subtitle').textContent = 'Update pricing, availability, and shop assignment.';
+    document.querySelector('.catalog-form-card').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
 function showProductDetail(id) {
-    _fetch('/api/products/' + id)
-        .then(r => r.json())
-        .then(data => {
-            const p = data.product;
-            if (!p) return;
-            document.getElementById('detail-title').textContent = p.name;
-            document.getElementById('detail-body').innerHTML = `
-                <div class="product-detail-view">
-                    <div class="product-detail-image">
-                        ${p.image_url
-                            ? `<img src="${p.image_url}" alt="${p.name}">`
-                            : `<div class="product-image-placeholder" style="height:200px;font-size:3rem">${p.name.charAt(0)}</div>`}
+    const product = productState.products.find((entry) => entry.id === id);
+    if (!product) return;
+    document.getElementById('detail-title').textContent = product.name;
+    document.getElementById('detail-body').innerHTML = `
+        <div class="product-detail-view">
+            <div class="product-detail-image">
+                ${product.image_url
+                    ? `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}">`
+                    : `<div class="product-image-placeholder" style="height:200px;font-size:3rem">${escapeHtml((product.name || '?').charAt(0))}</div>`}
+            </div>
+            <div class="detail-stack">
+                <div class="detail-grid">
+                    <div>
+                        <span class="status-label">SKU</span>
+                        <p style="margin-top:4px">${escapeHtml(product.sku)}</p>
                     </div>
-                    <div class="detail-stack">
-                        <div class="detail-grid">
-                            <div>
-                                <span class="status-label">SKU</span>
-                                <p style="margin-top:4px">${p.sku}</p>
-                            </div>
-                            <div>
-                                <span class="status-label">Category</span>
-                                <p style="margin-top:4px">${p.category || '—'}</p>
-                            </div>
-                            <div>
-                                <span class="status-label">Price</span>
-                                <p style="margin-top:4px;color:var(--accent-strong);font-size:1.3rem;font-weight:700">$${Number(p.price).toLocaleString(undefined, {minimumFractionDigits:2})}</p>
-                            </div>
-                            <div>
-                                <span class="status-label">Stock</span>
-                                <p style="margin-top:4px" class="${p.stock < 60 ? 'low-stock' : ''}">${p.stock} units</p>
-                            </div>
-                        </div>
-                        <div>
-                            <span class="status-label">Description</span>
-                            <p style="margin-top:6px;color:var(--text-secondary);line-height:1.6">${p.description || 'No description available.'}</p>
-                        </div>
+                    <div>
+                        <span class="status-label">Shop</span>
+                        <p style="margin-top:4px">${escapeHtml(product.shop_name || 'Unassigned')}</p>
+                    </div>
+                    <div>
+                        <span class="status-label">Category</span>
+                        <p style="margin-top:4px">${escapeHtml(product.category || '—')}</p>
+                    </div>
+                    <div>
+                        <span class="status-label">Status</span>
+                        <p style="margin-top:4px">${product.is_active ? 'Active' : 'Inactive'}</p>
+                    </div>
+                    <div>
+                        <span class="status-label">Price</span>
+                        <p style="margin-top:4px;color:var(--accent-strong);font-size:1.3rem;font-weight:700">${formatMoney(product.price)}</p>
+                    </div>
+                    <div>
+                        <span class="status-label">Stock</span>
+                        <p style="margin-top:4px" class="${Number(product.stock || 0) < 25 ? 'low-stock' : ''}">${Number(product.stock || 0).toLocaleString()} units</p>
                     </div>
                 </div>
-            `;
-            document.getElementById('detail-panel').classList.remove('hidden');
-        });
+                <div>
+                    <span class="status-label">Description</span>
+                    <p style="margin-top:6px;color:var(--text-secondary);line-height:1.6">${escapeHtml(product.description || 'No description available.')}</p>
+                </div>
+                <div class="toolbar" style="${productState.canManage ? '' : 'display:none'}">
+                    <button class="btn btn-primary" type="button" onclick="editProduct(${product.id}); closeDetail();">Edit Product</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('detail-panel').classList.remove('hidden');
 }
 
 function closeDetail() {
     document.getElementById('detail-panel').classList.add('hidden');
 }
 
-loadProducts();
+async function removeProduct(id) {
+    if (!productState.canManage) return;
+    if (!window.confirm('Archive or delete this product? Historical items will be archived instead of removed.')) return;
+    try {
+        const result = await _fetch(`/api/products/${id}`, {method: 'DELETE'}).then(readJsonResponse);
+        const syncFeedback = describeShopSync(result.shop_sync, result.reason || `Processed product #${id}`);
+        setFeedback(syncFeedback.message, syncFeedback.kind);
+        await loadProducts();
+        resetProductForm();
+        closeDetail();
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+async function submitProductForm(event) {
+    event.preventDefault();
+    if (!productState.canManage) return;
+    const productId = document.getElementById('product-id').value;
+    const payload = {
+        name: document.getElementById('product-name').value.trim(),
+        sku: document.getElementById('product-sku').value.trim(),
+        shop_id: document.getElementById('product-shop-id').value ? Number(document.getElementById('product-shop-id').value) : null,
+        category: document.getElementById('product-category').value.trim(),
+        price: Number(document.getElementById('product-price').value),
+        stock: Number(document.getElementById('product-stock').value),
+        is_active: Number(document.getElementById('product-is-active').value),
+        image_url: document.getElementById('product-image-url').value.trim() || null,
+        description: document.getElementById('product-description').value.trim(),
+    };
+
+    try {
+        const url = productId ? `/api/products/${productId}` : '/api/products';
+        const method = productId ? 'PATCH' : 'POST';
+        const result = await _fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
+        }).then(readJsonResponse);
+        const syncFeedback = describeShopSync(result.shop_sync, productId ? `Product #${productId}` : 'Product');
+        setFeedback(syncFeedback.message, syncFeedback.kind);
+        await loadProducts();
+        resetProductForm();
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+async function loadProductsWorkspace() {
+    try {
+        await Promise.all([loadShops(), loadProducts()]);
+        setFeedback(productState.canManage ? 'Product management workspace ready for changes.' : 'Read-only access: sign in as admin or manager to modify products.', 'info');
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+document.getElementById('product-form').addEventListener('submit', submitProductForm);
+document.getElementById('product-search').addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') loadProducts();
+});
+document.getElementById('category-filter').addEventListener('change', loadProducts);
+document.getElementById('status-filter').addEventListener('change', loadProducts);
+window.addEventListener('octo:session', (event) => {
+    updateAccessState(event.detail);
+    renderGrid(productState.products);
+    setFeedback(productState.canManage ? 'Product management workspace ready for changes.' : 'Read-only access: sign in as admin or manager to modify products.', 'info');
+});
+
+updateAccessState(window.OCTO_SESSION || {authenticated: false});
+resetProductForm();
+loadProductsWorkspace();
 </script>
 {% endblock %}

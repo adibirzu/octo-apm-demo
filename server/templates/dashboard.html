@@ -7,7 +7,7 @@
 <section class="hero-panel">
     <div>
         <p class="hero-kicker">OCTO unified observability</p>
-        <h2>CRM, Drone Shop, ATP, and OCI-DEMO backends on one correlated path.</h2>
+        <h2>CRM, Drone Shop, ATP, and platform backends on one correlated path.</h2>
         <p class="hero-copy">This view combines business metrics, dependency health, and drilldown targets so you can pivot from an application trace to logs, database tooling, and service status without losing context.</p>
     </div>
     <img src="/static/img/octo-logo.png" alt="OCTO CRM APM" class="hero-logo">
@@ -89,7 +89,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
 async function loadDashboard() {
     try {
         const [summaryResp, readyResp, statusResp] = await Promise.all([

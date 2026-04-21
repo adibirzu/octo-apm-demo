@@ -100,6 +100,7 @@ class SessionGateMiddleware(BaseHTTPMiddleware):
             _auth_inflight.release()
 
         if user:
+            request.state.current_user = user
             return await call_next(request)
 
         # API calls get a 401 JSON response

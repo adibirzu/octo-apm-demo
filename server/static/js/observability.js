@@ -28,7 +28,8 @@
         });
         // sendBeacon is non-blocking and survives page unload
         if (navigator.sendBeacon) {
-            navigator.sendBeacon('/api/observability/frontend', body);
+            const payload = new Blob([body], {type: 'application/json'});
+            navigator.sendBeacon('/api/observability/frontend', payload);
         } else {
             _fetch('/api/observability/frontend', {
                 method: 'POST',

@@ -73,17 +73,17 @@ spec:
                   name: crm-portal-secrets
                   key: C28_MUSHOP_URL
                   optional: true
-            - name: OCI_DEMO_CONTROL_PLANE_URL
+            - name: CONTROL_PLANE_URL
               valueFrom:
                 secretKeyRef:
                   name: crm-portal-secrets
-                  key: OCI_DEMO_CONTROL_PLANE_URL
+                  key: CONTROL_PLANE_URL
                   optional: true
-            - name: OCI_DEMO_BACKEND_URL
+            - name: PLATFORM_BACKEND_URL
               valueFrom:
                 secretKeyRef:
                   name: crm-portal-secrets
-                  key: OCI_DEMO_BACKEND_URL
+                  key: PLATFORM_BACKEND_URL
                   optional: true
             - name: APM_CONSOLE_URL
               valueFrom:
