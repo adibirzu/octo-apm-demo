@@ -135,11 +135,11 @@ Both services tag Oracle sessions for OPSI/DB Management correlation:
 
 ```sql
 -- Set on pool checkout
-DBMS_APPLICATION_INFO.SET_MODULE('octo-drone-shop-oke', 'POST /api/shop/checkout');
+DBMS_APPLICATION_INFO.SET_MODULE('octo-drone-shop', 'POST /api/shop/checkout');
 DBMS_SESSION.SET_IDENTIFIER('<trace_id>');
 
 -- Result in V$SESSION
-MODULE           = 'octo-drone-shop-oke'
+MODULE           = 'octo-drone-shop'
 ACTION           = 'POST /api/shop/checkout'
 CLIENT_IDENTIFIER = '79c76c8173b086043b36e60422a2b317'
 ```

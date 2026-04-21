@@ -78,7 +78,7 @@ CRM: simulation.drone_shop_proxy
 
 ## Verification in OCI Console
 
-1. **APM** → Trace Explorer → filter `serviceName=octo-drone-shop-oke`
+1. **APM** → Trace Explorer → filter `serviceName=octo-drone-shop`
 2. Pick a trace with `integration.crm.*` spans
 3. See the full distributed trace spanning both services
 4. **APM** → Topology → verify edges: Shop ↔ CRM ↔ ATP

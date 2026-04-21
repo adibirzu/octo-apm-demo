@@ -82,6 +82,7 @@ nav:
     - Prerequisites: getting-started/prerequisites.md
     - Quick Start: getting-started/quickstart.md
     - OKE Deployment: getting-started/oke-deployment.md
+    - New Tenancy: getting-started/new-tenancy.md
   - Architecture:
     - architecture/index.md
     - Platform Overview: architecture/platform-overview.md
@@ -102,6 +103,7 @@ nav:
     - Simulation Lab: crm/simulation.md
   - Observability:
     - observability/index.md
+    - Enhancement Plan: observability/enhancement-plan.md
     - Add-Ons Guide: observability/addons.md
     - MELTS Overview: observability/melts.md
     - Traces (APM): observability/traces.md
@@ -116,6 +118,7 @@ nav:
     - Chaos playbook: observability-v2/chaos-playbook.md
     - Log Analytics dashboards: observability-v2/log-analytics-dashboards.md
     - APM drill-down: observability-v2/apm-drilldown.md
+    - Stack Monitoring (ATP): observability-v2/stack-monitoring.md
     - WAF observability: observability-v2/waf-observability.md
     - Auto-remediation flow: observability-v2/autoremediation-flow.md
     - Demo script: observability-v2/demo-script.md

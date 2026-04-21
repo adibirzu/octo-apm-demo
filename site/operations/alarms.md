@@ -41,7 +41,7 @@ HTTP monitor on `/ready` endpoint every 30 seconds. Configured via `deploy/oci/e
 
 ```bash
 COMPARTMENT_ID="<compartment-ocid>" \
-SHOP_PUBLIC_URL="https://shop.yourcompany.cloud" \
-ALARM_EMAIL="ops@yourcompany.cloud" \
+SHOP_PUBLIC_URL="https://shop.<your-domain>" \
+ALARM_EMAIL="ops@<your-domain>" \
 ./deploy/oci/ensure_monitoring.sh
 ```

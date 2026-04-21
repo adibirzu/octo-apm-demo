@@ -18,8 +18,8 @@
 
 | URL | Status |
 |---|---|
-| [shop.octodemo.cloud](https://shop.octodemo.cloud) | Production (OKE) |
-| [shop.octodemo.cloud/api/observability/360](https://shop.octodemo.cloud/api/observability/360) | 360 Dashboard |
+| [shop.example.cloud](https://shop.example.cloud) | Production (OKE) |
+| [shop.example.cloud/api/observability/360](https://shop.example.cloud/api/observability/360) | 360 Dashboard |
 
 ## Current Boundary
 

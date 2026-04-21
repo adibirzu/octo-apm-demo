@@ -13,7 +13,7 @@ Every log entry includes trace context for OCI Log Analytics correlation:
   "span_id": "af2ac0675e8b5211",
   "oracleApmTraceId": "79c76c8173b086043b36e60422a2b317",
   "traceparent": "00-79c76c8173b086043b36e60422a2b317-af2ac0675e8b5211-01",
-  "service.name": "octo-drone-shop-oke",
+  "service.name": "octo-drone-shop",
   "orders.order_id": 3142,
   "orders.total": 2499.99
 }

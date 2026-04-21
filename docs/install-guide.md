@@ -7,30 +7,36 @@ git clone https://github.com/adibirzu/octo-drone-shop.git
 cd octo-drone-shop
 ```
 
-## 1b. Standalone deployment (any OCI tenancy, without OCI-DEMO)
+## 1b. Standalone deployment (any OCI tenancy, without external orchestration)
 
 The app is fully portable — set **one domain variable** and all URLs, CORS
 origins, and SSO redirects are derived automatically. No hardcoded tenancy
 OCIDs, IPs, or hostnames remain in the codebase.
 
+Use [deploy/credentials.template](../deploy/credentials.template) for secret-only
+values. Every sensitive variable also supports a `*_FILE` variant so mounted
+Docker/Kubernetes/OCI Vault secrets can be consumed without copying them into
+tracked env files.
+
 ### Prerequisites
 
 | Prerequisite | What to set | Notes |
 |---|---|---|
-| DNS domain | `DNS_DOMAIN=yourcompany.cloud` | All `shop.<domain>` and `crm.<domain>` URLs derive from this |
+| DNS domain | `DNS_DOMAIN=<your-domain>` | All `shop.<domain>` and `crm.<domain>` URLs derive from this |
 | Oracle ATP | `ORACLE_DSN`, `ORACLE_PASSWORD`, wallet | See section 4 |
 | OCI APM domain | `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY` | Create via OCI Console → APM → Create domain |
 | Auth secret | `AUTH_TOKEN_SECRET` | Required in production; 32+ random bytes |
 | IDCS SSO (optional) | `IDCS_DOMAIN_URL`, `IDCS_CLIENT_ID`, `IDCS_CLIENT_SECRET` | See section 11; `IDCS_REDIRECT_URI` auto-derives from `DNS_DOMAIN` |
-| CRM integration (optional) | `ENTERPRISE_CRM_URL` | Internal or public URL of the CRM portal |
-| Service key (optional) | `INTERNAL_SERVICE_KEY` | For CRM→shop simulation proxy; auto-derived in OCI-DEMO |
+| CRM integration (optional) | `ENTERPRISE_CRM_URL`, `CRM_PUBLIC_URL` | Use an internal/backend URL for server-to-server calls and a public URL for browser links |
+| Service key (optional) | `INTERNAL_SERVICE_KEY` | For CRM→shop simulation proxy; some deployment wrappers may derive it automatically |
 
 ### Quick start — standalone on OKE
 
 ```bash
 # 1. Set your domain and OCI resources
-export DNS_DOMAIN="yourcompany.cloud"
+export DNS_DOMAIN="<your-domain>"
 export AUTH_TOKEN_SECRET="$(openssl rand -hex 32)"
+export CRM_PUBLIC_URL="https://crm.${DNS_DOMAIN}"
 export ORACLE_DSN="myatp_low"
 export ORACLE_PASSWORD="<your-atp-password>"
 export OCI_APM_ENDPOINT="https://<apm-data-upload-endpoint>"
@@ -60,15 +66,17 @@ kubectl -n octo-drone-shop create secret generic octo-sso \
 kubectl -n octo-drone-shop rollout restart deploy/octo-drone-shop
 ```
 
-All CORS origins, SSO redirect URIs, and CRM integration URLs are derived from
-`DNS_DOMAIN` at runtime — no code changes needed per tenancy.
+All CORS origins and SSO redirect URIs derive from `DNS_DOMAIN` at runtime. If
+the CRM or workflow gateway use private backend service URLs, set
+`CRM_PUBLIC_URL` and `WORKFLOW_PUBLIC_API_BASE_URL` so browsers never receive
+private service hostnames.
 
-### When deployed as part of OCI-DEMO (C28)
+### If you use a deployment wrapper
 
-The `c28_deploy_drone_shop.sh` script handles all of the above automatically:
-it reads `DNS_DOMAIN` from the OCI-DEMO `.env.local`, derives `AUTH_TOKEN_SECRET`
-and `INTERNAL_SERVICE_KEY` if not explicitly set, and injects everything into
-the K8s manifests. Just run `python deploy.py c28`.
+If you have a separate deployment wrapper around this repo, it should inject
+the same `DNS_DOMAIN`, auth secret, CRM URL, and OCI variables documented in
+this guide. The shop manifests are designed to stay portable whether they are
+rendered directly with `envsubst` or fed by a higher-level automation layer.
 
 ## 2. Python environment
 
@@ -76,7 +84,7 @@ Create a virtual environment and install dependencies:
 
 ```bash
 python3 -m venv .venv
-source /Users/abirzu/dev/octo-drone-shop/.venv/bin/activate
+source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
@@ -158,7 +166,7 @@ Notes:
 Optional helper to ensure/create ATP:
 
 ```bash
-COMPARTMENT_ID="<database compartment ocid>" DISPLAY_NAME="oci-demo-shared-atp" DB_NAME="ocidemoatp" ./deploy/oci/ensure_atp.sh
+COMPARTMENT_ID="<database compartment ocid>" DISPLAY_NAME="shared-atp" DB_NAME="sharedatp" ./deploy/oci/ensure_atp.sh
 ```
 
 Recommended OCI-native post-create steps:
@@ -291,8 +299,19 @@ envsubst < deploy/k8s/deployment.yaml | kubectl apply -f -
 envsubst < deploy/k8s/workflow-gateway.yaml | kubectl apply -f -
 ```
 
-The same rendering pattern applies in OCI-DEMO **C28** (`scripts/c28_deploy_drone_shop.sh`),
-which sources its values from the demo's `.env.local`.
+Recommended secret workflow:
+
+```bash
+cp deploy/credentials.template deploy/credentials.env
+# fill secrets or *_FILE pointers in deploy/credentials.env
+set -a
+source deploy/credentials.env
+set +a
+```
+
+The same rendering pattern applies if you call these manifests from a higher-level
+deploy script or CI job. Keep the rendered values in environment variables or
+secrets rather than hardcoding them into the manifest.
 
 Or, if you prefer to skip templating, run kubectl directly:
 
@@ -349,9 +368,9 @@ endpoint, so the integration is safe to expose to the internet.
 4. **Client configuration**:
    - Allowed grant types: **Authorization Code**.
    - Allowed operations: **Introspect**.
-   - Redirect URL: `https://shop.octodemo.cloud/api/auth/sso/callback`
+   - Redirect URL: `https://shop.example.cloud/api/auth/sso/callback`
      (or your hostname).
-   - Post-logout redirect URL: `https://shop.octodemo.cloud/login`.
+   - Post-logout redirect URL: `https://shop.example.cloud/login`.
    - Client type: **Confidential**.
    - Scopes: `openid`, `profile`, `email`.
 5. **Activate** the app and copy the **Client ID** and **Client Secret**.
@@ -374,8 +393,8 @@ kubectl -n octo-drone-shop create secret generic octo-sso \
   --from-literal=idcs-domain-url="https://idcs-xxxxx.identity.oraclecloud.com" \
   --from-literal=idcs-client-id="..." \
   --from-literal=idcs-client-secret="..." \
-  --from-literal=idcs-redirect-uri="https://shop.octodemo.cloud/api/auth/sso/callback" \
-  --from-literal=idcs-post-logout-redirect="https://shop.octodemo.cloud/login"
+  --from-literal=idcs-redirect-uri="https://shop.example.cloud/api/auth/sso/callback" \
+  --from-literal=idcs-post-logout-redirect="https://shop.example.cloud/login"
 kubectl -n octo-drone-shop rollout restart deploy/octo-drone-shop
 ```
 
@@ -397,3 +416,22 @@ kubectl -n octo-drone-shop rollout restart deploy/octo-drone-shop
 | `401 ID token verification failed`      | Clock skew, wrong audience, or expired key                            | Sync clock; recheck `IDCS_CLIENT_ID`; restart to refetch JWKS    |
 | Callback redirects to `/login?sso_error=invalid_state` | PKCE cookie missing — usually a domain/path mismatch  | Ensure `IDCS_REDIRECT_URI` host matches the user-facing host     |
 | `RuntimeError: AUTH_TOKEN_SECRET is required` at startup | Production but no signing secret               | Set `AUTH_TOKEN_SECRET` (32+ random bytes) before starting       |
+
+## 12. Enhancement rollout plan
+
+After the baseline deployment is stable, use this sequence to turn the platform
+into a full OCI observability showcase:
+
+1. **Golden workflows first** — verify checkout, CRM sync, AI assistant, and a
+   simulated-fault path all generate traces.
+2. **APM next** — confirm Trace Explorer and Topology show the complete
+   cross-service path, then add widgets for checkout, sync, assistant, and DB
+   latency.
+3. **Logging and Log Analytics** — route structured logs into OCI Logging, then
+   into Log Analytics, preserving `oracleApmTraceId`.
+4. **Drilldowns** — publish the trace, log-search, and SQL-investigation pivots
+   so operators can move between OCI services quickly.
+5. **DB observability** — enable Database Management and Operations Insights for
+   ATP and verify session-tag correlation.
+
+Detailed plan: [docs/observability-enhancement-plan.md](observability-enhancement-plan.md)

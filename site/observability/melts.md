@@ -55,7 +55,7 @@
 
 | Layer | Verification Path |
 |---|---|
-| Traces | APM → Trace Explorer → `serviceName=octo-drone-shop-oke` |
+| Traces | APM → Trace Explorer → `serviceName=octo-drone-shop` |
 | Topology | APM → Topology → CRM ↔ Shop ↔ ATP edges |
 | RUM | APM → RUM → Session Explorer → add-to-cart, checkout events |
 | Logs | Log Analytics → search `oracleApmTraceId=<trace_id>` |
