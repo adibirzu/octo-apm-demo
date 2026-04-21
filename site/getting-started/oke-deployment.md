@@ -3,7 +3,11 @@
 ## 1. Set Environment
 
 ```bash
-export DNS_DOMAIN="yourcompany.cloud"
+cp deploy/credentials.template deploy/credentials.env
+set -a
+source deploy/credentials.env
+set +a
+export DNS_DOMAIN="<your-domain>"
 export AUTH_TOKEN_SECRET="$(openssl rand -hex 32)"
 export ORACLE_DSN="myatp_low"
 export ORACLE_PASSWORD="<your-atp-password>"
@@ -20,10 +24,10 @@ export OCIR_REPO="<region>.ocir.io/<namespace>"
 
 ```bash
 # Sync to build VM
-rsync -az --exclude '.git' --exclude '__pycache__' . control-plane:/tmp/octo-drone-shop/
+rsync -az --exclude '.git' --exclude '__pycache__' . remote-builder:/tmp/octo-drone-shop/
 
 # Build + push on VM
-ssh control-plane "cd /tmp/octo-drone-shop && \
+ssh remote-builder "cd /tmp/octo-drone-shop && \
   docker build -t ${OCIR_REPO}/octo-drone-shop:latest . && \
   docker push ${OCIR_REPO}/octo-drone-shop:latest"
 ```
@@ -99,3 +103,16 @@ AUTONOMOUS_DATABASE_ID="<atp-ocid>" ./deploy/oci/ensure_db_observability.sh
 curl https://shop.${DNS_DOMAIN}/ready | python3 -m json.tool
 curl https://shop.${DNS_DOMAIN}/api/observability/360 | python3 -m json.tool
 ```
+
+## 7. Recommended enhancement sequence
+
+After the application is reachable, enable the OCI showcase in this order:
+
+1. APM traces and topology
+2. RUM for browser workflows
+3. OCI Logging and Log Analytics
+4. APM drilldowns and console links
+5. DB Management and Operations Insights
+
+Use the published [Enhancement Plan](../observability/enhancement-plan.md) to
+drive the post-deploy rollout and validation checkpoints.

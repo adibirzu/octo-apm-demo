@@ -4,8 +4,8 @@
 
 [:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-drone-shop){ .md-button .md-button--primary }
 [:octicons-mark-github-16: CRM Portal](https://github.com/adibirzu/enterprise-crm-portal){ .md-button .md-button--primary }
-[:material-rocket-launch: Live Shop](https://shop.octodemo.cloud){ .md-button }
-[:material-rocket-launch: Live CRM](https://crm.octodemo.cloud){ .md-button }
+[:material-rocket-launch: Shop URL Template](https://shop.example.cloud){ .md-button }
+[:material-rocket-launch: CRM URL Template](https://crm.example.cloud){ .md-button }
 
 ---
 
@@ -24,8 +24,9 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 
 - **CRM owns catalog and storefront administration** — products, stock, pricing, category changes, shop assignment, and storefront metadata are now managed from the CRM control plane.
 - **Shop stays customer-facing** — the public storefront remains focused on browse, cart, checkout, and shipment flows; operational edits are intentionally removed from the customer frontend.
-- **Public and private CRM URLs are split** — browser-visible links use `https://crm.octodemo.cloud`, while backend service-to-service calls may continue to use the internal cluster-local CRM endpoint.
+- **Public and private CRM URLs are split** — browser-visible links use `https://crm.example.cloud`, while backend service-to-service calls may continue to use a private service endpoint.
 - **Frontend hardening is live** — CRM page rendering, observability beacon ingestion, CSP-safe scripts, and favicon handling were updated to remove recent runtime errors.
+- **Enhancement roadmap is published** — the docs now define the rollout path for complex flows, OCI APM, OCI Logging, Log Analytics, drilldowns, and DB tooling.
 
 <div class="grid cards" markdown>
 
@@ -36,6 +37,14 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
     APM, RUM, Logging, Log Analytics, Stack Monitoring, DB Management, Ops Insights — each activatable independently as add-ons.
 
     [:octicons-arrow-right-24: Add-Ons Guide](observability/addons.md)
+
+-   :material-map-search:{ .lg .middle } **Enhancement Roadmap**
+
+    ---
+
+    Sequential plan for complex-call demos, APM visibility, log routing, drilldowns, and database investigation tooling.
+
+    [:octicons-arrow-right-24: Enhancement Plan](observability/enhancement-plan.md)
 
 -   :material-shield-check:{ .lg .middle } **Security-First Design**
 
@@ -139,19 +148,19 @@ flowchart TD
 Set **one variable** and everything derives:
 
 ```bash
-export DNS_DOMAIN="yourcompany.cloud"
-# → shop.yourcompany.cloud (shop URL, CORS, SSO callback)
-# → crm.yourcompany.cloud (CRM URL, customer sync)
+export DNS_DOMAIN="<your-domain>"
+# → shop.<your-domain> (shop URL, CORS, SSO callback)
+# → crm.<your-domain> (CRM URL, customer sync)
 # → All IDCS redirect URIs auto-derived
 ```
 
 No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.
 
-## OCI-DEMO Components
+## Related Components
 
 | ID | Component | Repository |
 |---|---|---|
-| **C28** | Drone Shop Portal (OKE) | [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) |
-| **C27** | Enterprise CRM Portal (OKE) | [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) |
+| **Shop service** | Drone Shop Portal (OKE) | [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) |
+| **CRM service** | Enterprise CRM Portal (OKE) | [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) |
 
-Part of the OCI-DEMO ecosystem alongside Ops Portal and OCI Coordinator with Remediation Agent v2.
+Often deployed alongside an ops portal and OCI Coordinator, but this repository remains standalone and tenancy-portable.

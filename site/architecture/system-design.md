@@ -68,7 +68,7 @@ Drone Shop ◄──── W3C traceparent ────► Enterprise CRM
 - **Shop** owns customer browsing, cart state, checkout, order origination, and storefront-side observability.
 - **CRM** owns customer operations, invoices, support workflows, storefront metadata, and catalog inventory updates.
 - **Oracle ATP** remains the shared persistence layer, which is why topology, traces, and SQL drill-down continue to show both services against the same database.
-- **Public CRM links** use `CRM_PUBLIC_URL=https://crm.octodemo.cloud`; private cluster-local CRM hostnames are intentionally kept out of browser-facing responses.
+- **Public CRM links** use `CRM_PUBLIC_URL=https://crm.example.cloud`; private cluster-local CRM hostnames are intentionally kept out of browser-facing responses.
 
 ### Integration Endpoints
 

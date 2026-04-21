@@ -66,7 +66,7 @@ new entry with the indicated metadata.
   - `src/incidents/playbooks/*.yaml` (5 playbooks + README)
   - `src/incidents/rules/octo_demo.yaml`
   - `docs/OCTO_DEMO_DRILLDOWN.md`, `docs/index.md`,
-    `docs/octo-demo/{playbooks,rules,tools}.md`
+    `docs/platform/{playbooks,rules,tools}.md`
   - `mkdocs.yml`
   - `.github/workflows/{security-gates,mkdocs-deploy}.yml`
   - `README.md`
@@ -105,9 +105,9 @@ new entry with the indicated metadata.
   Hunting saved-searches powering the Coordinator drill-down pivot
   and the chaos-cleanup playbook.
 
-## Entry 6 — OCI-DEMO / ops_portal
+## Entry 6 — platform ops portal
 
-- **Project**: OCI-DEMO (ops_portal component)
+- **Project**: platform ops portal
 - **Type**: Integration
 - **Status**: Completed
 - **Date**: 2026-04-12

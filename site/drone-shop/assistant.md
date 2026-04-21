@@ -14,7 +14,7 @@ OCI GenAI-powered drone advisor with ATP conversation history and product ground
 ## Configuration
 
 ```bash
-OCI_GENAI_ENDPOINT="https://inference.generativeai.eu-frankfurt-1.oci.oraclecloud.com"
+OCI_GENAI_ENDPOINT="https://inference.generativeai.<region>.oci.oraclecloud.com"
 OCI_GENAI_MODEL_ID="cohere.command-r-plus"
 OCI_COMPARTMENT_ID="<compartment-ocid>"
 ```
