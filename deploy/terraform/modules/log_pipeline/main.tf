@@ -71,7 +71,7 @@ resource "oci_sch_service_connector" "this" {
   }
 
   freeform_tags = {
-    "octo-demo" = "true"
+    "deployment-profile" = "portable"
   }
 }
 

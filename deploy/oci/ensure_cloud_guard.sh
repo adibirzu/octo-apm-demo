@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ensure OCI Cloud Guard configuration for OCTO Drone Shop (C28).
+# Ensure OCI Cloud Guard configuration for OCTO Drone Shop (Shop service).
 #
 # Creates (idempotently):
 #   1. Cloud Guard Target for the shop compartment
@@ -15,14 +15,19 @@
 #
 # Usage:
 #   COMPARTMENT_ID="ocid1.compartment...." \
-#   REPORTING_REGION="eu-frankfurt-1" \
+#   REPORTING_REGION="<region-key>" \
 #   ./deploy/oci/ensure_cloud_guard.sh
 
 set -euo pipefail
 
 : "${COMPARTMENT_ID:?COMPARTMENT_ID is required}"
-REPORTING_REGION="${REPORTING_REGION:-${OCI_REGION:-eu-frankfurt-1}}"
+REPORTING_REGION="${REPORTING_REGION:-${OCI_REGION:-${OCI_CLI_REGION:-}}}"
 TARGET_NAME="${TARGET_NAME:-octo-drone-shop-target}"
+
+if [[ -z "${REPORTING_REGION}" ]]; then
+    echo "[cloudguard] REPORTING_REGION is required (set REPORTING_REGION, OCI_REGION, or OCI_CLI_REGION)"
+    exit 1
+fi
 
 echo "[cloudguard] Compartment: ${COMPARTMENT_ID}"
 echo "[cloudguard] Reporting region: ${REPORTING_REGION}"
@@ -102,7 +107,7 @@ else
         --display-name "${TARGET_NAME}" \
         --target-resource-id "${COMPARTMENT_ID}" \
         --target-resource-type "COMPARTMENT" \
-        --description "Cloud Guard monitoring for OCTO Drone Shop (C28)" \
+        --description "Cloud Guard monitoring for OCTO Drone Shop (Shop service)" \
         --target-detector-recipes "${DETECTOR_RECIPES}" \
         --target-responder-recipes "${RESPONDER_RECIPES}" \
         --query "data.id" \

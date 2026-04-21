@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ensure OCI Monitoring resources for OCTO Drone Shop (C28).
+# Ensure OCI Monitoring resources for OCTO Drone Shop (Shop service).
 #
 # Creates (idempotently):
 #   1. OCI Notification Topic for alarm delivery
@@ -9,18 +9,18 @@
 # Prerequisites:
 #   - OCI CLI configured (instance_principal or config file)
 #   - COMPARTMENT_ID set
-#   - SHOP_PUBLIC_URL set (e.g. https://shop.octodemo.cloud)
+#   - SHOP_PUBLIC_URL set (e.g. https://shop.example.cloud)
 #
 # Usage:
 #   COMPARTMENT_ID="ocid1.compartment...." \
-#   SHOP_PUBLIC_URL="https://shop.mytenancy.cloud" \
-#   ALARM_EMAIL="ops@mytenancy.cloud" \
+#   SHOP_PUBLIC_URL="https://shop.<your-domain>" \
+#   ALARM_EMAIL="ops@<your-domain>" \
 #   ./deploy/oci/ensure_monitoring.sh
 
 set -euo pipefail
 
 : "${COMPARTMENT_ID:?COMPARTMENT_ID is required}"
-: "${SHOP_PUBLIC_URL:?SHOP_PUBLIC_URL is required (e.g. https://shop.mytenancy.cloud)}"
+: "${SHOP_PUBLIC_URL:?SHOP_PUBLIC_URL is required (e.g. https://shop.<your-domain>)}"
 ALARM_EMAIL="${ALARM_EMAIL:-}"
 METRIC_NAMESPACE="${OCI_MONITORING_NAMESPACE:-octo_drone_shop}"
 DNS_DOMAIN="${DNS_DOMAIN:-}"
@@ -131,27 +131,27 @@ create_alarm() {
 echo "[monitoring] Creating alarms..."
 
 create_alarm "octo-shop-high-error-rate" \
-    "app.errors.rate[1m]{serviceName = \"octo-drone-shop-oke\"}.rate() > 5" \
+    "app.errors.rate[1m]{serviceName = \"octo-drone-shop\"}.rate() > 5" \
     "CRITICAL" \
     "Drone Shop error rate exceeds 5/min — check APM traces and Log Analytics"
 
 create_alarm "octo-shop-db-latency" \
-    "app.db.latency_ms[1m]{serviceName = \"octo-drone-shop-oke\"}.percentile(0.95) > 2000" \
+    "app.db.latency_ms[1m]{serviceName = \"octo-drone-shop\"}.percentile(0.95) > 2000" \
     "WARNING" \
     "Drone Shop ATP p95 latency > 2s — check DB Management Performance Hub"
 
 create_alarm "octo-shop-health-down" \
-    "app.health[1m]{serviceName = \"octo-drone-shop-oke\"}.min() < 1" \
+    "app.health[1m]{serviceName = \"octo-drone-shop\"}.min() < 1" \
     "CRITICAL" \
     "Drone Shop health check failed — app may be down"
 
 create_alarm "octo-shop-crm-sync-stale" \
-    "app.crm.sync_age_s[5m]{serviceName = \"octo-drone-shop-oke\"}.max() > 600" \
+    "app.crm.sync_age_s[5m]{serviceName = \"octo-drone-shop\"}.max() > 600" \
     "WARNING" \
     "CRM customer sync hasn't run in >10 minutes — check integration health"
 
 create_alarm "octo-shop-low-stock" \
-    "app.inventory.low_stock_products[5m]{serviceName = \"octo-drone-shop-oke\"}.max() > 3" \
+    "app.inventory.low_stock_products[5m]{serviceName = \"octo-drone-shop\"}.max() > 3" \
     "WARNING" \
     "More than 3 products have stock < 10 — replenishment needed"
 

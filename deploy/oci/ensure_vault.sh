@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ensure OCI Vault for OCTO Drone Shop (C28) secret management.
+# Ensure OCI Vault for OCTO Drone Shop (Shop service) secret management.
 #
 # Creates (idempotently):
 #   1. OCI Vault (or reuses existing)

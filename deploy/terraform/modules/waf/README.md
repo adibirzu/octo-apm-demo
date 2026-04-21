@@ -6,7 +6,7 @@ per public frontend with:
 * OWASP CRS managed protection (log-only by default)
 * admin-path CIDR guard (log-only unless `mode = BLOCK`)
 * login rate limit (10 / min, action = LOG)
-* freeform tags `octo-demo=true`, `waf-mode=DETECTION|BLOCK`
+* freeform tags `deployment-profile=portable`, `waf-mode=DETECTION|BLOCK`
 
 ## Variables
 
