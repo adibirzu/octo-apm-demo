@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
@@ -37,6 +37,7 @@ from server.modules.auth import router as auth_router
 from server.modules.customers import router as customers_router
 from server.modules.orders import router as orders_router
 from server.modules.products import router as products_router
+from server.modules.shops import router as shops_router
 from server.modules.invoices import router as invoices_router
 from server.modules.tickets import router as tickets_router
 from server.modules.reports import router as reports_router
@@ -53,6 +54,7 @@ from server.modules.observability_frontend import router as observability_router
 from server.modules.observability_dashboard import router as observability_dashboard_router
 
 logger = logging.getLogger(__name__)
+cfg.validate()
 
 
 # ── Pre-initialize OTel provider + exporters (before app creation) ────
@@ -76,6 +78,8 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown."""
     logger.info("Enterprise CRM Portal starting — APM: %s, RUM: %s, Logging: %s, Metrics: enabled",
                 cfg.apm_configured, cfg.rum_configured, cfg.logging_configured)
+    for warning in cfg.warn_deprecations():
+        logger.warning(warning)
     runtime_metrics.setup()
     await bootstrap_database()
     sync_task = None
@@ -108,7 +112,7 @@ async def _orders_sync_loop() -> None:
 
 app = FastAPI(
     title=cfg.brand_name,
-    description="CRM/ERP application with full observability stack and OCI-DEMO cross-service correlation",
+    description="CRM/ERP application with full observability stack and cross-service correlation",
     version=cfg.app_version,
     lifespan=lifespan,
 )
@@ -118,9 +122,16 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 FastAPIInstrumentor.instrument_app(app)
 
 # ── Middleware (order matters — outermost first) ─────────────────
-app.add_middleware(CORSMiddleware,
-    allow_origins=["*"], allow_methods=["*"],
-    allow_headers=["*"], allow_credentials=True)
+if cfg.cors_allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cfg.cors_allowed_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=True,
+    )
+else:
+    logger.warning("CORS middleware not installed because no allowed origins were configured")
 app.add_middleware(GeoLatencyMiddleware)
 app.add_middleware(ChaosMiddleware)
 app.add_middleware(SessionGateMiddleware)
@@ -160,11 +171,17 @@ if os.path.isdir(_static_dir):
 
 templates = Jinja2Templates(directory=_templates_dir) if os.path.isdir(_templates_dir) else None
 
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon() -> RedirectResponse:
+    return RedirectResponse(url="/static/img/octo-icon.png", status_code=307)
+
 # ── Register API routers ─────────────────────────────────────────
 app.include_router(auth_router)
 app.include_router(customers_router)
 app.include_router(orders_router)
 app.include_router(products_router)
+app.include_router(shops_router)
 app.include_router(invoices_router)
 app.include_router(tickets_router)
 app.include_router(reports_router)
@@ -211,6 +228,7 @@ async def list_modules():
             {"name": "customers", "label": "Customers", "endpoints": 4, "related_to": ["orders", "tickets", "leads", "invoices"]},
             {"name": "orders", "label": "Orders", "endpoints": 6, "related_to": ["customers", "products", "invoices", "shipping"]},
             {"name": "products", "label": "Products", "endpoints": 4, "related_to": ["orders"]},
+            {"name": "shops", "label": "Storefronts", "endpoints": 4, "related_to": ["products", "integrations"]},
             {"name": "invoices", "label": "Invoices", "endpoints": 3, "related_to": ["orders"]},
             {"name": "tickets", "label": "Support Tickets", "endpoints": 4, "related_to": ["customers"]},
             {"name": "campaigns", "label": "Campaigns", "endpoints": 6, "related_to": ["leads", "customers", "analytics"]},
@@ -230,8 +248,8 @@ async def list_modules():
              "related_to": ["integrations", "dashboard", "analytics"],
              "cross_service": True},
         ],
-        "total_modules": 17,
-        "total_endpoints": 73,
+        "total_modules": 18,
+        "total_endpoints": 77,
     }
 
 
@@ -309,6 +327,11 @@ async def orders_page(request: Request):
 @app.get("/products", response_class=HTMLResponse)
 async def products_page(request: Request):
     return _render_page(request, "products", "Product Catalog", nav_key="products")
+
+
+@app.get("/catalog", response_class=HTMLResponse)
+async def catalog_page(request: Request):
+    return _render_page(request, "catalog", "Storefront Operations", nav_key="catalog")
 
 
 @app.get("/invoices", response_class=HTMLResponse)

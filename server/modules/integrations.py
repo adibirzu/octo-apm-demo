@@ -1,4 +1,4 @@
-"""Cross-service integrations and OCI-DEMO topology status."""
+"""Cross-service integrations and platform topology status."""
 
 from __future__ import annotations
 
@@ -24,6 +24,64 @@ from server.order_sync import external_orders_base_url, order_security_summary
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
+
+
+INTEGRATION_SCHEMA: dict = {
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Enterprise CRM ↔ OCTO Drone Shop integration",
+        "version": "1",
+        "description": (
+            "Cross-service contract. Mirrors the schema published by the "
+            "shop at /api/integrations/schema. Both sides require "
+            "X-Internal-Service-Key when INTERNAL_SERVICE_KEY is set; "
+            "order payloads SHOULD include idempotency_token + "
+            "source_system + source_order_id for retry-safe dedup."
+        ),
+    },
+    "components": {
+        "securitySchemes": {
+            "InternalServiceKey": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "X-Internal-Service-Key",
+                "description": "Shared secret between CRM and Drone Shop (env INTERNAL_SERVICE_KEY, legacy DRONE_SHOP_INTERNAL_KEY).",
+            }
+        },
+    },
+    "paths": {
+        "/api/orders": {
+            "post": {
+                "summary": "Create or dedupe an order (cross-service callers MUST authenticate)",
+                "security": [{"InternalServiceKey": []}],
+                "requestBody": {
+                    "required": True,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["customer_id", "items"],
+                                "properties": {
+                                    "customer_id": {"type": "integer"},
+                                    "items": {"type": "array"},
+                                    "source_system": {"type": "string", "description": "e.g. octo-drone-shop"},
+                                    "source_order_id": {"type": "string", "description": "Stable upstream order id"},
+                                    "idempotency_token": {"type": "string", "format": "uuid"},
+                                },
+                            }
+                        }
+                    },
+                },
+            }
+        }
+    },
+}
+
+
+@router.get("/schema")
+async def integration_schema() -> dict:
+    """Published cross-service contract — mirror of the shop's endpoint."""
+    return INTEGRATION_SCHEMA
 
 
 def _service_name_from_url(url: str) -> str:
@@ -59,20 +117,20 @@ def _configured_dependencies() -> list[dict]:
             "drilldown_product": "APM / Log Analytics",
         },
         {
-            "name": "oci-demo-control-plane",
-            "display_name": "OCI-DEMO Control Plane",
+            "name": "platform-control-plane",
+            "display_name": "Platform Control Plane",
             "type": "backend",
-            "url": _dns_url("cp") or cfg.oci_demo_control_plane_url,
-            "probe_url": cfg.oci_demo_backend_url or cfg.oci_demo_control_plane_url or _dns_url("cp"),
+            "url": _dns_url("cp") or cfg.control_plane_url,
+            "probe_url": cfg.platform_backend_url or cfg.control_plane_url or _dns_url("cp"),
             "health_paths": ["/health", "/api/health", "/ready"],
             "drilldown_product": "APM",
         },
         {
-            "name": "oci-demo-backend",
-            "display_name": "OCI-DEMO Backends",
+            "name": "platform-backend",
+            "display_name": "Platform Backends",
             "type": "backend",
-            "url": cfg.oci_demo_backend_url or _dns_url("cp"),
-            "probe_url": cfg.oci_demo_backend_url or cfg.oci_demo_control_plane_url or _dns_url("cp"),
+            "url": cfg.platform_backend_url or _dns_url("cp"),
+            "probe_url": cfg.platform_backend_url or cfg.control_plane_url or _dns_url("cp"),
             "health_paths": ["/health", "/api/health", "/ready"],
             "drilldown_product": "Log Analytics",
         },
@@ -320,7 +378,7 @@ async def mushop_health(request: Request = None):
 
 @router.get("/topology")
 async def topology(request: Request):
-    """Return the OCI-DEMO application topology with correlation metadata."""
+    """Return the application topology with correlation metadata."""
     correlation_id = build_correlation_id(getattr(request.state, "correlation_id", ""))
     dependencies = await _collect_dependency_status(correlation_id)
     payload = _status_payload(request, dependencies)
@@ -362,7 +420,7 @@ async def console_connections(request: Request):
     """Fetch Guacamole connections from the Control Plane and return auto-login URLs."""
     import base64
 
-    cp_url = cfg.oci_demo_control_plane_url
+    cp_url = cfg.control_plane_url
     if not cp_url:
         return {"connections": [], "error": "Control Plane not configured"}
 
@@ -371,8 +429,8 @@ async def console_connections(request: Request):
 
     try:
         with tracer.start_as_current_span("integration.control_plane.guacamole") as span:
-            set_peer_service(span, "oci-demo-control-plane", cp_url)
-            span.set_attribute("integration.target_service", "oci-demo-control-plane")
+            set_peer_service(span, "platform-control-plane", cp_url)
+            span.set_attribute("integration.target_service", "platform-control-plane")
             async with httpx.AsyncClient(timeout=10.0, headers=outbound_headers(correlation_id)) as client:
                 resp = await client.get(f"{cp_url.rstrip('/')}/api/guacamole/connections")
                 span.set_attribute("http.status_code", resp.status_code)
@@ -407,7 +465,7 @@ async def console_connections(request: Request):
 @router.get("/console/config")
 async def console_config():
     """Check if Browser Remote Access is available."""
-    cp_url = cfg.oci_demo_control_plane_url
+    cp_url = cfg.control_plane_url
     return {
         "available": bool(cp_url),
         "control_plane_url": cp_url or None,

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import hmac
 from uuid import uuid4
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -180,9 +181,30 @@ async def get_order(order_id: int, request: Request):
         return {"order": detail}
 
 
+def _require_internal_key_if_configured(request: Request) -> None:
+    """Enforce X-Internal-Service-Key on cross-service POST /api/orders
+    when the shared key is configured. If the key is empty, allow
+    anonymous traffic (back-compat with deployments that have not yet
+    populated the Kubernetes secret).
+    """
+    required = getattr(cfg, "drone_shop_internal_key", "") or ""
+    if not required:
+        return
+    supplied = (request.headers.get("X-Internal-Service-Key") or "").strip()
+    if not supplied or not hmac.compare_digest(supplied, required):
+        raise HTTPException(status_code=401, detail="Invalid or missing X-Internal-Service-Key")
+
+
 @router.post("")
 async def create_order(request: Request):
-    """Create order and persist it with server-side total calculation."""
+    """Create order and persist it with server-side total calculation.
+
+    When the calling service supplies idempotency metadata
+    (``source_system``, ``source_order_id``, ``idempotency_token``) the
+    values are stored verbatim so a retried sync from the shop does
+    not create a duplicate invoice.
+    """
+    _require_internal_key_if_configured(request)
     tracer = tracer_fn()
     client_ip = request.client.host if request.client else "unknown"
     body = await request.json()
@@ -248,14 +270,24 @@ async def create_order(request: Request):
                         correlation_id=correlation_id,
                     )
 
+            # Honor idempotency metadata if supplied by the calling
+            # service; otherwise fall back to server-side generation so
+            # direct CRM-UI order creation still works.
+            payload_source_system = (body.get("source_system") or "").strip()
+            payload_source_order_id = (body.get("source_order_id") or "").strip()
+            source_system = payload_source_system or "enterprise-crm"
+            source_order_id = (
+                payload_source_order_id
+                or f"manual-{customer.id}-{uuid4().hex[:12]}"
+            )
             order = Order(
                 customer_id=customer.id,
                 total=computed_total,
                 status="pending",
                 notes=body.get("notes", ""),
                 shipping_address=body.get("shipping_address", ""),
-                source_system="enterprise-crm",
-                source_order_id=f"manual-{customer.id}-{uuid4().hex[:12]}",
+                source_system=source_system,
+                source_order_id=source_order_id,
                 source_customer_email=customer.email,
                 sync_status="local",
                 backlog_status="backlog",
