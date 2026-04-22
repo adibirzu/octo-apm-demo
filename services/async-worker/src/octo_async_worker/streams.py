@@ -157,6 +157,59 @@ class StreamConsumer:
                 if "BUSYGROUP" not in str(exc):
                     raise
 
+    async def recover_pending(
+        self,
+        *,
+        min_idle_ms: int = 60_000,
+        batch: int = 50,
+    ) -> list[Event]:
+        """Reclaim messages left pending by dead consumers (KG-033).
+
+        XAUTOCLAIM moves messages idle > ``min_idle_ms`` from their
+        original consumer to ``self._consumer`` and returns them as
+        pending-for-us. We then treat them as normal events (return
+        up the stack so the Worker loop processes them alongside
+        fresh XREADGROUP results).
+
+        Redis 6.2+ is required for XAUTOCLAIM. Older versions fall
+        back to XCLAIM after XPENDING — not implemented here because
+        every OCI-provided Redis + the octo-cache StatefulSet (7.4)
+        satisfy the floor.
+        """
+        events: list[Event] = []
+        for stream in self._streams:
+            try:
+                # XAUTOCLAIM returns (next-start-id, [[id, fields], ...], deleted-ids)
+                resp = await self._redis.xautoclaim(
+                    name=stream,
+                    groupname=self._group,
+                    consumername=self._consumer,
+                    min_idle_time=min_idle_ms,
+                    start_id="0-0",
+                    count=batch,
+                )
+            except Exception as exc:
+                # XAUTOCLAIM missing → log and skip recovery; fresh
+                # XREADGROUP will still make progress.
+                logger.warning("xautoclaim_failed", extra={"stream": stream, "error": str(exc)})
+                continue
+
+            # Response shape: tuple/list of (next_start, claimed_list, deleted_list)
+            # Different redis-py versions return slightly different shapes;
+            # handle both.
+            claimed = []
+            if isinstance(resp, (list, tuple)) and len(resp) >= 2:
+                claimed = resp[1] or []
+
+            for entry in claimed:
+                try:
+                    entry_id, fields = entry
+                except (TypeError, ValueError):
+                    continue
+                events.append(Event.from_redis(stream, entry_id, fields))
+
+        return events
+
     async def poll(self, *, block_ms: int = 5_000, count: int = 16) -> list[Event]:
         """XREADGROUP returning a batch of Events, or [] on timeout.
 
