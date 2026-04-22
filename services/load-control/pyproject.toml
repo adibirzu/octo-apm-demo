@@ -1,0 +1,26 @@
+[project]
+name = "octo-load-control"
+version = "1.0.0"
+description = "Named workload-profile orchestrator for octo-apm-demo"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.112",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+    "httpx>=0.27",
+    "structlog>=24.1",
+    "opentelemetry-api>=1.24",
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-http>=1.24",
+    "opentelemetry-instrumentation-fastapi>=0.45b0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "httpx>=0.27"]
+oci  = ["oci>=2.130"]  # Object Storage client — optional for local dev
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["src"]

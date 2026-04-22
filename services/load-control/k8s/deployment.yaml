@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-load-control
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-control
+  namespace: octo-load-control
+  labels:
+    app: load-control
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: load-control
+  template:
+    metadata:
+      labels:
+        app: load-control
+    spec:
+      containers:
+        - name: api
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-load-control:${IMAGE_TAG:-latest}
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: LOAD_CONTROL_LEDGER_PATH
+              value: "/data/runs.jsonl"
+            - name: TRAFFIC_GENERATOR_URL
+              value: "http://octo-traffic-generator.octo-traffic.svc.cluster.local:8080"
+            - name: CRM_CHAOS_ADMIN_URL
+              value: "http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080"
+            - name: OCI_EVENTS_TOPIC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-events
+                  key: topic-url
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://gateway.octo-otel.svc.cluster.local:4318"
+            - name: OTEL_SERVICE_NAME
+              value: "octo-load-control"
+          volumeMounts:
+            - name: ledger
+              mountPath: /data
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+      volumes:
+        - name: ledger
+          persistentVolumeClaim:
+            claimName: load-control-ledger
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: load-control-ledger
+  namespace: octo-load-control
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: load-control
+  namespace: octo-load-control
+spec:
+  selector:
+    app: load-control
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
