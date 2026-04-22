@@ -33,6 +33,7 @@ config/local/
 .terraform/
 *.tfstate
 *.tfstate.backup
+deploy/resource-manager/build/
 __pycache__/
 .playwright-cli/
 playwright-report/
