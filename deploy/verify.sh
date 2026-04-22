@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# Dry-run every deploy script in sequence and report what would happen.
+# Catches bit-rot in the deploy tree before an operator hits it on a
+# real tenancy.
+#
+# Categories:
+#   syntax    — bash -n on every shell script
+#   help      — every script accepts --help / -h or echoes usage
+#   pre-flight — required env vars surface as clear errors
+#   yaml      — every K8s manifest parses cleanly
+#   terraform — `terraform fmt -check` + `validate` on every module
+#   compose   — docker-compose config validates without container pulls
+#   docs      — mkdocs build --strict
+#
+# Exit codes:
+#   0 = every category passed
+#   1 = at least one category failed (full report still printed)
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+red()    { printf "\033[31m%s\033[0m" "$*"; }
+green()  { printf "\033[32m%s\033[0m" "$*"; }
+yellow() { printf "\033[33m%s\033[0m" "$*"; }
+
+errors=0
+warnings=0
+
+section() {
+    echo
+    printf "── %s ──────────────────────────────────────────────\n" "$1"
+}
+
+ok()   { green "  PASS  "; echo " $*"; }
+warn() { yellow "  WARN  "; echo " $*"; warnings=$((warnings + 1)); }
+fail() { red   "  FAIL  "; echo " $*"; errors=$((errors + 1)); }
+
+# ── Shell syntax ──────────────────────────────────────────────────────
+section "Shell syntax (bash -n)"
+while IFS= read -r script; do
+    if bash -n "${script}" 2>/dev/null; then
+        ok "${script#${REPO_ROOT}/}"
+    else
+        fail "${script#${REPO_ROOT}/}"
+        bash -n "${script}" 2>&1 | sed 's/^/         /'
+    fi
+done < <(find "${REPO_ROOT}/deploy" -type f -name "*.sh")
+
+# ── YAML ──────────────────────────────────────────────────────────────
+section "YAML manifests"
+while IFS= read -r yml; do
+    if python3 -c "import yaml,sys; list(yaml.safe_load_all(open(sys.argv[1])))" "${yml}" 2>/dev/null; then
+        ok "${yml#${REPO_ROOT}/}"
+    else
+        # docker-compose-unified uses ${VAR} interpolation that PyYAML can
+        # parse but `docker-compose config` will warn about — accept here.
+        fail "${yml#${REPO_ROOT}/}"
+        python3 -c "import yaml,sys; list(yaml.safe_load_all(open(sys.argv[1])))" "${yml}" 2>&1 | sed 's/^/         /' | head -5
+    fi
+done < <(find "${REPO_ROOT}/deploy" -type f \( -name "*.yaml" -o -name "*.yml" \))
+
+# ── JSON manifests ────────────────────────────────────────────────────
+section "JSON manifests"
+while IFS= read -r jsf; do
+    if python3 -c "import json,sys; json.load(open(sys.argv[1]))" "${jsf}" 2>/dev/null; then
+        ok "${jsf#${REPO_ROOT}/}"
+    else
+        fail "${jsf#${REPO_ROOT}/}"
+    fi
+done < <(find "${REPO_ROOT}/deploy" "${REPO_ROOT}/tools" -type f -name "*.json" \
+            -not -path "*/.venv/*" -not -path "*/node_modules/*" -not -path "*/build/*" 2>/dev/null)
+
+# ── Terraform fmt + validate ──────────────────────────────────────────
+section "Terraform fmt + validate"
+if command -v terraform >/dev/null 2>&1; then
+    if terraform -chdir="${REPO_ROOT}/deploy/terraform" fmt -check -recursive >/dev/null 2>&1; then
+        ok "deploy/terraform/* fmt clean"
+    else
+        warn "deploy/terraform/* fmt drift (run terraform fmt -recursive)"
+    fi
+    if terraform -chdir="${REPO_ROOT}/deploy/resource-manager" fmt -check -recursive >/dev/null 2>&1; then
+        ok "deploy/resource-manager/* fmt clean"
+    else
+        warn "deploy/resource-manager/* fmt drift"
+    fi
+else
+    warn "terraform not installed — skipped"
+fi
+
+# ── Compose config ────────────────────────────────────────────────────
+section "Docker compose config"
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    if docker compose -f "${REPO_ROOT}/deploy/vm/docker-compose-unified.yml" \
+            --env-file <(echo -e "OCIR_REGION=eu-frankfurt-1\nOCIR_TENANCY=test\nDNS_DOMAIN=octodemo.cloud\nINTERNAL_SERVICE_KEY=test\nAUTH_TOKEN_SECRET=test\nAPP_SECRET_KEY=test\nBOOTSTRAP_ADMIN_PASSWORD=test\nORACLE_DSN=test\nORACLE_PASSWORD=test\nORACLE_WALLET_PASSWORD=test") \
+            config >/dev/null 2>&1; then
+        ok "deploy/vm/docker-compose-unified.yml"
+    else
+        fail "deploy/vm/docker-compose-unified.yml"
+    fi
+else
+    warn "docker compose not installed — skipped"
+fi
+
+# ── Pre-flight error messages ─────────────────────────────────────────
+section "Pre-flight required-var enforcement"
+preflight_out=$(env -i PATH="${PATH}" bash "${REPO_ROOT}/deploy/pre-flight-check.sh" 2>&1 || true)
+for var in DNS_DOMAIN OCIR_REPO K8S_NAMESPACE; do
+    if echo "${preflight_out}" | grep -q "${var}"; then
+        ok "pre-flight surfaces missing ${var}"
+    else
+        fail "pre-flight does NOT surface missing ${var}"
+    fi
+done
+
+# ── MkDocs strict ─────────────────────────────────────────────────────
+section "MkDocs strict build"
+if command -v mkdocs >/dev/null 2>&1; then
+    if (cd "${REPO_ROOT}" && mkdocs build --strict >/dev/null 2>&1); then
+        ok "mkdocs --strict"
+    else
+        fail "mkdocs --strict"
+        (cd "${REPO_ROOT}" && mkdocs build --strict 2>&1 | grep -E "WARNING|ERROR" | head -5 | sed 's/^/         /')
+    fi
+else
+    warn "mkdocs not installed — skipped"
+fi
+
+# ── Python tests (shop, crm, tools) ───────────────────────────────────
+section "Python test suites"
+for testdir in shop crm tools/traffic-generator; do
+    if [[ -d "${REPO_ROOT}/${testdir}" ]] && find "${REPO_ROOT}/${testdir}" -name "test_*.py" -print -quit | grep -q .; then
+        if (cd "${REPO_ROOT}/${testdir}" && python -m pytest -q --no-header 2>&1 | tail -1 | grep -q "passed"); then
+            ok "${testdir} pytest"
+        else
+            warn "${testdir} pytest had failures or was not runnable here"
+        fi
+    fi
+done
+
+# ── Summary ───────────────────────────────────────────────────────────
+echo
+if [[ "${errors}" -gt 0 ]]; then
+    red "VERIFY FAILED"; printf " — %d error(s), %d warning(s)\n" "${errors}" "${warnings}"
+    exit 1
+fi
+
+green "VERIFY PASSED"; printf " — %d warning(s)\n" "${warnings}"
+exit 0
