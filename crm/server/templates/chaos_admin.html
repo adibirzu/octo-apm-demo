@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page">
+    <header class="page-header">
+        <h1>Chaos Control</h1>
+        <p class="page-subtitle">
+            Restricted to the <code>chaos-operator</code> role. Scenarios
+            apply to the Shop, the CRM, or both, for a bounded TTL.
+            Everything here is audited.
+        </p>
+    </header>
+
+    <section id="current-state" class="card">
+        <h2>Currently active</h2>
+        <pre id="current-state-json">Loading…</pre>
+        <button type="button" id="btn-clear" class="btn btn-danger">Clear scenario</button>
+    </section>
+
+    <section class="card">
+        <h2>Apply a preset</h2>
+        <form id="apply-form">
+            <label>
+                Preset
+                <select id="scenario-id" name="scenario_id" required></select>
+            </label>
+            <label>
+                Target
+                <select name="target">
+                    <option value="both">both</option>
+                    <option value="shop">shop only</option>
+                    <option value="crm">crm only</option>
+                </select>
+            </label>
+            <label>
+                TTL (seconds, max {{ max_ttl }})
+                <input type="number" name="ttl_seconds" min="10" max="{{ max_ttl }}" value="300" required>
+            </label>
+            <label>
+                Note
+                <input type="text" name="note" maxlength="512" placeholder="Why / who requested">
+            </label>
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </form>
+        <pre id="apply-result"></pre>
+    </section>
+</div>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+    const presetSelect = document.getElementById('scenario-id');
+    const currentEl = document.getElementById('current-state-json');
+    const applyResult = document.getElementById('apply-result');
+
+    async function refresh() {
+        const [presetsRes, stateRes] = await Promise.all([
+            fetch('/api/admin/chaos/presets'),
+            fetch('/api/admin/chaos/state'),
+        ]);
+        const presets = await presetsRes.json();
+        presetSelect.innerHTML = '';
+        for (const p of presets.presets) {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.id} — ${p.description}`;
+            presetSelect.appendChild(opt);
+        }
+        currentEl.textContent = JSON.stringify(await stateRes.json(), null, 2);
+    }
+
+    document.getElementById('apply-form').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const data = new FormData(ev.target);
+        const body = {
+            scenario_id: data.get('scenario_id'),
+            target: data.get('target'),
+            ttl_seconds: Number(data.get('ttl_seconds')),
+            note: data.get('note') || null,
+        };
+        const res = await fetch('/api/admin/chaos/apply', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        applyResult.textContent = JSON.stringify(await res.json(), null, 2);
+        refresh();
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', async () => {
+        await fetch('/api/admin/chaos/clear', {method: 'POST'});
+        refresh();
+    });
+
+    refresh();
+})();
+</script>
+{% endblock %}

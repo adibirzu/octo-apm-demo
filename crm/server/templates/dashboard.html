@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block header_actions %}
+<a class="btn btn-secondary" href="/integrations">Open topology</a>
+{% if apm_console_url %}<a class="btn btn-primary" href="{{ apm_console_url }}" target="_blank" rel="noreferrer">Open APM</a>{% endif %}
+{% endblock %}
+{% block content %}
+<section class="hero-panel">
+    <div>
+        <p class="hero-kicker">OCTO unified observability</p>
+        <h2>CRM, Drone Shop, ATP, and platform backends on one correlated path.</h2>
+        <p class="hero-copy">This view combines business metrics, dependency health, and drilldown targets so you can pivot from an application trace to logs, database tooling, and service status without losing context.</p>
+    </div>
+    <img src="/static/img/octo-logo.png" alt="OCTO CRM APM" class="hero-logo">
+</section>
+
+<div class="dashboard-grid">
+    <div class="card metric-card" id="card-customers">
+        <h3>Total Customers</h3>
+        <div class="metric-value" id="metric-customers">-</div>
+    </div>
+    <div class="card metric-card" id="card-orders">
+        <h3>Total Orders</h3>
+        <div class="metric-value" id="metric-orders">-</div>
+    </div>
+    <div class="card metric-card" id="card-revenue">
+        <h3>Total Revenue</h3>
+        <div class="metric-value" id="metric-revenue">-</div>
+    </div>
+    <div class="card metric-card" id="card-tickets">
+        <h3>Open Tickets</h3>
+        <div class="metric-value" id="metric-tickets">-</div>
+    </div>
+    <div class="card metric-card" id="card-backlog">
+        <h3>Backlog Orders</h3>
+        <div class="metric-value" id="metric-backlog">-</div>
+    </div>
+</div>
+
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Platform Health</h3>
+        <div class="status-grid" id="status-grid">
+            <div class="status-card"><span>Loading platform health...</span></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Product Drilldown</h3>
+        <div class="drilldown-grid" id="drilldown-grid">
+            <div class="drilldown-card">Loading drilldown targets...</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-row">
+    <div class="card" id="card-top-customers">
+        <h3>Top Customers by Revenue</h3>
+        <table class="data-table" id="top-customers-table">
+            <thead><tr><th>Name</th><th>Revenue</th><th>Orders</th></tr></thead>
+            <tbody id="top-customers-body"></tbody>
+        </table>
+    </div>
+    <div class="card" id="card-recent-orders">
+        <h3>Recent Orders</h3>
+        <table class="data-table" id="recent-orders-table">
+            <thead><tr><th>ID</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+            <tbody id="recent-orders-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-simulation">
+        <h3>Issue Simulation Controls</h3>
+        <div class="simulation-controls">
+            <button onclick="triggerSimulation('db-latency')" class="btn btn-warning">DB Latency</button>
+            <button onclick="triggerSimulation('db-disconnect')" class="btn btn-danger">DB Disconnect</button>
+            <button onclick="triggerSimulation('error-burst')" class="btn btn-danger">Error Burst</button>
+            <button onclick="loadSlowQuery()" class="btn btn-warning">Slow Query</button>
+            <button onclick="loadNPlusOne()" class="btn btn-warning">N+1 Demo</button>
+            <button onclick="resetSimulation()" class="btn btn-secondary">Reset All</button>
+        </div>
+        <div id="simulation-output" class="code-output"></div>
+    </div>
+    <div class="card">
+        <h3>Correlation Snapshot</h3>
+        <pre id="correlation-output" class="code-output">Loading correlation context...</pre>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+async function loadDashboard() {
+    try {
+        const [summaryResp, readyResp, statusResp] = await Promise.all([
+            fetch('/api/dashboard/summary'),
+            fetch('/ready'),
+            fetch('/api/integrations/status'),
+        ]);
+
+        const summary = await summaryResp.json();
+        const ready = await readyResp.json();
+        const status = await statusResp.json();
+
+        document.getElementById('metric-customers').textContent = summary.customers.total;
+        document.getElementById('metric-orders').textContent = summary.orders.total;
+        document.getElementById('metric-revenue').textContent = '$' + Number(summary.orders.revenue).toLocaleString();
+        document.getElementById('metric-tickets').textContent = (summary.tickets.open || 0) + (summary.tickets.in_progress || 0);
+        document.getElementById('metric-backlog').textContent = summary.security?.backlog_orders || 0;
+
+        document.getElementById('top-customers-body').innerHTML = summary.top_customers.map(c =>
+            `<tr><td>${c.customer || c.name}</td><td>$${Number(c.revenue).toLocaleString()}</td><td>${c.order_count}</td></tr>`
+        ).join('');
+
+        document.getElementById('recent-orders-body').innerHTML = summary.recent_orders.map(o =>
+            `<tr><td>#${o.id}</td><td>${o.customer_name || '-'}</td><td>$${Number(o.total).toLocaleString()}</td><td><span class="badge badge-${o.status}">${o.status}</span></td></tr>`
+        ).join('');
+
+        renderStatusGrid(ready, status);
+        renderDrilldowns(status.drilldowns || []);
+        document.getElementById('correlation-output').textContent = JSON.stringify({
+            correlation: status.correlation || {},
+            orders: summary.security || {},
+        }, null, 2);
+    } catch (error) {
+        console.error('Dashboard load failed:', error);
+    }
+}
+
+function friendlyUrl(raw) {
+    if (!raw) return '';
+    try {
+        const u = new URL(raw);
+        return u.hostname.match(/^\d+\.\d+\.\d+\.\d+$/) ? raw : `${u.protocol}//${u.hostname}`;
+    } catch { return raw; }
+}
+
+function renderStatusGrid(ready, status) {
+    const dependencies = status.dependencies || [];
+    const cards = [
+        {
+            label: 'Database',
+            status: ready.database || 'unknown',
+            body: `${ready.database_target || 'unknown'}${ready.atp_connection_name ? ' | ' + ready.atp_connection_name : ''}`,
+        },
+        {
+            label: 'Telemetry',
+            status: ready.apm_configured && ready.logging_configured ? 'healthy' : 'degraded',
+            body: `APM ${ready.apm_configured ? 'on' : 'off'} | Logs ${ready.logging_configured ? 'on' : 'off'} | RUM ${ready.rum_configured ? 'on' : 'off'}`,
+        },
+        ...dependencies.map(dep => ({
+            label: dep.display_name,
+            status: dep.status || 'unknown',
+            body: friendlyUrl(dep.url) || dep.connection_name || dep.database_target || 'Not configured',
+        }))
+    ];
+
+    document.getElementById('status-grid').innerHTML = cards.map(card => `
+        <div class="status-card">
+            <span class="status-label">${card.label}</span>
+            <strong class="status-value-pill is-${normalizeStatus(card.status)}">${card.status}</strong>
+            <p>${card.body}</p>
+        </div>
+    `).join('');
+}
+
+function renderDrilldowns(drilldowns) {
+    document.getElementById('drilldown-grid').innerHTML = drilldowns.map(target => `
+        <a class="drilldown-card ${target.configured ? '' : 'is-disabled'}" ${target.configured ? `href="${target.url}" target="_blank" rel="noreferrer"` : ''}>
+            <span>${target.name}</span>
+            <strong>${target.configured ? 'Open' : 'Not configured'}</strong>
+        </a>
+    `).join('');
+}
+
+function normalizeStatus(status) {
+    const value = String(status || '').toLowerCase();
+    if (value.includes('healthy') || value === 'connected' || value === 'configured') return 'healthy';
+    if (value.includes('degraded')) return 'degraded';
+    return 'unhealthy';
+}
+
+async function triggerSimulation(type) {
+    const body = type === 'error-burst' ? {count: 10} : {delay_seconds: 3};
+    const resp = await _fetch(`/api/simulate/${type}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+    });
+    document.getElementById('simulation-output').textContent = JSON.stringify(await resp.json(), null, 2);
+}
+
+async function loadSlowQuery() {
+    document.getElementById('simulation-output').textContent = 'Running slow query (2s)...';
+    const resp = await _fetch('/api/dashboard/slow-query?delay=2');
+    document.getElementById('simulation-output').textContent = JSON.stringify(await resp.json(), null, 2);
+}
+
+async function loadNPlusOne() {
+    document.getElementById('simulation-output').textContent = 'Running N+1 demo...';
+    const resp = await _fetch('/api/dashboard/n-plus-one');
+    document.getElementById('simulation-output').textContent = JSON.stringify(await resp.json(), null, 2);
+}
+
+async function resetSimulation() {
+    const resp = await _fetch('/api/simulate/reset', {method: 'POST'});
+    document.getElementById('simulation-output').textContent = JSON.stringify(await resp.json(), null, 2);
+}
+
+loadDashboard();
+</script>
+{% endblock %}

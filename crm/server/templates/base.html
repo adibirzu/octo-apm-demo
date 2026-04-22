@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - {{ brand_name }}</title>
+    <link rel="icon" type="image/png" href="/static/img/octo-icon.png">
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    {% if rum_configured %}
+    <script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+        window.__nativeFetch = window.fetch.bind(window);
+        window.__NativeXHR = window.XMLHttpRequest;
+        window._fetch = window.__nativeFetch;
+        window.apmrum = (window.apmrum || {});
+        window.apmrum.serviceName = '{{ service_name }}';
+        window.apmrum.webApplication = '{{ app_name }}-frontend';
+        window.apmrum.ociDataUploadEndpoint = '{{ rum_endpoint }}';
+        window.apmrum.OracleAPMPublicDataKey = '{{ rum_public_key }}';
+        /* Observability v2 — surface workflow_id + request_id as RUM custom
+           dimensions so RUM sessions join backend traces by workflow. */
+        window.apmrum.customDimensions = Object.assign(
+            window.apmrum.customDimensions || {},
+            {
+                workflow_id: '{{ (request.state.workflow.workflow_id if request and request.state and request.state.workflow else "") }}',
+                request_id: '{{ (request.state.request_id if request and request.state and request.state.request_id else "") }}',
+            }
+        );
+        /* Prevent RUM from adding tracing headers to app API calls */
+        window.apmrum.traceSupportingEndpoints = [
+            { hostPattern: '.*', headers: [] }
+        ];
+    </script>
+    <script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}" async crossorigin="anonymous" src="{{ rum_endpoint }}/static/jslib/apmrum.min.js"></script>
+    {% endif %}
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <img src="/static/img/octo-icon.png" alt="OCTO" class="sidebar-logo">
+            <div>
+                <p class="eyebrow">Platform application</p>
+                <h2>{{ brand_name }}</h2>
+                <div class="sidebar-meta">
+                    <span class="version">v{{ app_version }}</span>
+                    <span class="telemetry-pill {% if rum_configured %}is-on{% endif %}">RUM</span>
+                    <span class="telemetry-pill {% if apm_console_url %}is-on{% endif %}">APM</span>
+                </div>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/" data-journey="nav_dashboard" class="{% if nav_key == 'dashboard' %}active{% endif %}">Dashboard</a></li>
+            <li><a href="/customers" data-journey="nav_customers" class="{% if nav_key == 'customers' %}active{% endif %}">Customers</a></li>
+            <li><a href="/orders" data-journey="nav_orders" class="{% if nav_key == 'orders' %}active{% endif %}">Orders</a></li>
+            <li><a href="/products" data-journey="nav_products" class="{% if nav_key == 'products' %}active{% endif %}">Products</a></li>
+            <li><a href="/catalog" data-journey="nav_catalog" class="{% if nav_key == 'catalog' %}active{% endif %}">Storefront</a></li>
+            <li><a href="/invoices" data-journey="nav_invoices" class="{% if nav_key == 'invoices' %}active{% endif %}">Invoices</a></li>
+            <li><a href="/tickets" data-journey="nav_tickets" class="{% if nav_key == 'tickets' %}active{% endif %}">Support</a></li>
+            <li><a href="/campaigns" data-journey="nav_campaigns" class="{% if nav_key == 'campaigns' %}active{% endif %}">Campaigns</a></li>
+            <li><a href="/shipping" data-journey="nav_shipping" class="{% if nav_key == 'shipping' %}active{% endif %}">Shipping</a></li>
+            <li><a href="/analytics" data-journey="nav_analytics" class="{% if nav_key == 'analytics' %}active{% endif %}">Analytics</a></li>
+            <li><a href="/integrations" data-journey="nav_integrations" class="{% if nav_key == 'integrations' %}active{% endif %}">Integrations</a></li>
+            <li><a href="/observability" data-journey="nav_observability" class="{% if nav_key == 'observability' %}active{% endif %}">360 Monitoring</a></li>
+            <li class="separator"></li>
+            <li><a href="/reports" data-journey="nav_reports" class="{% if nav_key == 'reports' %}active{% endif %}">Reports</a></li>
+            <li><a href="/files" data-journey="nav_files" class="{% if nav_key == 'files' %}active{% endif %}">Files</a></li>
+            <li><a href="/admin" data-journey="nav_admin" class="{% if nav_key == 'admin' %}active{% endif %}">Admin</a></li>
+            <li><a href="/settings" data-journey="nav_simulation" class="{% if nav_key == 'settings' %}active{% endif %}">Simulation</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="sidebar-links">
+                {% if apm_console_url %}<a href="{{ apm_console_url }}" target="_blank" rel="noreferrer">APM</a>{% endif %}
+                {% if opsi_console_url %}<a href="{{ opsi_console_url }}" target="_blank" rel="noreferrer">OPSI</a>{% endif %}
+                {% if db_management_console_url %}<a href="{{ db_management_console_url }}" target="_blank" rel="noreferrer">DBMan</a>{% endif %}
+                {% if log_analytics_console_url %}<a href="{{ log_analytics_console_url }}" target="_blank" rel="noreferrer">Logs</a>{% endif %}
+            </div>
+            <div class="sidebar-user-area">
+                <span id="user-info">Not logged in</span>
+                <a href="/login" class="btn-login" id="auth-btn">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="content">
+        <header class="content-header">
+            <div>
+                <p class="eyebrow">Telemetry-correlated CRM cockpit</p>
+                <h1>{{ title }}</h1>
+            </div>
+            <div class="header-actions">
+                {% block header_actions %}{% endblock %}
+            </div>
+        </header>
+        <div class="content-body">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+        window.OCTO_CONFIG = {
+            appName: {{ app_name | tojson }},
+            brandName: {{ brand_name | tojson }},
+            appVersion: {{ app_version | tojson }},
+            apmConsoleUrl: {{ apm_console_url | tojson }},
+            opsiConsoleUrl: {{ opsi_console_url | tojson }},
+            dbManagementConsoleUrl: {{ db_management_console_url | tojson }},
+            logAnalyticsConsoleUrl: {{ log_analytics_console_url | tojson }}
+        };
+    </script>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/observability.js" defer></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,584 @@
+{% extends "base.html" %}
+{% block header_actions %}
+<div class="toolbar">
+    <a href="/products" class="btn">View Catalog</a>
+    <button onclick="syncCatalogToShop()" class="btn btn-success" id="sync-catalog-btn">Sync All to Shop</button>
+    <button onclick="loadCatalogData()" class="btn btn-primary">Refresh</button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="hero-panel compact">
+    <div>
+        <p class="hero-kicker">CRM-controlled commerce operations</p>
+        <h2>Manage shops and products from the portal.</h2>
+        <p class="hero-copy">This workspace keeps storefront configuration, product assignment, availability, and CRM endpoints inside the internal portal. Public storefront pages remain customer-facing only.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid" id="catalog-metrics">
+    <div class="card metric-card"><h3>Shops</h3><div class="metric-value">-</div></div>
+    <div class="card metric-card"><h3>Active Shops</h3><div class="metric-value">-</div></div>
+    <div class="card metric-card"><h3>Products</h3><div class="metric-value">-</div></div>
+    <div class="card metric-card"><h3>Inactive Products</h3><div class="metric-value">-</div></div>
+</div>
+
+<div class="dashboard-row catalog-row">
+    <section class="card catalog-table-card">
+        <div class="section-heading">
+            <div>
+                <h2>Shops</h2>
+                <p class="catalog-subtitle">Storefront endpoints, regions, and CRM linkage.</p>
+            </div>
+            <div class="toolbar">
+                <input id="shop-search" class="search-input" placeholder="Search shops">
+                <select id="shop-status-filter" class="search-input">
+                    <option value="">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadShops()">Filter</button>
+            </div>
+        </div>
+        <div class="catalog-table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Region</th>
+                        <th>Status</th>
+                        <th>Storefront</th>
+                        <th>CRM</th>
+                        <th>Products</th>
+                        <th id="shop-actions-head">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="shops-table-body">
+                    <tr><td colspan="7">Loading shops...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <aside class="card catalog-form-card" id="shop-form-card">
+        <div class="section-heading">
+            <div>
+                <h2 id="shop-form-title">New Shop</h2>
+                <p class="catalog-subtitle" id="shop-form-subtitle">Create or update storefront metadata.</p>
+            </div>
+            <button class="btn" type="button" onclick="resetShopForm()">Reset</button>
+        </div>
+        <p class="helper-text" id="shop-readonly-note">Only `admin` and `manager` roles can save storefront changes.</p>
+        <form id="shop-form" class="stack-form">
+            <input type="hidden" id="shop-id">
+            <label>Name</label>
+            <input id="shop-name" class="form-input" required>
+            <label>Slug</label>
+            <input id="shop-slug" class="form-input" required pattern="[a-z0-9-]+">
+            <label>Storefront URL</label>
+            <input id="shop-storefront-url" class="form-input" required type="url" placeholder="https://shop.example.cloud">
+            <label>CRM Base URL</label>
+            <input id="shop-crm-base-url" class="form-input" required type="url" placeholder="https://crm.example.cloud">
+            <label>Region</label>
+            <input id="shop-region" class="form-input" required>
+            <label>Currency</label>
+            <input id="shop-currency" class="form-input" value="USD" required maxlength="10">
+            <label>Status</label>
+            <select id="shop-status" class="form-input">
+                <option value="active">Active</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="inactive">Inactive</option>
+            </select>
+            <label>Notes</label>
+            <textarea id="shop-notes" class="form-input form-textarea" rows="4"></textarea>
+            <div class="toolbar">
+                <button class="btn btn-success" type="submit" id="shop-submit-btn">Save Shop</button>
+                <button class="btn" type="button" onclick="resetShopForm()">Clear</button>
+            </div>
+        </form>
+    </aside>
+</div>
+
+<div class="dashboard-row catalog-row">
+    <section class="card catalog-table-card">
+        <div class="section-heading">
+            <div>
+                <h2>Products</h2>
+                <p class="catalog-subtitle">Assign products to storefronts and control sellable state.</p>
+            </div>
+            <div class="toolbar">
+                <input id="product-search" class="search-input" placeholder="Search name, SKU, or category">
+                <select id="product-shop-filter" class="search-input">
+                    <option value="">All shops</option>
+                </select>
+                <select id="product-status-filter" class="search-input">
+                    <option value="all">All product states</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadProducts()">Filter</button>
+            </div>
+        </div>
+        <div class="catalog-table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Shop</th>
+                        <th>SKU</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th id="product-actions-head">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="products-table-body">
+                    <tr><td colspan="8">Loading products...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <aside class="card catalog-form-card" id="product-form-card">
+        <div class="section-heading">
+            <div>
+                <h2 id="product-form-title">New Product</h2>
+                <p class="catalog-subtitle" id="product-form-subtitle">Create or update CRM-managed catalog inventory.</p>
+            </div>
+            <button class="btn" type="button" onclick="resetProductForm()">Reset</button>
+        </div>
+        <p class="helper-text" id="product-readonly-note">Only `admin` and `manager` roles can save product changes.</p>
+        <form id="product-form" class="stack-form">
+            <input type="hidden" id="product-id">
+            <div class="catalog-quick-picks">
+                <button class="btn btn-secondary" type="button" onclick="applyProductPreset('Complete Drones', '/static/img/products/drn_001.jpg')">New Drone</button>
+                <button class="btn btn-secondary" type="button" onclick="applyProductPreset('Batteries', '/static/img/products/bat_001.jpg')">New Battery</button>
+                <button class="btn btn-secondary" type="button" onclick="applyProductPreset('Accessories', '/static/img/products/acc_001.jpg')">New Accessory</button>
+            </div>
+            <p class="helper-text">Set stock here in CRM. Each save updates the database and publishes the catalog change to the shop integration.</p>
+            <label>Name</label>
+            <input id="product-name" class="form-input" required>
+            <label>SKU</label>
+            <input id="product-sku" class="form-input" required pattern="[A-Za-z0-9._-]+">
+            <label>Shop</label>
+            <select id="product-shop-id" class="form-input">
+                <option value="">Unassigned</option>
+            </select>
+            <label>Category</label>
+            <input id="product-category" class="form-input" list="product-category-options" placeholder="Complete Drones, Batteries, Accessories">
+            <datalist id="product-category-options">
+                <option value="Complete Drones"></option>
+                <option value="Batteries"></option>
+                <option value="Accessories"></option>
+                <option value="Frames"></option>
+                <option value="Motors & ESCs"></option>
+                <option value="Flight Controllers"></option>
+                <option value="Cameras & Gimbals"></option>
+                <option value="Propellers"></option>
+                <option value="FPV Gear"></option>
+            </datalist>
+            <label>Price</label>
+            <input id="product-price" class="form-input" type="number" step="0.01" min="0" required>
+            <label>Stock</label>
+            <input id="product-stock" class="form-input" type="number" step="1" min="0" required>
+            <label>Status</label>
+            <select id="product-is-active" class="form-input">
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+            </select>
+            <label>Image URL</label>
+            <input id="product-image-url" class="form-input" placeholder="/static/img/products/octo_001.jpg">
+            <label>Description</label>
+            <textarea id="product-description" class="form-input form-textarea" rows="5"></textarea>
+            <div class="toolbar">
+                <button class="btn btn-success" type="submit" id="product-submit-btn">Save Product</button>
+                <button class="btn" type="button" onclick="resetProductForm()">Clear</button>
+            </div>
+        </form>
+    </aside>
+</div>
+
+<div class="card" id="catalog-feedback-card">
+    <h3>Catalog Status</h3>
+    <p id="catalog-feedback" class="catalog-feedback">Loading storefront operations workspace...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+const catalogState = {
+    shops: [],
+    products: [],
+    canManage: false,
+};
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function formatMoney(value) {
+    return '$' + Number(value || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function setFeedback(message, kind = 'info') {
+    const feedback = document.getElementById('catalog-feedback');
+    feedback.textContent = message;
+    feedback.className = `catalog-feedback is-${kind}`;
+}
+
+function describeShopSync(sync, fallbackLabel = 'catalog change') {
+    if (!sync) {
+        return {message: `${fallbackLabel} saved locally.`, kind: 'success'};
+    }
+    if (sync.synced) {
+        return {
+            message: `${fallbackLabel} saved locally and synced ${sync.count ?? sync.processed_count ?? 0} product${(sync.count ?? sync.processed_count ?? 0) === 1 ? '' : 's'} to the shop.`,
+            kind: 'success',
+        };
+    }
+    if (sync.configured === false) {
+        return {
+            message: `${fallbackLabel} saved locally. Shop sync is not configured in this environment.`,
+            kind: 'warning',
+        };
+    }
+    return {
+        message: `${fallbackLabel} saved locally, but shop sync failed: ${sync.reason || sync.response?.detail || 'unknown error'}`,
+        kind: 'warning',
+    };
+}
+
+function canManageCatalog(role) {
+    return ['admin', 'manager'].includes((role || '').toLowerCase());
+}
+
+function readJsonResponse(resp) {
+    return resp.json().then((data) => {
+        if (!resp.ok || data.error) {
+            const message = data.detail || data.error || `Request failed with status ${resp.status}`;
+            throw new Error(message);
+        }
+        return data;
+    });
+}
+
+function updateAccessState(session = window.OCTO_SESSION || {}) {
+    catalogState.canManage = Boolean(session.authenticated && canManageCatalog(session.role));
+    document.getElementById('shop-actions-head').style.display = catalogState.canManage ? '' : 'none';
+    document.getElementById('product-actions-head').style.display = catalogState.canManage ? '' : 'none';
+    document.getElementById('shop-readonly-note').style.display = catalogState.canManage ? 'none' : '';
+    document.getElementById('product-readonly-note').style.display = catalogState.canManage ? 'none' : '';
+    document.getElementById('shop-submit-btn').disabled = !catalogState.canManage;
+    document.getElementById('product-submit-btn').disabled = !catalogState.canManage;
+    document.getElementById('sync-catalog-btn').disabled = !catalogState.canManage;
+    Array.from(document.querySelectorAll('#shop-form input, #shop-form select, #shop-form textarea')).forEach((element) => {
+        if (element.id !== 'shop-id') element.disabled = !catalogState.canManage;
+    });
+    Array.from(document.querySelectorAll('#product-form input, #product-form select, #product-form textarea')).forEach((element) => {
+        if (element.id !== 'product-id') element.disabled = !catalogState.canManage;
+    });
+    Array.from(document.querySelectorAll('.catalog-quick-picks button')).forEach((element) => {
+        element.disabled = !catalogState.canManage;
+    });
+}
+
+function renderMetrics() {
+    const activeShops = catalogState.shops.filter((shop) => shop.status === 'active').length;
+    const inactiveProducts = catalogState.products.filter((product) => !product.is_active).length;
+    document.getElementById('catalog-metrics').innerHTML = `
+        <div class="card metric-card"><h3>Shops</h3><div class="metric-value">${catalogState.shops.length}</div></div>
+        <div class="card metric-card"><h3>Active Shops</h3><div class="metric-value">${activeShops}</div></div>
+        <div class="card metric-card"><h3>Products</h3><div class="metric-value">${catalogState.products.length}</div></div>
+        <div class="card metric-card"><h3>Inactive Products</h3><div class="metric-value">${inactiveProducts}</div></div>
+    `;
+}
+
+function populateShopSelects() {
+    const filter = document.getElementById('product-shop-filter');
+    const input = document.getElementById('product-shop-id');
+    const currentFilter = filter.value;
+    const currentInput = input.value;
+    const options = catalogState.shops.map((shop) => `<option value="${shop.id}">${escapeHtml(shop.name)}</option>`).join('');
+    filter.innerHTML = `<option value="">All shops</option>${options}`;
+    input.innerHTML = `<option value="">Unassigned</option>${options}`;
+    if ([...filter.options].some((option) => option.value === currentFilter)) filter.value = currentFilter;
+    if ([...input.options].some((option) => option.value === currentInput)) input.value = currentInput;
+}
+
+async function loadShops() {
+    const params = new URLSearchParams();
+    const search = document.getElementById('shop-search').value.trim();
+    const status = document.getElementById('shop-status-filter').value;
+    if (search) params.set('search', search);
+    if (status) params.set('status', status);
+
+    const url = params.toString() ? `/api/shops?${params.toString()}` : '/api/shops';
+    const data = await _fetch(url).then(readJsonResponse);
+    catalogState.shops = data.shops || [];
+    renderShopRows();
+    populateShopSelects();
+}
+
+async function loadProducts() {
+    const params = new URLSearchParams({include_inactive: 'true'});
+    const search = document.getElementById('product-search').value.trim();
+    const shopId = document.getElementById('product-shop-filter').value;
+    const status = document.getElementById('product-status-filter').value;
+    if (search) params.set('search', search);
+    if (shopId) params.set('shop_id', shopId);
+    if (status && status !== 'all') params.set('status', status);
+
+    const data = await _fetch(`/api/products?${params.toString()}`).then(readJsonResponse);
+    catalogState.products = data.products || [];
+    renderProductRows();
+}
+
+function renderShopRows() {
+    const tbody = document.getElementById('shops-table-body');
+    if (!catalogState.shops.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="catalog-empty">No shops found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = catalogState.shops.map((shop) => `
+        <tr>
+            <td><strong>${escapeHtml(shop.name)}</strong><div class="catalog-meta">${escapeHtml(shop.slug)}</div></td>
+            <td>${escapeHtml(shop.region)}</td>
+            <td><span class="badge badge-${escapeHtml(shop.status)}">${escapeHtml(shop.status)}</span></td>
+            <td><a href="${escapeHtml(shop.storefront_url)}" target="_blank" rel="noreferrer">${escapeHtml(shop.storefront_url)}</a></td>
+            <td><a href="${escapeHtml(shop.crm_base_url)}" target="_blank" rel="noreferrer">${escapeHtml(shop.crm_base_url)}</a></td>
+            <td>${shop.product_count || 0}</td>
+            <td class="catalog-actions" style="${catalogState.canManage ? '' : 'display:none'}">
+                <button class="btn btn-primary" type="button" onclick="editShop(${shop.id})">Edit</button>
+                <button class="btn btn-warning" type="button" onclick="removeShop(${shop.id})">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderProductRows() {
+    const tbody = document.getElementById('products-table-body');
+    if (!catalogState.products.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="catalog-empty">No products found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = catalogState.products.map((product) => `
+        <tr>
+            <td><strong>${escapeHtml(product.name)}</strong><div class="catalog-meta">${escapeHtml(product.description || '').slice(0, 80)}</div></td>
+            <td>${escapeHtml(product.shop_name || 'Unassigned')}</td>
+            <td>${escapeHtml(product.sku)}</td>
+            <td>${escapeHtml(product.category || 'Uncategorized')}</td>
+            <td>${formatMoney(product.price)}</td>
+            <td>${Number(product.stock || 0).toLocaleString()}</td>
+            <td><span class="badge badge-${product.is_active ? 'completed' : 'cancelled'}">${product.is_active ? 'active' : 'inactive'}</span></td>
+            <td class="catalog-actions" style="${catalogState.canManage ? '' : 'display:none'}">
+                <button class="btn btn-primary" type="button" onclick="editProduct(${product.id})">Edit</button>
+                <button class="btn btn-warning" type="button" onclick="removeProduct(${product.id})">${product.is_active ? 'Archive' : 'Delete'}</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function resetShopForm() {
+    document.getElementById('shop-form').reset();
+    document.getElementById('shop-id').value = '';
+    document.getElementById('shop-form-title').textContent = 'New Shop';
+    document.getElementById('shop-form-subtitle').textContent = 'Create or update storefront metadata.';
+    document.getElementById('shop-currency').value = 'USD';
+    document.getElementById('shop-status').value = 'active';
+}
+
+function resetProductForm() {
+    document.getElementById('product-form').reset();
+    document.getElementById('product-id').value = '';
+    document.getElementById('product-form-title').textContent = 'New Product';
+    document.getElementById('product-form-subtitle').textContent = 'Create or update CRM-managed catalog inventory.';
+    document.getElementById('product-is-active').value = '1';
+    document.getElementById('product-stock').value = '0';
+}
+
+function applyProductPreset(category, imageUrl = '') {
+    if (!catalogState.canManage) return;
+    document.getElementById('product-category').value = category;
+    if (!document.getElementById('product-image-url').value.trim() && imageUrl) {
+        document.getElementById('product-image-url').value = imageUrl;
+    }
+    document.getElementById('product-is-active').value = '1';
+    document.getElementById('product-stock').value = document.getElementById('product-stock').value || '0';
+    document.getElementById('product-name').focus();
+}
+
+function editShop(id) {
+    const shop = catalogState.shops.find((entry) => entry.id === id);
+    if (!shop) return;
+    document.getElementById('shop-id').value = shop.id;
+    document.getElementById('shop-name').value = shop.name || '';
+    document.getElementById('shop-slug').value = shop.slug || '';
+    document.getElementById('shop-storefront-url').value = shop.storefront_url || '';
+    document.getElementById('shop-crm-base-url').value = shop.crm_base_url || '';
+    document.getElementById('shop-region').value = shop.region || '';
+    document.getElementById('shop-currency').value = shop.currency || 'USD';
+    document.getElementById('shop-status').value = shop.status || 'active';
+    document.getElementById('shop-notes').value = shop.notes || '';
+    document.getElementById('shop-form-title').textContent = `Edit Shop #${shop.id}`;
+    document.getElementById('shop-form-subtitle').textContent = 'Update storefront routing and CRM linkage.';
+    document.getElementById('shop-form-card').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function editProduct(id) {
+    const product = catalogState.products.find((entry) => entry.id === id);
+    if (!product) return;
+    document.getElementById('product-id').value = product.id;
+    document.getElementById('product-name').value = product.name || '';
+    document.getElementById('product-sku').value = product.sku || '';
+    document.getElementById('product-shop-id').value = product.shop_id || '';
+    document.getElementById('product-category').value = product.category || '';
+    document.getElementById('product-price').value = Number(product.price || 0);
+    document.getElementById('product-stock').value = Number(product.stock || 0);
+    document.getElementById('product-is-active').value = String(product.is_active ? 1 : 0);
+    document.getElementById('product-image-url').value = product.image_url || '';
+    document.getElementById('product-description').value = product.description || '';
+    document.getElementById('product-form-title').textContent = `Edit Product #${product.id}`;
+    document.getElementById('product-form-subtitle').textContent = 'Update pricing, availability, and shop assignment.';
+    document.getElementById('product-form-card').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+async function removeShop(id) {
+    if (!catalogState.canManage) return;
+    if (!window.confirm('Delete this shop? Products must be reassigned first.')) return;
+    try {
+        await _fetch(`/api/shops/${id}`, {method: 'DELETE'}).then(readJsonResponse);
+        setFeedback(`Deleted shop #${id}.`, 'success');
+        await loadCatalogData();
+        resetShopForm();
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+async function removeProduct(id) {
+    if (!catalogState.canManage) return;
+    if (!window.confirm('Archive or delete this product? Historical items will be archived instead of removed.')) return;
+    try {
+        const result = await _fetch(`/api/products/${id}`, {method: 'DELETE'}).then(readJsonResponse);
+        const syncFeedback = describeShopSync(result.shop_sync, result.reason || `Processed product #${id}`);
+        setFeedback(syncFeedback.message, syncFeedback.kind);
+        await loadProducts();
+        renderMetrics();
+        resetProductForm();
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+async function submitShopForm(event) {
+    event.preventDefault();
+    if (!catalogState.canManage) return;
+    const shopId = document.getElementById('shop-id').value;
+    const payload = {
+        name: document.getElementById('shop-name').value.trim(),
+        slug: document.getElementById('shop-slug').value.trim(),
+        storefront_url: document.getElementById('shop-storefront-url').value.trim(),
+        crm_base_url: document.getElementById('shop-crm-base-url').value.trim(),
+        region: document.getElementById('shop-region').value.trim(),
+        currency: document.getElementById('shop-currency').value.trim(),
+        status: document.getElementById('shop-status').value,
+        notes: document.getElementById('shop-notes').value.trim(),
+    };
+
+    try {
+        const url = shopId ? `/api/shops/${shopId}` : '/api/shops';
+        const method = shopId ? 'PATCH' : 'POST';
+        await _fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
+        }).then(readJsonResponse);
+        setFeedback(shopId ? `Updated shop #${shopId}.` : 'Created shop.', 'success');
+        await loadCatalogData();
+        resetShopForm();
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+async function submitProductForm(event) {
+    event.preventDefault();
+    if (!catalogState.canManage) return;
+    const productId = document.getElementById('product-id').value;
+    const payload = {
+        name: document.getElementById('product-name').value.trim(),
+        sku: document.getElementById('product-sku').value.trim(),
+        shop_id: document.getElementById('product-shop-id').value ? Number(document.getElementById('product-shop-id').value) : null,
+        category: document.getElementById('product-category').value.trim(),
+        price: Number(document.getElementById('product-price').value),
+        stock: Number(document.getElementById('product-stock').value),
+        is_active: Number(document.getElementById('product-is-active').value),
+        image_url: document.getElementById('product-image-url').value.trim() || null,
+        description: document.getElementById('product-description').value.trim(),
+    };
+
+    try {
+        const url = productId ? `/api/products/${productId}` : '/api/products';
+        const method = productId ? 'PATCH' : 'POST';
+        const result = await _fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
+        }).then(readJsonResponse);
+        const syncFeedback = describeShopSync(result.shop_sync, productId ? `Product #${productId}` : 'Product');
+        setFeedback(syncFeedback.message, syncFeedback.kind);
+        await loadProducts();
+        renderMetrics();
+        resetProductForm();
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+async function syncCatalogToShop() {
+    if (!catalogState.canManage) return;
+    try {
+        const result = await _fetch('/api/products/sync/shop', {method: 'POST'}).then(readJsonResponse);
+        const syncFeedback = describeShopSync(result.shop_sync, 'Full catalog');
+        setFeedback(syncFeedback.message, syncFeedback.kind);
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+async function loadCatalogData() {
+    try {
+        await Promise.all([loadShops(), loadProducts()]);
+        renderMetrics();
+        setFeedback(catalogState.canManage ? 'Storefront operations ready for changes.' : 'Read-only access: sign in as admin or manager to make changes.', 'info');
+    } catch (error) {
+        setFeedback(error.message, 'error');
+    }
+}
+
+document.getElementById('shop-form').addEventListener('submit', submitShopForm);
+document.getElementById('product-form').addEventListener('submit', submitProductForm);
+document.getElementById('shop-search').addEventListener('keyup', (event) => { if (event.key === 'Enter') loadShops(); });
+document.getElementById('product-search').addEventListener('keyup', (event) => { if (event.key === 'Enter') loadProducts(); });
+window.addEventListener('octo:session', (event) => {
+    updateAccessState(event.detail);
+    renderShopRows();
+    renderProductRows();
+    setFeedback(catalogState.canManage ? 'Storefront operations ready for changes.' : 'Read-only access: sign in as admin or manager to make changes.', 'info');
+});
+
+updateAccessState(window.OCTO_SESSION || {authenticated: false});
+resetShopForm();
+resetProductForm();
+loadCatalogData();
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.state
+__pycache__
+*.pyc
+.venv
+venv
+
+# Build/test artifacts
+k6
+tests
+deploy
+scripts
+docs
+*.md
+.dockerignore
+docker-compose.yml
+Dockerfile
+
+# Security: never include secrets or keys in build context
+secrets/
+credentials/
+*.pem
+*.key
+*.wallet
+
+# IDE and tooling
+.vscode
+.idea
+.claude
+*.swp
+*.swo
+
+# Playwright / browser testing
+.playwright-cli/
+playwright-report/
+test-results/
+
+# OS files
+.DS_Store
+Thumbs.db

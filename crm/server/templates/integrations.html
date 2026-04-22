@@ -1,0 +1,592 @@
+{% extends "base.html" %}
+{% block header_actions %}
+<button class="btn btn-secondary" onclick="refreshTopology()">Refresh Health</button>
+{% if apm_console_url %}<a class="btn btn-primary" href="{{ apm_console_url }}" target="_blank" rel="noreferrer">Open APM</a>{% endif %}
+{% endblock %}
+{% block content %}
+<section class="hero-panel compact">
+    <div>
+        <p class="hero-kicker">Platform architecture &amp; service topology</p>
+        <h2>Full-stack observability: CRM, Drone Shop, ATP, and OCI backends.</h2>
+        <p class="hero-copy">Live service health, cross-service distributed traces, and drilldown navigation into APM, Log Analytics, DB Management, and Operations Insights.</p>
+    </div>
+</section>
+
+<!-- ── Architecture Topology ──────────────────────────────── -->
+<div class="card">
+    <h3>Service Architecture</h3>
+    <p class="card-subtitle">Platform topology — click a node for details</p>
+    <div class="arch-topology" id="arch-topology">
+        <svg viewBox="0 0 920 520" class="arch-svg" id="arch-svg">
+            <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                    <polygon points="0 0, 8 3, 0 6" fill="rgba(117,217,227,0.5)"/>
+                </marker>
+                <marker id="arrowhead-warm" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                    <polygon points="0 0, 8 3, 0 6" fill="rgba(245,184,111,0.5)"/>
+                </marker>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+            </defs>
+
+            <!-- Connection lines -->
+            <g class="arch-edges">
+                <!-- Browser → CRM -->
+                <line x1="100" y1="105" x2="310" y2="105" stroke="rgba(117,217,227,0.25)" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="6,4"/>
+                <!-- Browser → Drone Shop -->
+                <line x1="100" y1="105" x2="310" y2="245" stroke="rgba(117,217,227,0.25)" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="6,4"/>
+                <!-- CRM → ATP -->
+                <line x1="420" y1="130" x2="660" y2="175" stroke="rgba(117,217,227,0.3)" stroke-width="2" marker-end="url(#arrowhead)"/>
+                <!-- Drone Shop → ATP -->
+                <line x1="420" y1="245" x2="660" y2="200" stroke="rgba(117,217,227,0.3)" stroke-width="2" marker-end="url(#arrowhead)"/>
+                <!-- CRM ↔ Drone Shop (bidirectional) -->
+                <line x1="370" y1="140" x2="370" y2="215" stroke="rgba(245,184,111,0.3)" stroke-width="1.5" marker-end="url(#arrowhead-warm)"/>
+                <line x1="350" y1="215" x2="350" y2="140" stroke="rgba(245,184,111,0.3)" stroke-width="1.5" marker-end="url(#arrowhead-warm)"/>
+                <!-- ATP → OCI Observability -->
+                <line x1="780" y1="190" x2="780" y2="335" stroke="rgba(117,217,227,0.2)" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="4,3"/>
+                <!-- CRM → OCI Observability (traces) -->
+                <line x1="420" y1="105" x2="700" y2="365" stroke="rgba(101,212,168,0.15)" stroke-width="1" marker-end="url(#arrowhead)" stroke-dasharray="3,6"/>
+                <!-- Drone Shop → OCI Observability (traces) -->
+                <line x1="420" y1="260" x2="700" y2="380" stroke="rgba(101,212,168,0.15)" stroke-width="1" marker-end="url(#arrowhead)" stroke-dasharray="3,6"/>
+                <!-- CRM → OCI Backends -->
+                <line x1="420" y1="90" x2="660" y2="70" stroke="rgba(117,217,227,0.18)" stroke-width="1" marker-end="url(#arrowhead)" stroke-dasharray="4,4"/>
+                <!-- ATP → DB Management/OPSI -->
+                <line x1="720" y1="220" x2="660" y2="340" stroke="rgba(117,217,227,0.15)" stroke-width="1" marker-end="url(#arrowhead)" stroke-dasharray="3,5"/>
+            </g>
+
+            <!-- ── Nodes ── -->
+            <!-- Browser / Users -->
+            <g class="arch-node" data-node="browser" transform="translate(30,65)">
+                <rect width="140" height="80" rx="16" fill="rgba(4,14,23,0.7)" stroke="rgba(117,217,227,0.25)" stroke-width="1.5"/>
+                <text x="70" y="32" text-anchor="middle" fill="var(--text-muted)" font-size="10" letter-spacing="0.1em">USERS</text>
+                <text x="70" y="54" text-anchor="middle" fill="var(--text-primary)" font-size="13" font-weight="600">Browser + RUM</text>
+            </g>
+
+            <!-- CRM Portal -->
+            <g class="arch-node" data-node="crm" transform="translate(290,65)">
+                <rect width="160" height="80" rx="16" fill="rgba(117,217,227,0.08)" stroke="rgba(117,217,227,0.4)" stroke-width="2"/>
+                <text x="80" y="28" text-anchor="middle" fill="var(--accent)" font-size="10" letter-spacing="0.1em">ENTERPRISE CRM</text>
+                <text x="80" y="48" text-anchor="middle" fill="var(--text-primary)" font-size="14" font-weight="700">OCTO Portal</text>
+                <text x="80" y="66" text-anchor="middle" fill="var(--text-muted)" font-size="10">FastAPI · OKE · 2 pods</text>
+                <circle cx="148" cy="12" r="5" class="health-dot" id="health-crm"/>
+            </g>
+
+            <!-- Drone Shop -->
+            <g class="arch-node" data-node="drone-shop" transform="translate(290,205)">
+                <rect width="160" height="80" rx="16" fill="rgba(245,184,111,0.06)" stroke="rgba(245,184,111,0.35)" stroke-width="2"/>
+                <text x="80" y="28" text-anchor="middle" fill="var(--accent-warm)" font-size="10" letter-spacing="0.1em">OCTO DRONE SHOP</text>
+                <text x="80" y="48" text-anchor="middle" fill="var(--text-primary)" font-size="14" font-weight="700">Storefront</text>
+                <text x="80" y="66" text-anchor="middle" fill="var(--text-muted)" font-size="10">FastAPI · OKE · 2 pods</text>
+                <circle cx="148" cy="12" r="5" class="health-dot" id="health-drone-shop"/>
+            </g>
+
+            <!-- Oracle ATP -->
+            <g class="arch-node" data-node="atp" transform="translate(640,155)">
+                <rect width="170" height="80" rx="16" fill="rgba(101,212,168,0.06)" stroke="rgba(101,212,168,0.35)" stroke-width="2"/>
+                <text x="85" y="28" text-anchor="middle" fill="var(--success)" font-size="10" letter-spacing="0.1em">ORACLE CLOUD</text>
+                <text x="85" y="48" text-anchor="middle" fill="var(--text-primary)" font-size="14" font-weight="700">ATP Database</text>
+                <text x="85" y="66" text-anchor="middle" fill="var(--text-muted)" font-size="10" id="atp-label">Shared · {{ atp_connection_name or 'atp' }}</text>
+                <circle cx="158" cy="12" r="5" class="health-dot" id="health-atp"/>
+            </g>
+
+            <!-- OCI Backends -->
+            <g class="arch-node" data-node="backends" transform="translate(640,35)">
+                <rect width="170" height="60" rx="14" fill="rgba(4,14,23,0.6)" stroke="rgba(117,217,227,0.18)" stroke-width="1"/>
+                <text x="85" y="25" text-anchor="middle" fill="var(--text-muted)" font-size="10" letter-spacing="0.08em">PLATFORM BACKENDS</text>
+                <text x="85" y="44" text-anchor="middle" fill="var(--text-secondary)" font-size="12">Control Plane · APIs</text>
+                <circle cx="158" cy="10" r="4" class="health-dot" id="health-backends"/>
+            </g>
+
+            <!-- OCI Observability Stack -->
+            <g class="arch-node" data-node="observability" transform="translate(610,320)">
+                <rect width="260" height="170" rx="18" fill="rgba(4,14,23,0.5)" stroke="rgba(117,217,227,0.12)" stroke-width="1" stroke-dasharray="4,3"/>
+                <text x="130" y="26" text-anchor="middle" fill="var(--text-muted)" font-size="10" letter-spacing="0.12em">OCI OBSERVABILITY STACK</text>
+                <!-- Sub-services -->
+                <g transform="translate(12,40)">
+                    <rect width="112" height="44" rx="10" fill="rgba(117,217,227,0.08)" stroke="rgba(117,217,227,0.2)" stroke-width="1"/>
+                    <text x="56" y="18" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="600">APM</text>
+                    <text x="56" y="34" text-anchor="middle" fill="var(--text-muted)" font-size="9">Traces · RUM</text>
+                </g>
+                <g transform="translate(136,40)">
+                    <rect width="112" height="44" rx="10" fill="rgba(117,217,227,0.08)" stroke="rgba(117,217,227,0.2)" stroke-width="1"/>
+                    <text x="56" y="18" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="600">Log Analytics</text>
+                    <text x="56" y="34" text-anchor="middle" fill="var(--text-muted)" font-size="9">Logs · Detections</text>
+                </g>
+                <g transform="translate(12,96)">
+                    <rect width="112" height="44" rx="10" fill="rgba(117,217,227,0.08)" stroke="rgba(117,217,227,0.2)" stroke-width="1"/>
+                    <text x="56" y="18" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="600">DB Management</text>
+                    <text x="56" y="34" text-anchor="middle" fill="var(--text-muted)" font-size="9">AWR · SQL Monitor</text>
+                </g>
+                <g transform="translate(136,96)">
+                    <rect width="112" height="44" rx="10" fill="rgba(117,217,227,0.08)" stroke="rgba(117,217,227,0.2)" stroke-width="1"/>
+                    <text x="56" y="18" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="600">Ops Insights</text>
+                    <text x="56" y="34" text-anchor="middle" fill="var(--text-muted)" font-size="9">Capacity · Fleet</text>
+                </g>
+            </g>
+
+            <!-- Data flow labels -->
+            <text x="195" y="95" fill="rgba(117,217,227,0.4)" font-size="8" letter-spacing="0.08em">HTTPS + RUM</text>
+            <text x="460" y="155" fill="rgba(117,217,227,0.4)" font-size="8" letter-spacing="0.08em" transform="rotate(-8,460,155)">SQLAlchemy</text>
+            <text x="460" y="232" fill="rgba(117,217,227,0.4)" font-size="8" letter-spacing="0.08em" transform="rotate(8,460,232)">SQLAlchemy</text>
+            <text x="318" y="182" fill="rgba(245,184,111,0.4)" font-size="8" letter-spacing="0.06em">order sync</text>
+            <text x="550" y="345" fill="rgba(101,212,168,0.35)" font-size="8" letter-spacing="0.06em" transform="rotate(32,550,345)">OTel spans</text>
+
+            <!-- Legend -->
+            <g transform="translate(30,380)">
+                <text x="0" y="0" fill="var(--text-muted)" font-size="9" letter-spacing="0.1em">LEGEND</text>
+                <line x1="0" y1="18" x2="30" y2="18" stroke="rgba(117,217,227,0.3)" stroke-width="2"/>
+                <text x="36" y="22" fill="var(--text-muted)" font-size="9">Data flow</text>
+                <line x1="0" y1="36" x2="30" y2="36" stroke="rgba(245,184,111,0.3)" stroke-width="1.5"/>
+                <text x="36" y="40" fill="var(--text-muted)" font-size="9">Cross-service sync</text>
+                <line x1="0" y1="54" x2="30" y2="54" stroke="rgba(101,212,168,0.2)" stroke-width="1" stroke-dasharray="3,5"/>
+                <text x="36" y="58" fill="var(--text-muted)" font-size="9">Telemetry export</text>
+                <g transform="translate(0,72)">
+                    <circle cx="6" cy="0" r="5" fill="var(--success)"/><text x="18" y="4" fill="var(--text-muted)" font-size="9">Healthy</text>
+                    <circle cx="76" cy="0" r="5" fill="var(--warning)"/><text x="88" y="4" fill="var(--text-muted)" font-size="9">Degraded</text>
+                    <circle cx="156" cy="0" r="5" fill="var(--danger)"/><text x="168" y="4" fill="var(--text-muted)" font-size="9">Down</text>
+                    <circle cx="216" cy="0" r="5" fill="var(--text-muted)"/><text x="228" y="4" fill="var(--text-muted)" font-size="9">Unknown</text>
+                </g>
+            </g>
+        </svg>
+    </div>
+</div>
+
+<!-- ── Service Dependencies ───────────────────────────────── -->
+<div class="card">
+    <h3>Service Dependencies</h3>
+    <p class="card-subtitle">Live health checks with W3C traceparent propagation</p>
+    <div class="integration-grid" id="integration-grid">
+        <div class="status-card">Probing services...</div>
+    </div>
+</div>
+
+<!-- ── Telemetry & Correlation ────────────────────────────── -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Telemetry Pipeline</h3>
+        <p class="card-subtitle">Instrumentation and export status</p>
+        <div class="telemetry-pipeline" id="telemetry-pipeline">
+            <div class="status-card">Loading...</div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Trace Context</h3>
+        <p class="card-subtitle">Current W3C correlation snapshot</p>
+        <pre id="integration-correlation" class="code-output">Loading...</pre>
+    </div>
+</div>
+
+<!-- ── Module Architecture ────────────────────────────────── -->
+<div class="card">
+    <h3>CRM Module Graph</h3>
+    <p class="card-subtitle">Internal module dependencies — <span id="module-count">0</span> modules, <span id="endpoint-count">0</span> endpoints</p>
+    <div class="module-graph" id="module-graph">
+        <div class="status-card">Loading modules...</div>
+    </div>
+</div>
+
+<!-- ── Console Drilldowns ─────────────────────────────────── -->
+<div class="card">
+    <h3>OCI Console Drilldowns</h3>
+    <p class="card-subtitle">One-click pivot from application context to OCI native tooling</p>
+    <div class="drilldown-grid" id="integration-drilldowns">
+        <div class="drilldown-card">Loading drilldowns...</div>
+    </div>
+</div>
+
+<!-- ── Browser Remote Access ────────────────────────────── -->
+<div class="card" id="console-access-card">
+    <h3>Browser Remote Access</h3>
+    <p class="card-subtitle">One-click SSH/RDP sessions via Apache Guacamole — auto-authenticated, no separate login</p>
+    <div id="console-access-content">
+        <div class="status-card">Checking availability...</div>
+    </div>
+</div>
+
+<!-- ── Order Sync Status ──────────────────────────────────── -->
+<div class="card" id="order-sync-card" style="display:none">
+    <h3>Cross-Service Order Sync</h3>
+    <p class="card-subtitle">Drone Shop → CRM order synchronization</p>
+    <div class="dashboard-row">
+        <div id="order-sync-stats" class="status-grid"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.card-subtitle {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin: -4px 0 16px 0;
+}
+.arch-topology {
+    overflow-x: auto;
+    padding: 8px 0;
+}
+.arch-svg {
+    display: block;
+    height: auto;
+    max-width: 100%;
+    min-height: 480px;
+    width: 100%;
+}
+.arch-node {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.arch-node:hover rect {
+    stroke-width: 2.5;
+    filter: url(#glow);
+}
+.health-dot {
+    fill: var(--text-muted);
+    transition: fill 0.4s;
+}
+.health-dot.is-healthy { fill: var(--success); }
+.health-dot.is-degraded { fill: var(--warning); }
+.health-dot.is-unhealthy { fill: var(--danger); }
+
+/* Telemetry pipeline */
+.telemetry-pipeline {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.telemetry-item {
+    align-items: center;
+    background: rgba(4,14,23,0.56);
+    border: 1px solid rgba(117,217,227,0.12);
+    border-radius: 14px;
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+}
+.telemetry-item .tl-icon {
+    align-items: center;
+    border-radius: 10px;
+    display: flex;
+    font-size: 1.1rem;
+    height: 36px;
+    justify-content: center;
+    width: 36px;
+}
+.telemetry-item .tl-icon.is-on { background: rgba(101,212,168,0.14); color: var(--success); }
+.telemetry-item .tl-icon.is-off { background: rgba(255,116,116,0.12); color: var(--danger); }
+.telemetry-item .tl-label { color: var(--text-secondary); font-size: 0.82rem; }
+.telemetry-item .tl-value { font-size: 0.72rem; color: var(--text-muted); }
+
+/* Module graph */
+.module-graph {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.module-node {
+    background: rgba(4,14,23,0.56);
+    border: 1px solid rgba(117,217,227,0.14);
+    border-radius: 14px;
+    padding: 14px 16px;
+    transition: border-color 0.2s, transform 0.2s;
+}
+.module-node:hover {
+    border-color: rgba(117,217,227,0.3);
+    transform: translateY(-1px);
+}
+.module-node.is-cross-service {
+    border-color: rgba(245,184,111,0.3);
+}
+.module-node h4 {
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+.module-node .mod-endpoints {
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.module-node .mod-deps {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    margin-top: 8px;
+    line-height: 1.5;
+}
+.module-node .mod-deps span {
+    background: rgba(117,217,227,0.08);
+    border-radius: 6px;
+    display: inline-block;
+    margin: 2px 3px 2px 0;
+    padding: 2px 7px;
+}
+
+/* Console access grid */
+.console-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.console-conn {
+    align-items: center;
+    background: rgba(4,14,23,0.56);
+    border: 1px solid rgba(117,217,227,0.12);
+    border-radius: 14px;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    text-decoration: none;
+    transition: border-color 0.2s, transform 0.15s;
+}
+.console-conn:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+.console-conn .cc-icon {
+    align-items: center;
+    border-radius: 10px;
+    display: flex;
+    font-size: 1.3rem;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
+}
+.console-conn .cc-icon.is-ssh { background: rgba(117,217,227,0.12); color: var(--accent); }
+.console-conn .cc-icon.is-rdp { background: rgba(100,149,237,0.12); color: cornflowerblue; }
+.console-conn .cc-name { font-size: 0.9rem; font-weight: 600; }
+.console-conn .cc-meta { color: var(--text-muted); font-size: 0.72rem; font-family: "JetBrains Mono", "SF Mono", monospace; }
+.console-conn .cc-arrow { color: var(--text-muted); font-size: 0.8rem; margin-left: auto; transition: color 0.2s; }
+.console-conn:hover .cc-arrow { color: var(--accent); }
+.console-not-configured {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 24px;
+    text-align: center;
+}
+
+/* Integration cards — enhanced */
+.integration-card {
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+}
+.integration-card:hover {
+    border-color: rgba(117,217,227,0.3);
+    transform: translateY(-1px);
+}
+.integration-card .ic-type {
+    background: rgba(117,217,227,0.08);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    text-transform: uppercase;
+}
+.integration-card .ic-type.is-database { background: rgba(101,212,168,0.1); color: var(--success); }
+.integration-card .ic-type.is-application { background: rgba(245,184,111,0.1); color: var(--accent-warm); }
+.integration-card .ic-type.is-backend { background: rgba(117,217,227,0.1); color: var(--accent); }
+.integration-card .ic-url {
+    color: var(--text-muted);
+    font-family: "JetBrains Mono", "SF Mono", monospace;
+    font-size: 0.72rem;
+    margin-top: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.integration-card .ic-footer {
+    align-items: center;
+    border-top: 1px solid rgba(117,217,227,0.08);
+    color: var(--text-muted);
+    display: flex;
+    font-size: 0.72rem;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 10px;
+}
+</style>
+
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+const TELEMETRY_ICONS = {
+    apm_configured: ['APM', 'Distributed tracing via OCI APM'],
+    rum_configured: ['RUM', 'Real User Monitoring in browser'],
+    logging_configured: ['LOG', 'OCI Logging Analytics SDK'],
+    otlp_log_export_enabled: ['OTLP', 'OpenTelemetry log export'],
+    database_observability_enabled: ['DB', 'Database observability enabled'],
+    orders_sync_enabled: ['SYNC', 'Cross-service order sync'],
+};
+
+function normalizeStatus(status) {
+    const v = String(status || '').toLowerCase();
+    if (v.includes('healthy') || v === 'connected' || v === 'configured') return 'healthy';
+    if (v.includes('degraded')) return 'degraded';
+    return 'unhealthy';
+}
+
+function updateHealthDot(id, status) {
+    const dot = document.getElementById(id);
+    if (dot) {
+        dot.classList.remove('is-healthy','is-degraded','is-unhealthy');
+        dot.classList.add('is-' + normalizeStatus(status));
+    }
+}
+
+async function refreshTopology() {
+    const [topoResp, modulesResp, readyResp] = await Promise.all([
+        _fetch('/api/integrations/topology'),
+        _fetch('/api/modules'),
+        _fetch('/ready'),
+    ]);
+    const data = await topoResp.json();
+    const modules = await modulesResp.json();
+    const ready = await readyResp.json();
+
+    // ── Trace context ──
+    document.getElementById('integration-correlation').textContent = JSON.stringify(data.correlation || {}, null, 2);
+
+    // ── Health dots on architecture diagram ──
+    updateHealthDot('health-crm', ready.ready ? 'healthy' : 'unhealthy');
+    updateHealthDot('health-atp', ready.database === 'connected' ? 'healthy' : 'unhealthy');
+
+    const deps = data.dependencies || [];
+    const droneShop = deps.find(d => d.name === 'drone-shop-portal') || deps.find(d => d.name === 'octo-drone-shop');
+    const backends = deps.find(d => d.name === 'platform-control-plane') || deps.find(d => d.name === 'platform-backend');
+    updateHealthDot('health-drone-shop', droneShop ? droneShop.status : 'unknown');
+    updateHealthDot('health-backends', backends ? backends.status : 'unknown');
+
+    // ── Telemetry pipeline ──
+    const telemetry = data.telemetry || {};
+    document.getElementById('telemetry-pipeline').innerHTML = Object.entries(TELEMETRY_ICONS).map(([key, [label, desc]]) => {
+        const on = !!telemetry[key];
+        let extra = '';
+        if (key === 'database_observability_enabled') extra = telemetry.database_target || '';
+        if (key === 'orders_sync_enabled') extra = telemetry.orders_sync_source_name || '';
+        return `
+            <div class="telemetry-item">
+                <div class="tl-icon ${on ? 'is-on' : 'is-off'}">${label}</div>
+                <div>
+                    <div class="tl-label">${desc}</div>
+                    <div class="tl-value">${on ? 'Active' : 'Off'}${extra ? ' · ' + extra : ''}</div>
+                </div>
+            </div>`;
+    }).join('');
+
+    // ── Dependency cards ──
+    document.getElementById('integration-grid').innerHTML = deps.map(dep => {
+        const st = normalizeStatus(dep.status);
+        const typeClass = dep.type || 'backend';
+        return `
+            <div class="integration-card">
+                <div class="integration-card-head">
+                    <div>
+                        <span class="ic-type is-${typeClass}">${dep.type || 'service'}</span>
+                        <h4>${dep.display_name}</h4>
+                    </div>
+                    <span class="status-value-pill is-${st}">${dep.status || 'unknown'}</span>
+                </div>
+                <div class="ic-url">${dep.url || dep.connection_name || dep.database_target || 'Not configured'}</div>
+                <div class="ic-footer">
+                    <span>Drilldown: ${dep.drilldown_product || 'n/a'}</span>
+                    ${dep.status_code ? `<span>HTTP ${dep.status_code}</span>` : ''}
+                    ${dep.atp_ocid ? `<span title="${dep.atp_ocid}">ATP OCID ✓</span>` : ''}
+                </div>
+            </div>`;
+    }).join('');
+
+    // ── Console drilldowns ──
+    document.getElementById('integration-drilldowns').innerHTML = (data.drilldowns || []).map(target => `
+        <a class="drilldown-card ${target.configured ? '' : 'is-disabled'}" ${target.configured ? `href="${target.url}" target="_blank" rel="noreferrer"` : ''}>
+            <span>${target.name}</span>
+            <strong>${target.configured ? 'Open console →' : 'Not configured'}</strong>
+        </a>
+    `).join('');
+
+    // ── Module graph ──
+    const mods = modules.modules || [];
+    document.getElementById('module-count').textContent = modules.total_modules || mods.length;
+    document.getElementById('endpoint-count').textContent = modules.total_endpoints || mods.reduce((s, m) => s + m.endpoints, 0);
+    document.getElementById('module-graph').innerHTML = mods.map(m => `
+        <div class="module-node ${m.cross_service ? 'is-cross-service' : ''}">
+            <h4>${m.label}</h4>
+            <span class="mod-endpoints">${m.endpoints} endpoint${m.endpoints !== 1 ? 's' : ''}</span>
+            <div class="mod-deps">${(m.related_to || []).map(r => `<span>${r}</span>`).join('')}</div>
+        </div>
+    `).join('');
+
+    // ── Order sync ──
+    const orders = data.orders || {};
+    if (orders.total_synced !== undefined) {
+        document.getElementById('order-sync-card').style.display = '';
+        document.getElementById('order-sync-stats').innerHTML = [
+            {label: 'Total Synced', value: orders.total_synced || 0},
+            {label: 'Last Sync', value: orders.last_sync || 'never'},
+            {label: 'Sync Errors', value: orders.errors || 0},
+            {label: 'Source', value: telemetry.orders_sync_source_name || 'n/a'},
+        ].map(s => `
+            <div class="status-card">
+                <span class="status-label">${s.label}</span>
+                <strong style="margin-top:8px;display:block;font-size:1.1rem;">${s.value}</strong>
+            </div>
+        `).join('');
+    }
+}
+
+// ── Node click handler ──
+document.querySelectorAll('.arch-node').forEach(node => {
+    node.addEventListener('click', () => {
+        const name = node.dataset.node;
+        if (name === 'crm') window.location.href = '/';
+        else if (name === 'observability' && OCTO_CONFIG.apmConsoleUrl) window.open(OCTO_CONFIG.apmConsoleUrl, '_blank');
+        else if (name === 'atp' && OCTO_CONFIG.dbManagementConsoleUrl) window.open(OCTO_CONFIG.dbManagementConsoleUrl, '_blank');
+    });
+});
+
+refreshTopology();
+
+// ── Browser Remote Access ──
+async function loadConsoleAccess() {
+    const container = document.getElementById('console-access-content');
+    try {
+        const cfgResp = await _fetch('/api/integrations/console/config');
+        const cfgData = await cfgResp.json();
+        if (!cfgData.available) {
+            container.innerHTML = '<div class="console-not-configured">Control Plane not configured — set <code>CONTROL_PLANE_URL</code> to enable Browser Remote Access.</div>';
+            return;
+        }
+
+        const connResp = await _fetch('/api/integrations/console/connections');
+        const connData = await connResp.json();
+        const conns = connData.connections || [];
+
+        if (!conns.length) {
+            container.innerHTML = '<div class="console-not-configured">No Guacamole connections available. Deploy C0 (DevOps Bastion) with Guacamole first.</div>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="console-grid">
+                ${conns.map(c => `
+                    <a class="console-conn" href="${c.client_url}" target="_blank" rel="noopener" title="Open ${c.protocol.toUpperCase()} session to ${c.name}">
+                        <div class="cc-icon is-${c.protocol}">${c.protocol === 'rdp' ? '🖥' : '⌨'}</div>
+                        <div>
+                            <div class="cc-name">${c.name}</div>
+                            <div class="cc-meta">${c.protocol.toUpperCase()}${c.hostname ? ' · ' + c.hostname : ''}</div>
+                        </div>
+                        <span class="cc-arrow">→</span>
+                    </a>
+                `).join('')}
+            </div>
+            ${connData.guacamole_url ? `<div style="margin-top:12px;font-size:0.75rem;color:var(--text-muted);">
+                <strong>Tip:</strong> Use <kbd style="background:rgba(117,217,227,0.1);padding:1px 5px;border-radius:4px;">Ctrl+Shift+Alt</kbd> inside Guacamole for clipboard.
+                <a href="${connData.guacamole_url}" target="_blank" rel="noopener" style="margin-left:12px;color:var(--accent);">Open Guacamole directly →</a>
+            </div>` : ''}
+        `;
+    } catch (err) {
+        container.innerHTML = `<div class="console-not-configured">Failed to load console access: ${err.message}</div>`;
+    }
+}
+loadConsoleAccess();
+</script>
+{% endblock %}

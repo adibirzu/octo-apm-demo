@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% block header_actions %}
+<button class="btn btn-secondary" onclick="resetAll()">Reset All</button>
+{% endblock %}
+
+{% block content %}
+<!-- Status bar — active simulation pills -->
+<div id="status-bar" class="dashboard-row" style="margin-bottom:1rem;">
+    <div class="card" style="padding:0.75rem 1rem;">
+        <div id="status-pills" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+            <span class="status-value-pill is-healthy">All Clear</span>
+        </div>
+    </div>
+</div>
+
+<!-- Issue Simulation Controls -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-sim-controls">
+        <h3>Issue Simulation Controls</h3>
+
+        <h4 style="margin:1rem 0 0.5rem;font-weight:600;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.08em;color:var(--text-secondary);">One-Shot Incidents</h4>
+        <div class="simulation-controls" style="margin-bottom:1rem;">
+            <button class="btn btn-warning" onclick="oneShot('db-latency',{delay_seconds:3})">DB Latency Spike</button>
+            <button class="btn btn-danger"  onclick="oneShot('db-disconnect',{})">DB Disconnect</button>
+            <button class="btn btn-danger"  onclick="oneShot('error-burst',{count:10})">Error Burst</button>
+            <button class="btn btn-warning" onclick="oneShot('slow-query',{delay_seconds:2})">Slow Query</button>
+            <button class="btn btn-warning" onclick="oneShot('n-plus-one',{count:50})">N+1 Demo</button>
+            <button class="btn btn-danger"  onclick="oneShot('app-exception',{})">App Exception</button>
+            <button class="btn btn-danger"  onclick="oneShot('db-error',{})">DB Error</button>
+        </div>
+
+        <h4 style="margin:1rem 0 0.5rem;font-weight:600;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.08em;color:var(--text-secondary);">Persistent Toggles</h4>
+        <div class="simulation-controls" style="margin-bottom:0.75rem;">
+            <button class="btn" id="toggle-db_latency"     onclick="toggle('db_latency')">DB Latency: Off</button>
+            <button class="btn" id="toggle-db_disconnect"   onclick="toggle('db_disconnect')">DB Disconnect: Off</button>
+            <button class="btn" id="toggle-slow_queries"    onclick="toggle('slow_queries')">Slow Responses: Off</button>
+            <button class="btn btn-secondary" onclick="clearErrorRate()">Clear Error Rate</button>
+            <button class="btn btn-secondary" onclick="resetAll()">Reset All</button>
+        </div>
+        <div class="simulation-controls" style="margin-bottom:1rem;">
+            <span class="badge" id="pill-latency"    style="display:none;">db latency</span>
+            <span class="badge" id="pill-disconnect" style="display:none;">db disconnect</span>
+            <span class="badge" id="pill-slow"       style="display:none;">slow responses</span>
+            <span class="badge" id="pill-error-rate" style="display:none;">error rate</span>
+        </div>
+
+        <pre id="sim-output" class="code-output" style="min-height:80px;max-height:200px;overflow:auto;font-size:0.75rem;">Ready. Click any action to begin.</pre>
+    </div>
+</div>
+
+<!-- Demo Data Controls -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-demo-data">
+        <h3>Demo Data Controls</h3>
+
+        <h4 style="margin:1rem 0 0.5rem;font-weight:600;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.08em;color:var(--text-secondary);">Quick Actions</h4>
+        <div class="simulation-controls" style="margin-bottom:1.5rem;">
+            <button class="btn btn-primary"   onclick="quickAction('generate-orders',{count:5})">Generate 5 Orders</button>
+            <button class="btn btn-warning"   onclick="quickAction('generate-backlog',{count:5})">Generate Backlog</button>
+            <button class="btn btn-danger"    onclick="quickAction('high-value-order',{})">High-Value Order</button>
+            <button class="btn btn-primary"   onclick="quickAction('add-customer',{})">Add Customer</button>
+            <button class="btn btn-secondary" onclick="quickAction('sync-customers',{})">Sync CRM Customers</button>
+        </div>
+
+        <h4 style="margin:0 0 0.5rem;font-weight:600;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.08em;color:var(--text-secondary);">Create Customer / Company</h4>
+        <form id="form-create-customer" onsubmit="createCustomer(event)" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-bottom:1.5rem;">
+            <input class="form-input" id="cc-company"  placeholder="Company Name" required>
+            <input class="form-input" id="cc-contact"  placeholder="Contact Name" required>
+            <input class="form-input" id="cc-email"    placeholder="Email" type="email" required>
+            <input class="form-input" id="cc-industry" placeholder="Industry">
+            <input class="form-input" id="cc-revenue"  placeholder="Revenue" type="number" step="1000">
+            <button type="submit" class="btn btn-success">Create Customer</button>
+        </form>
+
+        <h4 style="margin:0 0 0.5rem;font-weight:600;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.08em;color:var(--text-secondary);">Generate Orders</h4>
+        <form id="form-gen-orders" onsubmit="genOrders(event)" style="display:grid;grid-template-columns:1fr 1fr auto auto 1fr;gap:0.5rem;align-items:end;">
+            <select class="form-input" id="go-customer"><option value="">Random customer</option></select>
+            <select class="form-input" id="go-product"><option value="">Random product</option></select>
+            <input class="form-input" id="go-count"    type="number" value="3" min="1" max="50" style="width:70px;" title="Count">
+            <input class="form-input" id="go-qty"      type="number" value="2" min="1" max="20" style="width:70px;" title="Max qty">
+            <select class="form-input" id="go-status">
+                <option value="processing">processing</option>
+                <option value="pending">pending</option>
+                <option value="shipped">shipped</option>
+                <option value="delivered">delivered</option>
+                <option value="cancelled">cancelled</option>
+            </select>
+        </form>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;">
+            <label style="font-size:0.8rem;cursor:pointer;"><input type="checkbox" id="go-highvalue"> High-value mix</label>
+            <button class="btn btn-success" onclick="document.getElementById('form-gen-orders').requestSubmit()">Generate Orders</button>
+        </div>
+    </div>
+</div>
+
+<!-- Drone Shop Simulation (cross-service) -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-drone-shop">
+        <h3>Drone Shop Simulation <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:400;">(cross-service proxy)</span></h3>
+        <div class="simulation-controls" style="margin-bottom:0.75rem;">
+            <button class="btn btn-warning" onclick="droneShop('db-latency',{latency_ms:2500})">DB Latency</button>
+            <button class="btn btn-danger"  onclick="droneShop('error-burst',{rate:0.3})">Error Burst</button>
+            <button class="btn btn-secondary" onclick="droneShop('reset',{})">Reset</button>
+            <button class="btn" onclick="droneShopStatus()">Status</button>
+        </div>
+        <pre id="drone-output" class="code-output" style="min-height:40px;max-height:150px;overflow:auto;font-size:0.75rem;">Drone shop proxy ready.</pre>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+const POLL_MS = 2000;
+let _lastState = {};
+let _poller = null;
+
+// ── Output helpers ───────────────────────────────────────────────
+function ts() { return new Date().toLocaleTimeString(); }
+
+function appendOutput(elId, label, data) {
+    const el = document.getElementById(elId);
+    const line = `[${ts()}] ${label}: ${JSON.stringify(data, null, 2)}`;
+    el.textContent = line + '\n' + el.textContent;
+    el.scrollTop = 0;
+}
+
+// ── Status polling ───────────────────────────────────────────────
+async function pollStatus() {
+    try {
+        const r = await _fetch('/api/simulate/status');
+        const d = await r.json();
+        _lastState = d.simulation || {};
+        renderStatusPills(_lastState);
+        updateToggleButtons(_lastState);
+    } catch (e) { /* silent */ }
+}
+
+function renderStatusPills(s) {
+    const pills = [];
+    if (s.db_latency)    pills.push('<span class="status-value-pill is-degraded">db latency</span>');
+    if (s.db_disconnect) pills.push('<span class="status-value-pill is-unhealthy">db disconnect</span>');
+    if (s.slow_queries)  pills.push('<span class="status-value-pill is-degraded">slow responses</span>');
+    if (s.error_rate > 0) pills.push(`<span class="status-value-pill is-unhealthy">error rate ${Math.round(s.error_rate*100)}%</span>`);
+    if (s.memory_leak)   pills.push('<span class="status-value-pill is-degraded">memory leak</span>');
+    if (s.cpu_spike)     pills.push('<span class="status-value-pill is-degraded">cpu spike</span>');
+    if (pills.length === 0) pills.push('<span class="status-value-pill is-healthy">All Clear</span>');
+    document.getElementById('status-pills').innerHTML = pills.join('');
+
+    // Mini pills in the controls card
+    document.getElementById('pill-latency').style.display    = s.db_latency    ? '' : 'none';
+    document.getElementById('pill-disconnect').style.display  = s.db_disconnect ? '' : 'none';
+    document.getElementById('pill-slow').style.display        = s.slow_queries  ? '' : 'none';
+    const errPill = document.getElementById('pill-error-rate');
+    errPill.style.display = s.error_rate > 0 ? '' : 'none';
+    errPill.textContent   = `error rate ${Math.round(s.error_rate*100)}%`;
+}
+
+function updateToggleButtons(s) {
+    const map = { db_latency: 'DB Latency', db_disconnect: 'DB Disconnect', slow_queries: 'Slow Responses' };
+    for (const [key, label] of Object.entries(map)) {
+        const btn = document.getElementById(`toggle-${key}`);
+        if (!btn) continue;
+        const on = !!s[key];
+        btn.textContent = `${label}: ${on ? 'ON' : 'Off'}`;
+        btn.className = on ? 'btn btn-warning' : 'btn';
+    }
+}
+
+// ── One-shot incidents ───────────────────────────────────────────
+async function oneShot(action, body) {
+    appendOutput('sim-output', action, 'firing...');
+    try {
+        const r = await _fetch(`/api/simulate/${action}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('sim-output', action, d);
+    } catch (e) {
+        appendOutput('sim-output', action, {error: e.message});
+    }
+    pollStatus();
+}
+
+// ── Persistent toggles ──────────────────────────────────────────
+async function toggle(key) {
+    const newVal = !_lastState[key];
+    const body = {}; body[key] = newVal;
+    try {
+        const r = await _fetch('/api/simulate/configure', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('sim-output', `toggle ${key}`, d.current || d);
+    } catch (e) {
+        appendOutput('sim-output', `toggle ${key}`, {error: e.message});
+    }
+    pollStatus();
+}
+
+async function clearErrorRate() {
+    await toggle_internal({error_rate: 0.0});
+}
+
+async function resetAll() {
+    try {
+        const r = await _fetch('/api/simulate/reset', {method: 'POST'});
+        const d = await r.json();
+        appendOutput('sim-output', 'reset', d);
+    } catch (e) {
+        appendOutput('sim-output', 'reset', {error: e.message});
+    }
+    pollStatus();
+}
+
+async function toggle_internal(body) {
+    try {
+        const r = await _fetch('/api/simulate/configure', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('sim-output', 'configure', d.current || d);
+    } catch (e) {
+        appendOutput('sim-output', 'configure', {error: e.message});
+    }
+    pollStatus();
+}
+
+// ── Quick actions ────────────────────────────────────────────────
+async function quickAction(action, body) {
+    appendOutput('sim-output', action, 'running...');
+    try {
+        const r = await _fetch(`/api/simulate/${action}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('sim-output', action, d);
+    } catch (e) {
+        appendOutput('sim-output', action, {error: e.message});
+    }
+}
+
+// ── Create customer form ─────────────────────────────────────────
+async function createCustomer(e) {
+    e.preventDefault();
+    const body = {
+        company_name: document.getElementById('cc-company').value,
+        contact_name: document.getElementById('cc-contact').value,
+        email: document.getElementById('cc-email').value,
+        industry: document.getElementById('cc-industry').value || '',
+        revenue: parseFloat(document.getElementById('cc-revenue').value) || 0,
+    };
+    try {
+        const r = await _fetch('/api/simulate/create-customer', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('sim-output', 'create-customer', d);
+        if (d.status === 'completed') {
+            e.target.reset();
+            loadDropdowns();
+        }
+    } catch (err) {
+        appendOutput('sim-output', 'create-customer', {error: err.message});
+    }
+}
+
+// ── Generate orders form ─────────────────────────────────────────
+async function genOrders(e) {
+    e.preventDefault();
+    const body = {
+        count: parseInt(document.getElementById('go-count').value) || 3,
+        max_quantity: parseInt(document.getElementById('go-qty').value) || 2,
+        status: document.getElementById('go-status').value,
+        high_value: document.getElementById('go-highvalue').checked,
+    };
+    const cust = document.getElementById('go-customer').value;
+    const prod = document.getElementById('go-product').value;
+    if (cust) body.customer_id = parseInt(cust);
+    if (prod) body.product_id  = parseInt(prod);
+    try {
+        const r = await _fetch('/api/simulate/generate-orders', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('sim-output', 'generate-orders', d);
+    } catch (err) {
+        appendOutput('sim-output', 'generate-orders', {error: err.message});
+    }
+}
+
+// ── Drone shop proxy ─────────────────────────────────────────────
+async function droneShop(action, body) {
+    appendOutput('drone-output', action, 'proxying...');
+    try {
+        const r = await _fetch(`/api/simulate/drone-shop/${action}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('drone-output', action, d);
+    } catch (e) {
+        appendOutput('drone-output', action, {error: e.message});
+    }
+}
+
+async function droneShopStatus() {
+    try {
+        const r = await _fetch('/api/simulate/drone-shop/status');
+        const d = await r.json();
+        appendOutput('drone-output', 'status', d);
+    } catch (e) {
+        appendOutput('drone-output', 'status', {error: e.message});
+    }
+}
+
+// ── Dropdown population ──────────────────────────────────────────
+async function loadDropdowns() {
+    try {
+        const [cr, pr] = await Promise.all([
+            _fetch('/api/customers').then(r => r.json()),
+            _fetch('/api/products').then(r => r.json()),
+        ]);
+        const custSel = document.getElementById('go-customer');
+        custSel.innerHTML = '<option value="">Random customer</option>';
+        (cr.data || cr || []).slice(0, 50).forEach(c => {
+            custSel.innerHTML += `<option value="${c.id}">${c.name} (${c.company || ''})</option>`;
+        });
+        const prodSel = document.getElementById('go-product');
+        prodSel.innerHTML = '<option value="">Random product</option>';
+        (pr.data || pr || []).slice(0, 50).forEach(p => {
+            prodSel.innerHTML += `<option value="${p.id}">${p.name} — $${p.price}</option>`;
+        });
+    } catch (e) { /* dropdowns stay at default */ }
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+    loadDropdowns();
+    pollStatus();
+    _poller = setInterval(pollStatus, POLL_MS);
+});
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        clearInterval(_poller); _poller = null;
+    } else {
+        pollStatus();
+        _poller = setInterval(pollStatus, POLL_MS);
+    }
+});
+</script>
+{% endblock %}

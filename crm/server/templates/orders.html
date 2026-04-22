@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-container orders-page">
+    <div class="hero-strip">
+        <div>
+            <p class="eyebrow">ATP-backed order operations</p>
+            <h1>Synced Order Backlog</h1>
+            <p class="hero-copy">Orders are stored in the app database, synced from octo-drone-shop, and correlated with APM, DB Management, OPSI, and Log Analytics.</p>
+        </div>
+        <div class="toolbar">
+            <button class="btn btn-primary" onclick="syncOrders()">Sync Orders</button>
+            <button class="btn" onclick="loadOrders()">Refresh</button>
+        </div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="card metric-card">
+            <div class="metric-label">Total Orders</div>
+            <div class="metric-value" id="orders-total">-</div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-label">Backlog Orders</div>
+            <div class="metric-value" id="orders-backlog">-</div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-label">Stale Backlog</div>
+            <div class="metric-value" id="orders-stale">-</div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-label">Failed Syncs</div>
+            <div class="metric-value" id="orders-failed-syncs">-</div>
+        </div>
+    </div>
+
+    <div class="content-split">
+        <div class="card">
+            <div class="section-heading">
+                <h2>Orders</h2>
+                <span class="pill" id="orders-db-target">{{ brand_name }} / {{ service_name }}</span>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Source</th>
+                        <th>Backlog</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-table-body">
+                    <tr><td colspan="6">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card detail-card">
+            <div class="section-heading">
+                <h2>Order Detail</h2>
+                <span class="pill" id="order-correlation-pill">No order selected</span>
+            </div>
+            <div id="order-detail-body" class="detail-stack">
+                <p>Select an order to inspect its ATP persistence, sync metadata, and telemetry context.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+async function loadSummary() {
+    const data = await _fetch('/api/orders/security/summary').then(r => r.json());
+    document.getElementById('orders-total').textContent = data.total_orders ?? 0;
+    document.getElementById('orders-backlog').textContent = data.backlog_orders ?? 0;
+    document.getElementById('orders-stale').textContent = data.stale_backlog_orders ?? 0;
+    document.getElementById('orders-failed-syncs').textContent = data.failed_syncs ?? 0;
+}
+
+async function loadOrders() {
+    const data = await _fetch('/api/orders').then(r => r.json());
+    const rows = data.orders || [];
+    document.getElementById('orders-db-target').textContent = data.database_target || 'database';
+    document.getElementById('orders-table-body').innerHTML = rows.map(order => `
+        <tr onclick="showOrder(${order.id})">
+            <td>${order.id}</td>
+            <td>${order.customer_name || 'Unknown'}</td>
+            <td>$${Number(order.total || 0).toLocaleString()}</td>
+            <td><span class="badge badge-${order.status}">${order.status}</span></td>
+            <td>${order.source_system || 'enterprise-crm'}</td>
+            <td><span class="badge badge-${order.backlog_status}">${order.backlog_status}</span></td>
+        </tr>
+    `).join('') || '<tr><td colspan="6">No orders found</td></tr>';
+}
+
+async function showOrder(id) {
+    const payload = await fetch(`/api/orders/${id}`).then(r => r.json());
+    const order = payload.order;
+    if (!order) return;
+
+    document.getElementById('order-correlation-pill').textContent = order.telemetry?.correlation_id || 'no correlation id';
+    document.getElementById('order-detail-body').innerHTML = `
+        <div class="detail-grid">
+            <div><strong>Order</strong><br>#${order.id} / ${order.source_order_id || 'local'}</div>
+            <div><strong>Customer</strong><br>${order.customer_name || 'Unknown'}<br>${order.customer_email || ''}</div>
+            <div><strong>Status</strong><br>${order.status} / ${order.backlog_status}</div>
+            <div><strong>Sync</strong><br>${order.sync_status || 'local'}<br>${order.last_synced_at || 'n/a'}</div>
+        </div>
+        <div class="detail-block">
+            <h3>Items</h3>
+            <pre>${JSON.stringify(order.items || [], null, 2)}</pre>
+        </div>
+        <div class="detail-block">
+            <h3>DB Drilldown</h3>
+            <pre>${JSON.stringify(order.db_drilldown || {}, null, 2)}</pre>
+        </div>
+        <div class="detail-block">
+            <h3>Telemetry</h3>
+            <pre>${JSON.stringify(order.telemetry || {}, null, 2)}</pre>
+        </div>
+    `;
+}
+
+async function syncOrders() {
+    const result = await _fetch('/api/orders/sync', {method: 'POST'}).then(r => r.json());
+    document.getElementById('order-correlation-pill').textContent = result.correlation_id || 'sync complete';
+    await loadSummary();
+    await loadOrders();
+}
+
+loadSummary();
+loadOrders();
+</script>
+{% endblock %}
