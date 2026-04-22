@@ -1,0 +1,8 @@
+{
+  "name": "octo-trace-to-logs",
+  "description": "All log records for a given OCI APM trace_id. Jump point from APM Trace Explorer. Accepts ${trace_id} as a parameter at run time.",
+  "displayName": "OCTO — logs for trace",
+  "queryString": "'Log Source' = 'octo-shop-app-json' | where oracleApmTraceId = '${trace_id}' | sort -'Time' | head limit = 500",
+  "widgetType": "SEARCH",
+  "savedSearchOnFailure": false
+}

@@ -1,0 +1,7 @@
+{
+  "name": "octo-errors-by-route",
+  "description": "5xx + 4xx response breakdown by HTTP route across shop + CRM. Fuels the 'error rate' widget on the operations dashboard.",
+  "displayName": "OCTO — errors by route (last 1h)",
+  "queryString": "'Log Source' = 'octo-shop-app-json' and http_status >= 400 | stats count() by route, http_status | sort -count | head limit = 50",
+  "widgetType": "BAR_CHART"
+}
