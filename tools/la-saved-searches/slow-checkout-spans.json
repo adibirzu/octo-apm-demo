@@ -1,0 +1,7 @@
+{
+  "name": "octo-slow-checkout-spans",
+  "description": "Checkout requests slower than 1s, correlated back to their log records. trace_id is the pivot column — click through to APM.",
+  "displayName": "OCTO — slow checkouts (p99 candidates)",
+  "queryString": "'Log Source' = 'octo-shop-app-json' and route = '/api/orders' and Duration > 1000 | stats count(), avg(Duration), max(Duration) by oracleApmTraceId | sort -max(Duration) | head limit = 25",
+  "widgetType": "TABLE"
+}

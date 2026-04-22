@@ -37,6 +37,7 @@ The `/api/observability/360` endpoint provides a single-pane-of-glass view:
 ## Sections
 
 - [Enhancement Plan](enhancement-plan.md) — rollout sequence for golden flows, APM, Logging, Log Analytics, drilldowns, and DB tooling
+- [OCI 360 Development Plan](oci-360-development-plan.md) — phased platform expansion with new services, edge visibility, load control, and runtime coverage
 - [MELTS Overview](melts.md) — Complete stack with verification paths
 - [Traces (APM)](traces.md) — 50+ custom spans, distributed tracing, topology
 - [Metrics](metrics.md) — Prometheus, OCI Monitoring, business KPIs
