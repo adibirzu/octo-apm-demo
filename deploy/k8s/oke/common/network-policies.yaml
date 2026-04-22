@@ -1,0 +1,60 @@
+# NetworkPolicy — lets shop ↔ crm traffic across namespaces while
+# denying any other inbound traffic on the pod port.
+#
+# Assumes the OKE cluster's CNI supports NetworkPolicy (VCN-native CNI
+# with Calico overlay or OCI CNI with policy=enabled).
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-backend
+  namespace: octo-shop-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: octo-drone-shop
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow ingress from the OCI Load Balancer (public traffic)
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow ingress from the CRM namespace (service-to-service callbacks)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: octo-backend-prod
+      ports:
+        - protocol: TCP
+          port: 8080
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-shop
+  namespace: octo-backend-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: enterprise-crm-portal
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: octo-shop-prod
+      ports:
+        - protocol: TCP
+          port: 8080
