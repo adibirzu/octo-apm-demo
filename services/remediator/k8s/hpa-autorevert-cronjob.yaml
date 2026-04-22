@@ -1,0 +1,37 @@
+# KG-037 — HPA auto-revert CronJob.
+# Every 10 minutes, for each HPA annotated by the remediator as recently
+# bumped, check whether CPU dropped below the trigger threshold; if so,
+# decrement minReplicas back toward its original value.
+#
+# Runs as the same ServiceAccount/ClusterRole as the remediator so
+# patch permissions are identical.
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hpa-autorevert
+  namespace: octo-remediator
+spec:
+  schedule: "*/10 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: remediator
+          restartPolicy: OnFailure
+          containers:
+            - name: autorevert
+              image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-remediator:${IMAGE_TAG:-latest}
+              command:
+                - python
+                - -m
+                - octo_remediator.autorevert
+              env:
+                - name: OCTO_REMEDIATOR_REDIS_URL
+                  value: "redis://cache.octo-cache.svc.cluster.local:6379"
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { cpu: 200m, memory: 128Mi }
