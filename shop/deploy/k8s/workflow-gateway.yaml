@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-workflow-gateway
+  namespace: octo-drone-shop
+  labels:
+    app: octo-workflow-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: octo-workflow-gateway
+  template:
+    metadata:
+      labels:
+        app: octo-workflow-gateway
+    spec:
+      containers:
+        - name: workflow-gateway
+          image: ${OCIR_REPO}/octo-workflow-gateway:latest
+          ports:
+            - containerPort: 8090
+          env:
+            - name: WORKFLOW_APP_NAME
+              value: "octo-workflow-gateway"
+            - name: WORKFLOW_SERVICE_NAME
+              value: "octo-workflow-gateway"
+            - name: WORKFLOW_PORT
+              value: "8090"
+            - name: ENVIRONMENT
+              value: "production"
+            - name: ORACLE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: dsn
+            - name: ORACLE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: username
+            - name: ORACLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: password
+            - name: ORACLE_WALLET_DIR
+              value: "/opt/oracle/wallet"
+            - name: ORACLE_WALLET_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: wallet-password
+            - name: OCI_APM_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: endpoint
+                  optional: true
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: private-key
+                  optional: true
+            - name: ENTERPRISE_CRM_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: crm-url
+                  optional: true
+            - name: WORKFLOW_POLL_SECONDS
+              value: "90"
+            - name: WORKFLOW_ALLOWED_ORIGINS
+              value: "${WORKFLOW_ALLOWED_ORIGINS}"
+            - name: WORKFLOW_FAULTY_QUERY_ENABLED
+              value: "false"
+            - name: SELECTAI_PROFILE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: octo-genai
+                  key: selectai-profile-name
+                  optional: true
+          volumeMounts:
+            - name: atp-wallet
+              mountPath: /opt/oracle/wallet
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      imagePullSecrets:
+        - name: ocir-pull-secret
+      volumes:
+        - name: atp-wallet
+          secret:
+            secretName: octo-atp-wallet
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-workflow-gateway
+  namespace: octo-drone-shop
+  labels:
+    app: octo-workflow-gateway
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8090
+      targetPort: 8090
+      protocol: TCP
+  selector:
+    app: octo-workflow-gateway

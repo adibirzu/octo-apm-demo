@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block head %}
+<style>
+    .login-shell {
+        max-width: 460px;
+        margin: 56px auto;
+    }
+    .login-card {
+        display: grid;
+        gap: 16px;
+    }
+    .login-card p {
+        color: var(--muted);
+        line-height: 1.6;
+    }
+    .login-form {
+        display: grid;
+        gap: 12px;
+    }
+    .login-result {
+        min-height: 52px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--muted);
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-shell">
+    <section class="card login-card">
+        <div class="eyebrow">Operator Access</div>
+        <h2>Sign in to governed administrative views.</h2>
+        <p>
+            Successful sign-in stores a signed bearer token in local storage so the portal can call protected admin APIs.
+            Use an administrator account for the Admin surface.
+        </p>
+        <p>Seeded demo access: <code>admin / OctoAdmin!2026</code> for admin views, <code>shopper / OctoUser!2026</code> for standard-user checks.</p>
+        {% if idcs_configured %}
+        <a class="btn" href="/api/auth/sso/login" id="ssoLoginBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#c74634;color:#fff;">
+            <span aria-hidden="true">⇄</span>
+            Sign in with OCI IAM (IDCS)
+        </a>
+        <div style="text-align:center;color:var(--muted);font-size:0.85em;">— or use a local account —</div>
+        {% endif %}
+        <form id="loginForm" class="login-form">
+            <input type="text" id="username" placeholder="Username" autocomplete="username" required>
+            <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+            <button type="submit" class="btn">Sign In</button>
+        </form>
+        <div class="login-result" id="result">No active sign-in yet.</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <a class="btn btn-outline" href="/admin-page">Open Admin</a>
+            <button type="button" class="btn btn-outline" id="clearTokenBtn">Clear Stored Token</button>
+            {% if idcs_configured %}
+            <a class="btn btn-outline" href="/api/auth/sso/logout">SSO Sign Out</a>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+const result = document.getElementById('result');
+
+function setMessage(message) {
+    result.textContent = message;
+}
+
+// Surface SSO callback errors that the server attached as ?sso_error=...
+const _ssoErr = new URLSearchParams(window.location.search).get('sso_error');
+if (_ssoErr) {
+    setMessage(`SSO sign-in failed: ${_ssoErr.replaceAll('_', ' ')}`);
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.status !== 'success') {
+            setMessage(payload.detail || payload.error || 'Login failed');
+            return;
+        }
+
+        localStorage.setItem('octo-auth-token', payload.token);
+        localStorage.setItem('octo-auth-user', JSON.stringify(payload.user));
+        setMessage(`Signed in as ${payload.user.username} (${payload.user.role}). Admin views can now call protected APIs.`);
+    } catch (error) {
+        setMessage(`Login failed: ${error.message}`);
+    }
+});
+
+document.getElementById('clearTokenBtn').addEventListener('click', () => {
+    localStorage.removeItem('octo-auth-token');
+    localStorage.removeItem('octo-auth-user');
+    setMessage('Stored token cleared.');
+});
+</script>
+{% endblock %}

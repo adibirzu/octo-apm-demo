@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% block head %}
+<style>
+    .hero-panel {
+        padding: 38px 34px;
+        display: grid;
+        grid-template-columns: 1.3fr 0.7fr;
+        gap: 22px;
+        align-items: center;
+    }
+    .hero-kicker {
+        color: var(--teal);
+        font-family: "Orbitron", sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-size: 0.74rem;
+        margin-bottom: 12px;
+    }
+    .hero-copy {
+        color: var(--muted);
+        line-height: 1.6;
+        margin-top: 14px;
+        max-width: 62ch;
+    }
+    .hero-logo {
+        width: min(100%, 280px);
+        justify-self: end;
+        opacity: 0.92;
+        filter: drop-shadow(0 18px 32px rgba(108, 210, 224, 0.18));
+    }
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 18px;
+    }
+    .metric-card { min-height: 132px; }
+    .metric-value {
+        font-size: 2rem;
+        font-family: "Orbitron", sans-serif;
+        margin-top: 12px;
+    }
+    .dashboard-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+    }
+    .dashboard-row-wide { grid-template-columns: 1fr; }
+    .status-grid, .drilldown-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+    .status-card, .drilldown-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .status-label {
+        display: block;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.74rem;
+        margin-bottom: 10px;
+    }
+    .status-value-pill {
+        display: inline-flex;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-bottom: 10px;
+    }
+    .status-value-pill.is-healthy { background: rgba(91, 229, 159, 0.12); color: var(--ok); }
+    .status-value-pill.is-degraded { background: rgba(255, 189, 89, 0.12); color: var(--amber); }
+    .status-value-pill.is-unhealthy { background: rgba(255, 107, 122, 0.12); color: var(--rose); }
+    .drilldown-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 110px;
+        justify-content: space-between;
+    }
+    .drilldown-card.is-disabled {
+        opacity: 0.55;
+        cursor: default;
+        pointer-events: none;
+    }
+    .code-output {
+        border: 1px solid rgba(147, 170, 189, 0.14);
+        border-radius: 18px;
+        background: rgba(4, 11, 19, 0.82);
+        padding: 16px;
+        min-height: 110px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+        color: #d8e9fb;
+        font-size: 0.9rem;
+    }
+    .data-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border: 1px solid var(--line);
+    }
+    .badge-processing, .badge-pending, .badge-queued { color: var(--amber); }
+    .badge-completed, .badge-delivered { color: var(--ok); }
+    .badge-cancelled, .badge-failed { color: var(--rose); }
+    .featured-products-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+    .featured-product {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .featured-product img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .featured-product-body {
+        padding: 14px 16px 16px;
+        display: grid;
+        gap: 10px;
+    }
+    @media (max-width: 1180px) {
+        .dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .dashboard-row, .status-grid, .drilldown-grid, .featured-products-grid { grid-template-columns: 1fr; }
+        .hero-panel { grid-template-columns: 1fr; }
+        .hero-logo { justify-self: start; }
+        .form-grid, .form-grid-orders { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+        .dashboard-grid, .form-grid, .form-grid-orders { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero-card hero-panel">
+    <div>
+        <p class="hero-kicker">OCTO shared commerce telemetry</p>
+        <h2>OCTO Drone Shop, CRM, ATP, OCI APM, and Splunk share the same business path.</h2>
+        <p class="hero-copy">
+            This dashboard shows live ATP-backed commerce state, cross-service drilldowns, issue simulation controls,
+            and demo-data generation for the shared CRM and shop tenancy. Every action is designed to be visible in
+            OCI APM, OCI Logging, and the external Splunk pipeline.
+        </p>
+    </div>
+    <img src="/static/img/octo-logo.png" alt="OCTO Drone Shop" class="hero-logo">
+</section>
+
+<div class="dashboard-grid">
+    <div class="card metric-card"><h3>Total Customers</h3><div class="metric-value" id="metric-customers">-</div></div>
+    <div class="card metric-card"><h3>Total Companies</h3><div class="metric-value" id="metric-companies">-</div></div>
+    <div class="card metric-card"><h3>Total Orders</h3><div class="metric-value" id="metric-orders">-</div></div>
+    <div class="card metric-card"><h3>Total Revenue</h3><div class="metric-value" id="metric-revenue">-</div></div>
+    <div class="card metric-card"><h3>Open Tickets</h3><div class="metric-value" id="metric-tickets">-</div></div>
+    <div class="card metric-card"><h3>Low Stock</h3><div class="metric-value" id="metric-low-stock">-</div></div>
+</div>
+
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Platform Health</h3>
+        <div class="status-grid" id="status-grid">
+            <div class="status-card"><span>Loading platform health...</span></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Drilldowns</h3>
+        <div class="drilldown-grid" id="drilldown-grid">
+            <div class="drilldown-card">Loading drilldown targets...</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-row">
+    <div class="card">
+        <h3>Top Customers by Revenue</h3>
+        <table class="data-table">
+            <thead><tr><th>Name</th><th>Company</th><th>Revenue</th><th>Orders</th></tr></thead>
+            <tbody id="top-customers-body"></tbody>
+        </table>
+    </div>
+    <div class="card">
+        <h3>Recent Orders</h3>
+        <table class="data-table">
+            <thead><tr><th>ID</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+            <tbody id="recent-orders-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Featured Product Mix</h3>
+        <div class="featured-products-grid" id="featured-products-grid">
+            <div class="featured-product"><div class="featured-product-body">Loading products...</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Simulation and demo data controls have been moved to the CRM portal
+     (crm.example.cloud → Integrations page). The backend APIs remain here
+     and are SSO+service-key protected. -->
+
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Correlation Snapshot</h3>
+        <pre id="correlation-output" class="code-output">Loading correlation context...</pre>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+function money(value) {
+    return '$' + Number(value || 0).toLocaleString();
+}
+
+function normalizeStatus(status) {
+    const value = String(status || '').toLowerCase();
+    if (['healthy', 'connected', 'enabled', 'configured', 'ready', 'ok'].includes(value)) return 'healthy';
+    if (['pending', 'warning', 'degraded', 'optional'].includes(value)) return 'degraded';
+    return 'unhealthy';
+}
+
+async function _fetch(path, options = {}) {
+    const resp = await fetch(path, options);
+    if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `${resp.status} ${resp.statusText}`);
+    }
+    return resp;
+}
+
+async function loadDashboard() {
+    try {
+        const [summaryResp, readyResp, crmResp, catalogResp, integrationsResp] = await Promise.all([
+            fetch('/api/dashboard/summary'),
+            fetch('/ready'),
+            fetch('/api/integrations/crm/health'),
+            fetch('/api/dashboard/catalog'),
+            fetch('/api/integrations/status'),
+        ]);
+
+        const summary = await summaryResp.json();
+        const ready = await readyResp.json();
+        const crm = await crmResp.json();
+        const catalog = await catalogResp.json();
+        const integrations = await integrationsResp.json();
+
+        document.getElementById('metric-customers').textContent = summary.customers?.total ?? 0;
+        document.getElementById('metric-companies').textContent = summary.customers?.companies ?? 0;
+        document.getElementById('metric-orders').textContent = summary.orders?.total ?? 0;
+        document.getElementById('metric-revenue').textContent = money(summary.orders?.revenue ?? 0);
+        document.getElementById('metric-tickets').textContent = summary.tickets?.open ?? 0;
+        document.getElementById('metric-low-stock').textContent = summary.products?.low_stock ?? 0;
+
+        document.getElementById('top-customers-body').innerHTML = (summary.top_customers || []).map(customer =>
+            `<tr><td>${customer.name || '-'}</td><td>${customer.company || '-'}</td><td>${money(customer.revenue)}</td><td>${customer.order_count || 0}</td></tr>`
+        ).join('') || '<tr><td colspan="4" class="muted">No customers yet.</td></tr>';
+
+        document.getElementById('recent-orders-body').innerHTML = (summary.recent_orders || []).map(order =>
+            `<tr><td>#${order.id}</td><td>${order.customer_name || '-'}</td><td>${money(order.total)}</td><td><span class="badge badge-${order.status}">${order.status}</span></td></tr>`
+        ).join('') || '<tr><td colspan="4" class="muted">No orders yet.</td></tr>';
+
+        renderStatusGrid(ready, crm, summary, integrations);
+        renderDrilldowns(ready, crm, integrations);
+        renderFeaturedProducts(summary.featured_products || []);
+        renderCatalog(catalog);
+        document.getElementById('correlation-output').textContent = JSON.stringify({
+            summary,
+            readiness: ready,
+            crm,
+            integrations,
+        }, null, 2);
+    } catch (error) {
+        console.error('Dashboard load failed:', error);
+        document.getElementById('correlation-output').textContent = String(error);
+    }
+}
+
+function renderStatusGrid(ready, crm, summary, integrations) {
+    const integration = (integrations.integrations || [])[0] || {};
+    const cards = [
+        {
+            label: 'Database',
+            status: ready.database || 'unknown',
+            body: ready.db_type || 'unknown',
+        },
+        {
+            label: 'Telemetry',
+            status: ready.apm_configured ? 'enabled' : 'pending',
+            body: `APM ${ready.apm_configured ? 'on' : 'off'} | RUM ${ready.rum_configured ? 'on' : 'off'}`,
+        },
+        {
+            label: 'CRM Sync',
+            status: crm.status || 'unknown',
+            body: crm.crm_url || (crm.crm_configured ? 'Configured for server-side sync' : 'Not configured'),
+        },
+        {
+            label: 'Shared Customers',
+            status: (summary.integration?.last_sync_error ? 'degraded' : 'healthy'),
+            body: `last sync count ${summary.integration?.last_sync_count || 0}`,
+        },
+        {
+            label: 'Products',
+            status: (summary.products?.low_stock || 0) > 0 ? 'degraded' : 'healthy',
+            body: `${summary.products?.total || 0} active | ${summary.products?.low_stock || 0} low stock`,
+        },
+        {
+            label: 'Integration API',
+            status: integration.configured ? 'configured' : 'pending',
+            body: integration.url || (integration.configured ? 'Configured for server-side sync' : 'Not configured'),
+        },
+    ];
+
+    document.getElementById('status-grid').innerHTML = cards.map(card => `
+        <div class="status-card">
+            <span class="status-label">${card.label}</span>
+            <strong class="status-value-pill is-${normalizeStatus(card.status)}">${card.status}</strong>
+            <p>${card.body}</p>
+        </div>
+    `).join('');
+}
+
+function renderDrilldowns(ready, crm, integrations) {
+    const integration = (integrations.integrations || [])[0] || {};
+    const crmPortalUrl = crm.crm_url || integration.url || '';
+    const drilldowns = [
+        { name: 'Shop Frontend', url: '/shop', configured: true },
+        { name: 'Service Catalog', url: '/services', configured: true },
+        { name: 'CRM Portal', url: crmPortalUrl, configured: Boolean(crmPortalUrl) },
+        { name: 'Orders Console', url: '/orders-page', configured: true },
+        { name: 'ATP Readiness', url: '/ready', configured: true },
+        { name: 'CRM Integration Health', url: '/api/integrations/crm/health', configured: true },
+    ];
+    document.getElementById('drilldown-grid').innerHTML = drilldowns.map(target => `
+        <a class="drilldown-card ${target.configured ? '' : 'is-disabled'}" ${target.configured ? `href="${target.url}" target="_blank" rel="noreferrer"` : ''}>
+            <span>${target.name}</span>
+            <strong>${target.configured ? 'Open' : 'Not configured'}</strong>
+        </a>
+    `).join('');
+}
+
+function renderFeaturedProducts(products) {
+    const grid = document.getElementById('featured-products-grid');
+    if (!products.length) {
+        grid.innerHTML = '<div class="featured-product"><div class="featured-product-body">No products loaded.</div></div>';
+        return;
+    }
+    grid.innerHTML = products.map(product => `
+        <article class="featured-product">
+            <img src="${product.image_url || ''}" alt="${product.name || 'Product'}" onerror="this.style.display='none'">
+            <div class="featured-product-body">
+                <span class="chip">${product.category || 'Uncategorised'}</span>
+                <h4>${product.name || '-'}</h4>
+                <p class="muted">${(product.description || '').slice(0, 110)}</p>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <strong>${money(product.price)}</strong>
+                    <span class="chip">Stock ${product.stock || 0}</span>
+                </div>
+            </div>
+        </article>
+    `).join('');
+}
+
+function renderCatalog(catalog) {
+    const customerSelect = document.getElementById('order-customer');
+    const productSelect = document.getElementById('order-product');
+    if (!customerSelect || !productSelect) return;
+    customerSelect.innerHTML = ['<option value="">Random customer</option>']
+        .concat((catalog.customers || []).map(customer =>
+            `<option value="${customer.id}">${customer.name}${customer.company ? ' | ' + customer.company : ''}</option>`
+        )).join('');
+    productSelect.innerHTML = ['<option value="">Random product</option>']
+        .concat((catalog.products || []).map(product =>
+            `<option value="${product.id}">${product.name} | ${money(product.price)}</option>`
+        )).join('');
+}
+
+loadDashboard();
+</script>
+{% endblock %}

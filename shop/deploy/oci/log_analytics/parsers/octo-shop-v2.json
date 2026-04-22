@@ -1,0 +1,28 @@
+{
+  "name": "octo-shop-v2",
+  "description": "Octo Drone Shop structured JSON logs (v2 enrichment).",
+  "type": "JSON",
+  "isEnabled": true,
+  "fieldMaps": [
+    {"sourcePath": "$.timestamp",        "logFieldName": "Time"},
+    {"sourcePath": "$.severity",         "logFieldName": "Severity"},
+    {"sourcePath": "$.message",          "logFieldName": "Original Log Content"},
+    {"sourcePath": "$.service.name",     "logFieldName": "Service"},
+    {"sourcePath": "$.service.version",  "logFieldName": "Service Version"},
+    {"sourcePath": "$.trace_id",         "logFieldName": "Trace ID"},
+    {"sourcePath": "$.oracleApmTraceId", "logFieldName": "Trace ID"},
+    {"sourcePath": "$.span_id",          "logFieldName": "Span ID"},
+    {"sourcePath": "$.request_id",       "logFieldName": "Request ID"},
+    {"sourcePath": "$.workflow_id",      "logFieldName": "Workflow ID"},
+    {"sourcePath": "$.workflow_step",    "logFieldName": "Workflow Step"},
+    {"sourcePath": "$.user_id_hash",     "logFieldName": "User ID (hashed)"},
+    {"sourcePath": "$.business_id",      "logFieldName": "Business ID"},
+    {"sourcePath": "$.chaos.scenario",   "logFieldName": "Chaos Scenario"},
+    {"sourcePath": "$.chaos.injected",   "logFieldName": "Chaos Injected"},
+    {"sourcePath": "$.http.request.method", "logFieldName": "HTTP Request Method"},
+    {"sourcePath": "$.http.url.path",    "logFieldName": "URL Path"},
+    {"sourcePath": "$.http.response.status_code", "logFieldName": "HTTP Status Code"},
+    {"sourcePath": "$.db.statement",     "logFieldName": "DB Statement"},
+    {"sourcePath": "$.db.elapsed_ms",    "logFieldName": "DB Elapsed ms"}
+  ]
+}

@@ -1,0 +1,242 @@
+"""Analytics module — overview, geo, funnel, page views."""
+
+import asyncio
+import html
+import json
+import random
+from fastapi import APIRouter, Request
+from sqlalchemy import text
+from server.database import get_db
+from server.observability.logging_sdk import push_log
+from server.observability.otel_setup import get_tracer
+
+router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+
+REGION_LATENCY = {
+    "eu-central-1": 50, "eu-west-1": 80, "us-east-1": 120,
+    "us-west-2": 150, "ap-southeast-1": 300, "ap-northeast-1": 350,
+    "ap-southeast-2": 380, "sa-east-1": 450, "af-south-1": 700,
+    "me-south-1": 250,
+}
+
+_VALID_REGIONS = set(REGION_LATENCY.keys())
+
+
+@router.get("/overview")
+async def analytics_overview():
+    """Cross-module analytics summary — 7 DB queries for APM demo."""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("analytics.overview") as span:
+        async with get_db() as db:
+            with tracer.start_as_current_span("db.query.customer_count"):
+                r1 = await db.execute(text("SELECT COUNT(*) FROM customers"))
+                total_customers = r1.scalar()
+
+            with tracer.start_as_current_span("db.query.order_count"):
+                r2 = await db.execute(text("SELECT COUNT(*) FROM orders"))
+                total_orders = r2.scalar()
+
+            with tracer.start_as_current_span("db.query.revenue"):
+                r3 = await db.execute(text("SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'completed'"))
+                total_revenue = r3.scalar()
+
+            with tracer.start_as_current_span("db.query.product_count"):
+                r4 = await db.execute(text("SELECT COUNT(*) FROM products WHERE is_active = 1"))
+                total_products = r4.scalar()
+
+            with tracer.start_as_current_span("db.query.campaigns"):
+                r5 = await db.execute(text("SELECT COUNT(*) FROM campaigns WHERE status = 'active'"))
+                active_campaigns = r5.scalar()
+
+            with tracer.start_as_current_span("db.query.shipments"):
+                r6 = await db.execute(text("SELECT COUNT(*) FROM shipments WHERE status IN ('shipped','in_transit')"))
+                in_transit = r6.scalar()
+
+            with tracer.start_as_current_span("db.query.leads"):
+                r7 = await db.execute(text("SELECT COUNT(*) FROM leads"))
+                total_leads = r7.scalar()
+
+        return {
+            "total_customers": total_customers,
+            "total_orders": total_orders,
+            "total_revenue": float(total_revenue),
+            "total_products": total_products,
+            "active_campaigns": active_campaigns,
+            "shipments_in_transit": in_transit,
+            "total_leads": total_leads,
+        }
+
+
+@router.get("/security/events")
+async def security_events(limit: int = 100):
+    """Persisted security events for attack visibility and triage."""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("analytics.security.events") as span:
+        async with get_db() as db:
+            result = await db.execute(
+                text(
+                    "SELECT id, attack_type, severity, endpoint, source_ip, payload, "
+                    "product_id, session_id, trace_id, details, created_at "
+                    "FROM security_events ORDER BY created_at DESC"
+                )
+            )
+            events = [dict(row) for row in result.mappings().all()][: max(1, min(limit, 500))]
+
+        for event in events:
+            details = event.get("details")
+            if isinstance(details, str) and details:
+                try:
+                    event["details"] = json.loads(details)
+                except json.JSONDecodeError:
+                    pass
+
+        span.set_attribute("analytics.security_event_count", len(events))
+        return {"events": events, "count": len(events)}
+
+
+@router.get("/security/correlations")
+async def security_correlations(limit: int = 50):
+    """Correlate attacks with products and observed order activity."""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("analytics.security.correlations") as span:
+        async with get_db() as db:
+            attack_rows = await db.execute(
+                text(
+                    "SELECT se.attack_type, se.severity, se.product_id, p.name AS product_name, p.sku, "
+                    "COUNT(*) AS event_count, MAX(se.created_at) AS last_seen, "
+                    "COALESCE((SELECT SUM(oi.quantity) FROM order_items oi WHERE oi.product_id = se.product_id), 0) AS observed_order_units, "
+                    "COALESCE((SELECT SUM(oi.quantity * oi.unit_price) FROM order_items oi WHERE oi.product_id = se.product_id), 0) AS observed_order_value "
+                    "FROM security_events se "
+                    "LEFT JOIN products p ON p.id = se.product_id "
+                    "GROUP BY se.attack_type, se.severity, se.product_id, p.name, p.sku "
+                    "ORDER BY event_count DESC, last_seen DESC"
+                )
+            )
+            product_rows = await db.execute(
+                text(
+                    "SELECT p.id, p.name, p.sku, "
+                    "COALESCE((SELECT COUNT(*) FROM security_events se WHERE se.product_id = p.id), 0) AS security_event_count, "
+                    "COALESCE((SELECT COUNT(*) FROM order_items oi WHERE oi.product_id = p.id), 0) AS order_line_count, "
+                    "COALESCE((SELECT SUM(oi.quantity) FROM order_items oi WHERE oi.product_id = p.id), 0) AS units_ordered "
+                    "FROM products p WHERE p.is_active = 1 "
+                    "ORDER BY security_event_count DESC, order_line_count DESC, p.name"
+                )
+            )
+
+        correlations = [dict(row) for row in attack_rows.mappings().all()][: max(1, min(limit, 500))]
+        product_coverage = [dict(row) for row in product_rows.mappings().all()][: max(1, min(limit, 500))]
+
+        span.set_attribute("analytics.security_correlation_count", len(correlations))
+        return {
+            "correlations": correlations,
+            "product_coverage": product_coverage,
+            "count": len(correlations),
+        }
+
+
+@router.get("/geo")
+async def analytics_geo(region: str = "", request: Request = None):
+    """Geo analytics with parameterized queries and validated region."""
+    tracer = get_tracer()
+
+    with tracer.start_as_current_span("analytics.geo") as span:
+        span.set_attribute("analytics.region", region)
+
+        delay = REGION_LATENCY.get(region, 100)
+        await asyncio.sleep(delay / 1000 * random.uniform(0.8, 1.2))
+
+        async with get_db() as db:
+            if region:
+                # Parameterized query — no SQL injection
+                result = await db.execute(
+                    text(
+                        "SELECT visitor_region, COUNT(*) as view_count, "
+                        "AVG(load_time_ms) as avg_load_time "
+                        "FROM page_views WHERE visitor_region = :region "
+                        "GROUP BY visitor_region ORDER BY view_count DESC"
+                    ),
+                    {"region": region},
+                )
+            else:
+                result = await db.execute(
+                    text(
+                        "SELECT visitor_region, COUNT(*) as view_count, "
+                        "AVG(load_time_ms) as avg_load_time "
+                        "FROM page_views GROUP BY visitor_region ORDER BY view_count DESC"
+                    )
+                )
+            regions = [dict(r) for r in result.mappings().all()]
+
+        return {"regions": regions, "total": len(regions)}
+
+
+@router.get("/funnel")
+async def analytics_funnel():
+    """Conversion funnel — 4 sequential queries (slow by design for APM demo)."""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("analytics.funnel") as span:
+        async with get_db() as db:
+            with tracer.start_as_current_span("db.query.visitors"):
+                r1 = await db.execute(text("SELECT COUNT(DISTINCT session_id) FROM page_views"))
+                visitors = r1.scalar()
+
+            with tracer.start_as_current_span("db.query.cart_adds"):
+                r2 = await db.execute(text("SELECT COUNT(DISTINCT session_id) FROM cart_items"))
+                cart_adds = r2.scalar()
+
+            with tracer.start_as_current_span("db.query.orders_placed"):
+                r3 = await db.execute(text("SELECT COUNT(*) FROM orders"))
+                orders_placed = r3.scalar()
+
+            with tracer.start_as_current_span("db.query.completed"):
+                r4 = await db.execute(text("SELECT COUNT(*) FROM orders WHERE status = 'completed'"))
+                completed = r4.scalar()
+
+        return {
+            "funnel": [
+                {"stage": "Visitors", "count": visitors or 0},
+                {"stage": "Added to Cart", "count": cart_adds or 0},
+                {"stage": "Placed Order", "count": orders_placed or 0},
+                {"stage": "Completed", "count": completed or 0},
+            ]
+        }
+
+
+@router.post("/track")
+async def track_pageview(payload: dict, request: Request):
+    """Track a page view with input validation."""
+    source_ip = request.client.host if request.client else ""
+    tracer = get_tracer()
+    with tracer.start_as_current_span("analytics.track_pageview") as span:
+        page = str(payload.get("page", "/"))[:200]
+        session_id = str(payload.get("session_id", ""))[:64]
+        load_time_ms = max(0, min(60000, int(payload.get("load_time_ms", 0) or 0)))
+        visitor_region = str(payload.get("visitor_region", ""))[:30]
+        referrer = str(payload.get("referrer", ""))[:500]
+        user_agent = str(request.headers.get("user-agent", ""))[:500]
+
+        span.set_attribute("analytics.page", page)
+        span.set_attribute("analytics.session_id", session_id or "anonymous")
+        span.set_attribute("analytics.load_time_ms", load_time_ms)
+
+        async with get_db() as db:
+            await db.execute(
+                text("INSERT INTO page_views (page, visitor_ip, visitor_region, "
+                     "load_time_ms, session_id, user_agent, referrer) "
+                     "VALUES (:page, :ip, :region, :load_time, :sess_id, :ua, :referrer_url)"),
+                {
+                    "page": page,
+                    "ip": source_ip,
+                    "region": visitor_region,
+                    "load_time": load_time_ms,
+                    "sess_id": session_id,
+                    "ua": user_agent,
+                    "referrer_url": referrer,
+                },
+            )
+        push_log(
+            "INFO",
+            "Page view tracked",
+            **{"analytics.page": page, "analytics.session_id": session_id or "anonymous"},
+        )
+    return {"status": "tracked", "page": page}

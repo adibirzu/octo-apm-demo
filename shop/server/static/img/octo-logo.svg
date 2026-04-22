@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500">
+  <defs>
+    <style>
+      .f { fill: #6cd2e0; }
+      .s { fill: none; stroke: #6cd2e0; stroke-linecap: round; stroke-linejoin: round; }
+      .d { fill: #061420; }
+    </style>
+  </defs>
+
+  <!-- Shield outline (hexagonal badge) -->
+  <path d="M200 20 L305 70 L305 175 L200 218 L95 175 L95 70 Z"
+        class="s" stroke-width="8"/>
+
+  <!-- Brain left lobe -->
+  <path d="M200 72
+           C190 67 170 68 158 80
+           C144 94 146 114 157 124
+           C146 133 141 150 152 162
+           C161 172 180 174 200 168"
+        class="s" stroke-width="5.5"/>
+  <!-- Brain right lobe -->
+  <path d="M200 72
+           C210 67 230 68 242 80
+           C256 94 254 114 243 124
+           C254 133 259 150 248 162
+           C239 172 220 174 200 168"
+        class="s" stroke-width="5.5"/>
+  <!-- Brain dividing line -->
+  <line x1="200" y1="75" x2="200" y2="166" class="s" stroke-width="2.5" stroke-dasharray="5 3.5"/>
+
+  <!-- Circuit traces left -->
+  <circle cx="167" cy="92" r="5" class="f"/>
+  <circle cx="180" cy="112" r="5" class="f"/>
+  <circle cx="168" cy="140" r="5" class="f"/>
+  <polyline points="167,92 180,92 180,112 168,112 168,140" class="s" stroke-width="3"/>
+
+  <!-- Circuit traces right -->
+  <circle cx="233" cy="92" r="5" class="f"/>
+  <circle cx="220" cy="112" r="5" class="f"/>
+  <circle cx="232" cy="140" r="5" class="f"/>
+  <polyline points="233,92 220,92 220,112 232,112 232,140" class="s" stroke-width="3"/>
+
+  <!-- Octopus mantle -->
+  <ellipse cx="200" cy="286" rx="78" ry="88" class="f"/>
+
+  <!-- Eyes (alien teardrop style) -->
+  <path d="M173 266 Q183 250 196 262 Q192 278 173 266 Z" class="d"/>
+  <path d="M227 266 Q217 250 204 262 Q208 278 227 266 Z" class="d"/>
+
+  <!-- Tentacle 1: far left arching up and back -->
+  <path d="M140 293 Q60 298 26 344 Q8 376 36 400"
+        class="s" stroke-width="12"/>
+  <ellipse cx="40" cy="387" rx="10" ry="6.5" class="s" stroke-width="3" transform="rotate(-35 40 387)"/>
+
+  <!-- Tentacle 2: left outer curling down -->
+  <path d="M152 316 Q76 355 52 406 Q37 440 65 458"
+        class="s" stroke-width="11"/>
+  <ellipse cx="70" cy="446" rx="8.5" ry="5.5" class="s" stroke-width="3" transform="rotate(-18 70 446)"/>
+
+  <!-- Tentacle 3: left-center -->
+  <path d="M174 358 Q150 408 154 452 Q156 476 172 482"
+        class="s" stroke-width="10"/>
+  <ellipse cx="175" cy="471" rx="7.5" ry="5" class="s" stroke-width="3" transform="rotate(8 175 471)"/>
+
+  <!-- Tentacle 4: center-left bottom -->
+  <path d="M192 368 Q182 415 185 460 Q186 478 196 483"
+        class="s" stroke-width="9"/>
+
+  <!-- Tentacle 5: center-right bottom -->
+  <path d="M208 368 Q218 415 215 460 Q214 478 204 483"
+        class="s" stroke-width="9"/>
+
+  <!-- Tentacle 6: right-center -->
+  <path d="M226 358 Q250 408 246 452 Q244 476 228 482"
+        class="s" stroke-width="10"/>
+  <ellipse cx="225" cy="471" rx="7.5" ry="5" class="s" stroke-width="3" transform="rotate(-8 225 471)"/>
+
+  <!-- Tentacle 7: right outer curling down -->
+  <path d="M248 316 Q324 355 348 406 Q363 440 335 458"
+        class="s" stroke-width="11"/>
+  <ellipse cx="330" cy="446" rx="8.5" ry="5.5" class="s" stroke-width="3" transform="rotate(18 330 446)"/>
+
+  <!-- Tentacle 8: far right arching up and back -->
+  <path d="M260 293 Q340 298 374 344 Q392 376 364 400"
+        class="s" stroke-width="12"/>
+  <ellipse cx="360" cy="387" rx="10" ry="6.5" class="s" stroke-width="3" transform="rotate(35 360 387)"/>
+
+  <!-- OCTO text -->
+  <text x="200" y="496"
+        text-anchor="middle"
+        font-family="Arial Black, Arial, sans-serif"
+        font-weight="900"
+        font-size="54"
+        letter-spacing="18"
+        class="f">OCTO</text>
+</svg>

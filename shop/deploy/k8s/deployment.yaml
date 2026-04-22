@@ -1,0 +1,278 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-drone-shop
+  namespace: octo-drone-shop
+  labels:
+    app: octo-drone-shop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: octo-drone-shop
+  template:
+    metadata:
+      labels:
+        app: octo-drone-shop
+    spec:
+      containers:
+        - name: app
+          image: ${OCIR_REPO}/octo-drone-shop:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DNS_DOMAIN
+              value: "${DNS_DOMAIN}"
+            - name: APP_NAME
+              value: "octo-drone-shop"
+            - name: OTEL_SERVICE_NAME
+              value: "octo-drone-shop"
+            - name: APP_RUNTIME
+              value: "oke"
+            - name: ENVIRONMENT
+              value: "production"
+            - name: AUTH_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: octo-auth
+                  key: token-secret
+            - name: INTERNAL_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-auth
+                  key: internal-service-key
+                  optional: true
+            # ── IDCS / OCI IAM Identity Domain SSO ──
+            - name: IDCS_DOMAIN_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-domain-url
+                  optional: true
+            - name: IDCS_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-client-id
+                  optional: true
+            - name: IDCS_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-client-secret
+                  optional: true
+            - name: IDCS_REDIRECT_URI
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-redirect-uri
+                  optional: true
+            - name: IDCS_POST_LOGOUT_REDIRECT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-post-logout-redirect
+                  optional: true
+            - name: OCI_AUTH_MODE
+              value: "instance_principal"
+            - name: ORACLE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: dsn
+            - name: ORACLE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: username
+            - name: ORACLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: password
+            - name: ORACLE_WALLET_DIR
+              value: "/opt/oracle/wallet"
+            - name: ORACLE_WALLET_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: wallet-password
+            - name: OCI_APM_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: endpoint
+                  optional: true
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: private-key
+                  optional: true
+            - name: OCI_APM_PUBLIC_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: public-key
+                  optional: true
+            - name: OCI_APM_RUM_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: rum-endpoint
+                  optional: true
+            - name: OCI_APM_WEB_APPLICATION
+              value: "octo-drone-shop-web"
+            - name: OCI_LOG_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-logging
+                  key: log-id
+                  optional: true
+            - name: OCI_LOG_GROUP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-logging
+                  key: log-group-id
+                  optional: true
+            - name: SPLUNK_HEC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-logging
+                  key: splunk-hec-url
+                  optional: true
+            - name: SPLUNK_HEC_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: octo-logging
+                  key: splunk-hec-token
+                  optional: true
+            - name: OCI_COMPARTMENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-genai
+                  key: compartment-id
+                  optional: true
+            - name: OCI_GENAI_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-genai
+                  key: endpoint
+                  optional: true
+            - name: OCI_GENAI_MODEL_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-genai
+                  key: model-id
+                  optional: true
+            - name: SELECTAI_PROFILE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: octo-genai
+                  key: selectai-profile-name
+                  optional: true
+            - name: ENTERPRISE_CRM_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: crm-url
+                  optional: true
+            - name: CRM_PUBLIC_URL
+              value: "${CRM_PUBLIC_URL}"
+            - name: WORKFLOW_API_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: workflow-api-base-url
+                  optional: true
+            - name: WORKFLOW_PUBLIC_API_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: workflow-public-api-base-url
+                  optional: true
+            - name: WORKFLOW_SERVICE_NAME
+              value: "octo-workflow-gateway"
+            # OCI Console drilldown URLs (360 Monitoring)
+            - name: APM_CONSOLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: apm-console-url
+                  optional: true
+            - name: OPSI_CONSOLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: opsi-console-url
+                  optional: true
+            - name: DB_MANAGEMENT_CONSOLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: db-management-console-url
+                  optional: true
+            - name: LOG_ANALYTICS_CONSOLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-integrations
+                  key: log-analytics-console-url
+                  optional: true
+          volumeMounts:
+            - name: atp-wallet
+              mountPath: /opt/oracle/wallet
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 12
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 18
+            periodSeconds: 12
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      imagePullSecrets:
+        - name: ocir-pull-secret
+      volumes:
+        - name: atp-wallet
+          secret:
+            secretName: octo-atp-wallet
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-drone-shop
+  namespace: octo-drone-shop
+  labels:
+    app: octo-drone-shop
+  annotations:
+    oci.oraclecloud.com/load-balancer-type: "lb"
+    service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "10"
+    # Tenancy-portable: substitute ${OCI_LB_SUBNET_OCID} during render (e.g.
+    # `envsubst < deployment.yaml | kubectl apply -f -`). Leave the literal
+    # placeholder so the manifest is safe to commit and isn't pinned to a
+    # single tenancy or region.
+    service.beta.kubernetes.io/oci-load-balancer-subnet1: "${OCI_LB_SUBNET_OCID}"
+    oci.oraclecloud.com/oci-load-balancer-health-check-interval: "10000"
+    oci.oraclecloud.com/oci-load-balancer-health-check-retries: "3"
+    oci.oraclecloud.com/oci-load-balancer-health-check-timeout: "3000"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: octo-drone-shop

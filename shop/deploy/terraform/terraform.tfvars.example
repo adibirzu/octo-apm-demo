@@ -1,0 +1,10 @@
+compartment_id     = "ocid1.compartment.oc1..xxxx"
+shop_domain        = "shop.example.cloud"
+crm_domain         = "crm.example.cloud"
+ops_domain         = "ops.example.cloud"
+coordinator_domain = "coordinator.example.cloud"
+waf_mode           = "DETECTION"
+waf_log_group_id   = "ocid1.loggroup.oc1..xxxx"
+admin_allow_cidrs  = []
+la_namespace       = "your-la-namespace"
+la_log_group_id    = "ocid1.loganalyticsloggroup.oc1..xxxx"
