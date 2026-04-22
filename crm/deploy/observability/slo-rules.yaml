@@ -1,0 +1,155 @@
+# SLI/SLO recording rules and burn-rate alerts for Enterprise CRM Portal.
+#
+# SLOs are defined based on the CRM's role as an internal demo/training app:
+#   - Availability: 99.5% (allows ~22 min/month downtime)
+#   - Latency: p95 < 800ms interactive, p95 < 400ms API reads
+#   - Frontend: LCP p75 < 2.5s, INP p75 < 200ms
+#
+# These rules assume Prometheus is scraping the /metrics endpoint or the
+# OTel Collector's prometheus exporter.
+
+groups:
+  # ── SLI Recording Rules ─────────────────────────────────────────
+  - name: crm-sli-recording
+    interval: 30s
+    rules:
+      # HTTP error rate (5xx only — 4xx are client errors, not SLI violations)
+      - record: crm:http_error_rate:5m
+        expr: |
+          sum(rate(crm_http_requests_total{http_status_class="5xx"}[5m]))
+          /
+          (sum(rate(crm_http_requests_total[5m])) > 0)
+
+      # HTTP availability (1 - error rate)
+      - record: crm:http_availability:5m
+        expr: |
+          1 - (crm:http_error_rate:5m or vector(0))
+
+      # p95 latency by route group
+      - record: crm:http_latency_p95:5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, http_route) (rate(crm_http_request_duration_bucket[5m]))
+          )
+
+      # p99 latency overall
+      - record: crm:http_latency_p99:5m
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (le) (rate(crm_http_request_duration_bucket[5m]))
+          )
+
+      # Business KPI rates
+      - record: crm:orders_per_minute:5m
+        expr: |
+          sum(rate(crm_business_orders_created_total[5m])) * 60
+
+      - record: crm:login_failure_rate:5m
+        expr: |
+          sum(rate(crm_business_auth_login_failed_total[5m]))
+          /
+          (sum(rate(crm_business_auth_login_total[5m])) + sum(rate(crm_business_auth_login_failed_total[5m])) > 0)
+
+      # Frontend Web Vitals p75
+      - record: crm:frontend_lcp_p75:5m
+        expr: |
+          histogram_quantile(
+            0.75,
+            sum by (le) (rate(crm_frontend_web_vital_bucket{metric="LCP"}[5m]))
+          )
+
+  # ── SLO Burn-Rate Alerts ────────────────────────────────────────
+  - name: crm-slo-alerts
+    rules:
+      # Fast burn: >2% error rate for 10 minutes → 14.4x monthly budget
+      - alert: CRM_AvailabilitySLO_FastBurn
+        expr: crm:http_error_rate:5m > 0.02
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+          slo: availability
+        annotations:
+          summary: "CRM error rate {{ $value | humanizePercentage }} exceeds 2% for 10m"
+          description: "The CRM portal 5xx error rate is burning through the 99.5% availability SLO at 14.4x the monthly budget."
+          runbook_url: "https://wiki.internal/runbooks/crm-availability"
+
+      # Slow burn: >0.5% error rate for 1 hour → 3.6x monthly budget
+      - alert: CRM_AvailabilitySLO_SlowBurn
+        expr: crm:http_error_rate:5m > 0.005
+        for: 1h
+        labels:
+          severity: warning
+          team: platform
+          slo: availability
+        annotations:
+          summary: "CRM error rate {{ $value | humanizePercentage }} exceeds 0.5% for 1h"
+
+      # Latency SLO: interactive pages > 800ms p95
+      - alert: CRM_LatencySLO_InteractivePages
+        expr: |
+          crm:http_latency_p95:5m{http_route=~"/|/customers|/orders|/products|/dashboard"} > 800
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          slo: latency
+        annotations:
+          summary: "CRM page {{ $labels.http_route }} p95 latency {{ $value }}ms > 800ms SLO"
+
+      # Latency SLO: API reads > 400ms p95
+      - alert: CRM_LatencySLO_APIReads
+        expr: |
+          crm:http_latency_p95:5m{http_route=~"/api/.*"} > 400
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          slo: latency
+        annotations:
+          summary: "CRM API {{ $labels.http_route }} p95 latency {{ $value }}ms > 400ms SLO"
+
+      # Database: high query latency
+      - alert: CRM_DBQueryLatencyHigh
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(crm_db_query_duration_bucket[5m]))) > 500
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "CRM database query p95 latency {{ $value }}ms > 500ms"
+
+      # Security: high rate of security events
+      - alert: CRM_SecurityEventSpike
+        expr: |
+          sum(rate(crm_business_security_events_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "CRM security event rate {{ $value }}/s — possible active attack"
+
+      # Frontend: LCP degradation
+      - alert: CRM_FrontendLCP_Degraded
+        expr: crm:frontend_lcp_p75:5m > 2500
+        for: 15m
+        labels:
+          severity: warning
+          team: frontend
+          slo: frontend-performance
+        annotations:
+          summary: "CRM frontend LCP p75 {{ $value }}ms exceeds 2.5s Web Vitals threshold"
+
+      # Login failure spike (possible brute force)
+      - alert: CRM_LoginFailureSpike
+        expr: crm:login_failure_rate:5m > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "CRM login failure rate {{ $value | humanizePercentage }} — possible brute force"

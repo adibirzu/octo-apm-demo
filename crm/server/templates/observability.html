@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% block header_actions %}
+<button class="btn btn-secondary" onclick="refresh360()">Refresh</button>
+{% if apm_console_url %}<a class="btn btn-primary" href="{{ apm_console_url }}" target="_blank" rel="noreferrer">APM</a>{% endif %}
+{% if log_analytics_console_url %}<a class="btn btn-primary" href="{{ log_analytics_console_url }}" target="_blank" rel="noreferrer">Log Analytics</a>{% endif %}
+{% endblock %}
+{% block content %}
+<section class="hero-panel compact">
+    <div>
+        <p class="hero-kicker">360-degree observability</p>
+        <h2>Unified monitoring: APM, Logs, WAF, DB Performance, OPSI, and Integrations</h2>
+        <p class="hero-copy">Correlate traces, logs, security events, and database SQL performance across CRM, Drone Shop, and OCI services using trace_id as the universal join key.</p>
+    </div>
+</section>
+
+<!-- ── Observability Pillars ─────────────────────────────── -->
+<div class="card">
+    <h3>Observability Pillars</h3>
+    <p class="card-subtitle">Status of each telemetry signal with OCI console drilldowns</p>
+    <div class="pillars-grid" id="pillars-grid">
+        <div class="status-card">Loading pillars...</div>
+    </div>
+</div>
+
+<!-- ── Application Health ────────────────────────────────── -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card">
+        <h3>Application Health</h3>
+        <p class="card-subtitle">Entity counts and recent activity</p>
+        <div class="stat-grid" id="app-health-grid">
+            <div class="status-card">Loading...</div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Database Health</h3>
+        <p class="card-subtitle">Oracle ATP connectivity, pool, and OPSI/DB Management links</p>
+        <div id="db-health-content">
+            <div class="status-card">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Order Sync Pipeline ───────────────────────────────── -->
+<div class="card">
+    <h3>Order Sync Pipeline</h3>
+    <p class="card-subtitle">Drone Shop to CRM synchronization health</p>
+    <div class="dashboard-row">
+        <div class="stat-grid" id="sync-health-grid">
+            <div class="status-card">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Security & WAF ─────────────────────────────────────── -->
+<div class="card">
+    <h3>Security Overview</h3>
+    <p class="card-subtitle">WAF signals, OWASP coverage, and audit activity</p>
+    <div class="dashboard-row dashboard-row-wide">
+        <div id="security-content">
+            <div class="status-card">Loading...</div>
+        </div>
+        <div id="waf-content">
+            <div class="status-card">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Correlation Guide ──────────────────────────────────── -->
+<div class="card">
+    <h3>360 Correlation Guide</h3>
+    <p class="card-subtitle">How to correlate signals across pillars in OCI Log Analytics</p>
+    <div class="correlation-guide">
+        <div class="corr-step">
+            <div class="corr-num">1</div>
+            <div>
+                <h4>APM Trace Explorer</h4>
+                <p>Find a slow or errored trace. Copy the <code>trace_id</code>.</p>
+            </div>
+        </div>
+        <div class="corr-step">
+            <div class="corr-num">2</div>
+            <div>
+                <h4>Log Analytics</h4>
+                <p>Search: <code>'trace_id' = '&lt;paste-id&gt;'</code> — see all logs, security events, and sync audit entries for that request.</p>
+            </div>
+        </div>
+        <div class="corr-step">
+            <div class="corr-num">3</div>
+            <div>
+                <h4>DB Management / OPSI</h4>
+                <p>The trace_id is set as <code>CLIENT_IDENTIFIER</code> on Oracle sessions. In DB Management SQL Monitor, filter by client_identifier to see SQL performance for that request.</p>
+            </div>
+        </div>
+        <div class="corr-step">
+            <div class="corr-num">4</div>
+            <div>
+                <h4>WAF Correlation</h4>
+                <p>WAF headers (<code>x-oci-waf-score</code>, <code>x-oci-waf-action</code>) are captured as span attributes and logged as security events. Search Log Analytics for <code>'security.attack.type' = 'security_misconfig'</code>.</p>
+            </div>
+        </div>
+        <div class="corr-step">
+            <div class="corr-num">5</div>
+            <div>
+                <h4>Cross-Service</h4>
+                <p>CRM propagates <code>traceparent</code> and <code>X-Correlation-Id</code> to Drone Shop. Both services' logs share the same trace_id for distributed request flows.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Trace Context ──────────────────────────────────────── -->
+<div class="card">
+    <h3>Current Trace Context</h3>
+    <p class="card-subtitle">W3C traceparent snapshot for this dashboard load</p>
+    <pre id="trace-context" class="code-output">Loading...</pre>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.card-subtitle {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin: -4px 0 16px 0;
+}
+.pillars-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.pillar-card {
+    background: rgba(4,14,23,0.56);
+    border: 1px solid rgba(117,217,227,0.12);
+    border-radius: 14px;
+    padding: 18px 16px;
+    transition: border-color 0.2s;
+}
+.pillar-card:hover { border-color: rgba(117,217,227,0.3); }
+.pillar-card.is-active { border-color: rgba(101,212,168,0.4); }
+.pillar-card.is-inactive { border-color: rgba(255,116,116,0.2); opacity: 0.7; }
+.pillar-card h4 { font-size: 0.95rem; margin-bottom: 4px; }
+.pillar-card .pillar-status {
+    border-radius: 6px;
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+}
+.pillar-card .pillar-status.on { background: rgba(101,212,168,0.14); color: var(--success); }
+.pillar-card .pillar-status.off { background: rgba(255,116,116,0.12); color: var(--danger); }
+.pillar-card .pillar-detail { color: var(--text-muted); font-size: 0.78rem; margin-top: 8px; }
+.pillar-card a { color: var(--accent); font-size: 0.78rem; }
+
+.stat-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.stat-item {
+    background: rgba(4,14,23,0.56);
+    border: 1px solid rgba(117,217,227,0.1);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+}
+.stat-item .stat-value {
+    color: var(--accent);
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+.stat-item .stat-label {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+.stat-item.is-warn .stat-value { color: var(--warning); }
+.stat-item.is-danger .stat-value { color: var(--danger); }
+.stat-item.is-success .stat-value { color: var(--success); }
+
+.db-info-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr;
+}
+.db-info-item {
+    padding: 8px 0;
+}
+.db-info-item .dbi-label { color: var(--text-muted); font-size: 0.75rem; }
+.db-info-item .dbi-value { font-size: 0.9rem; font-weight: 600; }
+
+.correlation-guide {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.corr-step {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+}
+.corr-num {
+    align-items: center;
+    background: rgba(117,217,227,0.12);
+    border-radius: 50%;
+    color: var(--accent);
+    display: flex;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    height: 32px;
+    justify-content: center;
+    width: 32px;
+}
+.corr-step h4 { font-size: 0.9rem; margin-bottom: 2px; }
+.corr-step p { color: var(--text-muted); font-size: 0.82rem; line-height: 1.5; }
+.corr-step code {
+    background: rgba(117,217,227,0.08);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    padding: 1px 5px;
+}
+
+.owasp-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+.owasp-tag {
+    background: rgba(245,184,111,0.08);
+    border: 1px solid rgba(245,184,111,0.2);
+    border-radius: 8px;
+    color: var(--accent-warm);
+    font-size: 0.72rem;
+    padding: 3px 10px;
+}
+</style>
+
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+let _dashboardData = null;
+
+async function refresh360() {
+    try {
+        const resp = await _fetch('/api/observability/360');
+        _dashboardData = await resp.json();
+        renderPillars(_dashboardData.pillars);
+        renderAppHealth(_dashboardData.app_health);
+        renderDbHealth(_dashboardData.db_health);
+        renderSyncHealth(_dashboardData.order_sync);
+        renderSecurity(_dashboardData.security);
+        document.getElementById('trace-context').textContent = JSON.stringify(_dashboardData.correlation || {}, null, 2);
+    } catch (err) {
+        console.error('360 dashboard error:', err);
+    }
+}
+
+function renderPillars(pillars) {
+    if (!pillars) return;
+    const grid = document.getElementById('pillars-grid');
+    const items = [
+        { key: 'apm', label: 'APM Traces', desc: 'Distributed tracing via OCI APM', urlKey: 'console_url', active: pillars.apm?.configured },
+        { key: 'rum', label: 'RUM', desc: 'Real User Monitoring in browser', active: pillars.apm?.rum_configured },
+        { key: 'logging', label: 'Logging', desc: 'OCI Logging SDK + Splunk HEC', urlKey: 'console_url', active: pillars.logging?.configured, data: pillars.logging },
+        { key: 'metrics', label: 'Metrics', desc: 'Prometheus + OTLP export', active: pillars.metrics?.prometheus },
+        { key: 'opsi', label: 'Operations Insights', desc: 'SQL performance + capacity planning', urlKey: 'console_url', active: pillars.opsi?.configured, data: pillars.opsi },
+        { key: 'db_management', label: 'DB Management', desc: 'AWR, SQL Monitor, session analysis', urlKey: 'console_url', active: pillars.db_management?.configured, data: pillars.db_management },
+    ];
+    grid.innerHTML = items.map(item => {
+        const data = item.data || pillars[item.key] || {};
+        const url = data[item.urlKey || 'console_url'];
+        return `
+            <div class="pillar-card ${item.active ? 'is-active' : 'is-inactive'}">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <h4>${item.label}</h4>
+                    <span class="pillar-status ${item.active ? 'on' : 'off'}">${item.active ? 'Active' : 'Off'}</span>
+                </div>
+                <div class="pillar-detail">${item.desc}</div>
+                ${url ? `<a href="${url}" target="_blank" rel="noreferrer" style="display:block;margin-top:8px;">Open console &rarr;</a>` : ''}
+            </div>`;
+    }).join('');
+}
+
+function renderAppHealth(data) {
+    if (!data) return;
+    const grid = document.getElementById('app-health-grid');
+    const entities = data.entities || {};
+    const activity = data.activity || {};
+    const items = [
+        { label: 'Customers', value: entities.customers },
+        { label: 'Orders', value: entities.orders },
+        { label: 'Products', value: entities.products },
+        { label: 'Invoices', value: entities.invoices },
+        { label: 'Tickets', value: entities.tickets },
+        { label: 'Users', value: entities.users },
+        { label: 'Active Sessions', value: entities.active_sessions },
+        { label: 'Orders (24h)', value: activity.orders_24h, cls: activity.orders_24h > 0 ? 'is-success' : '' },
+        { label: 'Open Tickets', value: activity.open_tickets, cls: activity.open_tickets > 5 ? 'is-warn' : '' },
+        { label: 'Total Revenue', value: '$' + (activity.total_revenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}), cls: 'is-success' },
+    ];
+    grid.innerHTML = items.map(i => `
+        <div class="stat-item ${i.cls || ''}">
+            <div class="stat-value">${i.value}</div>
+            <div class="stat-label">${i.label}</div>
+        </div>
+    `).join('');
+}
+
+function renderDbHealth(data) {
+    if (!data) return;
+    const el = document.getElementById('db-health-content');
+    const statusCls = data.status === 'connected' ? 'is-success' : 'is-danger';
+    const obs = data.observability || {};
+    el.innerHTML = `
+        <div class="stat-grid" style="margin-bottom:16px;">
+            <div class="stat-item ${statusCls}">
+                <div class="stat-value">${data.status}</div>
+                <div class="stat-label">Connection</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${data.latency_ms || '?'}ms</div>
+                <div class="stat-label">Ping Latency</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${(data.pool || {}).size || '?'}</div>
+                <div class="stat-label">Pool Size</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">${(data.pool || {}).max_overflow || '?'}</div>
+                <div class="stat-label">Max Overflow</div>
+            </div>
+        </div>
+        <div class="db-info-grid">
+            <div class="db-info-item">
+                <div class="dbi-label">Database Target</div>
+                <div class="dbi-value">${data.database_target || '?'}</div>
+            </div>
+            <div class="db-info-item">
+                <div class="dbi-label">SQL ID Enrichment</div>
+                <div class="dbi-value">${obs.sql_id_enrichment ? 'Enabled' : 'Disabled'}</div>
+            </div>
+            <div class="db-info-item">
+                <div class="dbi-label">Session Tagging (OPSI)</div>
+                <div class="dbi-value">${obs.session_tagging_enabled ? 'Enabled' : 'Disabled'}</div>
+            </div>
+            <div class="db-info-item">
+                <div class="dbi-label">ATP OCID</div>
+                <div class="dbi-value" style="font-size:0.72rem;word-break:break-all;">${data.atp_ocid || 'Not set'}</div>
+            </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px;">
+            ${obs.opsi_console ? `<a class="btn btn-secondary" href="${obs.opsi_console}" target="_blank" rel="noreferrer">OPSI &rarr;</a>` : ''}
+            ${obs.db_management_console ? `<a class="btn btn-secondary" href="${obs.db_management_console}" target="_blank" rel="noreferrer">DB Management &rarr;</a>` : ''}
+        </div>`;
+}
+
+function renderSyncHealth(data) {
+    if (!data) return;
+    const grid = document.getElementById('sync-health-grid');
+    const stats = data.stats || {};
+    const orders = data.orders || {};
+    const items = [
+        { label: 'Sync Enabled', value: data.enabled ? 'Yes' : 'No', cls: data.enabled ? 'is-success' : 'is-warn' },
+        { label: 'Source', value: data.source || '?' },
+        { label: 'Interval', value: (data.interval_seconds || 0) + 's' },
+        { label: 'Success Rate', value: (stats.success_rate_pct || 0) + '%', cls: stats.success_rate_pct >= 95 ? 'is-success' : stats.success_rate_pct >= 80 ? 'is-warn' : 'is-danger' },
+        { label: 'Total Syncs', value: stats.total_sync_operations || 0 },
+        { label: 'Successful', value: stats.successful || 0, cls: 'is-success' },
+        { label: 'Failed', value: stats.failed || 0, cls: stats.failed > 0 ? 'is-danger' : '' },
+        { label: 'External Orders', value: orders.external_total || 0 },
+        { label: 'Backlog', value: orders.backlog || 0, cls: orders.backlog > 5 ? 'is-warn' : '' },
+        { label: 'Suspicious', value: orders.suspicious || 0, cls: orders.suspicious > 0 ? 'is-danger' : '' },
+    ];
+    grid.innerHTML = items.map(i => `
+        <div class="stat-item ${i.cls || ''}">
+            <div class="stat-value">${i.value}</div>
+            <div class="stat-label">${i.label}</div>
+        </div>
+    `).join('');
+}
+
+function renderSecurity(data) {
+    if (!data) return;
+    const secEl = document.getElementById('security-content');
+    const wafEl = document.getElementById('waf-content');
+    const audit = data.audit || {};
+    const waf = data.waf || {};
+
+    secEl.innerHTML = `
+        <div class="stat-grid" style="margin-bottom:14px;">
+            <div class="stat-item">
+                <div class="stat-value">${audit.total_entries || 0}</div>
+                <div class="stat-label">Audit Entries</div>
+            </div>
+            <div class="stat-item ${audit.entries_24h > 10 ? 'is-warn' : ''}">
+                <div class="stat-value">${audit.entries_24h || 0}</div>
+                <div class="stat-label">Entries (24h)</div>
+            </div>
+            <div class="stat-item ${data.order_sync_failures > 0 ? 'is-danger' : ''}">
+                <div class="stat-value">${data.order_sync_failures || 0}</div>
+                <div class="stat-label">Sync Failures</div>
+            </div>
+        </div>
+        <h4 style="margin:14px 0 8px;font-size:0.85rem;">OWASP Top 10 Coverage</h4>
+        <div class="owasp-tags">
+            ${(data.owasp_coverage || []).map(o => `<span class="owasp-tag">${o}</span>`).join('')}
+        </div>`;
+
+    wafEl.innerHTML = `
+        <h4 style="margin-bottom:10px;font-size:0.85rem;">WAF Signal Detection</h4>
+        <div class="stat-grid">
+            <div class="stat-item ${waf.detection_enabled ? 'is-success' : 'is-warn'}">
+                <div class="stat-value">${waf.detection_enabled ? 'Active' : 'Off'}</div>
+                <div class="stat-label">WAF Detection</div>
+            </div>
+        </div>
+        <div style="margin-top:12px;color:var(--text-muted);font-size:0.78rem;">
+            Monitored headers: ${(waf.header_monitoring || []).map(h => `<code style="background:rgba(117,217,227,0.08);padding:1px 5px;border-radius:4px;">${h}</code>`).join(', ')}
+        </div>`;
+}
+
+refresh360();
+</script>
+{% endblock %}

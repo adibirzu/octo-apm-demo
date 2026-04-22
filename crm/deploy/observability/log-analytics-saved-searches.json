@@ -1,0 +1,174 @@
+{
+  "_metadata": {
+    "description": "OCI Log Analytics saved search definitions for 360 monitoring dashboard",
+    "service": "enterprise-crm-portal",
+    "version": "1.0.0",
+    "usage": "Import into OCI Log Analytics via Saved Searches or use as reference for manual creation"
+  },
+  "saved_searches": [
+    {
+      "name": "CRM-360: Application Errors (Last 1h)",
+      "description": "All ERROR-level application logs with trace correlation",
+      "category": "Application Health",
+      "query": "'Log Source' = 'enterprise-crm-portal' and level = ERROR | stats count as ErrorCount by 'error.type', 'http.url.path' | sort -ErrorCount",
+      "visualization": "bar",
+      "fields": ["error.type", "http.url.path", "trace_id", "correlation.id", "error.message"]
+    },
+    {
+      "name": "CRM-360: Slow Requests (>2s)",
+      "description": "Requests exceeding 2-second latency threshold with trace IDs for APM drilldown",
+      "category": "Application Health",
+      "query": "'Log Source' = 'enterprise-crm-portal' and 'performance.slow_request' = true | stats avg('http.response_time_ms') as AvgLatency, count as Count by 'http.url.path' | sort -AvgLatency",
+      "visualization": "table",
+      "fields": ["http.url.path", "http.response_time_ms", "trace_id", "oracleApmTraceId"]
+    },
+    {
+      "name": "CRM-360: Request Rate by Endpoint",
+      "description": "HTTP request throughput grouped by route and status code",
+      "category": "Application Health",
+      "query": "'Log Source' = 'enterprise-crm-portal' and message = 'Request completed' | stats count as Requests by 'http.url.path', 'http.status_code' | sort -Requests",
+      "visualization": "bar",
+      "fields": ["http.url.path", "http.method", "http.status_code", "http.response_time_ms"]
+    },
+    {
+      "name": "CRM-360: WAF Security Events",
+      "description": "WAF detections and security signals from OCI WAF headers",
+      "category": "Security",
+      "query": "'Log Source' = 'enterprise-crm-portal' and 'security.attack.detected' = true and 'security.attack.type' = security_misconfig | stats count as WafEvents by 'security.source_ip', 'security.waf.score' | sort -WafEvents",
+      "visualization": "table",
+      "fields": ["security.waf.score", "security.waf.action", "security.source_ip", "trace_id"]
+    },
+    {
+      "name": "CRM-360: OWASP Attack Detection",
+      "description": "All detected security attacks by type and severity with MITRE ATT&CK mapping",
+      "category": "Security",
+      "query": "'Log Source' = 'enterprise-crm-portal' and 'security.attack.detected' = true | stats count as Attacks by 'security.attack.type', 'security.attack.severity' | sort -Attacks",
+      "visualization": "pie",
+      "fields": ["security.attack.type", "security.attack.severity", "security.source_ip", "security.username", "trace_id"]
+    },
+    {
+      "name": "CRM-360: Security Events by Source IP",
+      "description": "Top attacking IPs with attack type distribution",
+      "category": "Security",
+      "query": "'Log Source' = 'enterprise-crm-portal' and 'security.attack.detected' = true | stats count as Attacks, distinctcount('security.attack.type') as UniqueAttacks by 'security.source_ip' | sort -Attacks",
+      "visualization": "table",
+      "fields": ["security.source_ip", "security.attack.type", "security.attack.severity"]
+    },
+    {
+      "name": "CRM-360: Order Sync Pipeline",
+      "description": "External order sync operations showing success/failure rates and sources",
+      "category": "Integration",
+      "query": "'Log Source' = 'enterprise-crm-portal' and message = 'External orders sync completed' | stats sum('orders.sync.created') as Created, sum('orders.sync.updated') as Updated, sum('orders.sync.failed') as Failed by 'orders.sync.source' | sort -Created",
+      "visualization": "bar",
+      "fields": ["orders.sync.source", "orders.sync.created", "orders.sync.updated", "orders.sync.failed", "correlation.id", "trace_id"]
+    },
+    {
+      "name": "CRM-360: Drone Shop Integration Health",
+      "description": "Integration calls to Drone Shop portal with latency and error tracking",
+      "category": "Integration",
+      "query": "'Log Source' = 'enterprise-crm-portal' and ('integration.target_service' = 'drone-shop-portal' or 'integration.target_service' = 'octo-drone-shop') | stats count as Calls by 'integration.type' | sort -Calls",
+      "visualization": "bar",
+      "fields": ["integration.target_service", "integration.type", "integration.error", "correlation.id", "trace_id"]
+    },
+    {
+      "name": "CRM-360: Database Query Correlation",
+      "description": "Logs containing DB context for correlation with OPSI/DB Management SQL performance",
+      "category": "Database",
+      "query": "'Log Source' = 'enterprise-crm-portal' and 'db.target' = 'oracle-atp' | stats count as Events by level | sort -Events",
+      "visualization": "pie",
+      "fields": ["db.target", "db.ocid", "db.connection_name", "trace_id", "oracleApmTraceId"]
+    },
+    {
+      "name": "CRM-360: Cross-Service Trace Correlation",
+      "description": "Find all log entries for a specific trace ID across services — the core 360 correlation query",
+      "category": "Correlation",
+      "query": "'Log Source' in ('enterprise-crm-portal', 'octo-drone-shop') | where trace_id is not null | stats count as LogEntries, distinctcount('service.name') as Services by trace_id | sort -LogEntries | head 50",
+      "visualization": "table",
+      "fields": ["trace_id", "service.name", "level", "message", "http.url.path", "correlation.id"]
+    },
+    {
+      "name": "CRM-360: End-to-End Request Flow",
+      "description": "Reconstruct full request lifecycle: WAF → LB → App → DB → Response",
+      "category": "Correlation",
+      "query": "'Log Source' = 'enterprise-crm-portal' | where trace_id is not null | stats earliest(Time) as FirstEvent, latest(Time) as LastEvent, count as EventCount by trace_id, 'http.url.path' | eval Duration = LastEvent - FirstEvent | sort -Duration | head 20",
+      "visualization": "table",
+      "fields": ["trace_id", "http.url.path", "http.response_time_ms", "db.target", "security.attack.detected"]
+    },
+    {
+      "name": "CRM-360: Auth Events (Login/Logout/Failure)",
+      "description": "Authentication activity for security monitoring and user behavior analysis",
+      "category": "Security",
+      "query": "'Log Source' = 'enterprise-crm-portal' and (message like '%login%' or message like '%auth%' or 'security.attack.type' in ('broken_auth', 'jwt_bypass', 'rate_limit_bypass')) | stats count as Events by level, 'security.attack.type' | sort -Events",
+      "visualization": "bar",
+      "fields": ["security.username", "security.source_ip", "security.attack.type", "trace_id"]
+    },
+    {
+      "name": "CRM-360: Service Health Timeline",
+      "description": "Application startup, shutdown, and error events for availability tracking",
+      "category": "Application Health",
+      "query": "'Log Source' = 'enterprise-crm-portal' and (message like 'Enterprise CRM Portal%' or level = ERROR) | stats count by level, message | sort -count",
+      "visualization": "timeline",
+      "fields": ["level", "message", "service.name", "service.version", "app.runtime"]
+    }
+  ],
+  "dashboard": {
+    "name": "Enterprise CRM Portal — 360 Monitoring",
+    "description": "Unified observability dashboard correlating APM traces, logs, WAF events, database performance, and integration health",
+    "tabs": [
+      {
+        "name": "Application",
+        "widgets": [
+          "CRM-360: Request Rate by Endpoint",
+          "CRM-360: Application Errors (Last 1h)",
+          "CRM-360: Slow Requests (>2s)",
+          "CRM-360: Service Health Timeline"
+        ]
+      },
+      {
+        "name": "Security",
+        "widgets": [
+          "CRM-360: OWASP Attack Detection",
+          "CRM-360: WAF Security Events",
+          "CRM-360: Security Events by Source IP",
+          "CRM-360: Auth Events (Login/Logout/Failure)"
+        ]
+      },
+      {
+        "name": "Integration",
+        "widgets": [
+          "CRM-360: Order Sync Pipeline",
+          "CRM-360: Drone Shop Integration Health"
+        ]
+      },
+      {
+        "name": "Database",
+        "widgets": [
+          "CRM-360: Database Query Correlation"
+        ],
+        "drilldowns": [
+          {"label": "OPSI SQL Performance", "target": "OPSI_CONSOLE_URL"},
+          {"label": "DB Management", "target": "DB_MANAGEMENT_CONSOLE_URL"}
+        ]
+      },
+      {
+        "name": "Correlation",
+        "widgets": [
+          "CRM-360: Cross-Service Trace Correlation",
+          "CRM-360: End-to-End Request Flow"
+        ],
+        "drilldowns": [
+          {"label": "APM Trace Explorer", "target": "APM_CONSOLE_URL"},
+          {"label": "Log Analytics Explorer", "target": "LOG_ANALYTICS_CONSOLE_URL"}
+        ]
+      }
+    ],
+    "correlation_fields": {
+      "primary_key": "trace_id",
+      "secondary_keys": ["correlation.id", "oracleApmTraceId", "span_id"],
+      "cross_service_fields": ["service.name", "orders.sync.source", "integration.target_service"],
+      "db_correlation_fields": ["db.target", "db.ocid", "db.connection_name"],
+      "waf_fields": ["security.waf.score", "security.waf.action"],
+      "user_fields": ["security.username", "security.source_ip"]
+    }
+  }
+}
