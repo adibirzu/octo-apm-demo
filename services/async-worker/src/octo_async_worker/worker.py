@@ -59,11 +59,24 @@ class Worker:
         await self.setup()
         logger.info("worker.started", extra={"streams": self.cfg.streams})
 
+        iterations_since_recovery = 0
+        recovery_every = 20  # one recovery pass per ~20 polls
+
         while not self._stop.is_set():
+            # KG-033 — periodically reclaim pending messages from
+            # dead consumers. Cheap if there are none.
+            if iterations_since_recovery >= recovery_every:
+                iterations_since_recovery = 0
+                recovered = await self._consumer.recover_pending(min_idle_ms=60_000)
+                for event in recovered:
+                    await self._handle_one(event)
+
             events = await self._consumer.poll(
                 block_ms=self.cfg.block_ms,
                 count=self.cfg.count_per_poll,
             )
+            iterations_since_recovery += 1
+
             if not events:
                 if self.cfg.run_once:
                     break
