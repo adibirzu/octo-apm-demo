@@ -1,0 +1,274 @@
+# Enterprise CRM Portal — production Deployment on OKE.
+#
+# Namespace:        octo-backend-prod
+# Public hostname:  backend.${DNS_DOMAIN}  (default: backend.octodemo.cloud)
+# Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG:-latest}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-crm-portal
+  namespace: octo-backend-prod
+  labels:
+    app: enterprise-crm-portal
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: crm
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: enterprise-crm-portal
+  template:
+    metadata:
+      labels:
+        app: enterprise-crm-portal
+        app.kubernetes.io/part-of: octo-apm-demo
+      annotations:
+        octo.oracle.com/restartedAt: "${IMAGE_TAG:-latest}"
+    spec:
+      containers:
+        - name: app
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG:-latest}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: APP_NAME
+              value: "enterprise-crm-portal"
+            - name: OTEL_SERVICE_NAME
+              value: "enterprise-crm-portal"
+            - name: APP_RUNTIME
+              value: "oke"
+            - name: APP_ENV
+              value: "production"
+            - name: DNS_DOMAIN
+              value: "${DNS_DOMAIN}"
+            - name: CRM_BASE_URL
+              value: "https://backend.${DNS_DOMAIN}"
+            - name: SERVICE_SHOP_URL
+              value: "http://octo-drone-shop.octo-shop-prod.svc.cluster.local:8080"
+            - name: OCI_AUTH_MODE
+              value: "instance_principal"
+            # ── Cross-service
+            - name: APP_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-auth
+                  key: app-secret-key
+            - name: INTERNAL_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-auth
+                  key: internal-service-key
+            - name: BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: octo-auth
+                  key: bootstrap-admin-password
+            # ── Autonomous DB (shared)
+            - name: ORACLE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: dsn
+            - name: ORACLE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: username
+            - name: ORACLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: password
+            - name: ORACLE_WALLET_DIR
+              value: "/opt/oracle/wallet"
+            - name: ORACLE_WALLET_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: octo-atp
+                  key: wallet-password
+            # ── OCI APM (traces)
+            - name: OCI_APM_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: endpoint
+                  optional: true
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: private-key
+                  optional: true
+            # ── OCI APM RUM (browser)
+            - name: OCI_APM_RUM_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: rum-endpoint
+                  optional: true
+            - name: OCI_APM_RUM_PUBLIC_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: public-key
+                  optional: true
+            # ── OCI Logging (SDK ingestion) → Log Analytics
+            - name: OCI_LOG_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-logging
+                  key: log-id
+                  optional: true
+            - name: OCI_LOG_GROUP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-logging
+                  key: log-group-id
+                  optional: true
+            # ── IDCS SSO
+            - name: IDCS_DOMAIN_URL
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-domain-url
+                  optional: true
+            - name: IDCS_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-client-id
+                  optional: true
+            - name: IDCS_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: octo-sso
+                  key: idcs-client-secret
+                  optional: true
+            - name: IDCS_REDIRECT_URI
+              value: "https://backend.${DNS_DOMAIN}/api/auth/sso/callback"
+            # ── Orders sync toggle
+            - name: ORDERS_SYNC_ENABLED
+              value: "true"
+            - name: ORDERS_SYNC_INTERVAL_SECONDS
+              value: "300"
+          volumeMounts:
+            - name: wallet
+              mountPath: /opt/oracle/wallet
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+      volumes:
+        - name: wallet
+          secret:
+            secretName: octo-atp-wallet
+      terminationGracePeriodSeconds: 45
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enterprise-crm-portal
+  namespace: octo-backend-prod
+  labels:
+    app: enterprise-crm-portal
+spec:
+  type: ClusterIP
+  selector:
+    app: enterprise-crm-portal
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enterprise-crm-portal-lb
+  namespace: octo-backend-prod
+  annotations:
+    service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "100"
+    service.beta.kubernetes.io/oci-load-balancer-subnet1: "${OCI_LB_SUBNET_OCID}"
+    service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode: "None"
+    oci.oraclecloud.com/waf-policy-ocid: "${WAF_POLICY_CRM_OCID}"
+spec:
+  type: LoadBalancer
+  selector:
+    app: enterprise-crm-portal
+  ports:
+    - name: https
+      port: 443
+      targetPort: http
+    - name: http
+      port: 80
+      targetPort: http
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: enterprise-crm-portal
+  namespace: octo-backend-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: enterprise-crm-portal
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: enterprise-crm-portal
+  namespace: octo-backend-prod
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: enterprise-crm-portal

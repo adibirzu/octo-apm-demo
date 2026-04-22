@@ -1,0 +1,23 @@
+# Production namespaces for octo-apm-demo on OKE.
+#
+# Naming deliberately differs from the unified-VM deployment so operators
+# can run both simultaneously on the same tenancy without collision.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-shop-prod
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: shop
+    octo.oracle.com/tier: production
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-backend-prod
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: crm
+    octo.oracle.com/tier: production
