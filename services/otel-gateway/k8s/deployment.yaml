@@ -1,0 +1,131 @@
+# octo-otel-gateway — OKE deployment.
+#
+# Sits in its own namespace so collector outages don't affect app
+# scheduling. Apps point at gateway.octo-otel.svc.cluster.local:4318
+# instead of OCI APM directly.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-otel
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: otel-gateway
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: octo-otel
+data:
+  # Mounted into the container at /etc/otelcol-contrib/config.yaml.
+  # Update this ConfigMap + restart the Deployment to change pipelines
+  # without rebuilding the image.
+  otel-collector.yaml: |
+    # The full content lives in services/otel-gateway/config/
+    # otel-collector.yaml — copy here at deploy time:
+    #   kubectl create configmap otel-collector-config \
+    #     --from-file=otel-collector.yaml=services/otel-gateway/config/otel-collector.yaml \
+    #     -n octo-otel --dry-run=client -o yaml | kubectl apply -f -
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-gateway
+  namespace: octo-otel
+  labels:
+    app: otel-gateway
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: otel-gateway
+  template:
+    metadata:
+      labels:
+        app: otel-gateway
+    spec:
+      containers:
+        - name: collector
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-otel-gateway:${IMAGE_TAG:-latest}
+          ports:
+            - { name: otlp-grpc, containerPort: 4317 }
+            - { name: otlp-http, containerPort: 4318 }
+            - { name: health,    containerPort: 13133 }
+            - { name: zpages,    containerPort: 55679 }
+            - { name: self-met,  containerPort: 8888 }
+          env:
+            - name: DNS_DOMAIN
+              value: "${DNS_DOMAIN}"
+            - name: OTEL_DEPLOYMENT_ENVIRONMENT
+              value: "production"
+            - name: OCI_APM_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: endpoint
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: private-key
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol-contrib
+          readinessProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+            items:
+              - key: otel-collector.yaml
+                path: config.yaml
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: octo-otel
+spec:
+  selector:
+    app: otel-gateway
+  ports:
+    - { name: otlp-grpc, port: 4317, targetPort: otlp-grpc }
+    - { name: otlp-http, port: 4318, targetPort: otlp-http }
+    - { name: self-met,  port: 8888, targetPort: self-met }
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: otel-gateway
+  namespace: octo-otel
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: otel-gateway
