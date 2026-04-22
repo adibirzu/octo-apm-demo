@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }} | OCTO Drone Commerce</title>
+    <style>
+      :root {
+        --bg: #07111c;
+        --bg-soft: #0d1824;
+        --bg-panel: rgba(9, 20, 34, 0.78);
+        --ink: #eef6ff;
+        --muted: #95a8bd;
+        --line: rgba(140, 190, 230, 0.14);
+        --teal: #6cd2e0;
+        --teal-strong: #2da7d7;
+        --amber: #ffbd59;
+        --rose: #ff6b7a;
+        --ok: #5be59f;
+        --shadow: 0 24px 60px rgba(3, 10, 18, 0.48);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top, rgba(108, 210, 224, 0.12), transparent 30%),
+          linear-gradient(180deg, #06111d 0%, #0d1826 52%, #0a141f 100%);
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .shell {
+        width: min(1380px, calc(100vw - 28px));
+        margin: 18px auto 36px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 22px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(7, 17, 28, 0.78);
+        backdrop-filter: blur(14px);
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 14px;
+        z-index: 20;
+      }
+      .brand-area {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+      }
+      .brand-area img {
+        width: 52px;
+        height: 52px;
+        object-fit: contain;
+        filter: drop-shadow(0 8px 18px rgba(108, 210, 224, 0.22));
+      }
+      .brand-copy strong {
+        display: block;
+        font-size: 1.1rem;
+        letter-spacing: 0.08em;
+      }
+      .brand-copy span {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+      .nav-links a {
+        padding: 10px 14px;
+        border-radius: 999px;
+        color: var(--muted);
+        transition: 180ms ease;
+        font-size: 0.92rem;
+      }
+      .nav-links a:hover,
+      .nav-links a.active {
+        color: var(--ink);
+        background: rgba(108, 210, 224, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(108, 210, 224, 0.18);
+      }
+      .status-strip {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .status-pill {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.83rem;
+      }
+      .status-pill strong {
+        color: var(--ink);
+      }
+      .status-pill.ok strong {
+        color: var(--ok);
+      }
+      .status-pill.warn strong {
+        color: var(--amber);
+      }
+      .container {
+        margin-top: 24px;
+      }
+      .hero-card,
+      .panel,
+      .card {
+        border: 1px solid var(--line);
+        background: var(--bg-panel);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+      .panel,
+      .card {
+        padding: 24px;
+      }
+      .eyebrow {
+        color: var(--teal);
+        font-family: "Orbitron", sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-size: 0.76rem;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: "Orbitron", sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      p,
+      td,
+      th,
+      li,
+      input,
+      button,
+      select,
+      textarea {
+        font-family: inherit;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        gap: 18px;
+      }
+      .grid-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid var(--teal);
+        border-radius: 14px;
+        padding: 12px 24px;
+        cursor: pointer;
+        background: rgba(0, 210, 255, 0.1);
+        color: var(--teal);
+        font-family: "Orbitron", sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        transition: all 0.3s ease;
+      }
+      .btn:hover {
+        background: var(--teal);
+        color: #000;
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .btn-outline:hover {
+        border-color: var(--ink);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--ink);
+        box-shadow: none;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 0.82rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        color: var(--ink);
+      }
+      th,
+      td {
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(147, 170, 189, 0.12);
+        text-align: left;
+      }
+      th {
+        color: var(--muted);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--ink);
+        font-family: "Inter", sans-serif;
+        transition: border-color 0.3s ease;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--teal);
+      }
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+      footer {
+        margin-top: 28px;
+        padding: 24px 8px 10px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      @media (max-width: 1100px) {
+        .topbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .status-strip {
+          justify-content: flex-start;
+        }
+        .grid-4 {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .grid-3 {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 720px) {
+        .shell {
+          width: min(100vw - 16px, 100%);
+          margin-top: 10px;
+        }
+        .topbar,
+        .panel,
+        .card {
+          border-radius: 20px;
+          padding: 18px;
+        }
+        .grid-4,
+        .grid-3,
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+        .nav-links {
+          justify-content: flex-start;
+        }
+      }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand-area">
+          <img src="/static/img/octo-logo.png" alt="OCTO logo" />
+          <div class="brand-copy">
+            <strong>OCTO Drone Commerce</strong>
+            <span>Professional platforms and payload configurations</span>
+          </div>
+        </div>
+        <nav class="nav-links">
+          <a href="/" {% if module == 'dashboard' or not module %}class="active" {% endif %}>Workspace</a>
+          <a href="/shop" {% if module == 'shop' %}class="active" {% endif %}>Drone Shop</a>
+          <a href="/services" {% if module == 'services' %}class="active" {% endif %}>Services & Support</a>
+        </nav>
+      </header>
+
+      <main class="container">{% block content %}{% endblock %}</main>
+
+      <footer>
+        OCTO Drone Commerce &copy; 2026. All rights reserved.
+      </footer>
+    </div>
+
+    {% if rum_configured and rum_endpoint and rum_public_key %}
+    <script nonce="{{ csp_nonce }}">
+      window.__nativeFetch = window.fetch.bind(window);
+      window.__NativeXHR = window.XMLHttpRequest;
+      window.apmrum = window.apmrum || {};
+      window.apmrum.serviceName = "{{ app_name }}";
+      window.apmrum.webApplication = "{{ rum_web_application }}";
+      window.apmrum.ociDataUploadEndpoint = "{{ rum_endpoint }}";
+      window.apmrum.OracleAPMPublicDataKey = "{{ rum_public_key }}";
+      window.apmrum.route = window.location.pathname;
+      /* Observability v2: surface workflow_id + request_id as RUM custom dimensions
+         so RUM sessions can be joined to backend traces by workflow. */
+      window.apmrum.customDimensions = Object.assign(
+        window.apmrum.customDimensions || {},
+        {
+          workflow_id: "{{ (request.state.workflow.workflow_id if request and request.state and request.state.workflow else '') }}",
+          request_id: "{{ (request.state.request_id if request and request.state and request.state.request_id else '') }}",
+        }
+      );
+      /* Prevent RUM from adding tracing headers to app API calls (avoids CORS preflight issues) */
+      window.apmrum.traceSupportingEndpoints = [
+        { hostPattern: '.*', headers: [] }
+      ];
+    </script>
+    <script
+      nonce="{{ csp_nonce }}"
+      async
+      crossorigin="anonymous"
+      src="{{ rum_endpoint }}/static/jslib/apmrum.min.js"
+    ></script>
+    {% endif %} {% block scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,993 @@
+{% extends "base.html" %}
+{% block head %}
+<style>
+    /* ── Top toolbar ─────────────────────────────────────────────── */
+    .shop-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.03);
+    }
+    .shop-toolbar h2 {
+        font-size: 1.1rem;
+        font-family: "Orbitron", sans-serif;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .toolbar-search {
+        flex: 1;
+        min-width: 200px;
+        max-width: 420px;
+    }
+    .toolbar-right {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-left: auto;
+    }
+    .toolbar-right select {
+        min-width: 160px;
+        font-size: 0.84rem;
+        padding: 8px 12px;
+    }
+
+    /* ── Category chips bar ──────────────────────────────────────── */
+    .cat-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 0 4px;
+    }
+    .cat-btn {
+        padding: 6px 14px;
+        border-radius: 20px;
+        border: 1px solid rgba(147,170,189,0.18);
+        background: rgba(255,255,255,0.03);
+        color: var(--muted);
+        font-size: 0.81rem;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .cat-btn:hover { border-color: rgba(108,210,224,0.3); color: var(--ink); }
+    .cat-btn.active {
+        border-color: rgba(108,210,224,0.55);
+        background: rgba(108,210,224,0.12);
+        color: var(--teal);
+        font-weight: 600;
+    }
+
+    /* ── Main layout: sidebar | catalog | cart ───────────────────── */
+    .shop-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 18px;
+        align-items: start;
+    }
+
+    /* ── Product grid ────────────────────────────────────────────── */
+    .catalog-area { display: grid; gap: 14px; }
+    .catalog-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+    .catalog-meta .muted strong { color: var(--ink); }
+    .status-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+    .product-card {
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.03);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: border-color 0.18s, transform 0.18s;
+    }
+    .product-card:hover {
+        border-color: rgba(108,210,224,0.4);
+        transform: translateY(-2px);
+    }
+    .product-card img {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255,255,255,0.02);
+    }
+    .product-body {
+        padding: 14px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+    }
+    .product-cat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .product-rating { color: var(--teal); font-size: 0.78rem; }
+    .product-body h3 { font-size: 0.92rem; line-height: 1.3; }
+    .product-body p {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        flex: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .spec-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .spec-chips .chip { font-size: 0.72rem; padding: 3px 8px; }
+    .product-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 6px;
+    }
+    .product-price {
+        font-size: 1.15rem;
+        font-family: "Orbitron", sans-serif;
+        font-weight: 700;
+        color: var(--teal);
+    }
+    .product-stock { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+    .add-btn {
+        padding: 7px 14px;
+        font-size: 0.8rem;
+        border-radius: 10px;
+    }
+
+    /* ── Right sidebar ───────────────────────────────────────────── */
+    .shop-sidebar { display: grid; gap: 16px; }
+
+    /* Cart */
+    .cart-list { display: grid; gap: 8px; margin-bottom: 12px; }
+    .cart-item {
+        display: grid;
+        grid-template-columns: 56px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 10px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.03);
+    }
+    .cart-item img { width: 56px; height: 48px; object-fit: cover; border-radius: 10px; }
+    .cart-total {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-top: 1px solid rgba(147,170,189,0.12);
+        font-weight: 600;
+    }
+    .order-note {
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px dashed rgba(108,210,224,0.3);
+        background: rgba(108,210,224,0.06);
+        font-size: 0.78rem;
+        color: var(--muted);
+        line-height: 1.5;
+        margin-bottom: 4px;
+    }
+    .checkout-form { display: grid; gap: 10px; }
+    .checkout-form input,
+    .checkout-form textarea,
+    .checkout-form select { font-size: 0.84rem; padding: 9px 12px; }
+    .checkout-form textarea { min-height: 68px; }
+
+    /* Dealers */
+    .dealer-item {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(147,170,189,0.1);
+    }
+    .dealer-item strong { font-size: 0.88rem; display: block; }
+    .dealer-item .helper { font-size: 0.78rem; }
+
+    /* Assistant */
+    .assistant-log {
+        display: grid;
+        gap: 8px;
+        max-height: 260px;
+        overflow: auto;
+        margin-bottom: 10px;
+    }
+    .assistant-msg {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.03);
+        color: var(--muted);
+        line-height: 1.5;
+        font-size: 0.84rem;
+        white-space: pre-wrap;
+    }
+    .assistant-msg strong { color: var(--ink); display: block; margin-bottom: 4px; }
+    .assistant-form { display: grid; gap: 8px; }
+    .assistant-form textarea { min-height: 60px; font-size: 0.84rem; }
+
+    .helper { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+    .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+    .ops-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+    }
+    .ops-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+    .ops-stat {
+        padding: 14px;
+        border-radius: 18px;
+        border: 1px solid rgba(147,170,189,0.12);
+        background: rgba(255,255,255,0.03);
+    }
+    .ops-stat strong {
+        display: block;
+        font-size: 1.2rem;
+        color: var(--ink);
+        margin-top: 6px;
+        font-family: "Orbitron", sans-serif;
+    }
+    .ops-stat span {
+        color: var(--muted);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+    }
+    .ops-list {
+        display: grid;
+        gap: 8px;
+    }
+    .ops-list-item {
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(147,170,189,0.12);
+        background: rgba(255,255,255,0.03);
+        display: grid;
+        gap: 4px;
+    }
+    .ops-list-item strong { font-size: 0.86rem; }
+    .ops-button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .ops-button-row .btn {
+        padding: 10px 14px;
+        font-size: 0.75rem;
+    }
+    .ops-table-wrap {
+        overflow-x: auto;
+    }
+    .ops-table td {
+        font-size: 0.8rem;
+        color: var(--muted);
+        vertical-align: top;
+    }
+    .ops-table td strong { color: var(--ink); }
+    .ops-output {
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid rgba(108,210,224,0.18);
+        background: rgba(108,210,224,0.06);
+        min-height: 120px;
+        white-space: pre-wrap;
+        line-height: 1.6;
+        color: var(--muted);
+        font-size: 0.84rem;
+    }
+    .ops-form {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+        .product-grid { grid-template-columns: repeat(2, 1fr); }
+        .ops-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 960px) {
+        .shop-layout { grid-template-columns: 1fr; }
+        .product-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 620px) {
+        .shop-toolbar { flex-direction: column; align-items: stretch; }
+        .toolbar-right { margin-left: 0; }
+        .product-grid { grid-template-columns: 1fr; }
+        .ops-stat-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section style="display:grid;gap:16px;">
+
+    <!-- Top toolbar -->
+    <div class="shop-toolbar">
+        <h2>Drone Shop</h2>
+        <input class="toolbar-search" id="searchInput" type="search" placeholder="Search drones, payloads, batteries…">
+        <div class="toolbar-right">
+            <select id="sortSelect">
+                <option value="name">Sort: A–Z</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="rating-desc">Top Rated</option>
+                <option value="stock-desc">Highest Stock</option>
+            </select>
+            <span class="chip" id="backendChip">ATP</span>
+            <span class="chip" id="crmChip">CRM</span>
+        </div>
+    </div>
+
+    <!-- Category filter chips -->
+    <div class="cat-bar" id="catBar">
+        <button class="cat-btn active" type="button" data-cat="All">All</button>
+    </div>
+
+    <!-- Main content -->
+    <div class="shop-layout" id="shopLayout">
+        <!-- Catalog -->
+        <section class="catalog-area">
+            <div class="catalog-meta">
+                <span class="muted">Showing <strong id="visibleCount">0</strong> products</span>
+                <div class="status-chips" id="statsChips"></div>
+            </div>
+            <div class="product-grid" id="productGrid">
+                <div class="helper" style="grid-column:1/-1;padding:24px 0;">Loading catalog from Oracle ATP…</div>
+            </div>
+        </section>
+
+        <!-- Right sidebar -->
+        <aside class="shop-sidebar">
+            <!-- Cart & Checkout -->
+            <div class="panel" id="cartPanel">
+                <div class="section-title">
+                    <h3>Cart & Checkout</h3>
+                    <span class="chip" id="cartChip">0 items</span>
+                </div>
+                <div class="cart-list" id="cartList">
+                    <div class="helper">Add products to your cart to begin checkout.</div>
+                </div>
+                <div class="cart-total">
+                    <span class="muted">Total</span>
+                    <strong id="cartTotal">$0.00</strong>
+                </div>
+                <div class="order-note">Orders are persisted in Oracle ATP, traced through OCI APM, and synchronized with Enterprise CRM.</div>
+                <form class="checkout-form" id="checkoutForm">
+                    <input name="customer_name" placeholder="Contact name" required>
+                    <input name="customer_email" type="email" placeholder="Contact email" required>
+                    <input name="company" placeholder="Company">
+                    <input name="customer_phone" placeholder="Phone">
+                    <textarea name="shipping_address" placeholder="Shipping address" required></textarea>
+                    <select name="payment_method" required>
+                        <option value="" disabled selected>Payment method</option>
+                        <option value="credit_card">Credit Card</option>
+                        <option value="bank_transfer">Bank Transfer (Net 30)</option>
+                        <option value="crypto">Cryptocurrency</option>
+                    </select>
+                    <input name="coupon_code" placeholder="Coupon code (optional)">
+                    <button class="btn" type="submit">Place Order</button>
+                </form>
+                <div class="helper" id="checkoutStatus" style="margin-top:6px;"></div>
+            </div>
+
+            <!-- Authorized dealers -->
+            <div class="panel">
+                <div class="section-title">
+                    <h3>Authorized Dealers</h3>
+                    <span class="chip" id="shopCount">–</span>
+                </div>
+                <div style="display:grid;gap:8px;" id="shopList">
+                    <div class="helper">Loading dealer locations…</div>
+                </div>
+            </div>
+
+            <!-- AI Assistant -->
+            <div class="panel">
+                <div class="section-title">
+                    <h3>Drone Advisor</h3>
+                    <span class="chip" id="assistantProvider">OCI GenAI</span>
+                </div>
+                <div class="assistant-log" id="assistantLog">
+                    <div class="assistant-msg"><strong>OCTO Advisor</strong>Ask about endurance, sensors, mapping, payload, radios, or compare platforms.</div>
+                </div>
+                <form class="assistant-form" id="assistantForm">
+                    <textarea name="message" placeholder="e.g. Best platform for thermal utility inspection?" required></textarea>
+                    <button class="btn" type="submit">Ask Advisor</button>
+                </form>
+            </div>
+        </aside>
+    </div>
+
+    <section class="ops-grid">
+        <div class="panel">
+            <div class="section-title">
+                <h3>Workflow Gateway</h3>
+                <span class="chip" id="workflowGatewayChip">checking</span>
+            </div>
+            <div class="ops-stat-grid">
+                <div class="ops-stat">
+                    <span>Orders</span>
+                    <strong id="workflowOrdersCount">-</strong>
+                </div>
+                <div class="ops-stat">
+                    <span>Revenue</span>
+                    <strong id="workflowRevenue">-</strong>
+                </div>
+                <div class="ops-stat">
+                    <span>CRM Linked</span>
+                    <strong id="workflowCrmLinked">-</strong>
+                </div>
+                <div class="ops-stat">
+                    <span>Low Stock</span>
+                    <strong id="workflowLowStock">-</strong>
+                </div>
+            </div>
+            <div class="ops-list" id="componentSnapshotList">
+                <div class="helper">Waiting for component snapshots…</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="section-title">
+                <h3>DB Query Lab</h3>
+                <span class="chip" id="queryLabChip">manual</span>
+            </div>
+            <div class="ops-button-row">
+                <button class="btn btn-outline query-runner" type="button" data-query="orders_backlog">Orders</button>
+                <button class="btn btn-outline query-runner" type="button" data-query="inventory_watch">Inventory</button>
+                <button class="btn btn-outline query-runner" type="button" data-query="crm_customer_mix">CRM Mix</button>
+                <button class="btn btn-outline query-runner" type="button" data-query="broken_orders_probe">Broken Query</button>
+            </div>
+            <div class="helper" id="queryLabStatus">Query activity is recorded in ATP for drilldown from APM into DB Management and OPSI.</div>
+            <div class="ops-table-wrap" style="margin-top:12px;">
+                <table class="ops-table">
+                    <thead>
+                        <tr>
+                            <th>Query</th>
+                            <th>Status</th>
+                            <th>Rows</th>
+                            <th>Latency</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queryExecutionBody">
+                        <tr><td colspan="4" class="muted">Loading recent executions…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="section-title">
+                <h3>Select AI Console</h3>
+                <span class="chip" id="selectAiChip">profile pending</span>
+            </div>
+            <form class="ops-form" id="selectAiForm">
+                <select name="action">
+                    <option value="showsql">Show SQL</option>
+                    <option value="narrate">Narrate</option>
+                    <option value="chat">Chat</option>
+                </select>
+                <textarea name="prompt" placeholder="Describe the operational question to run against ATP, for example: show SQL for orders by status with revenue totals." required></textarea>
+                <button class="btn" type="submit">Run Select AI</button>
+            </form>
+            <div class="ops-output" id="selectAiOutput">Select AI output will appear here once the database profile is configured.</div>
+        </div>
+    </section>
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+/* Restore native fetch — APM RUM agent patches fetch/XHR and can break API calls */
+const _fetch = window.__nativeFetch || window.fetch.bind(window);
+
+/* crypto.randomUUID() requires secure context (HTTPS) — fallback for HTTP */
+function _uuid() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+}
+
+const state = {
+    products: [],
+    filtered: [],
+    cart: [],
+    category: 'All',
+    sessionId: localStorage.getItem('octo-session-id') || _uuid(),
+    assistantSessionId: localStorage.getItem('octo-assistant-session-id') || _uuid(),
+    workflowApiBaseUrl: {{ workflow_api_base_url|tojson }},
+};
+localStorage.setItem('octo-session-id', state.sessionId);
+localStorage.setItem('octo-assistant-session-id', state.assistantSessionId);
+
+function money(v) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(v || 0);
+}
+
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function workflowUrl(path) {
+    if (!state.workflowApiBaseUrl) return '';
+    return `${String(state.workflowApiBaseUrl).replace(/\/$/, '')}${path}`;
+}
+
+async function workflowFetch(path, options = {}) {
+    if (!state.workflowApiBaseUrl) throw new Error('Workflow gateway is not configured.');
+    const headers = options.body ? {'Content-Type': 'application/json', ...(options.headers || {})} : (options.headers || {});
+    return _fetch(workflowUrl(path), {...options, headers});
+}
+
+/* ── Categories ──────────────────────────────────────────────── */
+function renderCategories(cats) {
+    const bar = document.getElementById('catBar');
+    bar.innerHTML = ['All', ...cats].map(c => `
+        <button class="cat-btn${state.category === c ? ' active' : ''}" type="button" data-cat="${esc(c)}">${esc(c)}</button>
+    `).join('');
+    bar.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.category = btn.dataset.cat;
+            renderCategories(cats);
+            applyFilters();
+        });
+    });
+}
+
+/* ── Stats chips ─────────────────────────────────────────────── */
+function renderStats(stats = {}) {
+    document.getElementById('statsChips').innerHTML = [
+        stats.product_count != null ? `<span class="chip">${stats.product_count} products</span>` : '',
+        stats.order_count   != null ? `<span class="chip">${stats.order_count} orders</span>` : '',
+        stats.revenue       != null ? `<span class="chip">${money(stats.revenue)} revenue</span>` : '',
+    ].join('');
+}
+
+/* ── Products ────────────────────────────────────────────────── */
+function renderProducts() {
+    const grid = document.getElementById('productGrid');
+    document.getElementById('visibleCount').textContent = state.filtered.length;
+    if (!state.filtered.length) {
+        grid.innerHTML = '<div class="helper" style="grid-column:1/-1;padding:24px 0;">No products match the current filter. Try clearing the search or selecting a different category.</div>';
+        return;
+    }
+    grid.innerHTML = state.filtered.map(p => `
+        <article class="product-card">
+            <img src="${esc(p.image_url)}" alt="${esc(p.name)}" onerror="this.style.display='none'">
+            <div class="product-body">
+                <div class="product-cat-row">
+                    <span class="chip" style="font-size:0.71rem;padding:3px 8px;">${esc(p.category)}</span>
+                    <span class="product-rating">★ ${(p.rating || 0).toFixed(1)}</span>
+                </div>
+                <h3>${esc(p.name)}</h3>
+                <p>${esc(p.description)}</p>
+                <div class="spec-chips">
+                    ${(p.specs || []).slice(0, 3).map(s => `<span class="chip">${esc(s.label)}: <strong>${esc(s.value)}</strong></span>`).join('')}
+                </div>
+                <div class="product-footer">
+                    <div>
+                        <div class="product-price">${money(p.price)}</div>
+                        <div class="product-stock">${esc(p.inventory_badge)}</div>
+                    </div>
+                    <button class="btn add-btn" type="button" data-id="${p.id}">Add to Cart</button>
+                </div>
+            </div>
+        </article>
+    `).join('');
+    grid.querySelectorAll('.add-btn').forEach(btn => {
+        btn.addEventListener('click', () => addToCart(Number(btn.dataset.id)));
+    });
+}
+
+function applyFilters() {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const sort = document.getElementById('sortSelect').value;
+    if (q) rumEvent('shop.search', {query: q, category: state.category, sort});
+    state.filtered = state.products.filter(p => {
+        if (state.category !== 'All' && p.category !== state.category) return false;
+        if (q) {
+            const hay = `${p.name} ${p.description} ${p.category} ${p.sku || ''}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+        }
+        return true;
+    });
+    const sorters = {
+        name:          (a, b) => a.name.localeCompare(b.name),
+        'price-asc':   (a, b) => a.price - b.price,
+        'price-desc':  (a, b) => b.price - a.price,
+        'rating-desc': (a, b) => (b.rating || 0) - (a.rating || 0),
+        'stock-desc':  (a, b) => (b.stock || 0) - (a.stock || 0),
+    };
+    state.filtered.sort(sorters[sort] || sorters.name);
+    renderProducts();
+}
+
+/* ── Storefront load ─────────────────────────────────────────── */
+async function loadStorefront() {
+    const res = await _fetch('/api/shop/storefront');
+    if (!res.ok) throw new Error(`Storefront ${res.status}`);
+    const data = await res.json();
+    state.products = data.products || [];
+    const be = data.backend || {};
+    const crm = data.crm_sync || {};
+    document.getElementById('backendChip').textContent = be.apm_configured ? 'ATP + APM' : 'Oracle ATP';
+    document.getElementById('crmChip').textContent = crm.configured ? 'CRM sync' : 'CRM optional';
+    renderCategories(data.categories || []);
+    renderStats(data.stats || {});
+    applyFilters();
+}
+
+/* ── Cart ────────────────────────────────────────────────────── */
+async function loadCart() {
+    const res = await _fetch(`/api/cart?session_id=${encodeURIComponent(state.sessionId)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    state.cart = data.items || [];
+    const total = data.total || 0;
+    document.getElementById('cartChip').textContent = `${state.cart.length} item${state.cart.length !== 1 ? 's' : ''}`;
+    document.getElementById('cartTotal').textContent = money(total);
+    const list = document.getElementById('cartList');
+    if (!state.cart.length) {
+        list.innerHTML = '<div class="helper">Add products to your cart to begin checkout.</div>';
+        return;
+    }
+    list.innerHTML = state.cart.map(item => `
+        <div class="cart-item">
+            <img src="${esc(item.image_url)}" alt="${esc(item.name)}" onerror="this.style.display='none'">
+            <div>
+                <strong style="font-size:0.85rem;">${esc(item.name)}</strong>
+                <div class="helper">${item.quantity} × ${money(item.price)}</div>
+            </div>
+            <button class="btn btn-outline remove-btn" style="font-size:0.75rem;padding:5px 10px;" type="button" data-id="${item.id}">✕</button>
+        </div>
+    `).join('');
+    list.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => removeCartItem(Number(btn.dataset.id)));
+    });
+}
+
+async function addToCart(productId) {
+    const product = state.products.find(p => p.id === productId);
+    rumEvent('shop.add_to_cart', {
+        product_id: productId,
+        product_name: product?.name || '',
+        product_price: product?.price || 0,
+        category: product?.category || '',
+        cart_size: state.cart.length,
+    });
+    const res = await _fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({session_id: state.sessionId, product_id: productId, quantity: 1}),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+        rumEvent('shop.add_to_cart_error', {product_id: productId, error: data.error || 'unknown'});
+        document.getElementById('checkoutStatus').textContent = data.error || 'Failed to add item.';
+        return;
+    }
+    await loadCart();
+}
+
+async function removeCartItem(itemId) {
+    await _fetch(`/api/cart/${itemId}`, {method: 'DELETE'});
+    await loadCart();
+}
+
+/* ── Checkout ────────────────────────────────────────────────── */
+async function submitCheckout(e) {
+    e.preventDefault();
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
+    const payload = {
+        ...Object.fromEntries(form.entries()),
+        session_id: state.sessionId,
+        items: state.cart.map(i => ({product_id: i.product_id, quantity: i.quantity})),
+    };
+    const status = document.getElementById('checkoutStatus');
+    rumEvent('shop.checkout_start', {
+        cart_items: state.cart.length,
+        cart_total: state.cart.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0),
+        session_id: state.sessionId,
+    });
+    status.textContent = 'Placing order…';
+    try {
+        const res = await _fetch('/api/shop/checkout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
+        });
+        const result = await res.json();
+        if (!res.ok || result.error) {
+            rumEvent('shop.checkout_error', {error: result.error || `HTTP ${res.status}`, cart_items: state.cart.length});
+            status.textContent = result.error || `Checkout failed (${res.status})`;
+            return;
+        }
+        rumEvent('shop.checkout_complete', {
+            order_id: result.order_id,
+            total: result.total,
+            items: state.cart.length,
+            tracking: result.tracking_number,
+        });
+        status.textContent = `Order #${result.order_id} placed! Tracking: ${result.tracking_number} — Total: $${result.total.toLocaleString()}`;
+        formEl.reset();
+        await Promise.all([loadCart(), loadStorefront()]);
+    } catch (err) {
+        rumEvent('shop.checkout_exception', {error: err.message});
+        status.textContent = `Request failed: ${err.message}`;
+    }
+}
+
+/* ── Dealers ─────────────────────────────────────────────────── */
+async function loadShops() {
+    try {
+        const res = await _fetch('/api/shop/locations');
+        const data = await res.json();
+        const shops = data.shops || [];
+        document.getElementById('shopCount').textContent = `${shops.length} locations`;
+        const list = document.getElementById('shopList');
+        list.innerHTML = shops.length
+            ? shops.map(s => `
+                <div class="dealer-item">
+                    <strong>${esc(s.name)}</strong>
+                    <div class="helper">${esc(s.address)}</div>
+                </div>`).join('')
+            : '<div class="helper">No dealer locations on file.</div>';
+    } catch (_) {}
+}
+
+/* ── AI Advisor ──────────────────────────────────────────────── */
+function appendMsg(role, content) {
+    const log = document.getElementById('assistantLog');
+    const el = document.createElement('div');
+    el.className = 'assistant-msg';
+    el.innerHTML = `<strong>${esc(role)}</strong>${esc(content)}`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+}
+
+async function submitAssistant(e) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const message = String(form.get('message') || '').trim();
+    if (!message) return;
+    appendMsg('You', message);
+    e.currentTarget.reset();
+    const res = await _fetch('/api/shop/assistant/query', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            message,
+            session_id: state.assistantSessionId,
+            customer_email: document.querySelector('#checkoutForm [name="customer_email"]')?.value || '',
+        }),
+    });
+    const result = await res.json();
+    if (result.error) { appendMsg('OCTO Advisor', result.error); return; }
+    document.getElementById('assistantProvider').textContent = result.provider || 'OCI GenAI';
+    appendMsg('OCTO Advisor', result.answer);
+}
+
+/* ── Analytics ───────────────────────────────────────────────── */
+async function trackPageView() {
+    await _fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            page: window.location.pathname,
+            session_id: state.sessionId,
+            visitor_region: Intl.DateTimeFormat().resolvedOptions().timeZone || 'browser',
+            load_time_ms: Math.round(performance.now()),
+            referrer: document.referrer || 'direct',
+        }),
+    });
+}
+
+/* ── Workflow Gateway ───────────────────────────────────────── */
+function renderComponentSnapshots(items = []) {
+    const node = document.getElementById('componentSnapshotList');
+    if (!items.length) {
+        node.innerHTML = '<div class="helper">No component snapshots captured yet.</div>';
+        return;
+    }
+    node.innerHTML = items.slice(0, 4).map(item => `
+        <div class="ops-list-item">
+            <strong>${esc(item.component_name || 'component')}</strong>
+            <div class="helper">${esc(item.component_type || 'service')} · ${esc(item.status || 'unknown')}</div>
+            <div class="helper">${esc(item.details || 'No details yet.')}</div>
+        </div>
+    `).join('');
+}
+
+function renderQueryExecutions(items = []) {
+    const body = document.getElementById('queryExecutionBody');
+    if (!items.length) {
+        body.innerHTML = '<tr><td colspan="4" class="muted">No query executions captured yet.</td></tr>';
+        return;
+    }
+    body.innerHTML = items.map(item => `
+        <tr>
+            <td><strong>${esc(item.query_name || '-')}</strong><br><span class="muted">${esc(item.component_name || '-')}</span></td>
+            <td>${esc(item.status || '-')}</td>
+            <td>${esc(item.row_count ?? '-')}</td>
+            <td>${Number(item.duration_ms || 0).toFixed(2)} ms</td>
+        </tr>
+    `).join('');
+}
+
+async function loadWorkflowOverview() {
+    const gatewayChip = document.getElementById('workflowGatewayChip');
+    if (!state.workflowApiBaseUrl) {
+        gatewayChip.textContent = 'not configured';
+        document.getElementById('queryLabStatus').textContent = 'Set WORKFLOW_API_BASE_URL to the local Go service or OCI API Gateway endpoint to enable backend workflow menus.';
+        return;
+    }
+    try {
+        const res = await workflowFetch('/api/workflows/overview');
+        if (!res.ok) throw new Error(`workflow overview ${res.status}`);
+        const data = await res.json();
+        gatewayChip.textContent = data.gateway?.service_name || 'connected';
+        document.getElementById('queryLabChip').textContent = data.gateway?.faulty_query_enabled ? 'faulty auto-on' : 'manual';
+        document.getElementById('selectAiChip').textContent = data.gateway?.selectai_configured
+            ? `profile ${data.gateway.selectai_profile_name || 'ready'}`
+            : 'profile pending';
+        document.getElementById('workflowOrdersCount').textContent = data.orders?.order_count ?? 0;
+        document.getElementById('workflowRevenue').textContent = money(data.orders?.revenue ?? 0);
+        document.getElementById('workflowCrmLinked').textContent = data.crm?.crm_linked ?? 0;
+        document.getElementById('workflowLowStock').textContent = data.inventory?.low_stock_count ?? 0;
+        renderComponentSnapshots(data.components || []);
+    } catch (err) {
+        gatewayChip.textContent = 'unreachable';
+        document.getElementById('queryLabStatus').textContent = `Workflow gateway request failed: ${err.message}`;
+    }
+}
+
+async function loadQueryExecutions() {
+    if (!state.workflowApiBaseUrl) return;
+    try {
+        const res = await workflowFetch('/api/query-lab/executions?limit=8');
+        if (!res.ok) throw new Error(`query executions ${res.status}`);
+        const data = await res.json();
+        renderQueryExecutions(data.items || []);
+    } catch (err) {
+        document.getElementById('queryExecutionBody').innerHTML =
+            `<tr><td colspan="4" class="muted">Failed to load query executions: ${esc(err.message)}</td></tr>`;
+    }
+}
+
+async function runWorkflowQuery(queryName) {
+    const status = document.getElementById('queryLabStatus');
+    status.textContent = `Running ${queryName}…`;
+    try {
+        const res = await workflowFetch('/api/query-lab/run', {
+            method: 'POST',
+            body: JSON.stringify({query_name: queryName}),
+        });
+        const data = await res.json();
+        if (!res.ok && !data.result) {
+            status.textContent = data.error || `Failed to run ${queryName}.`;
+            return;
+        }
+        const result = data.result || data;
+        status.textContent = result.status === 'error'
+            ? `${queryName} failed as expected: ${result.error_message || data.error || 'unknown error'}`
+            : `${queryName} completed with ${result.row_count || 0} rows in ${Number(result.duration_ms || 0).toFixed(2)} ms.`;
+        await Promise.all([loadWorkflowOverview(), loadQueryExecutions()]);
+    } catch (err) {
+        status.textContent = `Query runner failed: ${err.message}`;
+    }
+}
+
+async function submitSelectAi(event) {
+    event.preventDefault();
+    const output = document.getElementById('selectAiOutput');
+    if (!state.workflowApiBaseUrl) {
+        output.textContent = 'Workflow gateway is not configured.';
+        return;
+    }
+    const form = new FormData(event.currentTarget);
+    output.textContent = 'Running Select AI against ATP…';
+    try {
+        const res = await workflowFetch('/api/selectai/generate', {
+            method: 'POST',
+            body: JSON.stringify({
+                prompt: String(form.get('prompt') || ''),
+                action: String(form.get('action') || 'showsql'),
+            }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            output.textContent = data.error || 'Select AI request failed.';
+            return;
+        }
+        output.textContent = data.rows?.[0]?.generated || 'No Select AI output returned.';
+        await loadQueryExecutions();
+    } catch (err) {
+        output.textContent = `Select AI request failed: ${err.message}`;
+    }
+}
+
+/* ── RUM Custom Events (OCI APM user interaction tracing) ────── */
+function rumEvent(name, attrs) {
+    try {
+        if (window.apmrum && typeof window.apmrum.reportError === 'function') {
+            // Use a custom event via the RUM beacon — OCI APM surfaces these
+            // as "User Interaction" spans in the Session Explorer.
+            const payload = {name, ...attrs, timestamp: Date.now()};
+            // OCI APM RUM supports custom actions via the global apmrum object
+            if (window.apmrum.api && window.apmrum.api.addAction) {
+                window.apmrum.api.addAction(name, payload);
+            }
+        }
+        // Also emit a performance mark so browser DevTools shows the event
+        if (window.performance && window.performance.mark) {
+            window.performance.mark(`rum:${name}`, {detail: attrs});
+        }
+    } catch (_) { /* RUM not loaded */ }
+}
+
+/* ── Wire events ─────────────────────────────────────────────── */
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('sortSelect').addEventListener('change', applyFilters);
+document.getElementById('checkoutForm').addEventListener('submit', submitCheckout);
+document.getElementById('assistantForm').addEventListener('submit', submitAssistant);
+document.getElementById('selectAiForm').addEventListener('submit', submitSelectAi);
+document.querySelectorAll('.query-runner').forEach(btn => {
+    btn.addEventListener('click', () => runWorkflowQuery(btn.dataset.query));
+});
+
+/* ── Boot ────────────────────────────────────────────────────── */
+(async function init() {
+    const _bootStart = Date.now();
+    try {
+        await Promise.all([
+            loadStorefront(),
+            loadCart(),
+            loadShops(),
+            loadWorkflowOverview(),
+            loadQueryExecutions(),
+            trackPageView().catch(() => {}),
+        ]);
+        rumEvent('shop.page_loaded', {
+            load_time_ms: Date.now() - _bootStart,
+            products: state.products.length,
+            cart_items: state.cart.length,
+            categories: document.querySelectorAll('.category-chip').length,
+        });
+    } catch (err) {
+        rumEvent('shop.page_load_error', {error: err.message, load_time_ms: Date.now() - _bootStart});
+        document.getElementById('productGrid').innerHTML =
+            `<div class="helper" style="grid-column:1/-1;color:var(--rose);">Failed to load catalog: ${esc(err.message)}</div>`;
+    }
+})();
+</script>
+{% endblock %}
