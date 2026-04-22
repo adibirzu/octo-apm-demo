@@ -1,0 +1,27 @@
+#cloud-config
+# Bootstrap a dedicated OCI Compute VM for the vm-lab stress target.
+#
+# One-shot install of the OCI Management Agent (so host metrics flow
+# into Stack Monitoring) + stress-ng + the lab scripts cloned from the
+# repo. The VM sits idle until an operator runs
+# `apply-stress.sh KIND=cpu`.
+
+package_update: true
+packages:
+  - git
+  - stress-ng
+
+runcmd:
+  # 1. Install OCI Management Agent (installer script requires internet)
+  - curl -fsSL https://objectstorage.us-ashburn-1.oraclecloud.com/n/idpviou0lb01/b/management-agent-install/o/install.py | sudo python3 - || true
+
+  # 2. Clone octo-apm-demo to /opt/octo for the lab scripts
+  - git clone --depth 1 https://github.com/adibirzu/octo-apm-demo.git /opt/octo
+  - chmod +x /opt/octo/services/vm-lab/scripts/*.sh
+
+  # 3. Tag the VM in ~/.octo/host.env so operators can confirm which
+  #    profile applied last by reading one file.
+  - mkdir -p /var/log/octo
+  - echo "octo-vm-lab bootstrap complete $(date -u +%FT%TZ)" >> /var/log/octo/bootstrap.log
+
+final_message: "octo-vm-lab ready after $UPTIME seconds. Apply stress with: sudo RUN_ID=\$(uuidgen) KIND=cpu /opt/octo/services/vm-lab/scripts/apply-stress.sh"
