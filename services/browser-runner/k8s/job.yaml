@@ -1,0 +1,67 @@
+# octo-browser-runner — on-demand K8s Job.
+#
+# Apply to run one journey instance. Includes a ConfigMap-backed run_id
+# so the same manifest can be rendered per-run by octo-load-control.
+#
+# Usage:
+#   JOURNEY=catalog-to-checkout RUN_ID=<uuid> \
+#     envsubst < k8s/job.yaml | kubectl apply -f -
+#
+# The runner exits on completion; Job's backoffLimit=0 so failures
+# don't retry automatically (load-control orchestrates retries via
+# new runs).
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: browser-runner-${RUN_ID}
+  namespace: octo-browser
+  labels:
+    app: browser-runner
+    run-id: "${RUN_ID}"
+    journey: "${JOURNEY}"
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400      # keep Job + pod for 1 day for inspection
+  template:
+    metadata:
+      labels:
+        app: browser-runner
+        run-id: "${RUN_ID}"
+        journey: "${JOURNEY}"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: runner
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-browser-runner:${IMAGE_TAG:-latest}
+          args: ["${JOURNEY}"]
+          env:
+            - name: OCTO_BROWSER_RUN_ID
+              value: "${RUN_ID}"
+            - name: OCTO_BROWSER_JOURNEY
+              value: "${JOURNEY}"
+            - name: OCTO_BROWSER_SHOP_URL
+              value: "https://drone.${DNS_DOMAIN}"
+            - name: OCTO_BROWSER_CRM_URL
+              value: "https://backend.${DNS_DOMAIN}"
+            - name: OCTO_BROWSER_ITERATIONS
+              value: "${ITERATIONS:-1}"
+            - name: OCTO_BROWSER_ARTIFACTS_DIR
+              value: "/artifacts"
+          volumeMounts:
+            - name: artifacts
+              mountPath: /artifacts
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { cpu: 1500m, memory: 2Gi }
+      volumes:
+        - name: artifacts
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-browser
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
