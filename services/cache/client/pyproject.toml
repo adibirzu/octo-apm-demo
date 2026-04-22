@@ -1,0 +1,17 @@
+[project]
+name = "octo-cache-client"
+version = "1.0.0"
+description = "Async Redis client wrapper with OTel span enrichment for octo-apm-demo"
+requires-python = ">=3.11"
+dependencies = [
+    "redis>=5.0",
+    "opentelemetry-api>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "fakeredis>=2.23", "opentelemetry-sdk>=1.24"]
+
+[tool.pytest.ini_options]
+testpaths = ["../tests"]
+asyncio_mode = "auto"
+pythonpath = ["."]
