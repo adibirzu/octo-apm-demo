@@ -47,6 +47,16 @@ export DNS_DOMAIN="<your-domain>"
 
 No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.
 
+### Deployment paths
+
+| Path | Artifact | When to use |
+|---|---|---|
+| OKE (Kubernetes) | `deploy/k8s/*.yaml` + `deploy/deploy.sh` | Production / HA |
+| OCI Resource Manager stack | `deploy/resource-manager/` | Console-driven one-click observability + WAF bootstrap |
+| Unified single VM | `deploy/vm/` | Demos, workshops, air-gapped |
+
+Full matrix in [site/getting-started/deployment-options.md](site/getting-started/deployment-options.md).
+
 ### New tenancy bootstrap workflow
 
 | Step | Script | Purpose |

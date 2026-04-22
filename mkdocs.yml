@@ -81,6 +81,7 @@ nav:
     - getting-started/index.md
     - Prerequisites: getting-started/prerequisites.md
     - Quick Start: getting-started/quickstart.md
+    - Deployment options: getting-started/deployment-options.md
     - OKE Deployment: getting-started/oke-deployment.md
     - New Tenancy: getting-started/new-tenancy.md
   - Architecture:
