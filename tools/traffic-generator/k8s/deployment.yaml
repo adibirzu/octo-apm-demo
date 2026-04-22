@@ -1,0 +1,69 @@
+# Traffic generator — continuous K8s Deployment.
+#
+# Lives in its own namespace so it can be scaled/paused/killed without
+# touching the shop or CRM. Targets the public URLs of both services so
+# it exercises the full WAF + LB + pod path, not internal service DNS.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-traffic
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: traffic-generator
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-traffic-generator
+  namespace: octo-traffic
+  labels:
+    app: octo-traffic-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: octo-traffic-generator
+  template:
+    metadata:
+      labels:
+        app: octo-traffic-generator
+    spec:
+      containers:
+        - name: traffic
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-traffic-generator:${IMAGE_TAG:-latest}
+          env:
+            - name: OCTO_TRAFFIC_SHOP_BASE_URL
+              value: "https://drone.${DNS_DOMAIN}"
+            - name: OCTO_TRAFFIC_CRM_BASE_URL
+              value: "https://backend.${DNS_DOMAIN}"
+            - name: OCTO_TRAFFIC_TARGET_RPS
+              value: "2.0"
+            - name: OCTO_TRAFFIC_CONCURRENT_SESSION_LIMIT
+              value: "50"
+            - name: OCTO_TRAFFIC_FAILURE_INJECTION_RATE
+              value: "0.05"
+            - name: OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: endpoint
+                  optional: true
+            - name: OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_HEADERS
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: otlp-headers
+                  optional: true
+            - name: OCTO_TRAFFIC_OTEL_SERVICE_NAME
+              value: "octo-traffic-generator"
+            - name: OCTO_TRAFFIC_LOG_LEVEL
+              value: "INFO"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
