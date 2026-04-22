@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://adibirzu.github.io/octo-apm-demo/crm/integrations/cross-service-contract/">
+        <link rel="canonical" href="https://adibirzu.github.io/octo-apm-demo/architecture/service-inventory/">
       
       
-        <link rel="prev" href="../../../integrations/">
+        <link rel="prev" href="../correlation-contract/">
       
       
-        <link rel="next" href="../../../integrations/crm/">
+        <link rel="next" href="../data-model/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>Cross-service contract - OCTO APM Demo — Unified Platform</title>
+        <title>Service Inventory - OCTO APM Demo — Unified Platform</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,7 +53,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cross-service-integration-contract" class="md-skip">
+        <a href="#service-inventory" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +92,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="OCTO APM Demo — Unified Platform" class="md-header__button md-logo" aria-label="OCTO APM Demo — Unified Platform" data-md-component="logo">
+    <a href="../.." title="OCTO APM Demo — Unified Platform" class="md-header__button md-logo" aria-label="OCTO APM Demo — Unified Platform" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Cross-service contract
+              Service Inventory
             
           </span>
         </div>
@@ -225,7 +225,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -244,7 +244,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../introduction/" class="md-tabs__link">
+      <a href="../../introduction/" class="md-tabs__link">
         
   
   
@@ -265,7 +265,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../getting-started/" class="md-tabs__link">
+        <a href="../../getting-started/" class="md-tabs__link">
           
   
   
@@ -283,11 +283,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -309,7 +311,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../drone-shop/" class="md-tabs__link">
+        <a href="../../drone-shop/" class="md-tabs__link">
           
   
   
@@ -331,7 +333,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../" class="md-tabs__link">
+        <a href="../../crm/" class="md-tabs__link">
           
   
   
@@ -353,7 +355,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../observability/" class="md-tabs__link">
+        <a href="../../observability/" class="md-tabs__link">
           
   
   
@@ -375,7 +377,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../observability-v2/" class="md-tabs__link">
+        <a href="../../observability-v2/" class="md-tabs__link">
           
   
   
@@ -393,13 +395,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../../integrations/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../integrations/" class="md-tabs__link">
           
   
   
@@ -421,7 +421,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../testing/" class="md-tabs__link">
+        <a href="../../testing/" class="md-tabs__link">
           
   
   
@@ -443,7 +443,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../operations/" class="md-tabs__link">
+        <a href="../../operations/" class="md-tabs__link">
           
   
   
@@ -465,7 +465,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../workshop/" class="md-tabs__link">
+        <a href="../../workshop/" class="md-tabs__link">
           
   
   
@@ -501,7 +501,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="OCTO APM Demo — Unified Platform" class="md-nav__button md-logo" aria-label="OCTO APM Demo — Unified Platform" data-md-component="logo">
+    <a href="../.." title="OCTO APM Demo — Unified Platform" class="md-nav__button md-logo" aria-label="OCTO APM Demo — Unified Platform" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -531,7 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -558,7 +558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../introduction/" class="md-nav__link">
+      <a href="../../introduction/" class="md-nav__link">
         
   
   
@@ -620,7 +620,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../getting-started/" class="md-nav__link ">
+            <a href="../../getting-started/" class="md-nav__link ">
               
   
   
@@ -664,7 +664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/prerequisites/" class="md-nav__link">
+      <a href="../../getting-started/prerequisites/" class="md-nav__link">
         
   
   
@@ -692,7 +692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/quickstart/" class="md-nav__link">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
         
   
   
@@ -720,7 +720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/deployment-options/" class="md-nav__link">
+      <a href="../../getting-started/deployment-options/" class="md-nav__link">
         
   
   
@@ -748,7 +748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/oke-deployment/" class="md-nav__link">
+      <a href="../../getting-started/oke-deployment/" class="md-nav__link">
         
   
   
@@ -776,7 +776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/new-tenancy/" class="md-nav__link">
+      <a href="../../getting-started/new-tenancy/" class="md-nav__link">
         
   
   
@@ -804,7 +804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/bill-of-materials/" class="md-nav__link">
+      <a href="../../getting-started/bill-of-materials/" class="md-nav__link">
         
   
   
@@ -836,6 +836,8 @@
       
   
   
+    
+  
   
   
     
@@ -863,20 +865,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../architecture/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -894,13 +899,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -920,7 +925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/platform-overview/" class="md-nav__link">
+      <a href="../platform-overview/" class="md-nav__link">
         
   
   
@@ -948,7 +953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/system-design/" class="md-nav__link">
+      <a href="../system-design/" class="md-nav__link">
         
   
   
@@ -976,7 +981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/correlation-contract/" class="md-nav__link">
+      <a href="../correlation-contract/" class="md-nav__link">
         
   
   
@@ -1001,10 +1006,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../architecture/service-inventory/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Inventory
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1020,6 +1052,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#application-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application services
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-services-oci-360" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform services (OCI 360)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tooling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correlation-contract-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correlation contract coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event namespace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-totals-as-of-this-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test totals (as of this session)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1032,7 +1150,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/data-model/" class="md-nav__link">
+      <a href="../data-model/" class="md-nav__link">
         
   
   
@@ -1060,7 +1178,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/database-integration/" class="md-nav__link">
+      <a href="../database-integration/" class="md-nav__link">
         
   
   
@@ -1088,7 +1206,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/framework/" class="md-nav__link">
+      <a href="../framework/" class="md-nav__link">
         
   
   
@@ -1152,7 +1270,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../drone-shop/" class="md-nav__link ">
+            <a href="../../drone-shop/" class="md-nav__link ">
               
   
   
@@ -1196,7 +1314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../drone-shop/modules/" class="md-nav__link">
+      <a href="../../drone-shop/modules/" class="md-nav__link">
         
   
   
@@ -1224,7 +1342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../drone-shop/checkout/" class="md-nav__link">
+      <a href="../../drone-shop/checkout/" class="md-nav__link">
         
   
   
@@ -1252,7 +1370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../drone-shop/assistant/" class="md-nav__link">
+      <a href="../../drone-shop/assistant/" class="md-nav__link">
         
   
   
@@ -1324,7 +1442,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../crm/" class="md-nav__link ">
               
   
   
@@ -1368,7 +1486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../modules/" class="md-nav__link">
+      <a href="../../crm/modules/" class="md-nav__link">
         
   
   
@@ -1396,7 +1514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/" class="md-nav__link">
+      <a href="../../crm/architecture/" class="md-nav__link">
         
   
   
@@ -1424,7 +1542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../order-sync/" class="md-nav__link">
+      <a href="../../crm/order-sync/" class="md-nav__link">
         
   
   
@@ -1452,7 +1570,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security-vulns/" class="md-nav__link">
+      <a href="../../crm/security-vulns/" class="md-nav__link">
         
   
   
@@ -1480,7 +1598,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../simulation/" class="md-nav__link">
+      <a href="../../crm/simulation/" class="md-nav__link">
         
   
   
@@ -1539,7 +1657,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../observability-v2/" class="md-nav__link ">
+            <a href="../../crm/observability-v2/" class="md-nav__link ">
               
   
   
@@ -1583,7 +1701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability-v2/workflows/" class="md-nav__link">
+      <a href="../../crm/observability-v2/workflows/" class="md-nav__link">
         
   
   
@@ -1611,7 +1729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
+      <a href="../../crm/observability-v2/chaos-playbook/" class="md-nav__link">
         
   
   
@@ -1639,7 +1757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability-v2/security/" class="md-nav__link">
+      <a href="../../crm/observability-v2/security/" class="md-nav__link">
         
   
   
@@ -1667,7 +1785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability-v2/waf-observability/" class="md-nav__link">
+      <a href="../../crm/observability-v2/waf-observability/" class="md-nav__link">
         
   
   
@@ -1759,7 +1877,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/chaos-admin/" class="md-nav__link">
+      <a href="../../crm/operations/chaos-admin/" class="md-nav__link">
         
   
   
@@ -1845,7 +1963,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../observability/" class="md-nav__link ">
+            <a href="../../observability/" class="md-nav__link ">
               
   
   
@@ -1889,7 +2007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/addons/" class="md-nav__link">
+      <a href="../../observability/addons/" class="md-nav__link">
         
   
   
@@ -1917,7 +2035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/melts/" class="md-nav__link">
+      <a href="../../observability/melts/" class="md-nav__link">
         
   
   
@@ -1945,7 +2063,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/traces/" class="md-nav__link">
+      <a href="../../observability/traces/" class="md-nav__link">
         
   
   
@@ -1973,7 +2091,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/metrics/" class="md-nav__link">
+      <a href="../../observability/metrics/" class="md-nav__link">
         
   
   
@@ -2001,7 +2119,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/logs/" class="md-nav__link">
+      <a href="../../observability/logs/" class="md-nav__link">
         
   
   
@@ -2029,7 +2147,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/security/" class="md-nav__link">
+      <a href="../../observability/security/" class="md-nav__link">
         
   
   
@@ -2057,7 +2175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/rum/" class="md-nav__link">
+      <a href="../../observability/rum/" class="md-nav__link">
         
   
   
@@ -2085,7 +2203,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/distributed-traces/" class="md-nav__link">
+      <a href="../../observability/distributed-traces/" class="md-nav__link">
         
   
   
@@ -2113,7 +2231,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/enhancement-plan/" class="md-nav__link">
+      <a href="../../observability/enhancement-plan/" class="md-nav__link">
         
   
   
@@ -2141,7 +2259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability/oci-360-development-plan/" class="md-nav__link">
+      <a href="../../observability/oci-360-development-plan/" class="md-nav__link">
         
   
   
@@ -2215,7 +2333,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../observability-v2/" class="md-nav__link ">
+            <a href="../../observability-v2/" class="md-nav__link ">
               
   
   
@@ -2259,7 +2377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability-v2/workflows/" class="md-nav__link">
+      <a href="../../observability-v2/workflows/" class="md-nav__link">
         
   
   
@@ -2287,7 +2405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability-v2/chaos-playbook/" class="md-nav__link">
+      <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
   
@@ -2315,7 +2433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability-v2/log-analytics-dashboards/" class="md-nav__link">
+      <a href="../../observability-v2/log-analytics-dashboards/" class="md-nav__link">
         
   
   
@@ -2343,7 +2461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability-v2/apm-drilldown/" class="md-nav__link">
+      <a href="../../observability-v2/apm-drilldown/" class="md-nav__link">
         
   
   
@@ -2371,7 +2489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability-v2/stack-monitoring/" class="md-nav__link">
+      <a href="../../observability-v2/stack-monitoring/" class="md-nav__link">
         
   
   
@@ -2399,7 +2517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability-v2/waf-observability/" class="md-nav__link">
+      <a href="../../observability-v2/waf-observability/" class="md-nav__link">
         
   
   
@@ -2427,7 +2545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability-v2/autoremediation-flow/" class="md-nav__link">
+      <a href="../../observability-v2/autoremediation-flow/" class="md-nav__link">
         
   
   
@@ -2455,7 +2573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observability-v2/demo-script/" class="md-nav__link">
+      <a href="../../observability-v2/demo-script/" class="md-nav__link">
         
   
   
@@ -2487,8 +2605,6 @@
       
   
   
-    
-  
   
   
     
@@ -2512,23 +2628,20 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../integrations/" class="md-nav__link ">
+            <a href="../../integrations/" class="md-nav__link ">
               
   
   
@@ -2546,13 +2659,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2569,37 +2682,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Cross-service contract
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../crm/integrations/cross-service-contract/" class="md-nav__link">
         
   
   
@@ -2615,70 +2701,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#authentication" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Authentication
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#idempotency-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Idempotency contract
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#env-var-harmonization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Env var harmonization
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#discovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Discovery
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2691,7 +2713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/crm/" class="md-nav__link">
+      <a href="../../integrations/crm/" class="md-nav__link">
         
   
   
@@ -2719,7 +2741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/oci-services/" class="md-nav__link">
+      <a href="../../integrations/oci-services/" class="md-nav__link">
         
   
   
@@ -2747,7 +2769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/coordinator/" class="md-nav__link">
+      <a href="../../integrations/coordinator/" class="md-nav__link">
         
   
   
@@ -2775,7 +2797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../integrations/circuit-breaker/" class="md-nav__link">
+      <a href="../../integrations/circuit-breaker/" class="md-nav__link">
         
   
   
@@ -2837,7 +2859,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../testing/" class="md-nav__link ">
+            <a href="../../testing/" class="md-nav__link ">
               
   
   
@@ -2881,7 +2903,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../testing/e2e/" class="md-nav__link">
+      <a href="../../testing/e2e/" class="md-nav__link">
         
   
   
@@ -2909,7 +2931,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../testing/load-tests/" class="md-nav__link">
+      <a href="../../testing/load-tests/" class="md-nav__link">
         
   
   
@@ -2973,7 +2995,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../operations/" class="md-nav__link ">
+            <a href="../../operations/" class="md-nav__link ">
               
   
   
@@ -3017,7 +3039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/deployment/" class="md-nav__link">
+      <a href="../../operations/deployment/" class="md-nav__link">
         
   
   
@@ -3045,7 +3067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/chaos/" class="md-nav__link">
+      <a href="../../operations/chaos/" class="md-nav__link">
         
   
   
@@ -3073,7 +3095,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/alarms/" class="md-nav__link">
+      <a href="../../operations/alarms/" class="md-nav__link">
         
   
   
@@ -3151,7 +3173,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../workshop/" class="md-nav__link ">
+            <a href="../../workshop/" class="md-nav__link ">
               
   
   
@@ -3195,7 +3217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-01-first-trace/" class="md-nav__link">
+      <a href="../../workshop/lab-01-first-trace/" class="md-nav__link">
         
   
   
@@ -3223,7 +3245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-02-trace-log-correlation/" class="md-nav__link">
+      <a href="../../workshop/lab-02-trace-log-correlation/" class="md-nav__link">
         
   
   
@@ -3251,7 +3273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-03-slow-sql-drill-down/" class="md-nav__link">
+      <a href="../../workshop/lab-03-slow-sql-drill-down/" class="md-nav__link">
         
   
   
@@ -3279,7 +3301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-04-rum-outage-detection/" class="md-nav__link">
+      <a href="../../workshop/lab-04-rum-outage-detection/" class="md-nav__link">
         
   
   
@@ -3307,7 +3329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-05-metric-and-alarm/" class="md-nav__link">
+      <a href="../../workshop/lab-05-metric-and-alarm/" class="md-nav__link">
         
   
   
@@ -3335,7 +3357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-06-waf-event-investigation/" class="md-nav__link">
+      <a href="../../workshop/lab-06-waf-event-investigation/" class="md-nav__link">
         
   
   
@@ -3363,7 +3385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-07-saved-search/" class="md-nav__link">
+      <a href="../../workshop/lab-07-saved-search/" class="md-nav__link">
         
   
   
@@ -3391,7 +3413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-08-stack-monitoring-atp/" class="md-nav__link">
+      <a href="../../workshop/lab-08-stack-monitoring-atp/" class="md-nav__link">
         
   
   
@@ -3419,7 +3441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-09-chaos-drill/" class="md-nav__link">
+      <a href="../../workshop/lab-09-chaos-drill/" class="md-nav__link">
         
   
   
@@ -3447,7 +3469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workshop/lab-10-failed-checkout/" class="md-nav__link">
+      <a href="../../workshop/lab-10-failed-checkout/" class="md-nav__link">
         
   
   
@@ -3502,10 +3524,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#authentication" class="md-nav__link">
+  <a href="#application-services" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Authentication
+        Application services
       
     </span>
   </a>
@@ -3513,10 +3535,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#idempotency-contract" class="md-nav__link">
+  <a href="#platform-services-oci-360" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Idempotency contract
+        Platform services (OCI 360)
       
     </span>
   </a>
@@ -3524,10 +3546,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#env-var-harmonization" class="md-nav__link">
+  <a href="#tooling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Env var harmonization
+        Tooling
       
     </span>
   </a>
@@ -3535,10 +3557,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#discovery" class="md-nav__link">
+  <a href="#correlation-contract-coverage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Discovery
+        Correlation contract coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event namespace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-totals-as-of-this-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test totals (as of this session)
       
     </span>
   </a>
@@ -3565,86 +3609,259 @@
   
 
 
-<h1 id="cross-service-integration-contract">Cross-service integration contract<a class="headerlink" href="#cross-service-integration-contract" title="Permanent link">&para;</a></h1>
-<p>Enterprise CRM Portal and OCTO Drone Shop share a defined wire protocol
-so either side can evolve without breaking the other. This page is the
-authoritative reference — the same OpenAPI subset is served at
-<code>/api/integrations/schema</code> on both services.</p>
-<h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
-<p>All cross-service calls carry the shared <code>X-Internal-Service-Key</code> header:</p>
-<div class="language-http highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">POST</span> <span class="nn">/api/orders</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
-</span><span id="__span-0-2"><span class="na">Host</span><span class="o">:</span> <span class="l">crm.&lt;tenancy&gt;</span>
-</span><span id="__span-0-3"><span class="na">Content-Type</span><span class="o">:</span> <span class="l">application/json</span>
-</span><span id="__span-0-4"><span class="na">X-Internal-Service-Key</span><span class="o">:</span> <span class="l">&lt;shared-secret&gt;</span>
-</span></code></pre></div>
-<ul>
-<li>Canonical env var: <code>INTERNAL_SERVICE_KEY</code> (both sides).</li>
-<li>Legacy alias still accepted: <code>DRONE_SHOP_INTERNAL_KEY</code> (emits a
-  deprecation warning at startup).</li>
-<li>When the key is set, <code>POST /api/orders</code> rejects unauthenticated
-  callers with <code>401</code>. When the key is empty the endpoint accepts
-  anonymous traffic — this is the back-compat default.</li>
-</ul>
-<h2 id="idempotency-contract">Idempotency contract<a class="headerlink" href="#idempotency-contract" title="Permanent link">&para;</a></h2>
-<p>The calling service (Drone Shop) supplies the three dedup fields on
-every order sync:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><span class="p">{</span>
-</span><span id="__span-1-2"><span class="w">  </span><span class="nt">&quot;customer_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-</span><span id="__span-1-3"><span class="w">  </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;product_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;quantity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;unit_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">49.99</span><span class="p">}],</span>
-</span><span id="__span-1-4"><span class="w">  </span><span class="nt">&quot;source_system&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;octo-drone-shop&quot;</span><span class="p">,</span>
-</span><span id="__span-1-5"><span class="w">  </span><span class="nt">&quot;source_order_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;100&quot;</span><span class="p">,</span>
-</span><span id="__span-1-6"><span class="w">  </span><span class="nt">&quot;idempotency_token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;5e1a6db6-8c0e-5f1c-9c9a-3b0c2a1f0f01&quot;</span>
-</span><span id="__span-1-7"><span class="p">}</span>
-</span></code></pre></div>
-<ul>
-<li><code>source_system</code> — logical name of the upstream service.</li>
-<li><code>source_order_id</code> — stable id from the upstream system (retries use
-  the same value).</li>
-<li><code>idempotency_token</code> — stable UUID computed on the shop side from
-  <code>uuid5(namespace, "&lt;order_id&gt;:&lt;source&gt;")</code>. Shop side freezes the
-  namespace UUID forever to guarantee retries regenerate the same
-  token.</li>
-</ul>
-<p>CRM honors these fields verbatim instead of generating a new
-<code>source_order_id</code>. A unique composite DB index on
-<code>(source_system, source_order_id)</code> (or <code>idempotency_token</code>) is the
-recommended way to enforce dedup at the persistence layer.</p>
-<h2 id="env-var-harmonization">Env var harmonization<a class="headerlink" href="#env-var-harmonization" title="Permanent link">&para;</a></h2>
+<h1 id="service-inventory">Service Inventory<a class="headerlink" href="#service-inventory" title="Permanent link">&para;</a></h1>
+<p>Every service the platform ships, what it does, where its source lives,
+and which correlation-contract fields it emits.</p>
+<h2 id="application-services">Application services<a class="headerlink" href="#application-services" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Concern</th>
-<th>Canonical</th>
-<th>Legacy aliases</th>
+<th>Service</th>
+<th>Source</th>
+<th>Public URL</th>
+<th>OTel <code>service.name</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Shop URL (CRM → Shop)</td>
-<td><code>SERVICE_SHOP_URL</code></td>
-<td><code>OCTO_DRONE_SHOP_URL</code>, <code>MUSHOP_CLOUDNATIVE_URL</code></td>
+<td>Drone Shop</td>
+<td><code>shop/</code></td>
+<td><code>https://drone.${DNS_DOMAIN}</code></td>
+<td><code>octo-drone-shop</code></td>
 </tr>
 <tr>
-<td>CRM URL (Shop → CRM)</td>
-<td><code>SERVICE_CRM_URL</code></td>
-<td><code>ENTERPRISE_CRM_URL</code></td>
+<td>Enterprise CRM Portal</td>
+<td><code>crm/</code></td>
+<td><code>https://backend.${DNS_DOMAIN}</code></td>
+<td><code>enterprise-crm-portal</code></td>
 </tr>
 <tr>
-<td>Shared key</td>
-<td><code>INTERNAL_SERVICE_KEY</code></td>
-<td><code>DRONE_SHOP_INTERNAL_KEY</code> (CRM side only)</td>
+<td>Workflow Gateway (Go)</td>
+<td><code>shop/services/workflow-gateway/</code></td>
+<td>internal</td>
+<td><code>octo-workflow-gateway</code></td>
 </tr>
 </tbody>
 </table>
-<p>Either side emits a startup deprecation warning when only a legacy
-name is set.</p>
-<h2 id="discovery">Discovery<a class="headerlink" href="#discovery" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1">curl<span class="w"> </span>-s<span class="w"> </span>https://crm.&lt;tenancy&gt;/api/integrations/schema<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-</span><span id="__span-2-2">curl<span class="w"> </span>-s<span class="w"> </span>https://shop.&lt;tenancy&gt;/api/integrations/schema<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-</span></code></pre></div>
-<p>Both endpoints advertise the <code>InternalServiceKey</code> security scheme and
-the order payload shape. Multi-tenancy tooling validates the contract
-with a simple <code>jq</code> check before traffic flows.</p>
+<h2 id="platform-services-oci-360">Platform services (OCI 360)<a class="headerlink" href="#platform-services-oci-360" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Service</th>
+<th>Source</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>octo-otel-gateway</code></td>
+<td><code>services/otel-gateway/</code></td>
+<td>Central OTel Collector. Every app exports OTLP here; single egress to OCI APM.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>octo-load-control</code></td>
+<td><code>services/load-control/</code></td>
+<td>Named workload-profile orchestrator. 12 profiles, run ledger, REST API, OCI Events.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>octo-edge-gateway</code></td>
+<td><code>deploy/terraform/modules/api_gateway/</code></td>
+<td>OCI API Gateway Terraform module with route policies for <code>/api/public/*</code>, <code>/api/partner/*</code>, <code>/api/admin/*</code>.</td>
+</tr>
+<tr>
+<td>3a</td>
+<td><code>octo-edge-fuzz</code></td>
+<td><code>services/edge-fuzz/</code></td>
+<td>6-category forged-request burst executor for the <code>edge-auth-failure-burst</code> profile.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>octo-browser-runner</code></td>
+<td><code>services/browser-runner/</code></td>
+<td>Playwright journey runner — real Chromium for genuine RUM signal.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>octo-async-worker</code></td>
+<td><code>services/async-worker/</code></td>
+<td>Redis-Streams consumer with retry+DLQ. <code>EventPublisher</code> is the producer library shop+CRM will import.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>octo-cache</code></td>
+<td><code>services/cache/</code></td>
+<td>Redis 7 + instrumented Python client. <code>cache.hit</code>/<code>cache.miss</code>/<code>cache.namespace</code> span attributes.</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>octo-object-pipeline</code></td>
+<td><code>services/object-pipeline/</code></td>
+<td>OCI Object Storage event → handler → outcome event. Ships invoice + image handlers.</td>
+</tr>
+<tr>
+<td>8a</td>
+<td><code>octo-container-lab</code></td>
+<td><code>services/container-lab/</code></td>
+<td>K8s Jobs: CPU, memory, disk stress. Trips HPA + alarms.</td>
+</tr>
+<tr>
+<td>8b</td>
+<td><code>octo-vm-lab</code></td>
+<td><code>services/vm-lab/</code></td>
+<td>cloud-init + systemd-wrapped stress-ng on a dedicated VM.</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>octo-remediator</code></td>
+<td><code>services/remediator/</code></td>
+<td>Alarm-driven recovery. Tier-gated playbooks (LOW auto, MEDIUM conditional, HIGH approval).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="tooling">Tooling<a class="headerlink" href="#tooling" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Traffic generator</td>
+<td><code>tools/traffic-generator/</code></td>
+<td>Synthetic user population — realistic distributions, OTLP-instrumented.</td>
+</tr>
+<tr>
+<td>LA saved searches</td>
+<td><code>tools/la-saved-searches/</code></td>
+<td>APM ↔ LA round-trip dashboards + smoke test.</td>
+</tr>
+<tr>
+<td>Workshop verifiers</td>
+<td><code>tools/workshop/</code></td>
+<td>Per-lab pass/fail scripts + <code>certify.sh</code>.</td>
+</tr>
+<tr>
+<td>Provisioning wizard</td>
+<td><code>deploy/wizard/</code></td>
+<td>Interactive TUI — discovery + plan + dispatch.</td>
+</tr>
+<tr>
+<td>Deploy verifier</td>
+<td><code>deploy/verify.sh</code></td>
+<td>8 categories of pre-flight: shell, YAML, JSON, terraform fmt, compose, pre-flight, mkdocs, pytest.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="correlation-contract-coverage">Correlation contract coverage<a class="headerlink" href="#correlation-contract-coverage" title="Permanent link">&para;</a></h2>
+<p>Every service emits the <strong>same</strong> identity fields, per
+<a href="../correlation-contract/">correlation-contract</a>:</p>
+<ul>
+<li><code>trace_id</code> + <code>span_id</code> on every span (OTel)</li>
+<li><code>oracleApmTraceId</code> on every log record</li>
+<li><code>request_id</code> on every inbound + outbound HTTP call</li>
+<li><code>workflow_id</code> on business-flow spans + logs</li>
+<li><code>run_id</code> <strong>when</strong> originated by <code>octo-load-control</code> or <code>octo-remediator</code></li>
+</ul>
+<h2 id="event-namespace">Event namespace<a class="headerlink" href="#event-namespace" title="Permanent link">&para;</a></h2>
+<p>OCI Events emitted by the platform follow
+<code>com.octodemo.&lt;service&gt;.&lt;noun&gt;.&lt;verb&gt;</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Prefix</th>
+<th>Emitter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>com.octodemo.drone-shop.order.*</code></td>
+<td>Shop order state machine (payments)</td>
+</tr>
+<tr>
+<td><code>com.octodemo.load-control.run.*</code></td>
+<td>Load-control run lifecycle</td>
+</tr>
+<tr>
+<td><code>com.octodemo.remediator.run.*</code></td>
+<td>Remediator run lifecycle</td>
+</tr>
+<tr>
+<td><code>com.octodemo.object-pipeline.*.processed</code></td>
+<td>Object-pipeline per-bucket handler</td>
+</tr>
+<tr>
+<td><code>com.octodemo.async-worker.*</code></td>
+<td>Future: async-worker DLQ escalations</td>
+</tr>
+</tbody>
+</table>
+<h2 id="test-totals-as-of-this-session">Test totals (as of this session)<a class="headerlink" href="#test-totals-as-of-this-session" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>shop</td>
+<td>35</td>
+</tr>
+<tr>
+<td>crm</td>
+<td>29</td>
+</tr>
+<tr>
+<td>traffic-generator</td>
+<td>10</td>
+</tr>
+<tr>
+<td>load-control</td>
+<td>36</td>
+</tr>
+<tr>
+<td>cache</td>
+<td>6</td>
+</tr>
+<tr>
+<td>browser-runner</td>
+<td>6</td>
+</tr>
+<tr>
+<td>edge-fuzz</td>
+<td>4</td>
+</tr>
+<tr>
+<td>async-worker</td>
+<td>9</td>
+</tr>
+<tr>
+<td>remediator</td>
+<td>14</td>
+</tr>
+<tr>
+<td>object-pipeline</td>
+<td>8</td>
+</tr>
+<tr>
+<td>wizard</td>
+<td>7</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>164+</strong></td>
+</tr>
+</tbody>
+</table>
+<p><code>deploy/verify.sh</code>: 8 categories, 0 errors, 0 warnings on a clean checkout.</p>
 
 
 
@@ -3682,7 +3899,7 @@ with a simple <code>jq</code> check before traffic flows.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../../integrations/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Integrations">
+          <a href="../correlation-contract/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Correlation Contract">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3692,20 +3909,20 @@ with a simple <code>jq</code> check before traffic flows.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Integrations
+                Correlation Contract
               </div>
             </div>
           </a>
         
         
           
-          <a href="../../../integrations/crm/" class="md-footer__link md-footer__link--next" aria-label="Next: CRM Integration">
+          <a href="../data-model/" class="md-footer__link md-footer__link--next" aria-label="Next: Data Model">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                CRM Integration
+                Data Model
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -3758,10 +3975,10 @@ with a simple <code>jq</code> check before traffic flows.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
