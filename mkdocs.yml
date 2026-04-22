@@ -79,6 +79,7 @@ nav:
     - architecture/index.md
     - Platform Overview: architecture/platform-overview.md
     - System Design: architecture/system-design.md
+    - Correlation Contract: architecture/correlation-contract.md
     - Data Model: architecture/data-model.md
     - Database Integration: architecture/database-integration.md
     - Framework Approach: architecture/framework.md
@@ -140,6 +141,18 @@ nav:
     - Deployment: operations/deployment.md
     - Chaos Engineering: operations/chaos.md
     - Alarms & Health: operations/alarms.md
+  - Workshop:
+    - workshop/index.md
+    - "Lab 01 — First trace": workshop/lab-01-first-trace.md
+    - "Lab 02 — Trace ↔ Log": workshop/lab-02-trace-log-correlation.md
+    - "Lab 03 — Slow SQL drill-down": workshop/lab-03-slow-sql-drill-down.md
+    - "Lab 04 — RUM outage detection": workshop/lab-04-rum-outage-detection.md
+    - "Lab 05 — Custom metric + alarm": workshop/lab-05-metric-and-alarm.md
+    - "Lab 06 — WAF event investigation": workshop/lab-06-waf-event-investigation.md
+    - "Lab 07 — Saved searches": workshop/lab-07-saved-search.md
+    - "Lab 08 — Stack Monitoring + ATP": workshop/lab-08-stack-monitoring-atp.md
+    - "Lab 09 — Chaos drill": workshop/lab-09-chaos-drill.md
+    - "Lab 10 — Failed checkout debug": workshop/lab-10-failed-checkout.md
 
 extra:
   social:
