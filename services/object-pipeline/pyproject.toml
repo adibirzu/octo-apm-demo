@@ -1,0 +1,24 @@
+[project]
+name = "octo-object-pipeline"
+version = "1.0.0"
+description = "OCI Object Storage event → processor → outcome event pipeline for octo-apm-demo"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.112",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.5",
+    "httpx>=0.27",
+    "structlog>=24.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+oci = ["oci>=2.130"]
+
+[project.scripts]
+octo-object-pipeline = "octo_object_pipeline.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["src"]
