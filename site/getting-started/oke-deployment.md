@@ -1,118 +1,133 @@
-# OKE Deployment
+# OKE deployment — octo-apm-demo
 
-## 1. Set Environment
+Production path: two FastAPI services on an OKE cluster behind OCI
+Load Balancers with WAF, sharing an Autonomous Database, fully wired
+into APM + RUM + OCI Logging → Log Analytics + Stack Monitoring.
+
+## Namespaces + hostnames
+
+| Service | Namespace | Deployment | In-cluster URL | Public hostname |
+|---|---|---|---|---|
+| Drone Shop | `octo-shop-prod` | `octo-drone-shop` | `http://octo-drone-shop.octo-shop-prod.svc.cluster.local:8080` | `drone.${DNS_DOMAIN}` |
+| Enterprise CRM | `octo-backend-prod` | `enterprise-crm-portal` | `http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080` | `backend.${DNS_DOMAIN}` |
+
+Names deliberately differ from the unified-VM path so both deployments
+can co-exist on the same tenancy (different compartments or clusters)
+without collisions.
+
+## One-shot apply
 
 ```bash
-cp deploy/credentials.template deploy/credentials.env
-set -a
-source deploy/credentials.env
-set +a
-export DNS_DOMAIN="<your-domain>"
-export AUTH_TOKEN_SECRET="$(openssl rand -hex 32)"
-export ORACLE_DSN="myatp_low"
-export ORACLE_PASSWORD="<your-atp-password>"
-export OCI_APM_ENDPOINT="https://<apm-data-upload-endpoint>"
-export OCI_APM_PRIVATE_DATAKEY="<private-data-key>"
-export OCI_LB_SUBNET_OCID="ocid1.subnet.oc1.<region>...."
-export OCIR_REPO="<region>.ocir.io/<namespace>"
+DNS_DOMAIN=octodemo.cloud \
+OCIR_REGION=eu-frankfurt-1 \
+OCIR_TENANCY=<namespace> \
+OCI_LB_SUBNET_OCID=ocid1.subnet.oc1..xxx \
+WAF_POLICY_SHOP_OCID=ocid1.webappfirewallpolicy.oc1..xxx \
+WAF_POLICY_CRM_OCID=ocid1.webappfirewallpolicy.oc1..xxx \
+IMAGE_TAG=latest \
+./deploy/oke/deploy-oke.sh
 ```
 
-## 2. Build and Push
+The script applies namespaces, Deployments, LoadBalancer Services with
+WAF annotations, HPA (2→6 replicas, 70% CPU / 75% memory), PDB
+(`minAvailable: 1`), NetworkPolicies, and optionally a
+SecretProviderClass per namespace when the OCI Secrets Store CSI
+driver is installed.
 
-!!! warning "ARM Machines"
-    Never build locally on Apple Silicon. Use an x86_64 build VM.
+Full walkthrough: [deploy/oke/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/oke/README.md).
+
+## Security posture
+
+| Control | Where |
+|---|---|
+| WAF (DETECTION → BLOCK) | OCI LB annotation `oci.oraclecloud.com/waf-policy-ocid` |
+| TLS | OCI Certificates service attached to the LB, or cert-manager + LetsEncrypt |
+| Cross-service auth | `X-Internal-Service-Key: $INTERNAL_SERVICE_KEY` on every cross-service POST |
+| Idempotent order sync | `idempotency_token` (UUID5, stable per `(order_id, source)`) |
+| Network segmentation | Per-namespace `NetworkPolicy` allowing only inter-namespace traffic + LB ingress |
+| Secret handling | `SecretProviderClass` from OCI Vault via the Secrets Store CSI driver (optional; falls back to K8s Secrets) |
+| Pod safety | Resource requests + limits, liveness + readiness probes on `/ready`, PDB, rolling updates with `maxUnavailable: 0` |
+
+## Full observability — same as VM path, different Secrets
+
+| Signal | Env var | Secret reference | Destination |
+|---|---|---|---|
+| Traces | `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY` | `octo-apm:endpoint` + `private-key` | OCI APM Domain |
+| RUM | `OCI_APM_RUM_ENDPOINT`, `OCI_APM_PUBLIC_DATAKEY`, `OCI_APM_WEB_APPLICATION` | `octo-apm:rum-endpoint` + `public-key` + `web-application` | OCI APM RUM |
+| Logs | `OCI_LOG_ID`, `OCI_LOG_GROUP_ID` | `octo-logging:log-id` + `log-group-id` | OCI Logging → Service Connector → Log Analytics (source `octo-shop-app-json`) |
+| Metrics | `OCI_COMPARTMENT_ID`, `OCI_MONITORING_NAMESPACE` | `octo-oci-config:compartment-id` | OCI Monitoring custom metrics + alarms |
+
+**Correlation**: `oracleApmTraceId` is stamped onto every Logging record
+the app emits via `oci.loggingingestion`. The Log Analytics parser
+promotes it to a searchable column, so trace-to-log pivots work in
+both directions: APM → Log Analytics search, Log Analytics → APM
+trace explorer URL.
+
+## Image build + push
+
+The root-level `deploy/deploy-shop.sh` and `deploy/deploy-crm.sh` handle
+build + push + rollout. Point them at the OKE namespaces:
 
 ```bash
-# Sync to build VM
-rsync -az --exclude '.git' --exclude '__pycache__' . remote-builder:/tmp/octo-drone-shop/
+# Drone Shop
+OCIR_REPO=${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop \
+K8S_NAMESPACE=octo-shop-prod \
+K8S_DEPLOYMENT=octo-drone-shop \
+./deploy/deploy-shop.sh
 
-# Build + push on VM
-ssh remote-builder "cd /tmp/octo-drone-shop && \
-  docker build -t ${OCIR_REPO}/octo-drone-shop:latest . && \
-  docker push ${OCIR_REPO}/octo-drone-shop:latest"
+# Enterprise CRM
+OCIR_REPO=${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal \
+K8S_NAMESPACE=octo-backend-prod \
+K8S_DEPLOYMENT=enterprise-crm-portal \
+./deploy/deploy-crm.sh
 ```
 
-Or use the deploy script:
+Both scripts build on a remote x86_64 host (ARM laptops cannot cross-
+build with QEMU reliably), push to OCIR, and `kubectl set image` the
+appropriate Deployment.
+
+## Provisioning the observability resources
+
+Before the first deploy, run:
 
 ```bash
-./deploy/deploy.sh
-```
-
-## 3. Create K8s Secrets
-
-```bash
-NAMESPACE="octo-drone-shop"
-kubectl create namespace $NAMESPACE
-
-# Required
-kubectl -n $NAMESPACE create secret generic octo-auth \
-  --from-literal=token-secret="${AUTH_TOKEN_SECRET}"
-
-kubectl -n $NAMESPACE create secret generic octo-atp \
-  --from-literal=dsn="${ORACLE_DSN}" \
-  --from-literal=username="ADMIN" \
-  --from-literal=password="${ORACLE_PASSWORD}" \
-  --from-literal=wallet-password="${ORACLE_WALLET_PASSWORD}"
-
-kubectl -n $NAMESPACE create secret generic octo-apm \
-  --from-literal=endpoint="${OCI_APM_ENDPOINT}" \
-  --from-literal=private-key="${OCI_APM_PRIVATE_DATAKEY}" \
-  --from-literal=public-key="${OCI_APM_PUBLIC_DATAKEY}" \
-  --from-literal=rum-endpoint="${OCI_APM_RUM_ENDPOINT}"
-
-# ATP wallet
-kubectl -n $NAMESPACE create secret generic octo-atp-wallet \
-  --from-file=cwallet.sso --from-file=tnsnames.ora --from-file=sqlnet.ora
-```
-
-## 4. Deploy
-
-```bash
-envsubst < deploy/k8s/deployment.yaml | kubectl apply -f -
-kubectl rollout status deployment/octo-drone-shop -n $NAMESPACE
-```
-
-## 5. Provision OCI Services
-
-```bash
-export COMPARTMENT_ID="<compartment-ocid>"
-export SHOP_PUBLIC_URL="https://shop.${DNS_DOMAIN}"
-
-# Monitoring (alarms + health checks)
+COMPARTMENT_ID=<compartment-ocid> ./deploy/oci/ensure_apm.sh --apply
+COMPARTMENT_ID=<compartment-ocid> \
+AUTONOMOUS_DATABASE_ID=<atp-ocid> \
+DRY_RUN=false \
+./deploy/oci/ensure_stack_monitoring.sh
+python3 tools/create_la_source.py \
+    --la-namespace <la-namespace> \
+    --la-log-group-id <la-log-group-ocid> --apply
 ./deploy/oci/ensure_monitoring.sh
-
-# WAF protection rules
-LOAD_BALANCER_OCID="<lb-ocid>" ./deploy/oci/ensure_waf.sh
-
-# Cloud Guard
-./deploy/oci/ensure_cloud_guard.sh
-
-# Security Zones
-./deploy/oci/ensure_security_zones.sh
-
-# Vault
-./deploy/oci/ensure_vault.sh
-
-# DB Observability
-AUTONOMOUS_DATABASE_ID="<atp-ocid>" ./deploy/oci/ensure_db_observability.sh
 ```
 
-## 6. Verify
+The outputs (`apm_data_upload_endpoint`, `apm_public_datakey`,
+`apm_private_datakey`, `rum_web_application_id`) are what populate the
+`octo-apm` Kubernetes secret.
+
+## Validate
 
 ```bash
-curl https://shop.${DNS_DOMAIN}/ready | python3 -m json.tool
-curl https://shop.${DNS_DOMAIN}/api/observability/360 | python3 -m json.tool
+curl -s https://drone.${DNS_DOMAIN}/ready   | jq
+curl -s https://backend.${DNS_DOMAIN}/ready | jq
+curl -s https://drone.${DNS_DOMAIN}/api/integrations/schema   | jq .info.title
+curl -s https://backend.${DNS_DOMAIN}/api/integrations/schema | jq .info.title
 ```
 
-## 7. Recommended enhancement sequence
+When both `/ready` return `database.reachable=true` and both schema
+endpoints return an OpenAPI doc advertising `InternalServiceKey` in
+`components.securitySchemes`, the OKE deploy is fully operational.
 
-After the application is reachable, enable the OCI showcase in this order:
+## Rollback
 
-1. APM traces and topology
-2. RUM for browser workflows
-3. OCI Logging and Log Analytics
-4. APM drilldowns and console links
-5. DB Management and Operations Insights
+```bash
+kubectl rollout undo deployment/octo-drone-shop       -n octo-shop-prod
+kubectl rollout undo deployment/enterprise-crm-portal -n octo-backend-prod
+```
 
-Use the published [Enhancement Plan](../observability/enhancement-plan.md) to
-drive the post-deploy rollout and validation checkpoints.
+## Legacy
+
+The previous OKE walkthrough (single-Deployment shop-only install) is
+preserved in the commit history; its content is superseded by this
+page and by `deploy/oke/README.md`.
