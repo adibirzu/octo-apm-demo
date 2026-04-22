@@ -1,0 +1,89 @@
+# Dependabot configuration for octo-apm-demo.
+#
+# Two services live side-by-side under shop/ and crm/; each has its own
+# requirements.txt. The shop also ships a Go workflow gateway with its
+# own module. One ecosystem block per manifest lets Dependabot open
+# narrow, reviewable PRs.
+
+version: 2
+
+updates:
+  # ── Shop (Python) ──────────────────────────────────────────────────
+  - package-ecosystem: pip
+    directory: /shop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - area:shop
+    reviewers:
+      - adibirzu
+    groups:
+      shop-minor:
+        update-types:
+          - minor
+          - patch
+
+  # ── CRM (Python) ───────────────────────────────────────────────────
+  - package-ecosystem: pip
+    directory: /crm
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - area:crm
+    reviewers:
+      - adibirzu
+    groups:
+      crm-minor:
+        update-types:
+          - minor
+          - patch
+
+  # ── Workflow gateway (Go) ──────────────────────────────────────────
+  - package-ecosystem: gomod
+    directory: /shop/services/workflow-gateway
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - area:workflow-gateway
+    reviewers:
+      - adibirzu
+
+  # ── Shop Node (E2E + lint tooling) ─────────────────────────────────
+  - package-ecosystem: npm
+    directory: /shop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - area:shop
+    reviewers:
+      - adibirzu
+    groups:
+      shop-node-dev:
+        update-types:
+          - minor
+          - patch
+
+  # ── GitHub Actions workflows ───────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - area:ci
+    reviewers:
+      - adibirzu
