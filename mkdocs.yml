@@ -80,6 +80,7 @@ nav:
     - Platform Overview: architecture/platform-overview.md
     - System Design: architecture/system-design.md
     - Correlation Contract: architecture/correlation-contract.md
+    - Service Inventory: architecture/service-inventory.md
     - Data Model: architecture/data-model.md
     - Database Integration: architecture/database-integration.md
     - Framework Approach: architecture/framework.md
