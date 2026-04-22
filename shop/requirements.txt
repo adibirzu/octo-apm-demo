@@ -5,8 +5,8 @@ asyncpg==0.30.0
 psycopg2-binary==2.9.10
 oracledb==3.4.1
 httpx==0.28.1
-python-multipart==0.0.20
-jinja2==3.1.5
+python-multipart==0.0.26
+jinja2==3.1.6
 aiofiles==24.1.0
 
 # OpenTelemetry
@@ -25,6 +25,6 @@ oci==2.143.0
 
 # Security (bcrypt for password hashing, PyJWT for IDCS SSO ID-token verification)
 bcrypt==4.2.1
-PyJWT[crypto]==2.10.1
+PyJWT[crypto]==2.12.0
 
 psutil>=5.9.0
