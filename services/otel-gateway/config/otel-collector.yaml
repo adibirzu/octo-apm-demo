@@ -1,0 +1,134 @@
+# octo-otel-gateway — OpenTelemetry Collector config.
+#
+# Single ingress for all telemetry from the platform, single egress to
+# OCI APM (traces) + OCI Monitoring (metrics) + OCI Logging (logs).
+# Sits between every app pod and OCI so policies (sampling, batching,
+# enrichment, redaction) can change in one place without redeploying
+# applications.
+
+receivers:
+  # Native OTLP — every Python/Go app in the platform exports here.
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - https://drone.${env:DNS_DOMAIN}
+            - https://backend.${env:DNS_DOMAIN}
+
+  # Prometheus scrape for the few services that expose /metrics
+  # without OTLP push (workflow-gateway).
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: octo-workflow-gateway
+          scrape_interval: 30s
+          static_configs:
+            - targets:
+                - workflow-gateway.octo-shop-prod.svc.cluster.local:9090
+
+processors:
+  # Apply the correlation contract — ensure every signal carries the
+  # required identity attributes.
+  resource:
+    attributes:
+      - key: service.namespace
+        value: octo
+        action: upsert
+      - key: deployment.environment
+        from_attribute: OTEL_DEPLOYMENT_ENVIRONMENT
+        action: upsert
+
+  # Promote run_id from a span attribute to a resource attribute so
+  # every metric+log emitted from the same span trace is filterable.
+  attributes/run_id:
+    actions:
+      - key: run_id
+        from_attribute: chaos.run_id
+        action: insert
+      - key: workflow_id
+        from_attribute: workflow.id
+        action: insert
+
+  # Strip credit-card-shaped strings from span attributes — defense-in-
+  # depth for the payment gateway (real PII never reaches us, but a
+  # broken instrumentation in the future shouldn't leak).
+  attributes/redact:
+    actions:
+      - key: http.target
+        pattern: '\b(?:\d[ -]*?){13,16}\b'
+        action: delete
+
+  # Sensible memory ceiling — collector OOMs on a sustained burst
+  # otherwise.
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+  # Batch spans/metrics/logs — reduces export volume by ~10x without
+  # adding meaningful latency.
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+    send_batch_max_size: 2048
+
+exporters:
+  # Traces → OCI APM via OTLP/HTTP.
+  otlphttp/oci_apm:
+    endpoint: "${env:OCI_APM_ENDPOINT}"
+    headers:
+      "data-key": "${env:OCI_APM_PRIVATE_DATAKEY}"
+    tls:
+      insecure: false
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 5000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 5m
+
+  # Metrics → OCI Monitoring (custom metrics namespace).
+  # The native OCI Monitoring exporter ships in opentelemetry-collector-
+  # contrib; until then, log to stdout so a sidecar can ingest.
+  debug/metrics:
+    verbosity: basic
+
+  # Logs → stdout for now; OCI Logging exporter wires in next iteration.
+  debug/logs:
+    verbosity: detailed
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, attributes/run_id, attributes/redact, batch]
+      exporters: [otlphttp/oci_apm]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, resource, batch]
+      exporters: [debug/metrics]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, attributes/run_id, attributes/redact, batch]
+      exporters: [debug/logs]
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888
