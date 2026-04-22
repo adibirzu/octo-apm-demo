@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-crm-portal
+  namespace: enterprise-crm
+  labels:
+    app: enterprise-crm-portal
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: enterprise-crm-portal
+  template:
+    metadata:
+      labels:
+        app: enterprise-crm-portal
+    spec:
+      containers:
+        - name: app
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_RUNTIME
+              value: "oke"
+            - name: BRAND_NAME
+              value: "OCTO CRM APM"
+            - name: APP_VERSION
+              value: "1.1.0"
+            - name: SERVICE_NAMESPACE
+              value: "octo"
+            - name: DEMO_STACK_NAME
+              value: "octo-apm"
+            - name: ORDERS_SYNC_ENABLED
+              value: "true"
+            - name: ORDERS_SYNC_INTERVAL_SECONDS
+              value: "300"
+            - name: ORDERS_SYNC_SOURCE_NAME
+              value: "octo-drone-shop"
+          envFrom:
+            - secretRef:
+                name: crm-portal-secrets
+                optional: false
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enterprise-crm-portal
+  namespace: enterprise-crm
+  labels:
+    app: enterprise-crm-portal
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: enterprise-crm-portal

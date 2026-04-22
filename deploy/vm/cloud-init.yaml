@@ -1,0 +1,56 @@
+#cloud-config
+# One-shot OCI Compute bootstrap for the unified VM deployment.
+# Paste into OCI Console → Compute → Create Instance → Cloud-init script.
+#
+# Prerequisites before launching the VM:
+#   - OCIR image already pushed (octo-drone-shop + enterprise-crm-portal)
+#   - ATP wallet zip accessible via pre-authenticated request (PAR)
+#   - DNS A records shop.<DOMAIN> + crm.<DOMAIN> → this VM's public IP
+#
+# Fill the TODO markers before pasting.
+
+package_update: true
+packages:
+  - git
+  - curl
+  - jq
+  - unzip
+  - python3
+  - python3-pip
+  - certbot
+
+write_files:
+  - path: /etc/octo/bootstrap.env
+    permissions: "0600"
+    content: |
+      OCIR_REGION=TODO
+      OCIR_TENANCY=TODO
+      DNS_DOMAIN=TODO.customer.example
+      INTERNAL_SERVICE_KEY=TODO
+      AUTH_TOKEN_SECRET=TODO
+      APP_SECRET_KEY=TODO
+      BOOTSTRAP_ADMIN_PASSWORD=TODO
+      ORACLE_DSN=TODO
+      ORACLE_PASSWORD=TODO
+      ORACLE_WALLET_PASSWORD=TODO
+      WALLET_PAR_URL=https://objectstorage...TODO
+      REPO_URL=https://github.com/adibirzu/octo-drone-shop.git
+
+runcmd:
+  # 1. Clone the repo (unified deploy files only)
+  - git clone --depth 1 ${REPO_URL} /opt/octo
+  - cd /opt/octo/deploy/vm && cp .env.template .env
+  - bash -c '. /etc/octo/bootstrap.env; sed -i "s#^OCIR_REGION=.*#OCIR_REGION=${OCIR_REGION}#;s#^OCIR_TENANCY=.*#OCIR_TENANCY=${OCIR_TENANCY}#;s#^DNS_DOMAIN=.*#DNS_DOMAIN=${DNS_DOMAIN}#;s#^INTERNAL_SERVICE_KEY=.*#INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY}#;s#^AUTH_TOKEN_SECRET=.*#AUTH_TOKEN_SECRET=${AUTH_TOKEN_SECRET}#;s#^APP_SECRET_KEY=.*#APP_SECRET_KEY=${APP_SECRET_KEY}#;s#^BOOTSTRAP_ADMIN_PASSWORD=.*#BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD}#;s#^ORACLE_DSN=.*#ORACLE_DSN=${ORACLE_DSN}#;s#^ORACLE_PASSWORD=.*#ORACLE_PASSWORD=${ORACLE_PASSWORD}#;s#^ORACLE_WALLET_PASSWORD=.*#ORACLE_WALLET_PASSWORD=${ORACLE_WALLET_PASSWORD}#" /opt/octo/deploy/vm/.env'
+
+  # 2. Download + unzip the ATP wallet
+  - mkdir -p /opt/octo/deploy/vm/wallet
+  - bash -c '. /etc/octo/bootstrap.env; curl -fsSL "${WALLET_PAR_URL}" -o /tmp/wallet.zip && unzip -o /tmp/wallet.zip -d /opt/octo/deploy/vm/wallet'
+
+  # 3. Obtain TLS certificates (standalone mode — port 80 must be free)
+  - bash -c '. /etc/octo/bootstrap.env; certbot certonly --standalone --non-interactive --agree-tos --register-unsafely-without-email -d drone.${DNS_DOMAIN} -d backend.${DNS_DOMAIN} || true'
+  - bash -c '. /etc/octo/bootstrap.env; mkdir -p /opt/octo/deploy/vm/nginx/tls/shop /opt/octo/deploy/vm/nginx/tls/crm; cp /etc/letsencrypt/live/drone.${DNS_DOMAIN}/*.pem /opt/octo/deploy/vm/nginx/tls/shop/ 2>/dev/null || true; cp /etc/letsencrypt/live/backend.${DNS_DOMAIN}/*.pem /opt/octo/deploy/vm/nginx/tls/crm/ 2>/dev/null || true'
+
+  # 4. Run the idempotent installer
+  - bash /opt/octo/deploy/vm/install.sh
+
+final_message: "OCTO unified VM ready after $UPTIME seconds"

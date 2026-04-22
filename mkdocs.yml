@@ -1,0 +1,149 @@
+site_name: OCTO APM Demo — Unified Platform
+site_description: Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, OCI Resource Manager stack, and single-VM install.
+site_url: https://adibirzu.github.io/octo-apm-demo
+repo_url: https://github.com/adibirzu/octo-apm-demo
+repo_name: adibirzu/octo-apm-demo
+edit_uri: edit/main/site/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mermaid2
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.mark
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Introduction: introduction.md
+  - Getting Started:
+    - getting-started/index.md
+    - Prerequisites: getting-started/prerequisites.md
+    - Quick Start: getting-started/quickstart.md
+    - Deployment options: getting-started/deployment-options.md
+    - OKE Deployment: getting-started/oke-deployment.md
+    - New Tenancy: getting-started/new-tenancy.md
+    - Bill of Materials: getting-started/bill-of-materials.md
+  - Architecture:
+    - architecture/index.md
+    - Platform Overview: architecture/platform-overview.md
+    - System Design: architecture/system-design.md
+    - Data Model: architecture/data-model.md
+    - Database Integration: architecture/database-integration.md
+    - Framework Approach: architecture/framework.md
+  - Drone Shop:
+    - drone-shop/index.md
+    - Modules: drone-shop/modules.md
+    - Checkout Flow: drone-shop/checkout.md
+    - AI Assistant: drone-shop/assistant.md
+  - Enterprise CRM:
+    - crm/index.md
+    - Modules: crm/modules.md
+    - Architecture: crm/architecture.md
+    - Order Sync: crm/order-sync.md
+    - Security Vulnerabilities: crm/security-vulns.md
+    - Simulation Lab: crm/simulation.md
+    - CRM observability v2:
+      - crm/observability-v2/index.md
+      - Golden workflows: crm/observability-v2/workflows.md
+      - Chaos playbook: crm/observability-v2/chaos-playbook.md
+      - Security hardening: crm/observability-v2/security.md
+      - WAF observability: crm/observability-v2/waf-observability.md
+    - CRM operations:
+      - Chaos admin: crm/operations/chaos-admin.md
+  - Observability:
+    - observability/index.md
+    - Add-Ons Guide: observability/addons.md
+    - MELTS Overview: observability/melts.md
+    - Traces (APM): observability/traces.md
+    - Metrics: observability/metrics.md
+    - Logs: observability/logs.md
+    - Security Events: observability/security.md
+    - RUM: observability/rum.md
+    - Cross-Service Tracing: observability/distributed-traces.md
+    - Enhancement Plan: observability/enhancement-plan.md
+  - Observability v2:
+    - observability-v2/index.md
+    - Golden workflows: observability-v2/workflows.md
+    - Chaos playbook: observability-v2/chaos-playbook.md
+    - Log Analytics dashboards: observability-v2/log-analytics-dashboards.md
+    - APM drill-down: observability-v2/apm-drilldown.md
+    - Stack Monitoring (ATP): observability-v2/stack-monitoring.md
+    - WAF observability: observability-v2/waf-observability.md
+    - Auto-remediation flow: observability-v2/autoremediation-flow.md
+    - Demo script: observability-v2/demo-script.md
+  - Integrations:
+    - integrations/index.md
+    - Cross-service contract: crm/integrations/cross-service-contract.md
+    - CRM Integration: integrations/crm.md
+    - OCI Services: integrations/oci-services.md
+    - OCI Coordinator: integrations/coordinator.md
+    - Circuit Breaker: integrations/circuit-breaker.md
+  - Testing:
+    - testing/index.md
+    - E2E Tests: testing/e2e.md
+    - Load Tests: testing/load-tests.md
+  - Operations:
+    - operations/index.md
+    - Deployment: operations/deployment.md
+    - Chaos Engineering: operations/chaos.md
+    - Alarms & Health: operations/alarms.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/adibirzu/octo-apm-demo
+
+docs_dir: site
+site_dir: build
