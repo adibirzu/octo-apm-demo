@@ -1,12 +1,32 @@
 # Platform Architecture — Unified Deploy
 
-`octo-apm-demo` is the unified operational home for two independent
-FastAPI services that share an Oracle Autonomous Database, the same
-observability stack, and a pinned cross-service contract:
+`octo-apm-demo` is a unified OCI observability reference platform.
+Two application services on top of an OCI 360 runtime: a central OTel
+collector, named workload profiles, real browser journeys, async
+processing, cache, object-pipeline, edge gateway, stress labs, and
+alarm-driven remediation.
+
+## Application tier
 
 - **Drone Shop** (`shop/`) — storefront + checkout + AI assistant
 - **Enterprise CRM Portal** (`crm/`) — catalog ownership + CRM ops +
   chaos controller
+
+## Platform services (OCI 360)
+
+11 supporting services + labs. Full inventory:
+[site/architecture/service-inventory.md](site/architecture/service-inventory.md).
+
+Summary:
+
+| Tier | Services |
+|---|---|
+| Telemetry backbone | `octo-otel-gateway` |
+| Control plane | `octo-load-control`, `octo-remediator` |
+| Edge | `octo-edge-gateway` (OCI API GW + WAF), `octo-edge-fuzz` |
+| Runtime expansion | `octo-async-worker`, `octo-cache`, `octo-object-pipeline`, `octo-browser-runner` |
+| Labs | `octo-container-lab` (K8s stress Jobs), `octo-vm-lab` (systemd stress-ng) |
+| Tooling | `octo-traffic-generator`, `octo-wizard`, `deploy/verify.sh`, workshop verifiers |
 
 ## Topology
 
