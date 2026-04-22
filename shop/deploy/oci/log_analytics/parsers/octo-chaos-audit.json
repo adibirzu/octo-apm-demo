@@ -1,0 +1,15 @@
+{
+  "name": "octo-chaos-audit",
+  "description": "Chaos admin audit trail emitted by CRM.",
+  "type": "JSON",
+  "isEnabled": true,
+  "fieldMaps": [
+    {"sourcePath": "$.ts",             "logFieldName": "Time"},
+    {"sourcePath": "$.event",          "logFieldName": "Event"},
+    {"sourcePath": "$.scenario_id",    "logFieldName": "Chaos Scenario"},
+    {"sourcePath": "$.target",         "logFieldName": "Chaos Target"},
+    {"sourcePath": "$.ttl_seconds",    "logFieldName": "Chaos TTL Seconds"},
+    {"sourcePath": "$.applied_by",     "logFieldName": "User ID (hashed)"},
+    {"sourcePath": "$.request_id",     "logFieldName": "Request ID"}
+  ]
+}

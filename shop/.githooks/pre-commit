@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "${ROOT_DIR}"
+
+if ! git diff --cached --quiet --; then
+  if ! command -v gitleaks >/dev/null 2>&1; then
+    echo "gitleaks is required for commits. Install: https://github.com/gitleaks/gitleaks" >&2
+    exit 1
+  fi
+
+  echo "Running gitleaks scan on staged changes..."
+
+  if gitleaks git --help >/dev/null 2>&1; then
+    gitleaks git --staged --redact --config .gitleaks.toml
+    exit 0
+  fi
+
+  if gitleaks protect --help >/dev/null 2>&1; then
+    gitleaks protect --staged --redact --config .gitleaks.toml
+    exit 0
+  fi
+
+  echo "Unsupported gitleaks CLI version. Update gitleaks to a recent release." >&2
+  exit 1
+fi
