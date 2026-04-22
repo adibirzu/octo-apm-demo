@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <h2>Sign In</h2>
+
+        {% if idcs_configured %}
+        <a href="/api/auth/sso/login" class="btn btn-sso btn-block">Sign in with OCI Identity (SSO)</a>
+        <div class="login-divider"><span>or sign in locally</span></div>
+        {% endif %}
+
+        <form id="login-form" onsubmit="doLogin(event)">
+            <label>Username</label>
+            <input type="text" id="login-username" name="username" class="form-input" required>
+            <label>Password</label>
+            <input type="password" id="login-password" name="password" class="form-input" required>
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+        <div id="login-error" class="error-message hidden"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+async function doLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    try {
+        const resp = await _fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password}),
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            window.location.href = '/';
+        } else {
+            document.getElementById('login-error').textContent = data.error;
+            document.getElementById('login-error').classList.remove('hidden');
+        }
+    } catch (e) {
+        document.getElementById('login-error').textContent = 'Login failed: ' + e.message;
+        document.getElementById('login-error').classList.remove('hidden');
+    }
+}
+
+// Show SSO error from query params
+const params = new URLSearchParams(window.location.search);
+if (params.get('error')) {
+    const el = document.getElementById('login-error');
+    el.textContent = 'SSO error: ' + params.get('error');
+    el.classList.remove('hidden');
+}
+</script>
+{% endblock %}

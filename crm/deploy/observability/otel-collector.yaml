@@ -1,0 +1,125 @@
+# OpenTelemetry Collector configuration for Enterprise CRM Portal.
+#
+# Architecture: App → Collector → OCI APM + Splunk HEC
+# This decouples the application from export concerns and enables:
+#   - Tail sampling (keep 100% of error/slow/security traces)
+#   - Fan-out to multiple backends without app code changes
+#   - Central PII redaction via the transform processor
+#   - Retry/backpressure handled by the collector, not Python app
+#
+# Deploy as a sidecar (DaemonSet) or standalone (Deployment) in OKE.
+# The app sends OTLP to localhost:4318 (HTTP) or localhost:4317 (gRPC).
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Tail sampling — keep ALL error, slow, and security traces; sample normal traces
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 10000
+    expected_new_traces_per_sec: 50
+    policies:
+      # Always keep error traces
+      - name: errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      # Always keep slow traces (>2s)
+      - name: slow-requests
+        type: latency
+        latency:
+          threshold_ms: 2000
+      # Always keep security event traces
+      - name: security-events
+        type: string_attribute
+        string_attribute:
+          key: security.attack.detected
+          values: ["true"]
+      # Sample 25% of normal traces
+      - name: normal-traffic
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 25
+
+  # Resource detection for OKE pod metadata
+  resourcedetection:
+    detectors: [env]
+    timeout: 5s
+
+exporters:
+  # OCI APM OTLP endpoint (traces)
+  otlphttp/oci-traces:
+    endpoint: ${env:OCI_APM_OTLP_ENDPOINT}
+    headers:
+      Authorization: "dataKey ${env:OCI_APM_PRIVATE_DATAKEY}"
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  # OCI APM OTLP endpoint (metrics)
+  otlphttp/oci-metrics:
+    endpoint: ${env:OCI_APM_OTLP_METRICS_ENDPOINT}
+    headers:
+      Authorization: "dataKey ${env:OCI_APM_PRIVATE_DATAKEY}"
+    retry_on_failure:
+      enabled: true
+
+  # Splunk HEC for structured logs
+  splunk_hec/logs:
+    token: ${env:SPLUNK_HEC_TOKEN}
+    endpoint: ${env:SPLUNK_HEC_URL}
+    source: enterprise-crm-portal
+    sourcetype: _json
+    tls:
+      insecure_skip_verify: true
+
+  # Prometheus endpoint for Grafana scraping
+  prometheus:
+    endpoint: 0.0.0.0:9464
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # Debug logging (development only)
+  debug:
+    verbosity: basic
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, tail_sampling, resourcedetection]
+      exporters: [otlphttp/oci-traces, debug]
+
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resourcedetection]
+      exporters: [prometheus, otlphttp/oci-metrics]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [splunk_hec/logs, debug]
