@@ -1,0 +1,118 @@
+# OCTO APM Demo — Unified Platform
+
+Unified repository for the OCTO Drone Shop + Enterprise CRM Portal
+platform: one `deploy/` tree, one Bill of Materials, one Resource
+Manager stack, one unified-VM path. The two services live side-by-side
+as independent containers under `shop/` and `crm/` so they keep the
+cross-service contract hardened in the upstream repos.
+
+**Docs site**: https://adibirzu.github.io/octo-apm-demo
+**Default hostnames**: `drone.octodemo.cloud` (Shop) · `backend.octodemo.cloud` (CRM)
+
+## Repository layout
+
+```
+octo-apm-demo/
+├── README.md · ARCHITECTURE.md · LICENSE
+├── shop/              # octo-drone-shop (imported via git subtree, full history preserved)
+│   └── server/ · Dockerfile · tests/ · k6/ · ...
+├── crm/               # enterprise-crm-portal (imported via git subtree, full history preserved)
+│   └── server/ · Dockerfile · tests/ · ...
+├── deploy/            # unified deployment surface
+│   ├── BOM.md                        # Bill of Materials (authoritative)
+│   ├── pre-flight-check.sh           # env + tooling validator
+│   ├── init-tenancy.sh               # idempotent new-tenancy bootstrap
+│   ├── deploy-shop.sh                # build + push + rollout for Shop
+│   ├── deploy-crm.sh                 # build + push + rollout for CRM
+│   ├── resource-manager/             # OCI Resource Manager stack (one-click)
+│   ├── vm/                           # Unified single-VM compose + cloud-init
+│   ├── k8s/                          # OKE manifests
+│   │   ├── shop/
+│   │   └── crm/
+│   ├── terraform/                    # APM Domain, WAF, log pipelines
+│   └── oci/                          # ensure_apm.sh, ensure_stack_monitoring.sh, ...
+├── site/              # MkDocs (deployed to github.io)
+└── mkdocs.yml
+```
+
+## Three deployment paths — same container images
+
+| Path | Entry point | When to use |
+|---|---|---|
+| **OKE** | `deploy/k8s/{shop,crm}/*.yaml` + `deploy/deploy-{shop,crm}.sh` | Production, HA, rolling updates |
+| **OCI Resource Manager stack** | `deploy/resource-manager/` | Console one-click bootstrap of APM + RUM + LA + WAF |
+| **Unified single VM** | `deploy/vm/` | Demos, workshops, air-gapped — both services on one Compute instance |
+
+Full matrix: [site/getting-started/deployment-options.md](site/getting-started/deployment-options.md).
+
+## Cross-service integration contract
+
+Both services publish the same contract at `GET /api/integrations/schema`.
+
+| Concern | Value |
+|---|---|
+| Canonical shop URL env | `SERVICE_SHOP_URL` (legacy aliases: `OCTO_DRONE_SHOP_URL`, `MUSHOP_CLOUDNATIVE_URL`) |
+| Canonical CRM URL env | `SERVICE_CRM_URL` (legacy alias: `ENTERPRISE_CRM_URL`) |
+| Shared auth header | `X-Internal-Service-Key: $INTERNAL_SERVICE_KEY` |
+| Idempotency fields on order POST | `source_system`, `source_order_id`, `idempotency_token` (UUID5) |
+
+## Deployment Bill of Materials
+
+Full list of required resources, secrets, CLIs, and images in
+**[deploy/BOM.md](deploy/BOM.md)**. `pre-flight-check.sh`,
+`init-tenancy.sh`, and the Resource Manager schema all validate against
+it.
+
+## Quick start — single VM (fastest path)
+
+```bash
+# 1. SSH onto a fresh OCI Compute VM (Oracle Linux 9 / Ubuntu 24.04)
+sudo dnf install -y git curl unzip                  # or apt-get
+
+# 2. Clone + configure
+git clone https://github.com/adibirzu/octo-apm-demo.git /opt/octo
+cd /opt/octo/deploy/vm
+cp .env.template .env
+${EDITOR:-vi} .env                                   # set DNS_DOMAIN=octodemo.cloud, OCIR, ATP, keys
+
+# 3. Unzip the ATP wallet
+unzip /path/to/Wallet_<DB>.zip -d wallet
+
+# 4. TLS certs (bundled domains: drone.$DNS + backend.$DNS)
+sudo certbot certonly --standalone \
+  -d drone.${DNS_DOMAIN} -d backend.${DNS_DOMAIN}
+sudo cp /etc/letsencrypt/live/drone.${DNS_DOMAIN}/*.pem   nginx/tls/shop/
+sudo cp /etc/letsencrypt/live/backend.${DNS_DOMAIN}/*.pem nginx/tls/crm/
+
+# 5. Launch
+sudo ./install.sh
+```
+
+Validate:
+
+```bash
+curl -s https://drone.${DNS_DOMAIN}/ready   | jq
+curl -s https://backend.${DNS_DOMAIN}/ready | jq
+curl -s https://drone.${DNS_DOMAIN}/api/integrations/schema   | jq .info.title
+curl -s https://backend.${DNS_DOMAIN}/api/integrations/schema | jq .info.title
+```
+
+Both `/ready` must show `database.reachable=true`; both `/api/integrations/schema`
+must return an OpenAPI doc with `InternalServiceKey` in
+`components.securitySchemes`.
+
+## Subtree sources
+
+| Path | Source repo | Subtree command |
+|---|---|---|
+| `shop/` | `github.com/adibirzu/octo-drone-shop` | `git subtree pull --prefix=shop https://github.com/adibirzu/octo-drone-shop.git main` |
+| `crm/`  | `github.com/adibirzu/enterprise-crm-portal` | `git subtree pull --prefix=crm  https://github.com/adibirzu/enterprise-crm-portal.git main` |
+
+Either subtree can be pulled to grab upstream fixes without disturbing
+the other service. The upstream repos remain the per-service source of
+truth for app-layer changes; this repo owns the unified deploy + docs
+surface.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
