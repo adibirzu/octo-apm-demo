@@ -1,0 +1,23 @@
+{
+  "name": "octo-browser-runner",
+  "version": "1.0.0",
+  "description": "Playwright journey runner for octo-apm-demo — drives real browser sessions that emit RUM + OTel events tagged with run_id",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "run:catalog": "tsx src/run-journey.ts catalog-to-checkout",
+    "run:admin": "tsx src/run-journey.ts crm-admin-stroll",
+    "run:error": "tsx src/run-journey.ts error-retry-loop"
+  },
+  "dependencies": {
+    "@playwright/test": "1.48.2",
+    "playwright": "1.48.2",
+    "pino": "9.5.0",
+    "tsx": "4.19.2"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "@types/node": "22.7.9"
+  }
+}
