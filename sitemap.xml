@@ -13,6 +13,10 @@
          <lastmod>2026-04-22</lastmod>
     </url>
     <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/architecture/correlation-contract/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
          <loc>https://adibirzu.github.io/octo-apm-demo/architecture/data-model/</loc>
          <lastmod>2026-04-22</lastmod>
     </url>
@@ -177,6 +181,10 @@
          <lastmod>2026-04-22</lastmod>
     </url>
     <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/observability/oci-360-development-plan/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
          <loc>https://adibirzu.github.io/octo-apm-demo/observability/rum/</loc>
          <lastmod>2026-04-22</lastmod>
     </url>
@@ -250,6 +258,50 @@
     </url>
     <url>
          <loc>https://adibirzu.github.io/octo-apm-demo/testing/load-tests/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-01-first-trace/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-02-trace-log-correlation/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-03-slow-sql-drill-down/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-04-rum-outage-detection/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-05-metric-and-alarm/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-06-waf-event-investigation/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-07-saved-search/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-08-stack-monitoring-atp/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-09-chaos-drill/</loc>
+         <lastmod>2026-04-22</lastmod>
+    </url>
+    <url>
+         <loc>https://adibirzu.github.io/octo-apm-demo/workshop/lab-10-failed-checkout/</loc>
          <lastmod>2026-04-22</lastmod>
     </url>
 </urlset>

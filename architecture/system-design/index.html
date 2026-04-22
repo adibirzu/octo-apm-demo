@@ -8,7 +8,7 @@
 <meta content="Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, OCI Resource Manager stack, and single-VM install." name="description"/>
 <link href="https://adibirzu.github.io/octo-apm-demo/architecture/system-design/" rel="canonical"/>
 <link href="../platform-overview/" rel="prev"/>
-<link href="../data-model/" rel="next"/>
+<link href="../correlation-contract/" rel="next"/>
 <link href="../../assets/images/favicon.png" rel="icon"/>
 <meta content="mkdocs-1.6.1, mkdocs-material-9.7.1" name="generator"/>
 <title>System Design - OCTO APM Demo — Unified Platform</title>
@@ -230,6 +230,17 @@
     
   
   Operations
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../workshop/">
+          
+  
+  
+    
+  
+  Workshop
 
         </a>
 </li>
@@ -513,6 +524,18 @@
 </li>
 </ul>
 </nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../correlation-contract/">
+<span class="md-ellipsis">
+    
+  
+    Correlation Contract
+  
+
+    
+  </span>
+</a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="../data-model/">
@@ -960,6 +983,18 @@
   </span>
 </a>
 </li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability/oci-360-development-plan/">
+<span class="md-ellipsis">
+    
+  
+    OCI 360 Development Plan
+  
+
+    
+  </span>
+</a>
+</li>
 </ul>
 </nav>
 </li>
@@ -1299,6 +1334,156 @@
 </ul>
 </nav>
 </li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_12" type="checkbox"/>
+<div class="md-nav__link md-nav__container">
+<a class="md-nav__link" href="../../workshop/">
+<span class="md-ellipsis">
+    
+  
+    Workshop
+  
+
+    
+  </span>
+</a>
+<label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+<span class="md-nav__icon md-icon"></span>
+</label>
+</div>
+<nav aria-expanded="false" aria-labelledby="__nav_12_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_12">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Workshop
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-01-first-trace/">
+<span class="md-ellipsis">
+    
+  
+    Lab 01 — First trace
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-02-trace-log-correlation/">
+<span class="md-ellipsis">
+    
+  
+    Lab 02 — Trace ↔ Log
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-03-slow-sql-drill-down/">
+<span class="md-ellipsis">
+    
+  
+    Lab 03 — Slow SQL drill-down
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-04-rum-outage-detection/">
+<span class="md-ellipsis">
+    
+  
+    Lab 04 — RUM outage detection
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-05-metric-and-alarm/">
+<span class="md-ellipsis">
+    
+  
+    Lab 05 — Custom metric + alarm
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-06-waf-event-investigation/">
+<span class="md-ellipsis">
+    
+  
+    Lab 06 — WAF event investigation
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-07-saved-search/">
+<span class="md-ellipsis">
+    
+  
+    Lab 07 — Saved searches
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-08-stack-monitoring-atp/">
+<span class="md-ellipsis">
+    
+  
+    Lab 08 — Stack Monitoring + ATP
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-09-chaos-drill/">
+<span class="md-ellipsis">
+    
+  
+    Lab 09 — Chaos drill
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../workshop/lab-10-failed-checkout/">
+<span class="md-ellipsis">
+    
+  
+    Lab 10 — Failed checkout debug
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
 </ul>
 </nav>
 </div>
@@ -1528,13 +1713,13 @@
               </div>
 </div>
 </a>
-<a aria-label="Next: Data Model" class="md-footer__link md-footer__link--next" href="../data-model/">
+<a aria-label="Next: Correlation Contract" class="md-footer__link md-footer__link--next" href="../correlation-contract/">
 <div class="md-footer__title">
 <span class="md-footer__direction">
                 Next
               </span>
 <div class="md-ellipsis">
-                Data Model
+                Correlation Contract
               </div>
 </div>
 <div class="md-footer__button md-icon">
