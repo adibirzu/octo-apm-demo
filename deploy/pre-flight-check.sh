@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 # Pre-flight check for OCTO Drone Shop deployment to a new OCI tenancy.
 #
-# Validates:
-#   - Required env vars are set (no silent defaults)
-#   - No placeholder values leaked (example.cloud, example.invalid)
-#   - Required CLIs present on PATH (kubectl, oci, envsubst, docker, ssh)
-#   - kubectl context resolves
+# Validates a subset of the deployment Bill of Materials (BOM) — see
+# `deploy/BOM.md` for the authoritative list. Specifically:
+#
+#   - BOM §0 Operator workstation CLIs are on PATH
+#   - BOM §9 DNS_DOMAIN is set and not a placeholder
+#   - BOM §6 OCIR_REPO is set
+#   - Runtime K8S_NAMESPACE is set
+#   - Recommended BOM items (compartment, APM endpoint, log id, LB
+#     subnet, IDCS domain) raise warnings when missing so operators
+#     see the gap without hard-failing demo installs.
 #
 # Exit codes:
 #   0 = all checks passed
-#   1 = at least one check failed (missing var or missing tool)
+#   1 = at least one check failed (missing required var)
 #
 # Usage:
 #   DNS_DOMAIN=tenant-a.customer.example \
@@ -92,8 +97,10 @@ fi
 echo
 if [[ "${errors}" -gt 0 ]]; then
     printf "\033[31mPre-flight FAILED\033[0m with %d error(s), %d warning(s)\n" "${errors}" "${warnings}" >&2
+    printf "See the deployment Bill of Materials for the full minimal set: deploy/BOM.md\n" >&2
     exit 1
 fi
 
 printf "\033[32mPre-flight PASSED\033[0m (%d warning(s))\n" "${warnings}"
+printf "Reference the deployment Bill of Materials for anything else you might need: deploy/BOM.md\n"
 exit 0

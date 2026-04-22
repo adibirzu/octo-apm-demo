@@ -57,6 +57,15 @@ No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.
 
 Full matrix in [site/getting-started/deployment-options.md](site/getting-started/deployment-options.md).
 
+### Bill of Materials
+
+The complete, minimal list of tenancy resources, secrets, CLIs, and
+images needed to redeploy from a blank slate lives in
+**[deploy/BOM.md](deploy/BOM.md)**. `pre-flight-check.sh`,
+`init-tenancy.sh`, and the Resource Manager schema all validate
+against it — if they disagree, the BOM wins and the mismatch is a
+bug to raise.
+
 ### New tenancy bootstrap workflow
 
 | Step | Script | Purpose |
