@@ -11,8 +11,8 @@
     "run:error": "tsx src/run-journey.ts error-retry-loop"
   },
   "dependencies": {
-    "@playwright/test": "1.48.2",
-    "playwright": "1.48.2",
+    "@playwright/test": "1.55.1",
+    "playwright": "1.55.1",
     "pino": "9.5.0",
     "tsx": "4.19.2"
   },

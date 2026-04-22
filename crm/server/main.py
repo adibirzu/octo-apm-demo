@@ -123,11 +123,24 @@ FastAPIInstrumentor.instrument_app(app)
 
 # ── Middleware (order matters — outermost first) ─────────────────
 if cfg.cors_allowed_origins:
+    # Explicit method + header allowlists. `allow_credentials=True`
+    # combined with `allow_methods=["*"]` used to accept TRACE/CONNECT
+    # on preflight — tighten here to the methods the app actually uses.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cfg.cors_allowed_origins,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=[
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With",
+            "X-Internal-Service-Key",
+            "X-Request-Id",
+            "X-Run-Id",
+            "X-Workflow-Id",
+            "traceparent",
+            "tracestate",
+        ],
         allow_credentials=True,
     )
 else:
