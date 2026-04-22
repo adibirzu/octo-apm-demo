@@ -1,0 +1,17 @@
+[Unit]
+Description=OCTO Drone Shop + Enterprise CRM unified VM stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=__INSTALL_DIR__
+EnvironmentFile=__INSTALL_DIR__/.env
+ExecStart=/usr/bin/docker compose -f docker-compose-unified.yml --env-file __INSTALL_DIR__/.env up -d
+ExecStop=/usr/bin/docker compose -f docker-compose-unified.yml --env-file __INSTALL_DIR__/.env down
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,187 @@
+title: "OCTO Drone Shop + Enterprise CRM — Tenancy Bootstrap"
+description: |
+  Provisions the observability and integration surface required to run
+  the OCTO Drone Shop and Enterprise CRM Portal in a fresh OCI tenancy:
+  APM Domain, RUM Web Application, Log Analytics app-log pipeline, and
+  WAF policies. Container workloads (OKE) and the Autonomous Database
+  are selected from the tenancy — they are NOT created by this stack.
+
+schemaVersion: 1.1.0
+version: "20260422"
+
+locale: "en"
+
+variableGroups:
+  - title: "Tenancy & compartment"
+    variables:
+      - tenancy_ocid
+      - region
+      - compartment_id
+
+  - title: "DNS + service hostnames"
+    variables:
+      - shop_domain
+      - crm_domain
+      - ops_domain
+      - coordinator_domain
+
+  - title: "APM Domain + RUM"
+    variables:
+      - create_apm_domain
+      - apm_domain_display_name
+
+  - title: "Application logs → Log Analytics"
+    variables:
+      - app_log_id
+      - app_log_group_id
+      - la_namespace
+      - la_log_group_id
+
+  - title: "WAF policies"
+    variables:
+      - waf_mode
+      - waf_log_group_id
+      - admin_allow_cidrs
+
+  - title: "Advanced (usually leave as default)"
+    variables:
+      - waf_log_id_shop
+      - waf_log_id_crm
+      - waf_log_id_ops
+      - waf_log_id_coordinator
+    visible: false
+
+variables:
+  tenancy_ocid:
+    type: oci:identity:tenancy:id
+    title: "Tenancy OCID"
+    description: "Automatically filled by the OCI Console — do not edit."
+    required: true
+
+  region:
+    type: oci:identity:region:name
+    title: "Region"
+    description: "OCI region where the resources will be provisioned."
+    required: true
+
+  compartment_id:
+    type: oci:identity:compartment:id
+    title: "Compartment"
+    description: "Compartment that owns the APM Domain, Log Analytics pipeline, and WAF policies."
+    required: true
+    default: compartment_ocid
+
+  shop_domain:
+    type: string
+    title: "Shop public hostname"
+    description: "e.g. shop.tenant-a.customer.example"
+    required: true
+    pattern: "^[a-z0-9.-]+$"
+
+  crm_domain:
+    type: string
+    title: "CRM public hostname"
+    description: "e.g. crm.tenant-a.customer.example"
+    required: true
+    pattern: "^[a-z0-9.-]+$"
+
+  ops_domain:
+    type: string
+    title: "Ops portal hostname"
+    default: "ops.example.invalid"
+
+  coordinator_domain:
+    type: string
+    title: "Coordinator hostname"
+    default: "coordinator.example.invalid"
+
+  create_apm_domain:
+    type: boolean
+    title: "Provision an APM Domain + RUM Web Application"
+    description: "When disabled you must supply the APM data keys out of band."
+    default: true
+
+  apm_domain_display_name:
+    type: string
+    title: "APM Domain display name"
+    default: "octo-apm"
+    visible:
+      eq:
+        - create_apm_domain
+        - true
+
+  app_log_id:
+    type: oci:logging:log:id
+    title: "Application log (OCI Logging)"
+    description: |
+      Existing log that the app writes to via the OCI Logging SDK.
+      Service Connector will fan this log into Log Analytics.
+    dependsOn:
+      compartmentId: compartment_id
+    required: false
+
+  app_log_group_id:
+    type: oci:logging:loggroup:id
+    title: "Log group owning the app log"
+    dependsOn:
+      compartmentId: compartment_id
+    required: false
+
+  la_namespace:
+    type: string
+    title: "Log Analytics namespace"
+    description: "Look up once with: oci log-analytics namespace list-namespaces"
+    required: false
+
+  la_log_group_id:
+    type: oci:loganalytics:loggroup:id
+    title: "Log Analytics log group"
+    dependsOn:
+      compartmentId: compartment_id
+    required: false
+
+  waf_mode:
+    type: enum
+    title: "WAF mode"
+    enum:
+      - DETECTION
+      - BLOCK
+    default: DETECTION
+
+  waf_log_group_id:
+    type: oci:logging:loggroup:id
+    title: "Log group for WAF events"
+    dependsOn:
+      compartmentId: compartment_id
+    required: true
+
+  admin_allow_cidrs:
+    type: array
+    items:
+      type: string
+    title: "Admin allow-list CIDRs"
+    description: "IP ranges permitted to reach /api/admin/* on CRM/ops/coordinator."
+    default: []
+
+  waf_log_id_shop:
+    type: string
+    default: ""
+  waf_log_id_crm:
+    type: string
+    default: ""
+  waf_log_id_ops:
+    type: string
+    default: ""
+  waf_log_id_coordinator:
+    type: string
+    default: ""
+
+outputs:
+  apm_data_upload_endpoint:
+    title: "APM data upload endpoint"
+    description: "Set as OCI_APM_ENDPOINT in the app Kubernetes secret."
+  rum_web_application_id:
+    title: "RUM Web Application OCID"
+    description: "Set as OCI_APM_WEB_APPLICATION."
+  waf_policies:
+    title: "WAF policy OCIDs"
