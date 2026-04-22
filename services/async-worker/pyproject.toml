@@ -1,0 +1,26 @@
+[project]
+name = "octo-async-worker"
+version = "1.0.0"
+description = "Redis-Streams consumer for async order-sync + future event flows in octo-apm-demo"
+requires-python = ">=3.11"
+dependencies = [
+    "redis>=5.0",
+    "httpx>=0.27",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+    "structlog>=24.1",
+    "opentelemetry-api>=1.24",
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-http>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "fakeredis>=2.23"]
+
+[project.scripts]
+octo-async-worker = "octo_async_worker.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["src"]
