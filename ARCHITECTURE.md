@@ -84,6 +84,30 @@ flowchart TD
     DroneShop -.-> StackMonitoring
 ```
 
+## Deployment Bill of Materials
+
+The authoritative minimal set required to redeploy from a blank slate
+is enumerated in [`deploy/BOM.md`](deploy/BOM.md). Summary:
+
+| Category | Items | Produced by |
+|---|---|---|
+| Operator CLIs | oci, kubectl, terraform (≥1.6), docker, envsubst, jq, python3, gh | Laptop one-time setup |
+| Tenancy | Tenancy OCID, region, Object Storage namespace, optional remote-state bucket | Console |
+| Compartment + IAM | 1 compartment, 2 dynamic groups, ≥1 policy, IDCS domain + app | Console / Terraform |
+| Network | VCN + public LB subnet + private worker subnet + IG + NAT GW | Console / Terraform |
+| Database | 1 ATP + wallet + admin + wallet password | Console |
+| Container registry | 2–3 OCIR repos (shop, CRM, coordinator) | `init-tenancy.sh` |
+| Observability | APM Domain, RUM app, 2 data keys, Log group, App log, LA namespace + log group, LA source `octo-shop-app-json`, Service Connector, Stack Monitoring MonitoredResource | `ensure_apm.sh`, `ensure_stack_monitoring.sh`, `tools/create_la_source.py`, Terraform |
+| WAF | 4 policies + log group + 4 per-frontend logs | `deploy/terraform/modules/waf` |
+| DNS + TLS | 2–4 A records + certs per hostname | Your DNS provider + certbot / OCI Certificates |
+| Secrets | 9 (`AUTH_TOKEN_SECRET`, `INTERNAL_SERVICE_KEY`, `APP_SECRET_KEY`, `BOOTSTRAP_ADMIN_PASSWORD`, `ORACLE_PASSWORD`, `ORACLE_WALLET_PASSWORD`, `IDCS_CLIENT_SECRET`, `OCI_APM_PRIVATE_DATAKEY`, `OCI_APM_PUBLIC_DATAKEY`) | `init-tenancy.sh` + OCI Vault (via CSI) |
+| Runtime | OKE cluster **or** 1 Compute VM | Console or Terraform |
+| Images | shop, CRM, coordinator (optional) | `deploy/deploy.sh` |
+
+Smallest viable deploy (workshop/demo): ~15 minutes from a fresh
+tenancy using `deploy/vm/`. Full production deploy: 45–90 minutes first
+time, ~15 minutes per subsequent tenancy via the Resource Manager stack.
+
 ## Provisioning & portability artifacts
 
 | File | Responsibility |

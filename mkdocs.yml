@@ -82,6 +82,7 @@ nav:
     - Prerequisites: getting-started/prerequisites.md
     - Quick Start: getting-started/quickstart.md
     - Deployment options: getting-started/deployment-options.md
+    - Bill of Materials: getting-started/bill-of-materials.md
     - OKE Deployment: getting-started/oke-deployment.md
     - New Tenancy: getting-started/new-tenancy.md
   - Architecture:
