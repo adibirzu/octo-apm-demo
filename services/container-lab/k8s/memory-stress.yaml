@@ -1,0 +1,52 @@
+# Container memory pressure lab — allocates + touches $ALLOCATE_MB of
+# memory to trigger OOMKilled + degraded latency on neighbouring pods.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: memory-stress-${RUN_ID}
+  namespace: ${TARGET_NAMESPACE}
+  labels:
+    app: container-lab
+    stress: memory
+    run-id: "${RUN_ID}"
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  activeDeadlineSeconds: 3600
+  template:
+    metadata:
+      labels:
+        app: container-lab
+        stress: memory
+        run-id: "${RUN_ID}"
+    spec:
+      restartPolicy: Never
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: octo-drone-shop
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: stress
+          image: docker.io/polinux/stress-ng:latest
+          args:
+            - "--vm"
+            - "1"
+            - "--vm-bytes"
+            - "${ALLOCATE_MB:-1024}M"
+            - "--vm-hang"
+            - "1"
+            - "--timeout"
+            - "${DURATION_SECONDS:-300}s"
+            - "--metrics-brief"
+          resources:
+            requests: { cpu: 200m, memory: "${ALLOCATE_MB:-1024}Mi" }
+            limits: { cpu: 500m, memory: "${ALLOCATE_LIMIT_MB:-2048}Mi" }
+          env:
+            - name: OCTO_RUN_ID
+              value: "${RUN_ID}"
+            - name: OCTO_STRESS_KIND
+              value: "memory"
