@@ -1,0 +1,79 @@
+# octo-async-worker — continuous consumer Deployment.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-async
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: async-worker
+  namespace: octo-async
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: async-worker
+  template:
+    metadata:
+      labels:
+        app: async-worker
+    spec:
+      containers:
+        - name: worker
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-async-worker:${IMAGE_TAG:-latest}
+          env:
+            - name: OCTO_WORKER_REDIS_URL
+              value: "redis://cache.octo-cache.svc.cluster.local:6379"
+            - name: OCTO_WORKER_STREAMS
+              value: '["octo.orders.to-sync"]'
+            - name: OCTO_WORKER_CONSUMER_GROUP
+              value: "octo-async-worker"
+            - name: OCTO_WORKER_CONSUMER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OCTO_WORKER_CRM_BASE_URL
+              value: "http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080"
+            - name: OCTO_WORKER_INTERNAL_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-auth
+                  key: internal-service-key
+            - name: OCTO_WORKER_OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://gateway.octo-otel.svc.cluster.local:4318"
+            - name: OCTO_WORKER_SERVICE_NAME
+              value: "octo-async-worker"
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: async-worker
+  namespace: octo-async
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: async-worker
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
