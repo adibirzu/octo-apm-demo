@@ -1,0 +1,68 @@
+# Container CPU pressure lab — K8s Job that runs stress-ng alongside
+# the target Deployment so HPA + alarms + throttling counters light up.
+#
+# Targets the Drone Shop pods by default. Adjust `nodeSelector` to pin
+# stress to the same node as the target pod; otherwise the Job may
+# land elsewhere and not collide with the Deployment.
+#
+# Apply:
+#   RUN_ID=$(uuidgen) \
+#   TARGET_NAMESPACE=octo-shop-prod \
+#   CPU_LOAD_PERCENT=80 \
+#   DURATION_SECONDS=300 \
+#   envsubst < k8s/cpu-stress.yaml | kubectl apply -f -
+#
+# Remove:
+#   kubectl delete job -n $TARGET_NAMESPACE -l stress=cpu -l run-id=$RUN_ID
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cpu-stress-${RUN_ID}
+  namespace: ${TARGET_NAMESPACE}
+  labels:
+    app: container-lab
+    stress: cpu
+    run-id: "${RUN_ID}"
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  activeDeadlineSeconds: 3600       # hard cap — prevents forgotten runs
+  template:
+    metadata:
+      labels:
+        app: container-lab
+        stress: cpu
+        run-id: "${RUN_ID}"
+      annotations:
+        # Land on the same node as at least one target pod so the
+        # stress is visible in that pod's metrics.
+        octo.oracle.com/target-pod-label: "${TARGET_POD_LABEL:-app=octo-drone-shop}"
+    spec:
+      restartPolicy: Never
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: octo-drone-shop
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: stress
+          image: docker.io/polinux/stress-ng:latest
+          args:
+            - "--cpu"
+            - "2"
+            - "--cpu-load"
+            - "${CPU_LOAD_PERCENT:-80}"
+            - "--timeout"
+            - "${DURATION_SECONDS:-300}s"
+            - "--metrics-brief"
+          resources:
+            requests: { cpu: 500m, memory: 128Mi }
+            limits: { cpu: 2000m, memory: 256Mi }
+          env:
+            - name: OCTO_RUN_ID
+              value: "${RUN_ID}"
+            - name: OCTO_STRESS_KIND
+              value: "cpu"

@@ -1,0 +1,46 @@
+# Container disk stress — fills an emptyDir + thrashes fsync so the
+# node's disk latency climbs. Exercises Stack Monitoring + OPSI.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: disk-stress-${RUN_ID}
+  namespace: ${TARGET_NAMESPACE}
+  labels:
+    app: container-lab
+    stress: disk
+    run-id: "${RUN_ID}"
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  activeDeadlineSeconds: 1800
+  template:
+    metadata:
+      labels:
+        app: container-lab
+        stress: disk
+        run-id: "${RUN_ID}"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: stress
+          image: docker.io/polinux/stress-ng:latest
+          args:
+            - "--hdd"
+            - "2"
+            - "--hdd-bytes"
+            - "${DISK_BYTES:-500M}"
+            - "--timeout"
+            - "${DURATION_SECONDS:-180}s"
+            - "--metrics-brief"
+          volumeMounts:
+            - name: scratch
+              mountPath: /scratch
+          workingDir: /scratch
+          resources:
+            requests: { cpu: 200m, memory: 256Mi }
+            limits: { cpu: 1000m, memory: 512Mi }
+      volumes:
+        - name: scratch
+          emptyDir:
+            sizeLimit: 2Gi
