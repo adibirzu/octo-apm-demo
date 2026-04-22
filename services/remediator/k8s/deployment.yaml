@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-remediator
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+
+---
+# ServiceAccount the remediator uses to patch Deployments + HPAs.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: remediator
+  namespace: octo-remediator
+
+---
+# Narrow Role — only what the playbooks actually need.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: octo-remediator
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: octo-remediator
+subjects:
+  - kind: ServiceAccount
+    name: remediator
+    namespace: octo-remediator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: octo-remediator
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: remediator
+  namespace: octo-remediator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: remediator
+  template:
+    metadata:
+      labels:
+        app: remediator
+    spec:
+      serviceAccountName: remediator
+      containers:
+        - name: api
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-remediator:${IMAGE_TAG:-latest}
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: OCTO_REMEDIATOR_REDIS_URL
+              value: "redis://cache.octo-cache.svc.cluster.local:6379"
+            - name: OCTO_REMEDIATOR_AUTO_MEDIUM
+              value: "false"
+            - name: PORT
+              value: "8080"
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: remediator
+  namespace: octo-remediator
+spec:
+  selector:
+    app: remediator
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
