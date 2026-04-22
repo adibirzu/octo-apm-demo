@@ -38,6 +38,15 @@ Cloud-native CRM application built for **OCI Observability** demonstration. Show
     └── Prometheus ────────── /metrics endpoint (always on)
 ```
 
+## Deployment Bill of Materials
+
+Full minimum-required resource/cred/tool list for a new-tenancy deploy:
+[octo-drone-shop/deploy/BOM.md](https://github.com/adibirzu/octo-drone-shop/blob/main/deploy/BOM.md)
+— the shop side owns the authoritative BOM because the shop's deploy
+scripts (`pre-flight-check.sh`, `init-tenancy.sh`) validate against it
+and the Resource Manager schema is generated from the same source of
+truth.
+
 ## Deployment paths
 
 Three supported install paths, same container image on each:
