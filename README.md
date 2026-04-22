@@ -38,6 +38,18 @@ Cloud-native CRM application built for **OCI Observability** demonstration. Show
     └── Prometheus ────────── /metrics endpoint (always on)
 ```
 
+## Deployment paths
+
+Three supported install paths, same container image on each:
+
+| Path | Entry point | When to use |
+|---|---|---|
+| OKE (Kubernetes) | `deploy/k8s/deployment-atp.yaml` | Production / HA |
+| OCI Resource Manager stack | [octo-drone-shop/deploy/resource-manager/](https://github.com/adibirzu/octo-drone-shop/tree/main/deploy/resource-manager) | One-click observability + WAF bootstrap (shared with the shop) |
+| Unified single VM | [octo-drone-shop/deploy/vm/](https://github.com/adibirzu/octo-drone-shop/tree/main/deploy/vm) | Runs shop + CRM on one VM against ATP (demos, workshops, air-gapped) |
+
+See [deployment-options](https://adibirzu.github.io/octo-drone-shop/getting-started/deployment-options/) for the full matrix.
+
 ## Cross-service integration contract
 
 This service pairs with the [OCTO Drone Shop](https://github.com/adibirzu/octo-drone-shop). The integration is symmetric on both sides:
