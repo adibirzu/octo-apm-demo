@@ -28,8 +28,8 @@ COPY services/cache/client services/cache/client
 COPY services/async-worker services/async-worker
 
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install --prefix=/install -r shop/requirements.txt && \
-    pip install --prefix=/install --no-deps \
+    pip install --prefix=/install --ignore-installed -r shop/requirements.txt && \
+    pip install --prefix=/install --ignore-installed --no-deps \
         ./services/cache/client \
         ./services/async-worker
 
@@ -49,7 +49,6 @@ COPY --from=builder /install /usr/local
 
 WORKDIR /app
 COPY shop/server /app/server
-COPY shop/.env.example /app/.env.example
 
 RUN chown -R appuser:appuser /app
 USER appuser

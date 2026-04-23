@@ -29,6 +29,10 @@ lxml==6.1.0
 pyyaml==6.0.3
 psutil>=7.2.2
 
+# Transitive — opentelemetry-instrumentation imports `packaging` but
+# does not declare it as a runtime dep on some platforms.
+packaging>=23.0
+
 # Redis client — customer enrichment cache
 redis[hiredis]>=5.0,<6.0
 

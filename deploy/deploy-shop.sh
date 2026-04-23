@@ -160,5 +160,7 @@ echo ""
 echo "================================================"
 echo " Deploy complete!"
 echo " Image: ${OCIR_REPO}:${TAG}"
-echo " Verify: ${SHOP_PUBLIC_URL}/api/observability/360"
+if $ROLLOUT; then
+    echo " Verify: ${SHOP_PUBLIC_URL}/api/observability/360"
+fi
 echo "================================================"
