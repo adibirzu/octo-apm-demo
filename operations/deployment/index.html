@@ -16,7 +16,7 @@
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../deploy-readiness/">
+        <link rel="next" href="../current-status/">
       
       
         
@@ -2984,6 +2984,8 @@
       
         
       
+        
+      
     
     
     
@@ -3194,6 +3196,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../current-status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Current Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3795,28 +3825,35 @@
 
 <h1 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h1>
 <h2 id="automated-deploy-script">Automated Deploy Script<a class="headerlink" href="#automated-deploy-script" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">./deploy/deploy.sh<span class="w">                  </span><span class="c1"># Build + push + rollout</span>
-</span><span id="__span-0-2">./deploy/deploy.sh<span class="w"> </span>--build-only<span class="w">     </span><span class="c1"># Build + push, no rollout</span>
-</span><span id="__span-0-3">./deploy/deploy.sh<span class="w"> </span>--rollout-only<span class="w">   </span><span class="c1"># Rollout existing latest tag</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="nv">OCIR_REGION</span><span class="o">=</span>eu-frankfurt-1<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-2"><span class="nv">OCIR_TENANCY</span><span class="o">=</span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><span class="nv">DNS_DOMAIN</span><span class="o">=</span>&lt;your-domain&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-4">./deploy/deploy.sh<span class="w">                  </span><span class="c1"># Build + push + rollout</span>
+</span><span id="__span-0-5">
+</span><span id="__span-0-6">./deploy/deploy.sh<span class="w"> </span>--build-only<span class="w">     </span><span class="c1"># Build + push, no rollout</span>
+</span><span id="__span-0-7">./deploy/deploy.sh<span class="w"> </span>--rollout-only<span class="w">   </span><span class="c1"># Roll out the existing latest tag</span>
+</span><span id="__span-0-8">./deploy/deploy.sh<span class="w"> </span>--shop-only<span class="w">      </span><span class="c1"># Only the shop service</span>
+</span><span id="__span-0-9">./deploy/deploy.sh<span class="w"> </span>--crm-only<span class="w">       </span><span class="c1"># Only the CRM service</span>
 </span></code></pre></div>
 <h2 id="manual-workflow">Manual Workflow<a class="headerlink" href="#manual-workflow" title="Permanent link">&para;</a></h2>
 <h3 id="1-sync-to-build-vm">1. Sync to Build VM<a class="headerlink" href="#1-sync-to-build-vm" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1">rsync<span class="w"> </span>-az<span class="w"> </span>--exclude<span class="w"> </span><span class="s1">&#39;.git&#39;</span><span class="w"> </span>--exclude<span class="w"> </span><span class="s1">&#39;__pycache__&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-2"><span class="w">  </span>.<span class="w"> </span>remote-builder:/tmp/octo-drone-shop/
+</span><span id="__span-1-2"><span class="w">  </span>.<span class="w"> </span>remote-builder:/tmp/octo-apm-demo-shop/
 </span></code></pre></div>
 <h3 id="2-build-native-x86_64">2. Build (Native x86_64)<a class="headerlink" href="#2-build-native-x86_64" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="nv">TAG</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d%H%M%S<span class="k">)</span>
-</span><span id="__span-2-2">ssh<span class="w"> </span>remote-builder<span class="w"> </span><span class="s2">&quot;cd /tmp/octo-drone-shop &amp;&amp; \</span>
-</span><span id="__span-2-3"><span class="s2">  docker build -t </span><span class="si">${</span><span class="nv">OCIR_REPO</span><span class="si">}</span><span class="s2">/octo-drone-shop:</span><span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="s2"> \</span>
-</span><span id="__span-2-4"><span class="s2">               -t </span><span class="si">${</span><span class="nv">OCIR_REPO</span><span class="si">}</span><span class="s2">/octo-drone-shop:latest .&quot;</span>
+</span><span id="__span-2-2">ssh<span class="w"> </span>remote-builder<span class="w"> </span><span class="s2">&quot;cd /tmp/octo-apm-demo-shop &amp;&amp; \</span>
+</span><span id="__span-2-3"><span class="s2">  docker build -f shop/Dockerfile \</span>
+</span><span id="__span-2-4"><span class="s2">    -t </span><span class="si">${</span><span class="nv">OCIR_REGION</span><span class="si">}</span><span class="s2">.ocir.io/</span><span class="si">${</span><span class="nv">OCIR_TENANCY</span><span class="si">}</span><span class="s2">/octo-drone-shop:</span><span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="s2"> \</span>
+</span><span id="__span-2-5"><span class="s2">    -t </span><span class="si">${</span><span class="nv">OCIR_REGION</span><span class="si">}</span><span class="s2">.ocir.io/</span><span class="si">${</span><span class="nv">OCIR_TENANCY</span><span class="si">}</span><span class="s2">/octo-drone-shop:latest .&quot;</span>
 </span></code></pre></div>
 <h3 id="3-push-to-ocir">3. Push to OCIR<a class="headerlink" href="#3-push-to-ocir" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">ssh<span class="w"> </span>remote-builder<span class="w"> </span><span class="s2">&quot;docker push </span><span class="si">${</span><span class="nv">OCIR_REPO</span><span class="si">}</span><span class="s2">/octo-drone-shop:</span><span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="s2"> &amp;&amp; \</span>
-</span><span id="__span-3-2"><span class="s2">  docker push </span><span class="si">${</span><span class="nv">OCIR_REPO</span><span class="si">}</span><span class="s2">/octo-drone-shop:latest&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">ssh<span class="w"> </span>remote-builder<span class="w"> </span><span class="s2">&quot;docker push </span><span class="si">${</span><span class="nv">OCIR_REGION</span><span class="si">}</span><span class="s2">.ocir.io/</span><span class="si">${</span><span class="nv">OCIR_TENANCY</span><span class="si">}</span><span class="s2">/octo-drone-shop:</span><span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="s2"> &amp;&amp; \</span>
+</span><span id="__span-3-2"><span class="s2">  docker push </span><span class="si">${</span><span class="nv">OCIR_REGION</span><span class="si">}</span><span class="s2">.ocir.io/</span><span class="si">${</span><span class="nv">OCIR_TENANCY</span><span class="si">}</span><span class="s2">/octo-drone-shop:latest&quot;</span>
 </span></code></pre></div>
 <h3 id="4-rollout-on-oke">4. Rollout on OKE<a class="headerlink" href="#4-rollout-on-oke" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>image<span class="w"> </span>deployment/octo-drone-shop<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-2"><span class="w">  </span><span class="nv">app</span><span class="o">=</span><span class="si">${</span><span class="nv">OCIR_REPO</span><span class="si">}</span>/octo-drone-shop:<span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="w"> </span>-n<span class="w"> </span>octo-drone-shop
+</span><span id="__span-4-2"><span class="w">  </span><span class="nv">app</span><span class="o">=</span><span class="si">${</span><span class="nv">OCIR_REGION</span><span class="si">}</span>.ocir.io/<span class="si">${</span><span class="nv">OCIR_TENANCY</span><span class="si">}</span>/octo-drone-shop:<span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="w"> </span>-n<span class="w"> </span>octo-drone-shop
 </span><span id="__span-4-3">
 </span><span id="__span-4-4">kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>deployment/octo-drone-shop<span class="w"> </span>-n<span class="w"> </span>octo-drone-shop
 </span></code></pre></div>
@@ -3883,13 +3920,13 @@
         
         
           
-          <a href="../deploy-readiness/" class="md-footer__link md-footer__link--next" aria-label="Next: Deploy Readiness">
+          <a href="../current-status/" class="md-footer__link md-footer__link--next" aria-label="Next: Current Status">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Deploy Readiness
+                Current Status
               </div>
             </div>
             <div class="md-footer__button md-icon">

@@ -3133,6 +3133,8 @@
       
         
       
+        
+      
     
     
     
@@ -3202,6 +3204,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/current-status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Current Status
   
 
     
@@ -3843,17 +3873,17 @@ into APM + RUM + OCI Logging → Log Analytics + Stack Monitoring.</p>
 <tbody>
 <tr>
 <td>Drone Shop</td>
-<td><code>octo-shop-prod</code></td>
 <td><code>octo-drone-shop</code></td>
-<td><code>http://octo-drone-shop.octo-shop-prod.svc.cluster.local:8080</code></td>
-<td><code>drone.${DNS_DOMAIN}</code></td>
+<td><code>octo-drone-shop</code></td>
+<td><code>http://octo-drone-shop.octo-drone-shop.svc.cluster.local:8080</code></td>
+<td><code>shop.${DNS_DOMAIN}</code></td>
 </tr>
 <tr>
 <td>Enterprise CRM</td>
-<td><code>octo-backend-prod</code></td>
+<td><code>enterprise-crm</code></td>
 <td><code>enterprise-crm-portal</code></td>
-<td><code>http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080</code></td>
-<td><code>backend.${DNS_DOMAIN}</code></td>
+<td><code>http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080</code></td>
+<td><code>crm.${DNS_DOMAIN}</code></td>
 </tr>
 </tbody>
 </table>
@@ -3958,19 +3988,12 @@ promotes it to a searchable column, so trace-to-log pivots work in
 both directions: APM → Log Analytics search, Log Analytics → APM
 trace explorer URL.</p>
 <h2 id="image-build-push">Image build + push<a class="headerlink" href="#image-build-push" title="Permanent link">&para;</a></h2>
-<p>The root-level <code>deploy/deploy-shop.sh</code> and <code>deploy/deploy-crm.sh</code> handle
-build + push + rollout. Point them at the OKE namespaces:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><span class="c1"># Drone Shop</span>
-</span><span id="__span-1-2"><span class="nv">OCIR_REPO</span><span class="o">=</span><span class="si">${</span><span class="nv">OCIR_REGION</span><span class="si">}</span>.ocir.io/<span class="si">${</span><span class="nv">OCIR_TENANCY</span><span class="si">}</span>/octo-drone-shop<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-3"><span class="nv">K8S_NAMESPACE</span><span class="o">=</span>octo-shop-prod<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-4"><span class="nv">K8S_DEPLOYMENT</span><span class="o">=</span>octo-drone-shop<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-5">./deploy/deploy-shop.sh
-</span><span id="__span-1-6">
-</span><span id="__span-1-7"><span class="c1"># Enterprise CRM</span>
-</span><span id="__span-1-8"><span class="nv">OCIR_REPO</span><span class="o">=</span><span class="si">${</span><span class="nv">OCIR_REGION</span><span class="si">}</span>.ocir.io/<span class="si">${</span><span class="nv">OCIR_TENANCY</span><span class="si">}</span>/enterprise-crm-portal<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-9"><span class="nv">K8S_NAMESPACE</span><span class="o">=</span>octo-backend-prod<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-10"><span class="nv">K8S_DEPLOYMENT</span><span class="o">=</span>enterprise-crm-portal<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-11">./deploy/deploy-crm.sh
+<p>The root-level <code>deploy/deploy.sh</code> wrapper orchestrates both services and
+delegates to <code>deploy/deploy-shop.sh</code> + <code>deploy/deploy-crm.sh</code> under the hood:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><span class="nv">OCIR_REGION</span><span class="o">=</span><span class="si">${</span><span class="nv">OCIR_REGION</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><span class="nv">OCIR_TENANCY</span><span class="o">=</span><span class="si">${</span><span class="nv">OCIR_TENANCY</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><span class="nv">DNS_DOMAIN</span><span class="o">=</span><span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4">./deploy/deploy.sh
 </span></code></pre></div>
 <p>Both scripts build on a remote x86_64 host (ARM laptops cannot cross-
 build with QEMU reliably), push to OCIR, and <code>kubectl set image</code> the
@@ -3991,17 +4014,17 @@ appropriate Deployment.</p>
 <code>apm_private_datakey</code>, <code>rum_web_application_id</code>) are what populate the
 <code>octo-apm</code> Kubernetes secret.</p>
 <h2 id="validate">Validate<a class="headerlink" href="#validate" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">curl<span class="w"> </span>-s<span class="w"> </span>https://drone.<span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span>/ready<span class="w">   </span><span class="p">|</span><span class="w"> </span>jq
-</span><span id="__span-3-2">curl<span class="w"> </span>-s<span class="w"> </span>https://backend.<span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span>/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-</span><span id="__span-3-3">curl<span class="w"> </span>-s<span class="w"> </span>https://drone.<span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span>/api/integrations/schema<span class="w">   </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.info.title
-</span><span id="__span-3-4">curl<span class="w"> </span>-s<span class="w"> </span>https://backend.<span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span>/api/integrations/schema<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.info.title
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">curl<span class="w"> </span>-s<span class="w"> </span>https://shop.<span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span>/ready<span class="w">   </span><span class="p">|</span><span class="w"> </span>jq
+</span><span id="__span-3-2">curl<span class="w"> </span>-s<span class="w"> </span>https://crm.<span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span>/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</span><span id="__span-3-3">curl<span class="w"> </span>-s<span class="w"> </span>https://shop.<span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span>/api/integrations/schema<span class="w">   </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.info.title
+</span><span id="__span-3-4">curl<span class="w"> </span>-s<span class="w"> </span>https://crm.<span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span>/api/integrations/schema<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.info.title
 </span></code></pre></div>
 <p>When both <code>/ready</code> return <code>database.reachable=true</code> and both schema
 endpoints return an OpenAPI doc advertising <code>InternalServiceKey</code> in
 <code>components.securitySchemes</code>, the OKE deploy is fully operational.</p>
 <h2 id="rollback">Rollback<a class="headerlink" href="#rollback" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">kubectl<span class="w"> </span>rollout<span class="w"> </span>undo<span class="w"> </span>deployment/octo-drone-shop<span class="w">       </span>-n<span class="w"> </span>octo-shop-prod
-</span><span id="__span-4-2">kubectl<span class="w"> </span>rollout<span class="w"> </span>undo<span class="w"> </span>deployment/enterprise-crm-portal<span class="w"> </span>-n<span class="w"> </span>octo-backend-prod
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">kubectl<span class="w"> </span>rollout<span class="w"> </span>undo<span class="w"> </span>deployment/octo-drone-shop<span class="w">       </span>-n<span class="w"> </span>octo-drone-shop
+</span><span id="__span-4-2">kubectl<span class="w"> </span>rollout<span class="w"> </span>undo<span class="w"> </span>deployment/enterprise-crm-portal<span class="w"> </span>-n<span class="w"> </span>enterprise-crm
 </span></code></pre></div>
 <h2 id="legacy">Legacy<a class="headerlink" href="#legacy" title="Permanent link">&para;</a></h2>
 <p>The previous OKE walkthrough (single-Deployment shop-only install) is

@@ -2980,6 +2980,8 @@
       
         
       
+        
+      
     
     
     
@@ -3049,6 +3051,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/current-status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Current Status
   
 
     
@@ -4023,10 +4053,10 @@ sync to CRM failed and the shop returned 500 to the user.</p>
 <p>The trace's <code>crm.sync_order</code> span has <code>peer.service=enterprise-crm-portal</code>
 but no child spans on the CRM side — typical of a network failure that
 never reached the peer. Check:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>octo-backend-prod
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>enterprise-crm
 </span></code></pre></div>
 <p>Notice one of two CRM pods is <code>CrashLoopBackOff</code>.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1">kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>octo-backend-prod<span class="w"> </span>&lt;bad-pod&gt;<span class="w"> </span>--previous<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-30
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1">kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>enterprise-crm<span class="w"> </span>&lt;bad-pod&gt;<span class="w"> </span>--previous<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-30
 </span></code></pre></div>
 <p>The trailing log shows an <code>OperationalError: ATP wallet expired</code> —
 the wallet rotated and one pod didn't pick up the new mount until it
@@ -4044,7 +4074,7 @@ confirming the failure was systemic to the time window — not a
 one-off.</p>
 <h3 id="6-resolve">6. Resolve<a class="headerlink" href="#6-resolve" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><span class="c1"># Force the bad pod to restart with the fresh wallet mount</span>
-</span><span id="__span-3-2">kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>octo-backend-prod<span class="w"> </span>&lt;bad-pod&gt;
+</span><span id="__span-3-2">kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>enterprise-crm<span class="w"> </span>&lt;bad-pod&gt;
 </span></code></pre></div>
 <p>It comes back healthy within 60 s. Re-test:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">curl<span class="w"> </span>-sS<span class="w"> </span>https://crm.example.tld/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
