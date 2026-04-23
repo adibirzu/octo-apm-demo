@@ -29,21 +29,28 @@ octo-apm-demo/
 │   ├── k8s/                          # OKE manifests
 │   │   ├── shop/
 │   │   └── crm/
-│   ├── terraform/                    # APM Domain, WAF, log pipelines
+│   ├── terraform/modules/            # apm_domain, waf, log_pipeline, iam, api_gateway,
+│   │                                 # atp, vault, object_storage, logging, stack_monitoring
+│   ├── local-stack/                  # hermetic docker-compose for regression (postgres + redis)
+│   ├── OBSERVABILITY-BOOTSTRAP.md    # end-to-end recipe: tf → init-tenancy → deploy → verify
 │   └── oci/                          # ensure_apm.sh, ensure_stack_monitoring.sh, ...
+├── services/          # supporting pods (otel-gateway, async-worker, cache, remediator,
+│                      # load-control, browser-runner, edge-gateway, object-pipeline, vm-lab)
 ├── site/              # MkDocs (deployed to github.io)
+│   └── architecture/diagrams/        # .drawio sources (platform-overview, observability-flow, deploy-topology)
 └── mkdocs.yml
 ```
 
-## Three deployment paths — same container images
+## Four deployment paths — same container images
 
 | Path | Entry point | When to use |
 |---|---|---|
-| **OKE** | `deploy/k8s/{shop,crm}/*.yaml` + `deploy/deploy-{shop,crm}.sh` | Production, HA, rolling updates |
+| **OKE** | `deploy/k8s/oke/{shop,crm}/*.yaml` + `deploy/deploy-{shop,crm}.sh` | Production, HA, rolling updates. First-time rollout auto-runs `envsubst` on manifests. |
 | **OCI Resource Manager stack** | `deploy/resource-manager/` | Console one-click bootstrap of APM + RUM + LA + WAF |
-| **Unified single VM** | `deploy/vm/` | Demos, workshops, air-gapped — both services on one Compute instance |
+| **Unified single VM** | `deploy/vm/docker-compose-unified.yml` | Demos, workshops, air-gapped — both services on one Compute instance |
+| **local-stack** | `deploy/local-stack/docker-compose.test.yml` | Hermetic regression — Playwright + k6 + CI without OCI credentials. NOT for prod. |
 
-Full matrix: [site/getting-started/deployment-options.md](site/getting-started/deployment-options.md).
+Full matrix: [site/getting-started/deployment-options.md](site/getting-started/deployment-options.md). Observability wiring for a fresh tenancy: [deploy/OBSERVABILITY-BOOTSTRAP.md](deploy/OBSERVABILITY-BOOTSTRAP.md).
 
 ## Cross-service integration contract
 

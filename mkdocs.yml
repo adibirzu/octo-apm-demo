@@ -84,6 +84,7 @@ nav:
     - Data Model: architecture/data-model.md
     - Database Integration: architecture/database-integration.md
     - Framework Approach: architecture/framework.md
+    - "Diagrams (drawio)": architecture/diagrams/README.md
   - Drone Shop:
     - drone-shop/index.md
     - Modules: drone-shop/modules.md

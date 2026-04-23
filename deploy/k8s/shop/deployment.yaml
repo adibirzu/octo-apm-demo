@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: ${OCIR_REPO}/octo-drone-shop:latest
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop:${IMAGE_TAG:-latest}
           ports:
             - containerPort: 8080
           env:

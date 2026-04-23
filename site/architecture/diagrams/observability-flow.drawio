@@ -1,0 +1,144 @@
+<mxfile host="app.diagrams.net" modified="2026-04-23T07:00:00.000Z" agent="octo-apm-demo" version="24.0.0" type="device">
+  <diagram name="Observability Flow" id="obs-flow">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="OCTO-APM-DEMO — Observability Signal Flow (MELTS)" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1F2937" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1320" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apps" value="Application pods (shop + crm + services/*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=13;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="260" height="560" as="geometry" />
+        </mxCell>
+
+        <mxCell id="app-instr" value="Instrumentation points" style="text;html=1;align=left;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="55" y="130" width="230" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="otel-py" value="OpenTelemetry SDK&#xa;auto-instrumentation:&#xa;fastapi / httpx / sqlalchemy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="160" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="log-sdk" value="push_log() →&#xa;OCI LoggingIngestionClient&#xa;(threaded queue, PII-masked)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="240" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="metrics-sdk" value="Prometheus /metrics&#xa;+ OCI Monitoring publish&#xa;(octo_drone_shop namespace)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="320" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="correlation" value="Correlation context:&#xa;trace_id, span_id,&#xa;oracleApmTraceId,&#xa;request_id, workflow_id, run_id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="400" width="230" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="security-spans" value="Security spans&#xa;(auth events, WAF-correlated)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="500" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rum" value="RUM beacon (JS SDK)&#xa;embedded in base.html" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="580" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gateway" value="octo-otel-gateway (OTel Collector)&#xa;receivers: OTLP (gRPC:4317, HTTP:4318)&#xa;processors: batch, memory_limiter, attributes&#xa;exporters: OCI APM, Prometheus, file" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=12;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="400" y="100" width="340" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apm-svc" value="OCI APM Domain" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=13;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="830" y="100" width="530" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apm-traces" value="Trace Explorer&#xa;cross-service waterfall" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="850" y="140" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apm-rum" value="Real User Monitoring&#xa;page views + core web vitals" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1020" y="140" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apm-topology" value="Service Topology&#xa;auto-discovered deps" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1190" y="140" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="logging-svc" value="OCI Logging&#xa;Log Group: octo-apm-demo&#xa;Custom Logs: octo-app, octo-chaos-audit, octo-security" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="400" y="280" width="340" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="la-svc" value="OCI Log Analytics&#xa;sources: octo-shop-app-json, octo-waf, chaos-audit&#xa;saved searches + dashboards" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="830" y="280" width="530" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="monitoring-svc" value="OCI Monitoring&#xa;custom metrics + built-in OKE/DB&#xa;alarms → Notifications topic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="400" y="410" width="340" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="stackmon-svc" value="OCI Stack Monitoring&#xa;ATP as monitored resource&#xa;SQL perf + waits + top session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="830" y="410" width="530" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="events-svc" value="OCI Events + Alarms + Notifications&#xa;→ octo-remediator playbook runner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=12;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="400" y="540" width="960" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="waf-sig" value="OCI WAF event stream → Logging → LA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="400" y="660" width="530" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="atp-sig" value="ATP built-in agentless metrics → Stack Monitoring" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="950" y="660" width="410" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend-t" value="T traces" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="40" y="760" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-l" value="L logs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="160" y="760" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-m" value="M metrics" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="280" y="760" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-e" value="E events" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="400" y="760" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-s" value="S SQL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#9333EA;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="520" y="760" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-note" value="MELTS = Metrics, Events, Logs, Traces, SQL (not Security — see WAF row)" style="text;html=1;align=left;fontSize=10;fontColor=#4B5563" vertex="1" parent="1">
+          <mxGeometry x="640" y="760" width="700" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#059669" edge="1" parent="1" source="otel-py" target="gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f1l" value="OTLP" style="edgeLabel;html=1;fontSize=10;fontColor=#059669" vertex="1" connectable="0" parent="f1">
+          <mxGeometry x="-0.1" y="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="f2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#15803D" edge="1" parent="1" source="log-sdk" target="logging-svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#D97706" edge="1" parent="1" source="metrics-sdk" target="monitoring-svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#059669" edge="1" parent="1" source="gateway" target="apm-svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#15803D;dashed=1" edge="1" parent="1" source="logging-svc" target="la-svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#DC2626" edge="1" parent="1" source="monitoring-svc" target="events-svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#DC2626;dashed=1" edge="1" parent="1" source="stackmon-svc" target="events-svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2563EB" edge="1" parent="1" source="rum" target="apm-rum">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

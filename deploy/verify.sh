@@ -92,8 +92,25 @@ fi
 # ── Compose config ────────────────────────────────────────────────────
 section "Docker compose config"
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    # Per-run random tokens so verify.sh never commits literal secrets and
+    # an operator accidentally pasting this script into a shell session
+    # cannot leak a reusable value.
+    rand_token() { openssl rand -hex 16 2>/dev/null || python3 -c 'import secrets;print(secrets.token_hex(16))'; }
+    compose_env=$(cat <<EOF
+OCIR_REGION=eu-frankfurt-1
+OCIR_TENANCY=verify-placeholder
+DNS_DOMAIN=verify.example.invalid
+INTERNAL_SERVICE_KEY=$(rand_token)
+AUTH_TOKEN_SECRET=$(rand_token)
+APP_SECRET_KEY=$(rand_token)
+BOOTSTRAP_ADMIN_PASSWORD=$(rand_token)
+ORACLE_DSN=verify-dsn
+ORACLE_PASSWORD=$(rand_token)
+ORACLE_WALLET_PASSWORD=$(rand_token)
+EOF
+)
     if docker compose -f "${REPO_ROOT}/deploy/vm/docker-compose-unified.yml" \
-            --env-file <(echo -e "OCIR_REGION=eu-frankfurt-1\nOCIR_TENANCY=test\nDNS_DOMAIN=octodemo.cloud\nINTERNAL_SERVICE_KEY=test\nAUTH_TOKEN_SECRET=test\nAPP_SECRET_KEY=test\nBOOTSTRAP_ADMIN_PASSWORD=test\nORACLE_DSN=test\nORACLE_PASSWORD=test\nORACLE_WALLET_PASSWORD=test") \
+            --env-file <(echo "${compose_env}") \
             config >/dev/null 2>&1; then
         ok "deploy/vm/docker-compose-unified.yml"
     else
