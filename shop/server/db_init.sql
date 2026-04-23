@@ -45,10 +45,14 @@ CREATE TABLE IF NOT EXISTS orders (
     status VARCHAR(50) DEFAULT 'pending',
     payment_method VARCHAR(50) DEFAULT 'credit_card',
     payment_status VARCHAR(50) DEFAULT 'pending',
+    payment_provider VARCHAR(50),
+    payment_provider_reference VARCHAR(128),
     notes TEXT,
     shipping_address TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS ix_orders_payment_provider_reference
+    ON orders (payment_provider_reference);
 
 CREATE TABLE IF NOT EXISTS shops (
     id SERIAL PRIMARY KEY,

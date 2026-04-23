@@ -444,6 +444,8 @@ class Order(Base):
     status = Column(String(50), default="pending")
     payment_method = Column(String(50), default="credit_card")
     payment_status = Column(String(50), default="pending")
+    payment_provider = Column(String(50), nullable=True)
+    payment_provider_reference = Column(String(128), nullable=True, index=True)
     notes = Column(Text)
     shipping_address = Column(Text)
     created_at = Column(DateTime, server_default=func.now())

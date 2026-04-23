@@ -58,12 +58,25 @@ The script is idempotent and performs:
 
 1. **OCIR repository** — creates `octo-drone-shop` if missing.
 2. **Kubernetes namespace** — creates it if missing.
-3. **Bootstrap secrets** — `octo-auth` (token + internal service key), `octo-atp` (DSN, user, password, wallet password). Keys are auto-generated when not supplied.
+3. **Bootstrap secrets** — seven K8s secrets with auto-generated defaults where safe:
+    - `octo-auth` (token-secret, internal-service-key, app-secret-key, bootstrap-admin-password — all random if not supplied)
+    - `octo-atp` (DSN, username, password, wallet password — skipped if `ORACLE_DSN`/`ORACLE_PASSWORD` not set)
+    - `octo-apm` (APM data keys + endpoints — empty strings OK on first run; the OTel exporter becomes a no-op until populated)
+    - `octo-logging` (log-group-id, log-id, chaos-audit log id, security log id)
+    - `octo-sso` (IDCS client id/secret/domain — skipped if IDCS env not set)
+    - `octo-genai` (GenAI endpoint + compartment + model id — all optional)
+    - `octo-integrations` (Slack webhook URL, Stripe, PayPal — all optional)
 4. **Terraform init** — downloads the OCI provider in `deploy/terraform/`.
 
-Remaining secrets (IDCS, APM, RUM) are populated by the observability scripts in the next step.
+All APM / RUM / Logging / GenAI / Integration secrets can be left blank on first run and refreshed later by re-running the script with the env populated.
 
 ## 4. Provision observability
+
+!!! tip "One-shot recipe"
+    The full Terraform + env + init-tenancy wiring is documented end-to-end
+    in [`deploy/OBSERVABILITY-BOOTSTRAP.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md) — copy the snippets into a
+    single shell session and everything from APM to Stack Monitoring is
+    wired in about 10 minutes.
 
 ### APM Domain + RUM Web Application
 

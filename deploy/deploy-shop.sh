@@ -55,6 +55,8 @@ echo "================================================"
 
 if $BUILD; then
     # ── 1. Sync code to the remote build host ──────────
+    # Shop Dockerfile requires REPO ROOT context (needs sibling services/cache/client
+    # and services/async-worker for editable installs). Sync shop/ + services/ together.
     echo ""
     echo "[1/4] Syncing code to ${REMOTE_HOST}:${REMOTE_DIR}..."
     rsync -az --delete \
@@ -71,14 +73,19 @@ if $BUILD; then
         --exclude 'test-results' \
         --exclude '.claude' \
         --exclude '*.log' \
-        "${REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/shop/" "${REMOTE_HOST}:${REMOTE_DIR}/"
+        --include 'shop/***' \
+        --include 'services/cache/***' \
+        --include 'services/async-worker/***' \
+        --include 'services/' \
+        --exclude '*' \
+        "${REPO_ROOT}/" "${REMOTE_HOST}:${REMOTE_DIR}/"
 
     echo "[1/4] Sync complete"
 
     # ── 2. Build on VM (native x86_64) ─────────────────
     echo ""
     echo "[2/4] Building Docker image on ${REMOTE_HOST}..."
-    ssh "${REMOTE_HOST}" "cd ${REMOTE_DIR} && docker build -t ${OCIR_REPO}:${TAG} -t ${OCIR_REPO}:latest ."
+    ssh "${REMOTE_HOST}" "cd ${REMOTE_DIR} && docker build -f shop/Dockerfile -t ${OCIR_REPO}:${TAG} -t ${OCIR_REPO}:latest ."
     echo "[2/4] Build complete: ${OCIR_REPO}:${TAG}"
 
     # ── 3. Push to OCIR ────────────────────────────────

@@ -138,6 +138,7 @@ nav:
     - testing/index.md
     - E2E Tests: testing/e2e.md
     - Load Tests: testing/load-tests.md
+    - Local Regression Stack: testing/local-stack.md
   - Operations:
     - operations/index.md
     - Deployment: operations/deployment.md

@@ -80,15 +80,23 @@ create_secret_if_missing() {
     echo "      ${name} — created"
 }
 
-AUTH_TOKEN_SECRET="${AUTH_TOKEN_SECRET:-$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')}"
-INTERNAL_SERVICE_KEY="${INTERNAL_SERVICE_KEY:-$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')}"
+gen_secret() {
+    python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
+}
+
+AUTH_TOKEN_SECRET="${AUTH_TOKEN_SECRET:-$(gen_secret)}"
+INTERNAL_SERVICE_KEY="${INTERNAL_SERVICE_KEY:-$(gen_secret)}"
+APP_SECRET_KEY="${APP_SECRET_KEY:-$(gen_secret)}"
+BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-$(gen_secret)}"
 
 create_secret_if_missing "octo-auth" \
     "--from-literal=token-secret=${AUTH_TOKEN_SECRET}" \
-    "--from-literal=internal-service-key=${INTERNAL_SERVICE_KEY}"
+    "--from-literal=internal-service-key=${INTERNAL_SERVICE_KEY}" \
+    "--from-literal=app-secret-key=${APP_SECRET_KEY}" \
+    "--from-literal=bootstrap-admin-password=${BOOTSTRAP_ADMIN_PASSWORD}"
 
-# octo-atp requires real ATP credentials — do not invent defaults. Skip if
-# operator hasn't supplied them; they can re-run or create manually.
+# ATP credentials — required for both shop + crm. Skip only if operator
+# explicitly defers them.
 if [[ -n "${ORACLE_DSN:-}" && -n "${ORACLE_PASSWORD:-}" ]]; then
     create_secret_if_missing "octo-atp" \
         "--from-literal=dsn=${ORACLE_DSN}" \
@@ -98,6 +106,47 @@ if [[ -n "${ORACLE_DSN:-}" && -n "${ORACLE_PASSWORD:-}" ]]; then
 else
     echo "      octo-atp — skipped (ORACLE_DSN/ORACLE_PASSWORD not set)"
 fi
+
+# APM + RUM datakeys — collected via `terraform output` once the APM
+# module provisions. Leaves empty values on first run; deploy-shop.sh
+# tolerates missing keys (OTel exporter becomes a no-op).
+create_secret_if_missing "octo-apm" \
+    "--from-literal=apm-private-datakey=${OCI_APM_PRIVATE_DATAKEY:-}" \
+    "--from-literal=apm-public-datakey=${OCI_APM_PUBLIC_DATAKEY:-}" \
+    "--from-literal=apm-endpoint=${OCI_APM_ENDPOINT:-}" \
+    "--from-literal=rum-endpoint=${OCI_APM_RUM_ENDPOINT:-}" \
+    "--from-literal=rum-web-application-ocid=${OCI_APM_RUM_WEB_APPLICATION_OCID:-}"
+
+# OCI Logging ingestion — log group + custom log OCIDs.
+create_secret_if_missing "octo-logging" \
+    "--from-literal=log-group-id=${OCI_LOG_GROUP_ID:-}" \
+    "--from-literal=log-id=${OCI_LOG_ID:-}" \
+    "--from-literal=log-chaos-audit-id=${OCI_LOG_GROUP_CHAOS_AUDIT:-}" \
+    "--from-literal=log-security-id=${OCI_LOG_SECURITY:-}"
+
+# IDCS / SSO — skip if tenancy hasn't configured IDCS yet.
+if [[ -n "${IDCS_CLIENT_ID:-}" && -n "${IDCS_CLIENT_SECRET:-}" ]]; then
+    create_secret_if_missing "octo-sso" \
+        "--from-literal=idcs-client-id=${IDCS_CLIENT_ID}" \
+        "--from-literal=idcs-client-secret=${IDCS_CLIENT_SECRET}" \
+        "--from-literal=idcs-domain-url=${IDCS_DOMAIN_URL:-}"
+else
+    echo "      octo-sso — skipped (IDCS_CLIENT_ID/SECRET not set)"
+fi
+
+# GenAI endpoint + auth — optional.
+create_secret_if_missing "octo-genai" \
+    "--from-literal=endpoint=${OCI_GENAI_ENDPOINT:-}" \
+    "--from-literal=compartment-id=${OCI_GENAI_COMPARTMENT_ID:-${OCI_COMPARTMENT_ID}}" \
+    "--from-literal=model-id=${OCI_GENAI_MODEL_ID:-}"
+
+# Integrations — Slack, Stripe, PayPal. All optional.
+create_secret_if_missing "octo-integrations" \
+    "--from-literal=slack-webhook-url=${SLACK_WEBHOOK_URL:-}" \
+    "--from-literal=stripe-api-key=${STRIPE_API_KEY:-}" \
+    "--from-literal=stripe-webhook-secret=${STRIPE_WEBHOOK_SECRET:-}" \
+    "--from-literal=paypal-client-id=${PAYPAL_CLIENT_ID:-}" \
+    "--from-literal=paypal-client-secret=${PAYPAL_CLIENT_SECRET:-}"
 
 # ── 4. Terraform init (optional) ──────────────────────────────────────────
 echo "[4/4] Terraform init..."
