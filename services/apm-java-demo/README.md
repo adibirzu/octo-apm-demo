@@ -65,6 +65,27 @@ system properties:
 Both env vars come from the existing `octo-apm` K8s secret
 (populated by `deploy/init-tenancy.sh`). No new secrets, no new IAM.
 
+## Automated agent download
+
+`services/apm-java-demo/download-agent.sh` tries two paths:
+
+1. Your **local `oci` CLI** — needs `read apm-agent-installers` on the
+   compartment holding the APM domain.
+2. A **running shop pod** (instance-principal via the `octo-oke-workers`
+   dynamic group) — the `modules/iam` Terraform module grants
+   `read apm-agent-installers` (see commit `78e7571+`). If the
+   instance-principal already has this grant, the script does the
+   download + `kubectl cp` round-trip itself.
+
+```bash
+OCI_APM_COMPARTMENT_ID=<compartment-with-APM-domain> \
+OCI_APM_DOMAIN_ID=<apm-domain-ocid> \
+  ./services/apm-java-demo/download-agent.sh
+```
+
+Both paths fall through to the manual Console download below if they
+fail.
+
 ## If the agent zip download fails
 
 Some tenancies restrict egress to Object Storage. The Dockerfile
