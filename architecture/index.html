@@ -861,6 +861,8 @@
       
         
       
+        
+      
     
     
     
@@ -1101,6 +1103,34 @@
     
   
     Framework Approach
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="diagrams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagrams (drawio)
   
 
     
@@ -3493,6 +3523,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#diagrams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagrams
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sections" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3547,8 +3588,8 @@
 <tr>
 <td>Drone Shop</td>
 <td>Python/FastAPI</td>
-<td>98</td>
-<td>Commerce, SSO, chaos, observability, CRM sync</td>
+<td>114</td>
+<td>Commerce, SSO, chaos, observability, CRM sync, payment webhooks, partner/public APIs, platform status</td>
 </tr>
 <tr>
 <td>Workflow Gateway</td>
@@ -3559,11 +3600,68 @@
 <tr>
 <td>Enterprise CRM</td>
 <td>Python/FastAPI</td>
-<td>~80</td>
-<td>CRM, simulation proxy, distributed traces</td>
+<td>132</td>
+<td>CRM, simulation proxy, distributed traces, chaos admin, cross-service contract</td>
+</tr>
+<tr>
+<td>OTel Gateway</td>
+<td>OTel Collector</td>
+<td>—</td>
+<td>Central OTLP ingress → OCI APM + Prometheus + file</td>
+</tr>
+<tr>
+<td>Async Worker</td>
+<td>Python</td>
+<td>—</td>
+<td>Redis-Streams consumer for order fan-out + XCLAIM recovery</td>
+</tr>
+<tr>
+<td>Remediator</td>
+<td>Python</td>
+<td>—</td>
+<td>Alarm-driven playbooks (LOW/MEDIUM/HIGH tier gating)</td>
+</tr>
+<tr>
+<td>Browser Runner</td>
+<td>Playwright + TS</td>
+<td>—</td>
+<td>Synthetic journey executor</td>
+</tr>
+<tr>
+<td>Load Control</td>
+<td>Python</td>
+<td>—</td>
+<td>Named-profile traffic orchestrator</td>
+</tr>
+<tr>
+<td>Cache</td>
+<td>Redis + client</td>
+<td>—</td>
+<td>OTel-instrumented cache with span enrichment</td>
+</tr>
+<tr>
+<td>Edge Gateway</td>
+<td>TypeScript</td>
+<td>—</td>
+<td>Edge-fuzz + request shaping</td>
+</tr>
+<tr>
+<td>Object Pipeline</td>
+<td>Python</td>
+<td>—</td>
+<td>Object Storage drainer + upload</td>
 </tr>
 </tbody>
 </table>
+<h2 id="diagrams">Diagrams<a class="headerlink" href="#diagrams" title="Permanent link">&para;</a></h2>
+<p>Drawio sources live in <a href="diagrams/"><code>diagrams/</code></a> and open at
+<a href="https://app.diagrams.net">app.diagrams.net</a>:</p>
+<ul>
+<li><strong>Platform Overview</strong> — <a href="diagrams/platform-overview.drawio"><code>diagrams/platform-overview.drawio</code></a>. Users → WAF → OKE → data + observability plane, every service + every OCI backend.</li>
+<li><strong>Observability Flow</strong> — <a href="diagrams/observability-flow.drawio"><code>diagrams/observability-flow.drawio</code></a>. MELTS signal flow: traces / logs / metrics / events / SQL-perf routed to OCI APM / Logging / Log Analytics / Stack Monitoring / Events.</li>
+<li><strong>Deploy Topology</strong> — <a href="diagrams/deploy-topology.drawio"><code>diagrams/deploy-topology.drawio</code></a>. Build path + OCIR + three deploy targets (OKE, single-VM, local-stack).</li>
+</ul>
+<p>See the <a href="diagrams/">diagrams README</a> for the shape / colour legend and CLI re-render commands.</p>
 <h2 id="sections">Sections<a class="headerlink" href="#sections" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="system-design/">System Design</a> — Runtime topology, cross-service flows, SSO architecture</li>
