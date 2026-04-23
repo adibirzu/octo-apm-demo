@@ -65,8 +65,11 @@ resource "oci_identity_policy" "oke_workers" {
     # OCI Logging — ingest app logs via logging-ingestion SDK
     "Allow dynamic-group octo-oke-workers to use log-content in compartment id ${var.compartment_id}",
 
-    # OCI APM — push traces / RUM
+    # OCI APM — push traces / RUM + read agent installer binaries so the
+    # octo-apm-java-demo initContainer can auto-fetch the Java APM agent
+    # without a manual Console download.
     "Allow dynamic-group octo-oke-workers to use apm-domains in compartment id ${var.compartment_id}",
+    "Allow dynamic-group octo-oke-workers to read apm-agent-installers in compartment id ${var.compartment_id}",
 
     # OCI Monitoring — publish custom metrics
     "Allow dynamic-group octo-oke-workers to use metrics in compartment id ${var.compartment_id} where target.metrics.namespace = 'octo_drone_shop'",
