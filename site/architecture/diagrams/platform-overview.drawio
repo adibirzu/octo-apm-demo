@@ -141,7 +141,7 @@
           <mxGeometry x="730" y="790" width="170" height="60" as="geometry" />
         </mxCell>
 
-        <mxCell id="ocir" value="OCI Container Registry (OCIR)&#xa;&lt;region&gt;.ocir.io/&lt;ns&gt;/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1" vertex="1" parent="1">
+        <mxCell id="ocir" value="OCI Container Registry (OCIR)&#10;REGION.ocir.io/NAMESPACE/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1" vertex="1" parent="1">
           <mxGeometry x="920" y="790" width="220" height="60" as="geometry" />
         </mxCell>
 
