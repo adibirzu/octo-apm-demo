@@ -7,7 +7,7 @@ as independent containers under `shop/` and `crm/` so they keep the
 cross-service contract hardened in the upstream repos.
 
 **Docs site**: https://adibirzu.github.io/octo-apm-demo
-**Default hostnames**: `drone.octodemo.cloud` (Shop) · `backend.octodemo.cloud` (CRM)
+**Default hostnames**: `shop.example.tld` (Shop) · `crm.example.tld` (CRM)
 
 ## Repository layout
 
@@ -80,7 +80,7 @@ sudo dnf install -y git curl unzip                  # or apt-get
 git clone https://github.com/adibirzu/octo-apm-demo.git /opt/octo
 cd /opt/octo/deploy/vm
 cp .env.template .env
-${EDITOR:-vi} .env                                   # set DNS_DOMAIN=octodemo.cloud, OCIR, ATP, keys
+${EDITOR:-vi} .env                                   # set DNS_DOMAIN=example.tld, OCIR, ATP, keys
 
 # 3. Unzip the ATP wallet
 unzip /path/to/Wallet_<DB>.zip -d wallet
