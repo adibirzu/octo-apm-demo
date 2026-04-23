@@ -3943,7 +3943,7 @@ malicious, what did the user actually try to do.</p>
 <h3 id="1-trigger-a-waf-rule">1. Trigger a WAF rule<a class="headerlink" href="#1-trigger-a-waf-rule" title="Permanent link">&para;</a></h3>
 <p>Send a request that looks like SQL injection. WAF will detect
 (<code>DETECTION</code> mode) without blocking.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">curl<span class="w"> </span>-sS<span class="w"> </span><span class="s2">&quot;https://drone.octodemo.cloud/api/products?id=1&#39; OR &#39;1&#39;=&#39;1&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">curl<span class="w"> </span>-sS<span class="w"> </span><span class="s2">&quot;https://shop.example.tld/api/products?id=1&#39; OR &#39;1&#39;=&#39;1&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;User-Agent: workshop-lab-06&quot;</span>
 </span></code></pre></div>
 <p>You'll get a normal response (because we're in DETECTION mode), but

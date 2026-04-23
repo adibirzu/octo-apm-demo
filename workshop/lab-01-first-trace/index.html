@@ -3899,7 +3899,7 @@ contains.</p>
 </span><span id="__span-0-4">curl<span class="w"> </span>-sS<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-5"><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;traceparent: </span><span class="nv">$TRACEPARENT</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-6"><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;X-Workflow-Id: workshop-lab-01&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-7"><span class="w">    </span>https://drone.octodemo.cloud/api/products<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[0]&#39;</span>
+</span><span id="__span-0-7"><span class="w">    </span>https://shop.example.tld/api/products<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[0]&#39;</span>
 </span></code></pre></div>
 <p>The <code>traceparent</code> header is the W3C standard the shop's OTel SDK reads.
 By generating it ourselves, we know the exact 32-hex <code>trace_id</code> to

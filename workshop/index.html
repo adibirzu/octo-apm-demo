@@ -3818,8 +3818,8 @@ labs 6-10 day two (~3.5h).</p>
 <li>[ ] Optional but recommended: <code>octo-traffic-generator</code> running so APM
       and RUM have signal. (<a href="https://github.com/adibirzu/octo-apm-demo/tree/main/tools/traffic-generator">deploy guide</a>)</li>
 <li>[ ] Verified the platform is reachable:
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">curl<span class="w"> </span>-s<span class="w"> </span>https://drone.octodemo.cloud/ready<span class="w">   </span><span class="p">|</span><span class="w"> </span>jq
-</span><span id="__span-0-2">curl<span class="w"> </span>-s<span class="w"> </span>https://backend.octodemo.cloud/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+    <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">curl<span class="w"> </span>-s<span class="w"> </span>https://shop.example.tld/ready<span class="w">   </span><span class="p">|</span><span class="w"> </span>jq
+</span><span id="__span-0-2">curl<span class="w"> </span>-s<span class="w"> </span>https://crm.example.tld/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
 </span></code></pre></div>
     Both should return <code>database.reachable=true</code>.</li>
 </ul>
@@ -3827,7 +3827,7 @@ labs 6-10 day two (~3.5h).</p>
 <ul>
 <li>Every shell snippet assumes <code>bash</code> (not zsh-specific syntax). On
   macOS, <code>bash</code> from Homebrew works the same.</li>
-<li>Every URL uses <code>octodemo.cloud</code>. If your tenancy uses a different
+<li>Every URL uses <code>example.tld</code>. If your tenancy uses a different
   <code>DNS_DOMAIN</code>, mentally substitute.</li>
 <li>"OCI Console" instructions assume the <a href="https://cloud.oracle.com/?region=eu-frankfurt-1">Frankfurt region UI</a>.
   If you use another region, the menu paths are identical; only the

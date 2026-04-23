@@ -3961,7 +3961,7 @@ on it, and prioritize the broadcast accordingly.</p>
 <h3 id="3-trigger-a-session-pressure-event">3. Trigger a session-pressure event<a class="headerlink" href="#3-trigger-a-session-pressure-event" title="Permanent link">&para;</a></h3>
 <p>Run a high-concurrency burst against the shop:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">50</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-</span><span id="__span-0-2"><span class="w">    </span><span class="o">(</span>curl<span class="w"> </span>-sS<span class="w"> </span>https://drone.octodemo.cloud/api/products?heavy<span class="o">=</span><span class="nb">true</span><span class="w"> </span>&gt;<span class="w"> </span>/dev/null<span class="o">)</span><span class="w"> </span><span class="p">&amp;</span>
+</span><span id="__span-0-2"><span class="w">    </span><span class="o">(</span>curl<span class="w"> </span>-sS<span class="w"> </span>https://shop.example.tld/api/products?heavy<span class="o">=</span><span class="nb">true</span><span class="w"> </span>&gt;<span class="w"> </span>/dev/null<span class="o">)</span><span class="w"> </span><span class="p">&amp;</span>
 </span><span id="__span-0-3"><span class="k">done</span>
 </span><span id="__span-0-4"><span class="nb">wait</span>
 </span></code></pre></div>

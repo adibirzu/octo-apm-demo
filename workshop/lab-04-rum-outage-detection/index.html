@@ -3941,7 +3941,7 @@ broken from the customer's perspective — even when the backend
 </ul>
 <h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
 <h3 id="1-open-the-shop-in-your-browser">1. Open the shop in your browser<a class="headerlink" href="#1-open-the-shop-in-your-browser" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1">https://drone.octodemo.cloud
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1">https://shop.example.tld
 </span></code></pre></div>
 <p>Open dev tools → Network tab. Reload. You should see a request to
 <code>https://...oci.oraclecloud.com/.../rum/...</code> — that's the RUM SDK
@@ -3977,7 +3977,7 @@ matching your browser).</p>
 <h3 id="5-simulate-a-failure">5. Simulate a failure<a class="headerlink" href="#5-simulate-a-failure" title="Permanent link">&para;</a></h3>
 <p>In dev tools console, run:</p>
 <div class="language-js highlight"><pre><span></span><code><span id="__span-1-1"><span class="c1">// Force a fetch error</span>
-</span><span id="__span-1-2"><span class="nx">fetch</span><span class="p">(</span><span class="s1">&#39;https://drone.octodemo.cloud/api/intentionally-missing&#39;</span><span class="p">)</span>
+</span><span id="__span-1-2"><span class="nx">fetch</span><span class="p">(</span><span class="s1">&#39;https://shop.example.tld/api/intentionally-missing&#39;</span><span class="p">)</span>
 </span><span id="__span-1-3"><span class="w">    </span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">r</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">json</span><span class="p">())</span>
 </span><span id="__span-1-4"><span class="w">    </span><span class="p">.</span><span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;lab-04 forced error&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="p">));</span>
 </span></code></pre></div>
