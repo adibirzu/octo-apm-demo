@@ -110,6 +110,10 @@ _security_logger.addHandler(_handler)
 # OCI Logging SDK client (lazy init)
 _oci_logging_client = None
 
+# Rate-limited error log for put_logs failures (per-process, not thread-safe
+# by design — a missed tick is cheaper than a lock on every push).
+_last_logging_error_ts: float = 0.0
+
 
 def _get_oci_logging_client():
     global _oci_logging_client
@@ -194,8 +198,15 @@ def _push_to_oci_logging(level: str, message: str, extra: dict):
                 log_entry_batches=[batch],
             ),
         )
-    except Exception:
-        pass  # never break the request
+    except Exception as exc:
+        # Never break the request, but log once per minute so operators know
+        # ingestion is broken. Silent-fail was masking real problems in prod
+        # (KB-456: wrong Monitoring endpoint went undetected for days).
+        global _last_logging_error_ts
+        now = time.time()
+        if now - _last_logging_error_ts > 60.0:
+            _last_logging_error_ts = now
+            logger.warning("OCI Logging put_logs failed: %s", exc)
 
 
 def _push_to_splunk(level: str, message: str, extra: dict):
