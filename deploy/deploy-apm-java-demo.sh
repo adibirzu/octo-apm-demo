@@ -70,7 +70,7 @@ if $BUILD; then
         "${REPO_ROOT}/" "${REMOTE_HOST}:${REMOTE_DIR}/"
 
     echo
-    echo "[3/3] Building on ${REMOTE_HOST}..."
+    echo "[3/4] Building on ${REMOTE_HOST}..."
     ssh "${REMOTE_HOST}" "cd ${REMOTE_DIR} && docker build -f services/apm-java-demo/Dockerfile -t ${OCIR_REPO}:${TAG} -t ${OCIR_REPO}:latest ."
 
     echo

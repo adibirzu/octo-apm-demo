@@ -61,6 +61,12 @@ variable "admin_rate_limit_rpm" {
   default = 100
 }
 
+variable "partner_auth_function_id" {
+  type        = string
+  default     = ""
+  description = "OCI Functions OCID of the authorizer that validates X-API-Key for /api/partner/*. Empty = no custom auth block emitted (rate-limit only)."
+}
+
 variable "idcs_jwks_uri" {
   type        = string
   description = "IDCS JWKS endpoint — used by the admin route's jwt_authentication policy."

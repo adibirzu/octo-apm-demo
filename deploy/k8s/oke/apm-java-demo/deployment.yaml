@@ -21,8 +21,9 @@ spec:
       labels:
         app: octo-apm-java-demo
     spec:
-      imagePullSecrets:
-        - name: ocir-pull-secret
+      # No imagePullSecrets — OKE workers authenticate to OCIR via the
+      # octo-oke-workers dynamic group (modules/iam policy `read repos`).
+      # Matching the shop + crm deployments' approach.
       containers:
         - name: app
           # envsubst does not expand `${VAR:-default}` — use plain `${VAR}`.

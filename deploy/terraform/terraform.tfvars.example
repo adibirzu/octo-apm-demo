@@ -1,10 +1,82 @@
+###############################################################################
+# Root variables. Copy to terraform.tfvars and fill in per tenancy.
+#
+# Every `create_*` flag below is OPT-IN — leaving it at false means the
+# module does nothing (the operator passes in a pre-existing OCID
+# elsewhere). Turning one on provisions the resource end-to-end.
+###############################################################################
+
+# ── Always required ────────────────────────────────────────────────────
 compartment_id     = "ocid1.compartment.oc1..xxxx"
-shop_domain        = "shop.example.cloud"
-crm_domain         = "crm.example.cloud"
-ops_domain         = "ops.example.cloud"
-coordinator_domain = "coordinator.example.cloud"
-waf_mode           = "DETECTION"
-waf_log_group_id   = "ocid1.loggroup.oc1..xxxx"
-admin_allow_cidrs  = []
-la_namespace       = "your-la-namespace"
-la_log_group_id    = "ocid1.loganalyticsloggroup.oc1..xxxx"
+shop_domain        = "shop.example.tld"
+crm_domain         = "crm.example.tld"
+ops_domain         = "ops.example.tld"
+coordinator_domain = "coordinator.example.tld"
+
+# ── WAF ─────────────────────────────────────────────────────────────────
+waf_mode          = "DETECTION"
+waf_log_group_id  = "ocid1.loggroup.oc1..xxxx"
+admin_allow_cidrs = []
+
+# ── Log Analytics ───────────────────────────────────────────────────────
+la_namespace    = "your-la-namespace"
+la_log_group_id = "ocid1.loganalyticsloggroup.oc1..xxxx"
+
+###############################################################################
+# APM Domain + RUM endpoint. RUM web-app registration is still a one-time
+# OCI Console step (provider limitation — see KB-OCTO-09 / OBSERVABILITY-BOOTSTRAP.md §7a).
+###############################################################################
+# create_apm_domain       = true
+# apm_domain_display_name = "octo-apm-demo"
+
+###############################################################################
+# Autonomous Database (ATP). admin + wallet passwords land in tfvars;
+# protect this file via sops or git-crypt. Rotate after first login.
+###############################################################################
+# create_atp          = true
+# atp_admin_password  = "ReplaceMe-ChangeMe-Nr1!"
+# atp_wallet_password = "ReplaceMeW1!"
+# atp_whitelisted_ips = []   # CIDRs permitted to hit the mTLS endpoint
+
+###############################################################################
+# Vault + AES-256 master key + one VaultSecret per app secret. Leave the
+# vault_secrets map empty to create the Vault + key only; populate after
+# init-tenancy.sh has generated random values.
+###############################################################################
+# create_vault  = true
+# vault_secrets = {}   # filled by a follow-up `terraform apply -target` pass
+
+###############################################################################
+# Object Storage — three private buckets: chaos_state, wallet, artifacts.
+###############################################################################
+# create_object_storage    = true
+# object_storage_namespace = "your-ocir-namespace"   # same as OCIR ns
+
+###############################################################################
+# OCI Logging — log group + 3 custom logs (app, chaos-audit, security).
+###############################################################################
+# create_logging         = true
+# logging_retention_days = 30
+
+###############################################################################
+# Stack Monitoring — register the ATP as a monitored resource. Auto-wires
+# to the ATP created by modules/atp when create_atp = true.
+###############################################################################
+# create_stack_monitoring = true
+# stack_monitoring_atp_id = ""   # set only if reusing an existing ATP
+
+###############################################################################
+# (Optional) App log pipeline — feeds an existing OCI Logging log into
+# Log Analytics. Leave empty to skip.
+###############################################################################
+# app_log_id       = ""
+# app_log_group_id = ""
+
+###############################################################################
+# (Optional) WAF LB-side log pipelines — fed by the load balancer's WAF
+# integration. Leave empty to skip.
+###############################################################################
+# waf_log_id_shop        = ""
+# waf_log_id_crm         = ""
+# waf_log_id_ops         = ""
+# waf_log_id_coordinator = ""

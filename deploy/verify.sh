@@ -97,7 +97,7 @@ if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; 
     # cannot leak a reusable value.
     rand_token() { openssl rand -hex 16 2>/dev/null || python3 -c 'import secrets;print(secrets.token_hex(16))'; }
     compose_env=$(cat <<EOF
-OCIR_REGION=eu-frankfurt-1
+OCIR_REGION=${OCIR_REGION:-eu-frankfurt-1}
 OCIR_TENANCY=verify-placeholder
 DNS_DOMAIN=verify.example.invalid
 INTERNAL_SERVICE_KEY=$(rand_token)

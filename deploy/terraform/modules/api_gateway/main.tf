@@ -81,12 +81,19 @@ resource "oci_apigateway_deployment" "octo" {
         url  = "${var.shop_backend_url}/api/partner/{path}"
       }
       request_policies {
-        authentication {
-          type                        = "CUSTOM_AUTHENTICATION"
-          is_anonymous_access_allowed = false
-          # In production, wire this to a dedicated authorizer Function
-          # that looks up X-API-Key in Vault and caches the result.
-          function_id = ""
+        # CUSTOM_AUTHENTICATION requires a non-empty function_id at plan
+        # time (OCI provider rejects ""). Only emit the block when an
+        # authorizer function is supplied; otherwise the partner route
+        # is protected by the rate-limit + shop's own INTERNAL_SERVICE_KEY
+        # middleware. Wire a real function OCID via partner_auth_function_id
+        # for production.
+        dynamic "authentication" {
+          for_each = var.partner_auth_function_id == "" ? [] : [1]
+          content {
+            type                        = "CUSTOM_AUTHENTICATION"
+            is_anonymous_access_allowed = false
+            function_id                 = var.partner_auth_function_id
+          }
         }
         rate_limiting {
           rate_in_requests_per_second = ceil(var.partner_rate_limit_rpm / 60)
