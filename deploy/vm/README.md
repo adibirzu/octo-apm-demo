@@ -47,7 +47,7 @@ Cross-service calls stay on the container network:
 sudo dnf install -y git curl unzip                 # or apt-get install ...
 
 # 2. Clone
-git clone https://github.com/adibirzu/octo-drone-shop.git /opt/octo
+git clone https://github.com/adibirzu/octo-apm-demo.git /opt/octo
 cd /opt/octo/deploy/vm
 
 # 3. Env
@@ -60,9 +60,9 @@ unzip /path/to/Wallet_<DB>.zip -d wallet
 
 # 5. TLS (one-shot via certbot)
 sudo certbot certonly --standalone \
-    -d drone.${DNS_DOMAIN} -d backend.${DNS_DOMAIN}
-sudo cp /etc/letsencrypt/live/drone.${DNS_DOMAIN}/*.pem nginx/tls/shop/
-sudo cp /etc/letsencrypt/live/backend.${DNS_DOMAIN}/*.pem  nginx/tls/crm/
+    -d shop.${DNS_DOMAIN} -d crm.${DNS_DOMAIN}
+sudo cp /etc/letsencrypt/live/shop.${DNS_DOMAIN}/*.pem nginx/tls/shop/
+sudo cp /etc/letsencrypt/live/crm.${DNS_DOMAIN}/*.pem  nginx/tls/crm/
 
 # 6. Launch
 sudo ./install.sh
@@ -71,10 +71,10 @@ sudo ./install.sh
 ## Validate
 
 ```bash
-curl -s https://drone.${DNS_DOMAIN}/ready | jq
-curl -s https://backend.${DNS_DOMAIN}/ready  | jq
-curl -s https://drone.${DNS_DOMAIN}/api/integrations/schema | jq .info.title
-curl -s https://backend.${DNS_DOMAIN}/api/integrations/schema  | jq .info.title
+curl -s https://shop.${DNS_DOMAIN}/ready | jq
+curl -s https://crm.${DNS_DOMAIN}/ready  | jq
+curl -s https://shop.${DNS_DOMAIN}/api/integrations/schema | jq .info.title
+curl -s https://crm.${DNS_DOMAIN}/api/integrations/schema  | jq .info.title
 ```
 
 A healthy install returns the OpenAPI contract on both sides and both

@@ -38,8 +38,8 @@ vault_secrets = {
 
 # WAF prerequisites (existing)
 waf_log_group_id   = "ocid1.loggroup.oc1..xxxx"
-shop_domain        = "drone.<your-domain>"
-crm_domain         = "backend.<your-domain>"
+shop_domain        = "shop.<your-domain>"
+crm_domain         = "crm.<your-domain>"
 ops_domain         = "ops.<your-domain>"
 coordinator_domain = "coordinator.<your-domain>"
 ```
@@ -118,7 +118,7 @@ export OCIR_REPO=${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal
 | Signal | Where | Expectation |
 |---|---|---|
 | Traces | OCI APM → Trace Explorer | `service.name=octo-drone-shop` and `octo-enterprise-crm` |
-| RUM beacons | OCI APM → Real User Monitoring | `drone.<your-domain>` page views |
+| RUM beacons | OCI APM → Real User Monitoring | `shop.<your-domain>` page views |
 | App logs | OCI Logging → `octo-apm-demo/octo-app` | stream of JSON with `trace_id` |
 | Chaos audit | OCI Logging → `octo-apm-demo/octo-chaos-audit` | one record per apply/clear |
 | Security logs | OCI Logging → `octo-apm-demo/octo-security` | auth denials, WAF-correlated events |

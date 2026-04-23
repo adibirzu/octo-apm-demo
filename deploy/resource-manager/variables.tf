@@ -20,12 +20,12 @@ variable "compartment_id" {
 
 variable "shop_domain" {
   type    = string
-  default = "drone.example.invalid"
+  default = "shop.example.invalid"
 }
 
 variable "crm_domain" {
   type    = string
-  default = "backend.example.invalid"
+  default = "crm.example.invalid"
 }
 
 variable "ops_domain" {

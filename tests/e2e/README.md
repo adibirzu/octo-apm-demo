@@ -18,19 +18,21 @@ deterministic when the target isn't reachable.
 npx playwright install --with-deps chromium
 
 # Cross-service smoke against the deployed env
-SHOP_BASE_URL=https://drone.octodemo.cloud \
-CRM_BASE_URL=https://backend.octodemo.cloud \
+SHOP_BASE_URL=https://shop.cyber-sec.ro \
+CRM_BASE_URL=https://crm.cyber-sec.ro \
 INTERNAL_SERVICE_KEY=<shared-secret> \
 CROSS_SERVICE_E2E_ENABLED=1 \
 npx playwright test tests/e2e/cross-service-smoke.spec.ts
 
 # SSO spec (requires an IDCS test user + confidential app configured)
 SSO_E2E_ENABLED=1 \
-SHOP_BASE_URL=https://drone.octodemo.cloud \
-OCTO_E2E_TEST_USER_EMAIL=e2e-test@octodemo.cloud \
+SHOP_BASE_URL=https://shop.cyber-sec.ro \
+OCTO_E2E_TEST_USER_EMAIL=e2e-test@cyber-sec.ro \
 OCTO_E2E_TEST_USER_PASSWORD='***' \
 npx playwright test tests/e2e/sso-oidc-pkce.spec.ts
 ```
+
+For CAP or any other tenancy, override `SHOP_BASE_URL` / `CRM_BASE_URL` explicitly. The baked-in defaults now target `DEFAULT` / `oci4cca`.
 
 ## CI integration
 

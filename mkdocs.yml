@@ -144,6 +144,7 @@ nav:
   - Operations:
     - operations/index.md
     - Deployment: operations/deployment.md
+    - Current Status: operations/current-status.md
     - Deploy Readiness: operations/deploy-readiness.md
     - Chaos Engineering: operations/chaos.md
     - Alarms & Health: operations/alarms.md
