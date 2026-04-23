@@ -3138,10 +3138,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#live-runtime" class="md-nav__link">
+  <a href="#tenancy-confirmation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Live runtime
+        Tenancy confirmation
       
     </span>
   </a>
@@ -3149,10 +3149,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#oci-snapshot" class="md-nav__link">
+  <a href="#dns-and-cutover-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        OCI snapshot
+        DNS and cutover status
       
     </span>
   </a>
@@ -3160,10 +3160,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gaps-found-in-the-repo-audit" class="md-nav__link">
+  <a href="#tls-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Gaps Found In The Repo Audit
+        TLS status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
       
     </span>
   </a>
@@ -3174,7 +3196,18 @@
   <a href="#current-remediation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Current Remediation
+        Current remediation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-cap-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy CAP reference
       
     </span>
   </a>
@@ -3185,7 +3218,7 @@
   <a href="#validation-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Validation Notes
+        Validation notes
       
     </span>
   </a>
@@ -3693,10 +3726,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#live-runtime" class="md-nav__link">
+  <a href="#tenancy-confirmation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Live runtime
+        Tenancy confirmation
       
     </span>
   </a>
@@ -3704,10 +3737,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#oci-snapshot" class="md-nav__link">
+  <a href="#dns-and-cutover-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        OCI snapshot
+        DNS and cutover status
       
     </span>
   </a>
@@ -3715,10 +3748,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gaps-found-in-the-repo-audit" class="md-nav__link">
+  <a href="#tls-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Gaps Found In The Repo Audit
+        TLS status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was wrong
       
     </span>
   </a>
@@ -3729,7 +3784,18 @@
   <a href="#current-remediation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Current Remediation
+        Current remediation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-cap-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy CAP reference
       
     </span>
   </a>
@@ -3740,7 +3806,7 @@
   <a href="#validation-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Validation Notes
+        Validation notes
       
     </span>
   </a>
@@ -3770,42 +3836,64 @@
 <h1 id="current-status">Current Status<a class="headerlink" href="#current-status" title="Permanent link">&para;</a></h1>
 <p>Snapshot date: <strong>April 23, 2026</strong></p>
 <p>This page records the current validated state of the unified OCTO deployment in the <code>oci4cca</code> tenancy using the <code>DEFAULT</code> OCI profile.</p>
-<h2 id="live-runtime">Live runtime<a class="headerlink" href="#live-runtime" title="Permanent link">&para;</a></h2>
+<h2 id="tenancy-confirmation">Tenancy confirmation<a class="headerlink" href="#tenancy-confirmation" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Public shop endpoint: <code>https://shop.octodemo.cloud</code></li>
-<li>Public CRM endpoint: <code>https://crm.octodemo.cloud</code></li>
-<li>Both <code>/ready</code> endpoints currently return <code>ready=true</code>.</li>
-<li>Both <code>/api/integrations/schema</code> endpoints currently return the published cross-service OpenAPI contract.</li>
+<li><code>DEFAULT</code> OCI profile resolves to tenancy <code>oci4cca</code>.</li>
+<li><code>cap</code> OCI profile resolves to a different tenancy, <code>pbncapgemini</code>.</li>
+<li>The unified OCI Resource Manager stack was created in the right tenancy: compartment <code>Adrian_Birzu</code>, stack <code>octo-apm-demo-unified-stack</code>.</li>
 </ul>
-<h2 id="oci-snapshot">OCI snapshot<a class="headerlink" href="#oci-snapshot" title="Permanent link">&para;</a></h2>
+<h2 id="dns-and-cutover-status">DNS and cutover status<a class="headerlink" href="#dns-and-cutover-status" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Region: <code>eu-frankfurt-1</code></li>
-<li>Compartment: <code>Adrian_Birzu</code></li>
-<li>Active OKE cluster: <code>cluster1</code></li>
-<li>Managed node pool present: <code>octo-apm-managed-pool</code></li>
-<li>Active ATP for this stack: <code>octo-apm-demo-atp</code></li>
-<li>Resource Manager stack: <code>octo-apm-demo-unified-stack</code></li>
+<li>The intended <code>oci4cca</code> public hostnames are <code>shop.cyber-sec.ro</code> and <code>crm.cyber-sec.ro</code>.</li>
+<li>The OCI DNS zone <code>cyber-sec.ro</code> exists in compartment <code>Adrian_Birzu</code>.</li>
+<li>OCI DNS A records for <code>shop.cyber-sec.ro</code> and <code>crm.cyber-sec.ro</code> are present in that zone and now point to the active ingress IP <code>144.24.178.176</code>.</li>
+<li>Public internet delegation for <code>cyber-sec.ro</code> is still pointed at Wix nameservers, not the OCI nameservers for the <code>Adrian_Birzu</code> zone.</li>
+<li>Result: the OCI DNS records are correct inside OCI, but public resolution for <code>shop.cyber-sec.ro</code> / <code>crm.cyber-sec.ro</code> is not live yet. External cutover still requires either:</li>
+<li>changing the registrar delegation from Wix to OCI, or</li>
+<li>publishing the same A records at Wix.</li>
 </ul>
-<h2 id="gaps-found-in-the-repo-audit">Gaps Found In The Repo Audit<a class="headerlink" href="#gaps-found-in-the-repo-audit" title="Permanent link">&para;</a></h2>
+<h2 id="tls-status">TLS status<a class="headerlink" href="#tls-status" title="Permanent link">&para;</a></h2>
 <ul>
-<li>The root unified deploy surface had drifted behind the live environment.</li>
-<li>The root bootstrap path created Ingress objects that always targeted service port <code>80</code>, while the root OKE services exposed <code>8080</code>.</li>
-<li>The root manifests and docs still mixed the older <code>drone/backend</code> hostnames with the current <code>shop/crm</code> topology.</li>
-<li>The root repo documented <code>./deploy/deploy.sh</code>, but that wrapper script did not exist.</li>
-<li>No OCTO-specific OCI Resource Manager stack was present in the target compartment before this audit.</li>
+<li>The current ingress TLS secret in the cluster is <code>*.octodemo.cloud</code>, not <code>*.cyber-sec.ro</code>.</li>
+<li>OCI Certificates contains an imported certificate named <code>star.cyber-sec.ro</code>.</li>
+<li>Its current version is expired: validity ended on <strong>April 16, 2025</strong>.</li>
+<li>Result: HTTP host routing for <code>shop.cyber-sec.ro</code> / <code>crm.cyber-sec.ro</code> now works through the ingress IP, but public HTTPS cutover still needs a renewed <code>cyber-sec.ro</code> certificate wired into Kubernetes or the edge load balancer.</li>
 </ul>
-<h2 id="current-remediation">Current Remediation<a class="headerlink" href="#current-remediation" title="Permanent link">&para;</a></h2>
+<h2 id="runtime-status">Runtime status<a class="headerlink" href="#runtime-status" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>deploy/deploy.sh</code> now exists as the canonical unified build/push/rollout wrapper.</li>
-<li><code>deploy/bootstrap.sh</code> now routes Ingress traffic to the declared backend service port and seeds the RUM web-app secret key consistently.</li>
-<li>The root OKE manifests, Terraform defaults, and Resource Manager defaults now use <code>shop.&lt;domain&gt;</code> and <code>crm.&lt;domain&gt;</code>.</li>
-<li><code>deploy/resource-manager/upsert-stack.sh</code> now packages and creates or updates the unified OCI Resource Manager stack from the GitHub repo.</li>
-<li>The OCI Resource Manager stack has now been created in the target compartment as <code>octo-apm-demo-unified-stack</code>.</li>
+<li>OKE cluster: <code>cluster1</code></li>
+<li>Managed node pool: <code>octo-apm-managed-pool</code></li>
+<li>ATP: <code>octo-apm-demo-atp</code></li>
+<li>Shop pod: running in namespace <code>octo-drone-shop</code></li>
+<li>CRM pod: running in namespace <code>enterprise-crm</code></li>
+<li>HTTP host-header smoke checks through <code>144.24.178.176</code> now return <code>ready=true</code> for both <code>shop.cyber-sec.ro</code> and <code>crm.cyber-sec.ro</code>.</li>
+<li>Both <code>/api/integrations/schema</code> endpoints also resolve correctly through those <code>cyber-sec.ro</code> hosts when routed via the ingress IP.</li>
+<li>Legacy ingress hostnames still present in the cluster: <code>shop.octodemo.cloud</code> and <code>crm.octodemo.cloud</code></li>
 </ul>
-<h2 id="validation-notes">Validation Notes<a class="headerlink" href="#validation-notes" title="Permanent link">&para;</a></h2>
+<h2 id="what-was-wrong">What was wrong<a class="headerlink" href="#what-was-wrong" title="Permanent link">&para;</a></h2>
 <ul>
-<li>The focused root regression test is <code>tests/test_unified_deploy_surface.py</code>.</li>
-<li>The broader script/doc validator is <code>deploy/verify.sh</code>.</li>
+<li>The repo and docs treated CAP endpoints (<code>shop.octodemo.cloud</code>, <code>crm.octodemo.cloud</code>) as if they were the validated <code>oci4cca</code> public surface.</li>
+<li>Several deployment examples still hardcoded <code>octodemo.cloud</code>, which pushed operators toward the wrong tenancy/domain pairing.</li>
+<li>The root bootstrap path had a real functional bug: generated Ingress objects always targeted service port <code>80</code> even when the actual backend services exposed <code>8080</code>.</li>
+</ul>
+<h2 id="current-remediation">Current remediation<a class="headerlink" href="#current-remediation" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>deploy/deploy.sh</code> exists and remains the canonical unified build/push/rollout wrapper.</li>
+<li><code>deploy/bootstrap.sh</code> now routes generated Ingress objects to the declared backend service port instead of a hardcoded <code>80</code>.</li>
+<li><code>deploy/resource-manager/upsert-stack.sh</code> packages and creates or updates the unified OCI Resource Manager stack from this repo.</li>
+<li>Deployment comments, wizard defaults, and E2E defaults now target <code>cyber-sec.ro</code> for <code>DEFAULT</code> / <code>oci4cca</code>.</li>
+<li>The docs now distinguish the <code>oci4cca</code> target domain from the legacy CAP reference endpoints.</li>
+</ul>
+<h2 id="legacy-cap-reference">Legacy CAP reference<a class="headerlink" href="#legacy-cap-reference" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>https://shop.octodemo.cloud</code></li>
+<li><code>https://crm.octodemo.cloud</code></li>
+</ul>
+<p>Those hostnames still resolve through the existing <code>octodemo.cloud</code> ingress path, but they are not the correct public domain for <code>oci4cca</code>.</p>
+<h2 id="validation-notes">Validation notes<a class="headerlink" href="#validation-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Focused root regression test: <code>tests/test_unified_deploy_surface.py</code></li>
+<li>Broader script/doc validator: <code>deploy/verify.sh</code></li>
 </ul>
 
 
