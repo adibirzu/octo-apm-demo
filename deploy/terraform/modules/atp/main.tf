@@ -38,9 +38,14 @@ variable "db_name" {
   }
 }
 
-variable "cpu_core_count" {
-  type    = number
-  default = 1
+variable "compute_count" {
+  type        = number
+  default     = 2
+  description = "ECPU count. OCI no longer accepts OCPU compute model for new ADBs — must be ECPU. Min 2 ECPU for dev-tier ADB-S (Autonomous Serverless)."
+  validation {
+    condition     = var.compute_count >= 2
+    error_message = "compute_count must be >= 2 ECPU for new ATP instances."
+  }
 }
 
 variable "data_storage_size_in_tbs" {
@@ -88,7 +93,12 @@ resource "oci_database_autonomous_database" "this" {
   compartment_id           = var.compartment_id
   db_name                  = var.db_name
   display_name             = var.display_name
-  cpu_core_count           = var.cpu_core_count
+  # OCI deprecated OCPU compute model for new Autonomous DBs in 2024-q4.
+  # `compute_model = ECPU` + `compute_count` is the required pairing.
+  # Setting cpu_core_count on a new ADB now raises
+  # "Creating new Autonomous AI Databases using the OCPU compute model is not supported".
+  compute_model            = "ECPU"
+  compute_count            = var.compute_count
   data_storage_size_in_tbs = var.data_storage_size_in_tbs
   is_auto_scaling_enabled  = var.is_auto_scaling_enabled
   admin_password           = var.admin_password

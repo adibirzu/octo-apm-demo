@@ -55,3 +55,8 @@ deploy/vm/nginx/tls/crm/*.pem
 deploy/vm/wallet/
 .terraform/
 .terraform.lock.hcl
+
+# Per-tenancy Terraform vars — contain generated passwords.
+deploy/terraform/terraform.*.tfvars
+!deploy/terraform/terraform.tfvars.example
+deploy/terraform/.terraform.tfstate.lock.info
