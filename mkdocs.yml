@@ -118,6 +118,7 @@ nav:
     - Enhancement Plan: observability/enhancement-plan.md
     - OCI 360 Development Plan: observability/oci-360-development-plan.md
     - Signal wire-up map: observability/wire-up.md
+    - Demo drill-down: observability/demo-drilldown.md
   - Observability v2:
     - observability-v2/index.md
     - Golden workflows: observability-v2/workflows.md
