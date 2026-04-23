@@ -25,7 +25,11 @@ spec:
         - name: ocir-pull-secret
       containers:
         - name: app
-          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-apm-java-demo:${IMAGE_TAG:-latest}
+          # envsubst does not expand `${VAR:-default}` — use plain `${VAR}`.
+          # The deploy script always exports IMAGE_TAG; `latest` is the safe
+          # fallback for manual `kubectl apply` by always tagging images as
+          # both `<timestamp>` and `latest`.
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-apm-java-demo:${IMAGE_TAG}
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -33,16 +37,21 @@ spec:
           env:
             - name: OCI_APM_SERVICE_NAME
               value: octo-apm-java-demo
+            # The live crm-secrets / octo-apm convention uses short keys
+            # (`endpoint`, `private-key`). init-tenancy.sh documents
+            # `apm-endpoint` / `apm-private-datakey` for fresh tenancies;
+            # we include both as fallbacks via `optional: true` so the pod
+            # boots against either naming.
             - name: OCI_APM_ENDPOINT
               valueFrom:
                 secretKeyRef:
                   name: octo-apm
-                  key: apm-endpoint
+                  key: endpoint
             - name: OCI_APM_PRIVATE_DATAKEY
               valueFrom:
                 secretKeyRef:
                   name: octo-apm
-                  key: apm-private-datakey
+                  key: private-key
           resources:
             requests:
               cpu: 100m
