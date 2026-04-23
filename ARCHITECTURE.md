@@ -37,8 +37,8 @@ flowchart TD
     IDCS["OCI IAM Identity Domain<br>(OIDC + PKCE)"]
 
     subgraph Runtime ["OCI runtime (OKE cluster or single VM)"]
-        Shop["<b>Drone Shop</b><br>drone.octodemo.cloud<br>FastAPI · uvicorn :8080"]
-        CRM["<b>Enterprise CRM</b><br>backend.octodemo.cloud<br>FastAPI · uvicorn :8080"]
+        Shop["<b>Drone Shop</b><br>shop.example.tld<br>FastAPI · uvicorn :8080"]
+        CRM["<b>Enterprise CRM</b><br>crm.example.tld<br>FastAPI · uvicorn :8080"]
     end
 
     subgraph Obs ["OCI Observability"]

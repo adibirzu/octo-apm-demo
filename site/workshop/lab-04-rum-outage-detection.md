@@ -22,7 +22,7 @@ broken from the customer's perspective — even when the backend
 ### 1. Open the shop in your browser
 
 ```
-https://drone.octodemo.cloud
+https://shop.example.tld
 ```
 
 Open dev tools → Network tab. Reload. You should see a request to
@@ -69,7 +69,7 @@ In dev tools console, run:
 
 ```js
 // Force a fetch error
-fetch('https://drone.octodemo.cloud/api/intentionally-missing')
+fetch('https://shop.example.tld/api/intentionally-missing')
     .then(r => r.json())
     .catch(e => console.error('lab-04 forced error', e));
 ```

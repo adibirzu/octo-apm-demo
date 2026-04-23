@@ -38,7 +38,7 @@ If the array is empty, no requests have been made — generate some:
 
 ```bash
 for i in $(seq 1 20); do
-    curl -sS https://drone.octodemo.cloud/api/products > /dev/null
+    curl -sS https://shop.example.tld/api/products > /dev/null
 done
 ```
 
@@ -86,7 +86,7 @@ Force a 5xx by hitting a route that intentionally fails:
 ```bash
 for i in $(seq 1 5); do
     curl -sS -o /dev/null -w "%{http_code}\n" \
-        -X POST https://drone.octodemo.cloud/api/orders \
+        -X POST https://shop.example.tld/api/orders \
         -H "Content-Type: application/json" \
         -d '{"customer_id": 0, "items": []}'
 done

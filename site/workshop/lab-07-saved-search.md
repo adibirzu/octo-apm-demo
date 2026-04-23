@@ -50,10 +50,10 @@ Group by reason:
 ```bash
 # 5 valid orders, 5 invalid
 for i in 1 2 3 4 5; do
-    curl -sS -X POST https://drone.octodemo.cloud/api/orders \
+    curl -sS -X POST https://shop.example.tld/api/orders \
         -H "Content-Type: application/json" \
         -d '{"customer_id":1,"items":[{"product_id":1,"quantity":1,"unit_price":1.0}]}' > /dev/null
-    curl -sS -X POST https://drone.octodemo.cloud/api/orders \
+    curl -sS -X POST https://shop.example.tld/api/orders \
         -H "Content-Type: application/json" \
         -d '{"customer_id":0,"items":[]}' > /dev/null
 done

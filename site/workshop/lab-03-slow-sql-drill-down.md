@@ -31,7 +31,7 @@ TRACE_ID=$(echo "$TRACEPARENT" | cut -d- -f2)
 curl -sS \
     -H "traceparent: $TRACEPARENT" \
     -H "X-Workflow-Id: workshop-lab-03" \
-    "https://drone.octodemo.cloud/api/products?slow=true&category=drones" | jq '.[0:3]'
+    "https://shop.example.tld/api/products?slow=true&category=drones" | jq '.[0:3]'
 
 echo "trace_id: $TRACE_ID"
 ```

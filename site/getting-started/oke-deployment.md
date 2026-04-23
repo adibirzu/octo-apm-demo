@@ -18,7 +18,7 @@ without collisions.
 ## One-shot apply
 
 ```bash
-DNS_DOMAIN=octodemo.cloud \
+DNS_DOMAIN=example.tld \
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
 OCI_LB_SUBNET_OCID=ocid1.subnet.oc1..xxx \

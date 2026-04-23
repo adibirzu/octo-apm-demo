@@ -49,7 +49,7 @@ Run a high-concurrency burst against the shop:
 
 ```bash
 for i in $(seq 1 50); do
-    (curl -sS https://drone.octodemo.cloud/api/products?heavy=true > /dev/null) &
+    (curl -sS https://shop.example.tld/api/products?heavy=true > /dev/null) &
 done
 wait
 ```

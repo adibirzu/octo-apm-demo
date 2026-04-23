@@ -25,7 +25,7 @@ Send a request that looks like SQL injection. WAF will detect
 (`DETECTION` mode) without blocking.
 
 ```bash
-curl -sS "https://drone.octodemo.cloud/api/products?id=1' OR '1'='1" \
+curl -sS "https://shop.example.tld/api/products?id=1' OR '1'='1" \
     -H "User-Agent: workshop-lab-06"
 ```
 

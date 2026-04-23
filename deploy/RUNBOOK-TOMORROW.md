@@ -13,7 +13,7 @@ cd /opt/octo || git clone https://github.com/adibirzu/octo-apm-demo.git /opt/oct
 # Expected: VERIFY PASSED — 0 warnings
 
 # Pin deploy scope
-export DNS_DOMAIN=octodemo.cloud
+export DNS_DOMAIN=example.tld
 export OCIR_REGION=eu-frankfurt-1
 export OCIR_TENANCY=<your-tenancy-namespace>
 export OCI_COMPARTMENT_ID=<ocid>
@@ -100,21 +100,21 @@ cd deploy/vm
 cp .env.template .env
 ${EDITOR:-vi} .env       # fill DNS_DOMAIN, OCIR, ATP, keys
 unzip /path/to/Wallet_<DB>.zip -d wallet
-sudo certbot certonly --standalone -d drone.octodemo.cloud -d backend.octodemo.cloud
-sudo cp /etc/letsencrypt/live/drone.octodemo.cloud/*.pem nginx/tls/shop/
-sudo cp /etc/letsencrypt/live/backend.octodemo.cloud/*.pem nginx/tls/crm/
+sudo certbot certonly --standalone -d shop.example.tld -d crm.example.tld
+sudo cp /etc/letsencrypt/live/shop.example.tld/*.pem nginx/tls/shop/
+sudo cp /etc/letsencrypt/live/crm.example.tld/*.pem nginx/tls/crm/
 sudo ./install.sh
 ```
 
 ## 5. DNS + validate (5 min)
 
-Point `drone.octodemo.cloud` + `backend.octodemo.cloud` at the LB or VM IP.
+Point `shop.example.tld` + `crm.example.tld` at the LB or VM IP.
 
 ```bash
-curl -sS https://drone.octodemo.cloud/ready | jq
-curl -sS https://backend.octodemo.cloud/ready | jq
-curl -sS https://drone.octodemo.cloud/api/version | jq
-curl -sS https://drone.octodemo.cloud/api/integrations/schema | jq .info.title
+curl -sS https://shop.example.tld/ready | jq
+curl -sS https://crm.example.tld/ready | jq
+curl -sS https://shop.example.tld/api/version | jq
+curl -sS https://shop.example.tld/api/integrations/schema | jq .info.title
 
 # Rollout validator
 python tools/rollout-validator/validate.py \
@@ -127,7 +127,7 @@ python tools/rollout-validator/validate.py \
 ```bash
 # Traffic generator (continuous — demos)
 OCTO_TRAFFIC_RUN_DURATION_SECONDS=0 \
-OCTO_TRAFFIC_SHOP_BASE_URL=https://drone.octodemo.cloud \
+OCTO_TRAFFIC_SHOP_BASE_URL=https://shop.example.tld \
 OCTO_TRAFFIC_TARGET_RPS=2 \
 OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_ENDPOINT=http://gateway.octo-otel.svc.cluster.local:4318 \
 kubectl -n octo-traffic apply -f tools/traffic-generator/k8s/deployment.yaml
@@ -137,8 +137,8 @@ kubectl -n octo-traffic apply -f tools/traffic-generator/k8s/deployment.yaml
 
 ```bash
 FULL_PLATFORM_E2E_ENABLED=1 \
-SHOP_BASE_URL=https://drone.octodemo.cloud \
-CRM_BASE_URL=https://backend.octodemo.cloud \
+SHOP_BASE_URL=https://shop.example.tld \
+CRM_BASE_URL=https://crm.example.tld \
 LOAD_CONTROL_URL=http://load-control.octo-load-control:8080 \
 REMEDIATOR_URL=http://remediator.octo-remediator:8080 \
 OBJECT_PIPELINE_URL=http://object-pipeline.octo-object:8080 \

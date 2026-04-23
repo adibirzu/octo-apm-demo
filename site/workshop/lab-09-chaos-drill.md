@@ -34,7 +34,7 @@ echo "RUN_ID=$RUN_ID"
 ### 2. Apply the chaos profile
 
 ```bash
-curl -sS -X POST https://backend.octodemo.cloud/api/admin/chaos/apply \
+curl -sS -X POST https://crm.example.tld/api/admin/chaos/apply \
     -H "Content-Type: application/json" \
     -H "X-Internal-Service-Key: $INTERNAL_SERVICE_KEY" \
     -H "X-Run-Id: $RUN_ID" \
@@ -89,7 +89,7 @@ The chaos run pretends to be a real incident. The on-call playbook is:
 ### 5. Resolve
 
 ```bash
-curl -sS -X POST https://backend.octodemo.cloud/api/admin/chaos/clear \
+curl -sS -X POST https://crm.example.tld/api/admin/chaos/clear \
     -H "Content-Type: application/json" \
     -H "X-Internal-Service-Key: $INTERNAL_SERVICE_KEY" \
     -H "X-Run-Id: $RUN_ID" \

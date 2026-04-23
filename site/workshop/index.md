@@ -76,8 +76,8 @@ Before lab 01:
       and RUM have signal. ([deploy guide](https://github.com/adibirzu/octo-apm-demo/tree/main/tools/traffic-generator))
 - [ ] Verified the platform is reachable:
     ```bash
-    curl -s https://drone.octodemo.cloud/ready   | jq
-    curl -s https://backend.octodemo.cloud/ready | jq
+    curl -s https://shop.example.tld/ready   | jq
+    curl -s https://crm.example.tld/ready | jq
     ```
     Both should return `database.reachable=true`.
 
@@ -85,7 +85,7 @@ Before lab 01:
 
 - Every shell snippet assumes `bash` (not zsh-specific syntax). On
   macOS, `bash` from Homebrew works the same.
-- Every URL uses `octodemo.cloud`. If your tenancy uses a different
+- Every URL uses `example.tld`. If your tenancy uses a different
   `DNS_DOMAIN`, mentally substitute.
 - "OCI Console" instructions assume the [Frankfurt region UI](https://cloud.oracle.com/?region=eu-frankfurt-1).
   If you use another region, the menu paths are identical; only the
