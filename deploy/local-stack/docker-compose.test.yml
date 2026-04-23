@@ -1,0 +1,132 @@
+# Local regression stack — shop + crm + redis + postgres (ATP stand-in).
+#
+# Purpose: run Playwright e2e + k6 soak against a self-contained stack
+# without touching OCI. Do NOT use for production.
+#
+# Build context for shop + crm is the REPO ROOT (../..) because both
+# Dockerfiles install sibling editable packages from services/.
+#
+# Usage:
+#     cd deploy/local-stack
+#     docker compose -f docker-compose.test.yml up --build
+#     # shop:  http://localhost:18080
+#     # crm:   http://localhost:18090
+#     # redis: localhost:16379
+#     # pg:    localhost:15432
+
+name: octo-local-stack
+
+networks:
+  octo-test:
+    driver: bridge
+
+volumes:
+  pg-data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: octo
+      POSTGRES_PASSWORD: octo-local-test
+      POSTGRES_DB: octo
+    ports:
+      - "15432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - octo-test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U octo -d octo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "16379:6379"
+    networks:
+      - octo-test
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  shop:
+    build:
+      context: ../..
+      dockerfile: shop/Dockerfile
+    image: octo-shop:local-test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_NAME: octo-drone-shop
+      APP_RUNTIME: local
+      ENVIRONMENT: test
+      PORT: "8080"
+      DNS_DOMAIN: localhost.local
+      SERVICE_CRM_URL: http://crm:8080
+      CRM_PUBLIC_URL: http://crm:8080
+      INTERNAL_SERVICE_KEY: local-test-key
+      AUTH_TOKEN_SECRET: local-test-auth-secret
+      # Postgres stand-in for ATP
+      DATABASE_URL: postgresql+asyncpg://octo:octo-local-test@postgres:5432/octo
+      OCTO_CACHE_URL: redis://redis:6379/0
+      OCTO_ORDER_STREAM_REDIS_URL: redis://redis:6379/0
+      OCTO_RATE_LIMIT_REDIS_URL: redis://redis:6379/0
+      OCTO_ASYNC_ORDER_SYNC_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+      OCI_AUTH_MODE: disabled
+    ports:
+      - "18080:8080"
+    networks:
+      - octo-test
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  crm:
+    build:
+      context: ../..
+      dockerfile: crm/Dockerfile
+    image: octo-crm:local-test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_NAME: enterprise-crm-portal
+      APP_RUNTIME: local
+      APP_ENV: test
+      APP_PORT: "8080"
+      DNS_DOMAIN: localhost.local
+      CRM_BASE_URL: http://crm:8080
+      SERVICE_SHOP_URL: http://shop:8080
+      INTERNAL_SERVICE_KEY: local-test-key
+      APP_SECRET_KEY: local-test-crm-secret
+      BOOTSTRAP_ADMIN_PASSWORD: local-admin-test
+      DATABASE_URL: postgresql://octo:octo-local-test@postgres:5432/octo
+      OCTO_CACHE_URL: redis://redis:6379/1
+      OCI_AUTH_MODE: disabled
+    ports:
+      - "18090:8080"
+    networks:
+      - octo-test
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s

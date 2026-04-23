@@ -211,3 +211,94 @@ module "la_pipeline_app_logs" {
   la_log_group_id     = var.la_log_group_id
   la_source_name      = "octo-shop-app-json"
 }
+
+###############################################################################
+# ATP + Vault + Object Storage + Logging + Stack Monitoring.
+# Each is gated behind a `create_*` flag so operators can provision
+# selectively (e.g. reuse an existing ATP while creating a fresh Vault).
+###############################################################################
+
+module "atp" {
+  source                   = "./modules/atp"
+  count                    = var.create_atp ? 1 : 0
+  compartment_id           = var.compartment_id
+  admin_password           = var.atp_admin_password
+  wallet_password          = var.atp_wallet_password
+  whitelisted_ips          = var.atp_whitelisted_ips
+}
+
+module "vault" {
+  source         = "./modules/vault"
+  count          = var.create_vault ? 1 : 0
+  compartment_id = var.compartment_id
+  secrets        = var.vault_secrets
+}
+
+module "object_storage" {
+  source         = "./modules/object_storage"
+  count          = var.create_object_storage ? 1 : 0
+  compartment_id = var.compartment_id
+  namespace      = var.object_storage_namespace
+}
+
+module "logging" {
+  source             = "./modules/logging"
+  count              = var.create_logging ? 1 : 0
+  compartment_id     = var.compartment_id
+  retention_duration = var.logging_retention_days
+}
+
+locals {
+  stack_monitoring_atp_ocid = var.create_atp ? module.atp[0].atp_id : var.stack_monitoring_atp_id
+}
+
+module "stack_monitoring_atp" {
+  source           = "./modules/stack_monitoring"
+  count            = var.create_stack_monitoring && local.stack_monitoring_atp_ocid != "" ? 1 : 0
+  compartment_id   = var.compartment_id
+  autonomous_db_id = local.stack_monitoring_atp_ocid
+}
+
+output "atp" {
+  value = var.create_atp ? {
+    atp_id                  = module.atp[0].atp_id
+    atp_db_name             = module.atp[0].atp_db_name
+    atp_service_console_url = module.atp[0].atp_service_console_url
+  } : null
+  description = "ATP coordinates (non-sensitive). DSN + wallet exported separately."
+}
+
+output "atp_wallet_b64" {
+  value       = var.create_atp ? module.atp[0].atp_wallet_content_base64 : ""
+  sensitive   = true
+  description = "Base64 ATP wallet zip — land in Vault/K8s secret octo-atp-wallet."
+}
+
+output "vault" {
+  value = var.create_vault ? {
+    vault_id      = module.vault[0].vault_id
+    master_key_id = module.vault[0].master_key_id
+    secret_ids    = module.vault[0].secret_ids
+  } : null
+}
+
+output "object_storage" {
+  value = var.create_object_storage ? {
+    chaos_state_bucket = module.object_storage[0].chaos_state_bucket
+    wallet_bucket      = module.object_storage[0].wallet_bucket
+    artifacts_bucket   = module.object_storage[0].artifacts_bucket
+  } : null
+}
+
+output "logging" {
+  value = var.create_logging ? {
+    log_group_id       = module.logging[0].log_group_id
+    log_app_id         = module.logging[0].log_app_id
+    log_chaos_audit_id = module.logging[0].log_chaos_audit_id
+    log_security_id    = module.logging[0].log_security_id
+  } : null
+}
+
+output "stack_monitoring_atp_id" {
+  value = length(module.stack_monitoring_atp) > 0 ? module.stack_monitoring_atp[0].monitored_resource_id : ""
+}

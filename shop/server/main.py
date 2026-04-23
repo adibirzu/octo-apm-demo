@@ -43,6 +43,15 @@ from server.modules.integrations import router as integrations_router
 from server.modules.services import router as services_router
 from server.modules.observability_dashboard import router as observability_dashboard_router
 
+# New modules (Phase 2 + 11 + platform status)
+from server.modules.payments.webhooks import router as payments_webhooks_router
+from server.modules.public_api import (
+    public_router as public_api_router,
+    partner_router as partner_api_router,
+)
+from server.modules.version import router as version_router
+from server.modules.platform_status import router as platform_status_router
+
 logger = logging.getLogger(__name__)
 
 # ── Pre-initialize OTel + Metrics ─────────────────────────────
@@ -167,6 +176,17 @@ app.include_router(dashboard_router)
 app.include_router(integrations_router)
 app.include_router(services_router)
 app.include_router(observability_dashboard_router)
+
+# Phase 2 — payment gateway webhook ingestion
+app.include_router(payments_webhooks_router)
+
+# Phase 11 — public + partner versioned APIs
+app.include_router(public_api_router)
+app.include_router(partner_api_router)
+
+# Meta — /api/version + /api/platform/status
+app.include_router(version_router)
+app.include_router(platform_status_router)
 
 # Chaos readers (shop is reader-only; control surface lives on CRM + Ops).
 from server.chaos.router import router as chaos_reader_router

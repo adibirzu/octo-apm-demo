@@ -13,7 +13,7 @@ from __future__ import annotations
 from alembic import op
 
 revision = "a1paymentref"
-down_revision = None
+down_revision = "a0paymentprovidercols"
 branch_labels = None
 depends_on = None
 

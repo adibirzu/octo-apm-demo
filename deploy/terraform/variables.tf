@@ -58,3 +58,89 @@ variable "la_log_group_id" {
   type        = string
   description = "OCI Log Analytics log group OCID receiving app + WAF logs."
 }
+
+###############################################################################
+# ATP — application database. Off by default so an existing ATP can be
+# reused via its OCID.
+###############################################################################
+
+variable "create_atp" {
+  type    = bool
+  default = false
+}
+
+variable "atp_admin_password" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "atp_wallet_password" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "atp_whitelisted_ips" {
+  type    = list(string)
+  default = []
+}
+
+###############################################################################
+# Vault — secret storage for app + integrations. Off by default so an
+# existing Vault can be reused.
+###############################################################################
+
+variable "create_vault" {
+  type    = bool
+  default = false
+}
+
+variable "vault_secrets" {
+  type      = map(string)
+  sensitive = true
+  default   = {}
+}
+
+###############################################################################
+# Object Storage — chaos state, wallet mirror, artifacts.
+###############################################################################
+
+variable "create_object_storage" {
+  type    = bool
+  default = false
+}
+
+variable "object_storage_namespace" {
+  type    = string
+  default = ""
+}
+
+###############################################################################
+# Logging — log group + custom logs (app, chaos-audit, security).
+###############################################################################
+
+variable "create_logging" {
+  type    = bool
+  default = false
+}
+
+variable "logging_retention_days" {
+  type    = number
+  default = 30
+}
+
+###############################################################################
+# Stack Monitoring — register the ATP DB as a monitored resource.
+###############################################################################
+
+variable "create_stack_monitoring" {
+  type    = bool
+  default = false
+}
+
+variable "stack_monitoring_atp_id" {
+  type        = string
+  default     = ""
+  description = "ATP OCID to register. If create_atp=true this is auto-wired to the new DB."
+}

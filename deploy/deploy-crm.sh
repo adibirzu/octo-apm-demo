@@ -48,7 +48,7 @@ echo "================================================"
 
 if $BUILD; then
     echo
-    echo "[1/4] Syncing crm/ to ${REMOTE_HOST}:${REMOTE_DIR}..."
+    echo "[1/4] Syncing crm/ + services/cache/ to ${REMOTE_HOST}:${REMOTE_DIR}..."
     rsync -az --delete \
         --exclude '.git' \
         --exclude '__pycache__' \
@@ -61,12 +61,16 @@ if $BUILD; then
         --exclude 'build' \
         --exclude '.claude' \
         --exclude '*.log' \
-        "${REPO_ROOT}/crm/" "${REMOTE_HOST}:${REMOTE_DIR}/"
+        --include 'crm/***' \
+        --include 'services/cache/***' \
+        --include 'services/' \
+        --exclude '*' \
+        "${REPO_ROOT}/" "${REMOTE_HOST}:${REMOTE_DIR}/"
     echo "[1/4] Sync complete"
 
     echo
     echo "[2/4] Building on ${REMOTE_HOST}..."
-    ssh "${REMOTE_HOST}" "cd ${REMOTE_DIR} && docker build -t ${OCIR_REPO}:${TAG} -t ${OCIR_REPO}:latest ."
+    ssh "${REMOTE_HOST}" "cd ${REMOTE_DIR} && docker build -f crm/Dockerfile -t ${OCIR_REPO}:${TAG} -t ${OCIR_REPO}:latest ."
 
     echo
     echo "[3/4] Pushing to OCIR..."

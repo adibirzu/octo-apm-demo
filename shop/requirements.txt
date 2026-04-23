@@ -28,3 +28,13 @@ bcrypt==4.2.1
 PyJWT[crypto]==2.12.0
 
 psutil>=5.9.0
+
+# Redis client — rate limit + cache + async order stream
+redis[hiredis]>=5.0,<6.0
+
+# Alembic — schema migrations against ATP / local Postgres
+alembic>=1.13,<2.0
+
+# Local editable packages (octo-cache, octo-async-worker) — install via
+# requirements-dev.txt or Dockerfile COPY + pip install -e. Not pinned here
+# so `pip install -r requirements.txt` works in CI without the monorepo tree.
