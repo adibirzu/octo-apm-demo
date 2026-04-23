@@ -165,22 +165,36 @@ def _publisher_loop(compartment_id: str, start_time: float):
         from oci.monitoring import MonitoringClient
         from oci.monitoring.models import PostMetricDataDetails, MetricDataDetails, Datapoint
 
-        # Use the same auth mode as the rest of the app
+        # Use the same auth mode as the rest of the app.
+        #
+        # IMPORTANT: OCI Monitoring has two separate endpoints:
+        #   telemetry.<region>.oraclecloud.com            — READ  (ListMetrics, SummarizeMetricsData)
+        #   telemetry-ingestion.<region>.oraclecloud.com  — WRITE (PostMetricData)
+        # The default MonitoringClient endpoint is the read one. Passing
+        # `service_endpoint=<ingestion>` is the supported override for writes.
+        # Without this every post_metric_data returns 404 "Incorrect Telemetry
+        # endpoint is being used for posting metrics". See KB-456.
         auth_mode = cfg.oci_auth_mode.lower()
+        region = (
+            os.getenv("OCI_REGION")
+            or os.getenv("OCI_REGION_ID")
+            or "eu-frankfurt-1"
+        ).strip().lower()
+        ingestion_endpoint = f"https://telemetry-ingestion.{region}.oraclecloud.com"
+
         if auth_mode == "instance_principal":
             signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
-            client = MonitoringClient(config={}, signer=signer)
+            client = MonitoringClient(
+                config={}, signer=signer, service_endpoint=ingestion_endpoint
+            )
         elif auth_mode == "resource_principal":
             signer = oci.auth.signers.get_resource_principals_signer()
-            client = MonitoringClient(config={}, signer=signer)
+            client = MonitoringClient(
+                config={}, signer=signer, service_endpoint=ingestion_endpoint
+            )
         else:
             config = oci.config.from_file()
-            client = MonitoringClient(config)
-
-        # Use the telemetry ingestion endpoint for the region
-        region = os.getenv("OCI_REGION", "")
-        if region:
-            client.base_client.set_region(region)
+            client = MonitoringClient(config, service_endpoint=ingestion_endpoint)
 
         logger.info(
             "OCI Monitoring publisher started — namespace=%s, interval=%ds, compartment=%s",
