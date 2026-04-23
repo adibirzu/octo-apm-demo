@@ -34,10 +34,10 @@ Subsequent runs reuse it unless you delete the cache.
 | 5 | Extract wallet zip, seed 6 K8s secrets per namespace | yes (applied with `--dry-run=client` diff) | — |
 | 6 | `deploy-{shop,crm}.sh --build-only` on remote builder | yes | `REMOTE_BUILD_HOST` |
 | 7 | Apply shop + crm manifests via `envsubst` | yes | — |
-| 8 | Detect virtual-node-only cluster (KB-459) — install nginx-ingress or exit with guidance | yes | `INSTALL_NGINX_INGRESS=false` |
-| 9 | Create Ingress objects | yes | — |
+| 8 | Reuse an existing shared ingress controller or install nginx-ingress if needed | yes | `INSTALL_NGINX_INGRESS=false` |
+| 9 | Create Ingress objects and, when available, load `*.cyber-sec.ro` TLS from OCI Certificates | yes | `TLS_MODE=skip` |
 | 10 | Wait for nginx LB IP, PATCH `<DNS_BASE_DOMAIN>` zone with A records | yes | — |
-| 11 | Smoke-test `/` + `/ready` via Host: header | yes | — |
+| 11 | Smoke-test `/` + `/ready` over HTTP and HTTPS (when TLS is enabled) | yes | — |
 
 ### Environment variables
 
@@ -51,6 +51,11 @@ Subsequent runs reuse it unless you delete the cache.
 | `REMOTE_BUILD_HOST` | `control-plane-oci` | SSH host for x86_64 Docker builds. |
 | `OKE_CLUSTER_ID` | *(first ACTIVE cluster in compartment)* | Skip cluster auto-detection. |
 | `INSTALL_NGINX_INGRESS` | `true` | Opt-out of helm install. |
+| `PUBLISH_VIA_INGRESS` | `true` | Filters per-app `LoadBalancer` services out of first-time applies so the shared ingress controller fronts both apps. |
+| `TLS_MODE` | `auto` | `auto` loads a certificate from OCI Certificates when one matches `*.${DNS_BASE_DOMAIN}`; `skip` leaves ingress HTTP-only. |
+| `TLS_REQUIRED` | `false` | Fail the bootstrap if no usable OCI certificate can be loaded. |
+| `TLS_SECRET_NAME` | `cyber-sec-ro-tls` | TLS secret name created in both app namespaces. |
+| `OCI_CERTIFICATE_OCID` | *(auto-discover)* | Explicit OCI Certificates OCID if auto-discovery should not be used. |
 | `SKIP_APM_JAVA_DEMO` | `true` | Reserved. |
 | `ATP_ADMIN_PW` / `ATP_WALLET_PW` | *(generated)* | Override if you want specific creds. |
 
@@ -82,11 +87,12 @@ Subsequent runs reuse it unless you delete the cache.
 ### What it removes
 
 1. K8s namespaces `${K8S_NAMESPACE_SHOP}` + `${K8S_NAMESPACE_CRM}` (deployments, services, ingresses, secrets, PDBs, HPAs).
-2. nginx-ingress Helm release (only if installed by bootstrap).
+2. Shared ingress controller only if you pass `--delete-shared-ingress`.
 3. DNS A records `shop.<DNS_BASE_DOMAIN>`, `crm.<DNS_BASE_DOMAIN>`.
-4. ATP via `terraform destroy -target=module.atp`.
-5. OCIR repos `octo-drone-shop`, `enterprise-crm-portal`, `octo-apm-java-demo`.
-6. Local kubectl context + tenancy cache.
+4. Managed node pool `octo-apm-managed-pool` only if you pass `--delete-managed-pool`.
+5. ATP via `terraform destroy -target=module.atp`.
+6. OCIR repos `octo-drone-shop`, `enterprise-crm-portal`, `octo-apm-java-demo`.
+7. Local kubectl context + tenancy cache.
 
 ### What it NEVER touches
 
