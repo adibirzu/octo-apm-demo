@@ -19,7 +19,10 @@ REMOTE_HOST="${REMOTE_HOST:-remote-builder}"
 REMOTE_DIR="${REMOTE_DIR:-/tmp/octo-apm-demo-crm}"
 NAMESPACE="${K8S_NAMESPACE:-enterprise-crm}"
 DEPLOYMENT="${K8S_DEPLOYMENT:-enterprise-crm-portal}"
-CONTAINER="${K8S_CONTAINER:-crm}"
+CONTAINER="${K8S_CONTAINER:-app}"
+K8S_NAMESPACE_SHOP="${K8S_NAMESPACE_SHOP:-octo-drone-shop}"
+K8S_NAMESPACE_CRM="${K8S_NAMESPACE_CRM:-${NAMESPACE}}"
+PUBLISH_VIA_INGRESS="${PUBLISH_VIA_INGRESS:-true}"
 TAG=$(date +%Y%m%d%H%M%S)
 
 BUILD=true
@@ -35,8 +38,39 @@ if $ROLLOUT; then
     DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/oci4cca use cyber-sec.ro) for backend URL derivation, or pass --build-only.}"
     CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}"
     SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}"
+    SERVICE_SHOP_URL="${SERVICE_SHOP_URL:-http://octo-drone-shop.${K8S_NAMESPACE_SHOP}.svc.cluster.local:8080}"
     VERIFY_URL="${VERIFY_URL:-${CRM_PUBLIC_URL}/ready}"
 fi
+
+apply_manifest_dir() {
+    local manifest_dir="$1"
+    local rendered
+    local manifest
+    for manifest in "${manifest_dir}"/*.yaml; do
+        rendered="$(mktemp)"
+        envsubst < "${manifest}" > "${rendered}"
+        if [[ "${PUBLISH_VIA_INGRESS}" == "true" ]]; then
+            python3 - "${rendered}" <<'PYEOF' | kubectl apply -n "${NAMESPACE}" -f -
+import sys
+import yaml
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    docs = list(yaml.safe_load_all(handle))
+
+for doc in docs:
+    if not doc:
+        continue
+    if doc.get("kind") == "Service" and doc.get("spec", {}).get("type") == "LoadBalancer":
+        continue
+    print("---")
+    sys.stdout.write(yaml.safe_dump(doc, sort_keys=False))
+PYEOF
+        else
+            kubectl apply -n "${NAMESPACE}" -f "${rendered}"
+        fi
+        rm -f "${rendered}"
+    done
+}
 
 echo "================================================"
 echo " Enterprise CRM Portal Deploy (octo-apm-demo)"
@@ -99,15 +133,14 @@ if $ROLLOUT; then
             echo "envsubst not found — install gettext (brew install gettext / apt-get install gettext-base)" >&2
             exit 1
         }
-        for f in "${manifest_dir}"/*.yaml; do
-            envsubst < "$f" | kubectl apply -n "${NAMESPACE}" -f -
-        done
+        export OCIR_REGION OCIR_TENANCY DNS_DOMAIN SHOP_PUBLIC_URL CRM_PUBLIC_URL K8S_NAMESPACE_SHOP K8S_NAMESPACE_CRM
+        apply_manifest_dir "${manifest_dir}"
     fi
 
     echo
     echo "[4/4] Rolling out ${DEPLOYMENT} → ${IMAGE}..."
     kubectl set env "deployment/${DEPLOYMENT}" \
-        "SERVICE_SHOP_URL=${SHOP_PUBLIC_URL}" \
+        "SERVICE_SHOP_URL=${SERVICE_SHOP_URL}" \
         "CRM_BASE_URL=${CRM_PUBLIC_URL}" \
         -n "${NAMESPACE}" >/dev/null
     kubectl set image "deployment/${DEPLOYMENT}" "${CONTAINER}=${IMAGE}" -n "${NAMESPACE}"

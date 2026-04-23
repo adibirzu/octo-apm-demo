@@ -66,10 +66,11 @@ resource "oci_sch_service_connector" "this" {
 
   target {
     # log_source_name is NOT part of the oci_sch_service_connector.target
-    # schema for the loganalytics kind in the current OCI Terraform provider.
+    # schema for the Logging Analytics target in the current OCI Terraform
+    # provider.
     # The Log Analytics source (var.la_source_name) is set on the ingest
     # configuration on the LA side via deploy/oci/ensure_la_sources.sh.
-    kind         = "loganalytics"
+    kind         = "loggingAnalytics"
     log_group_id = var.la_log_group_id
   }
 

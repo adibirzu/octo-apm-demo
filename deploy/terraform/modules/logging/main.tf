@@ -9,7 +9,8 @@
 # Outputs are the OCIDs that the app consumes via env vars:
 #   OCI_LOG_GROUP_ID          -> log_group_id
 #   OCI_LOG_ID                -> log_app_id
-#   OCI_LOG_GROUP_CHAOS_AUDIT -> log_chaos_audit_id
+#   OCI_LOG_CHAOS_AUDIT_ID    -> log_chaos_audit_id
+#   OCI_LOG_SECURITY_ID       -> log_security_id
 ###############################################################################
 
 terraform {
@@ -86,10 +87,10 @@ output "log_app_id" {
 
 output "log_chaos_audit_id" {
   value       = oci_logging_log.chaos_audit.id
-  description = "OCI_LOG_GROUP_CHAOS_AUDIT for chaos apply/clear audit records."
+  description = "OCI_LOG_CHAOS_AUDIT_ID for chaos apply/clear audit records."
 }
 
 output "log_security_id" {
   value       = oci_logging_log.security.id
-  description = "OCI_LOG_SECURITY for auth + WAF app-level events."
+  description = "OCI_LOG_SECURITY_ID for auth + WAF app-level events."
 }
