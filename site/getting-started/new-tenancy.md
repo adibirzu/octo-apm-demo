@@ -80,6 +80,25 @@ All APM / RUM / Logging / GenAI / Integration secrets can be left blank on first
 
 ### APM Domain + RUM Web Application
 
+Two equivalent paths — pick one:
+
+**Terraform (preferred, tenancy-portable):** set `create_apm_domain = true`
+in `deploy/terraform/terraform.tfvars` and run `terraform apply`. Outputs
+include `apm_data_upload_endpoint`, `apm_private_datakey`,
+`apm_public_datakey`, and `rum_endpoint`. See [`deploy/terraform/README.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/terraform/README.md).
+
+!!! warning "RUM web-app OCID is a manual step"
+    OCI's Terraform provider does not yet expose a resource for creating
+    a RUM web application (`config_type = "WEB_APPLICATION"` is
+    rejected). After `terraform apply`, register the web app in the
+    Console: **Observability & Management → APM → Real User Monitoring
+    → Create Web Application**. Copy the OCID into `octo-apm` K8s
+    secret as `rum-web-application-ocid`. Beacon ingestion works
+    without this OCID — the JS SDK only needs the public data key +
+    endpoint. See [OBSERVABILITY-BOOTSTRAP.md §7a](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md#7a-rum-web-application-one-manual-step).
+
+**Shell script (legacy, still supported):**
+
 ```bash
 COMPARTMENT_ID=$OCI_COMPARTMENT_ID \
 ./deploy/oci/ensure_apm.sh --plan     # review
