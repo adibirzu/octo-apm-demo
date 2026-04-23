@@ -46,6 +46,41 @@ Build an alarm on `app.errors.rate[5m].sum() > 5` → Notifications topic →
 "View related traces" → lands in APM Trace Explorer filtered to that
 window.
 
+## 1a. App Servers drill-down (OCI APM → Service Monitoring → App servers)
+
+Populated by the `octo-apm-java-demo` service — a tiny Spring Boot pod
+with the OCI APM Java agent attached. Python services (`shop`, `crm`)
+cannot populate this view because the OCI APM Python SDK does not emit
+server-info.
+
+**Console path**: Observability & Management → APM → Service Monitoring → **App servers**
+
+| Card | Source | What it shows |
+|---|---|---|
+| Apdex | Java agent | Satisfied/tolerating/frustrated ratio |
+| Active Servers (last 5 min) | Java agent heartbeat | `1` — one JVM reporting |
+| Server restarts | Java agent | Pod restarts over the window |
+| Resource consumption (by request threads) | Java agent | Request-thread CPU + heap |
+| Server request rate (ops/min) | Java agent | Incoming HTTP rate |
+| App server CPU / req table | Java agent | APM version, VM name, VM version, Process CPU load %, Young GC time, Old GC time |
+
+**Generating traffic**:
+```bash
+kubectl port-forward -n octo-drone-shop svc/octo-apm-java-demo 18081:80 &
+for i in {1..30}; do
+    curl -s http://localhost:18081/ >/dev/null
+    curl -s http://localhost:18081/slow >/dev/null     # burn request threads
+    curl -s http://localhost:18081/allocate >/dev/null # force Young GC
+    curl -s http://localhost:18081/error >/dev/null    # frustrated Apdex samples
+    sleep 1
+done
+```
+
+A CronJob (`deploy/k8s/oke/apm-java-demo/deployment.yaml`) also fires the
+same pattern every 5 min so the App Servers view never goes flat.
+
+Deploy + side-load the agent per [services/apm-java-demo/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/services/apm-java-demo/README.md).
+
 ## 2. Traces drill-down (OCI APM)
 
 **Console path**: Observability & Management → APM → Trace Explorer

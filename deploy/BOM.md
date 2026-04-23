@@ -84,6 +84,7 @@ Set as `OCI_COMPARTMENT_ID` in every script.
 |---|---|---|
 | `${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop` | Drone Shop | `latest` + `YYYYMMDDHHMMSS` |
 | `${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal` | CRM Portal | same |
+| `${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-apm-java-demo` | Spring Boot populator for APM App Servers view | same |
 | `${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/oci-coordinator` | Coordinator (optional) | same |
 
 Auth: instance principal from the builder host's dynamic group + `docker login` once per host.
