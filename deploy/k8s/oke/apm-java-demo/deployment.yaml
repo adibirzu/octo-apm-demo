@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-apm-java-demo
+  namespace: octo-drone-shop
+  labels:
+    app: octo-apm-java-demo
+    demo.role: app-server-populator
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: octo-apm-java-demo
+  template:
+    metadata:
+      labels:
+        app: octo-apm-java-demo
+    spec:
+      imagePullSecrets:
+        - name: ocir-pull-secret
+      containers:
+        - name: app
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-apm-java-demo:${IMAGE_TAG:-latest}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: OCI_APM_SERVICE_NAME
+              value: octo-apm-java-demo
+            - name: OCI_APM_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: apm-endpoint
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: apm-private-datakey
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-apm-java-demo
+  namespace: octo-drone-shop
+  labels:
+    app: octo-apm-java-demo
+spec:
+  type: ClusterIP
+  selector:
+    app: octo-apm-java-demo
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: octo-apm-java-demo-traffic
+  namespace: octo-drone-shop
+  labels:
+    app: octo-apm-java-demo
+    demo.role: traffic-generator
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 300
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: curl
+              image: curlimages/curl:8.10.1
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  BASE=http://octo-apm-java-demo.octo-drone-shop.svc.cluster.local
+                  for i in $(seq 1 30); do
+                      curl -sS -o /dev/null "$BASE/"
+                      curl -sS -o /dev/null "$BASE/slow"
+                      curl -sS -o /dev/null "$BASE/allocate"
+                      curl -sS -o /dev/null -w "%{http_code}\n" "$BASE/error" || true
+                      sleep 1
+                  done

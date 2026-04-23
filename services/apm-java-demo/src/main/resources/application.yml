@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: octo-apm-java-demo
+
+server:
+  port: 8080
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [trace_id=%X{trace_id:-0} span_id=%X{span_id:-0}] %logger{36} - %msg%n'
