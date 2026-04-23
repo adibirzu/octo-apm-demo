@@ -29,6 +29,6 @@ resource "oci_monitoring_alarm" "api_gateway_5xx" {
 
   body = "API Gateway ${var.display_name} returned ≥ ${var.api_gateway_5xx_threshold_per_5m} 5xx responses in 5m. Run-id: {annotation.run_id}. Trace exemplar: {annotation.trace_exemplar}."
 
-  message_format = "PRETTY_JSON"
+  message_format               = "PRETTY_JSON"
   repeat_notification_duration = "PT15M"
 }
