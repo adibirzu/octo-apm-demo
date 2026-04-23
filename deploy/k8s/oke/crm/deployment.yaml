@@ -2,7 +2,7 @@
 #
 # Namespace:        octo-backend-prod
 # Public hostname:  backend.${DNS_DOMAIN}  (default: backend.octodemo.cloud)
-# Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG:-latest}
+# Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -29,11 +29,11 @@ spec:
         app: enterprise-crm-portal
         app.kubernetes.io/part-of: octo-apm-demo
       annotations:
-        octo.oracle.com/restartedAt: "${IMAGE_TAG:-latest}"
+        octo.oracle.com/restartedAt: "${IMAGE_TAG}"
     spec:
       containers:
         - name: app
-          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG:-latest}
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

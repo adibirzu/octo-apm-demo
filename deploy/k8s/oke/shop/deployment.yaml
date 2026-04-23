@@ -2,7 +2,7 @@
 #
 # Namespace:        octo-shop-prod
 # Public hostname:  drone.${DNS_DOMAIN}  (default: drone.octodemo.cloud)
-# Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop:${IMAGE_TAG:-latest}
+# Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop:${IMAGE_TAG}
 #
 # Rendered via envsubst before apply:
 #   envsubst < deploy/k8s/oke/shop/deployment.yaml | kubectl apply -f -
@@ -33,11 +33,11 @@ spec:
         app.kubernetes.io/part-of: octo-apm-demo
       annotations:
         # Force rollout when data key secret rotates
-        octo.oracle.com/restartedAt: "${IMAGE_TAG:-latest}"
+        octo.oracle.com/restartedAt: "${IMAGE_TAG}"
     spec:
       containers:
         - name: app
-          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop:${IMAGE_TAG:-latest}
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop:${IMAGE_TAG}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
