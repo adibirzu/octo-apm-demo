@@ -53,7 +53,7 @@ REMOTE_HOST="${REMOTE_HOST:-${REMOTE_BUILD_HOST:-remote-builder}}"
 K8S_NAMESPACE_SHOP="${K8S_NAMESPACE_SHOP:-octo-drone-shop}"
 K8S_NAMESPACE_CRM="${K8S_NAMESPACE_CRM:-enterprise-crm}"
 
-if [[ ! " ${forward_args[*]} " =~ [[:space:]]--build-only[[:space:]] ]]; then
+if [[ ! " ${forward_args[*]-} " =~ [[:space:]]--build-only[[:space:]] ]]; then
     : "${DNS_DOMAIN:?Set DNS_DOMAIN for rollout or pass --build-only}"
     SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}"
     CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}"
@@ -77,17 +77,35 @@ run_service() {
     echo " Ns:   ${namespace}"
     echo "================================================"
 
-    OCIR_REPO="${repo}" \
-    OCIR_REGION="${OCIR_REGION}" \
-    OCIR_TENANCY="${OCIR_TENANCY}" \
-    DNS_DOMAIN="${DNS_DOMAIN:-}" \
-    SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-}" \
-    CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-}" \
-    REMOTE_HOST="${REMOTE_HOST}" \
-    K8S_NAMESPACE="${namespace}" \
-    K8S_DEPLOYMENT="${deployment}" \
-    K8S_CONTAINER="${container}" \
-    bash "${SCRIPT_DIR}/${script}" "${forward_args[@]}"
+    if ((${#forward_args[@]})); then
+        OCIR_REPO="${repo}" \
+        OCIR_REGION="${OCIR_REGION}" \
+        OCIR_TENANCY="${OCIR_TENANCY}" \
+        DNS_DOMAIN="${DNS_DOMAIN:-}" \
+        SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-}" \
+        CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-}" \
+        K8S_NAMESPACE_SHOP="${K8S_NAMESPACE_SHOP}" \
+        K8S_NAMESPACE_CRM="${K8S_NAMESPACE_CRM}" \
+        REMOTE_HOST="${REMOTE_HOST}" \
+        K8S_NAMESPACE="${namespace}" \
+        K8S_DEPLOYMENT="${deployment}" \
+        K8S_CONTAINER="${container}" \
+        bash "${SCRIPT_DIR}/${script}" "${forward_args[@]}"
+    else
+        OCIR_REPO="${repo}" \
+        OCIR_REGION="${OCIR_REGION}" \
+        OCIR_TENANCY="${OCIR_TENANCY}" \
+        DNS_DOMAIN="${DNS_DOMAIN:-}" \
+        SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-}" \
+        CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-}" \
+        K8S_NAMESPACE_SHOP="${K8S_NAMESPACE_SHOP}" \
+        K8S_NAMESPACE_CRM="${K8S_NAMESPACE_CRM}" \
+        REMOTE_HOST="${REMOTE_HOST}" \
+        K8S_NAMESPACE="${namespace}" \
+        K8S_DEPLOYMENT="${deployment}" \
+        K8S_CONTAINER="${container}" \
+        bash "${SCRIPT_DIR}/${script}"
+    fi
 }
 
 if $RUN_SHOP; then
@@ -106,7 +124,7 @@ if $RUN_CRM; then
         "${CRM_OCIR_REPO}" \
         "${K8S_NAMESPACE_CRM}" \
         "enterprise-crm-portal" \
-        "crm" \
+        "app" \
         "deploy-crm.sh"
 fi
 

@@ -14,6 +14,7 @@ def test_unified_deploy_wrapper_exists() -> None:
     wrapper_text = deploy_wrapper.read_text(encoding="utf-8")
     assert "deploy-shop.sh" in wrapper_text
     assert "deploy-crm.sh" in wrapper_text
+    assert '"app"' in wrapper_text
 
 
 def test_bootstrap_uses_declared_ingress_service_port() -> None:
@@ -71,14 +72,33 @@ def test_oke_assets_use_unified_namespaces_and_hostnames() -> None:
 def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
     deploy_wrapper = read_text("deploy/deploy.sh")
     bootstrap = read_text("deploy/bootstrap.sh")
+    destroy = read_text("deploy/destroy.sh")
+    deploy_crm = read_text("deploy/deploy-crm.sh")
+    init_tenancy = read_text("deploy/init-tenancy.sh")
     deploy_oke = read_text("deploy/oke/deploy-oke.sh")
+    readme = read_text("README.md")
+    site_index = read_text("site/index.md")
     wizard_cli = read_text("deploy/wizard/src/octo_wizard/cli.py")
     current_status = read_text("site/operations/current-status.md")
 
     assert "DNS_DOMAIN=cyber-sec.ro" in deploy_wrapper
     assert "DNS_BASE_DOMAIN=cyber-sec.ro" in bootstrap
+    assert "CERTIFICATE_CONTENT_WITH_PRIVATE_KEY" in bootstrap
+    assert "TLS_SECRET_NAME" in bootstrap
+    assert "HTTPS" in bootstrap
+    assert "--delete-shared-ingress" in destroy
+    assert "Shared ingress controller is preserved by default." in destroy
+    assert "OCI_LOG_CHAOS_AUDIT_ID" in init_tenancy
+    assert "OCI_LOG_SECURITY_ID" in init_tenancy
+    assert 'CONTAINER="${K8S_CONTAINER:-app}"' in deploy_crm
+    assert 'SERVICE_SHOP_URL="${SERVICE_SHOP_URL:-http://octo-drone-shop.' in deploy_crm
     assert "DNS_DOMAIN=cyber-sec.ro" in deploy_oke
     assert "cyber-sec.ro" in wizard_cli
+    assert "star.cyber-sec.ro" in readme
+    assert "version 4" in readme
+    assert "Wix" in readme
+    assert "star.cyber-sec.ro" in site_index
     assert "shop.cyber-sec.ro" in current_status
     assert "crm.cyber-sec.ro" in current_status
+    assert "version `4`" in current_status
     assert "Wix" in current_status

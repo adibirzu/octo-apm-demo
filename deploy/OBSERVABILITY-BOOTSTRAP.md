@@ -89,8 +89,8 @@ export OCI_APM_RUM_ENDPOINT=$(terraform output -json apm_domain | jq -r .rum_end
 
 export OCI_LOG_GROUP_ID=$(terraform output -json logging | jq -r .log_group_id)
 export OCI_LOG_ID=$(terraform output -json logging | jq -r .log_app_id)
-export OCI_LOG_GROUP_CHAOS_AUDIT=$(terraform output -json logging | jq -r .log_chaos_audit_id)
-export OCI_LOG_SECURITY=$(terraform output -json logging | jq -r .log_security_id)
+export OCI_LOG_CHAOS_AUDIT_ID=$(terraform output -json logging | jq -r .log_chaos_audit_id)
+export OCI_LOG_SECURITY_ID=$(terraform output -json logging | jq -r .log_security_id)
 
 cd ../..
 ./deploy/init-tenancy.sh

@@ -48,6 +48,11 @@ PROJECT_TAG_VAL="octo-apm-demo"
 : "${REMOTE_BUILD_HOST:=control-plane-oci}"
 : "${INSTALL_NGINX_INGRESS:=true}"
 : "${SKIP_APM_JAVA_DEMO:=true}"
+: "${PUBLISH_VIA_INGRESS:=true}"
+: "${TLS_MODE:=auto}"
+: "${TLS_REQUIRED:=false}"
+: "${TLS_SECRET_NAME:=cyber-sec-ro-tls}"
+: "${OCI_CERTIFICATE_OCID:=}"
 # When the cluster is virtual-node-only, classic LB / NLB Services are
 # unsupported. Two paths:
 #   true  — auto-provision a 2-node managed pool so nginx-ingress works.
@@ -76,6 +81,226 @@ _green() { printf '\033[32m%s\033[0m\n' "$*"; }
 _yellow(){ printf '\033[33m%s\033[0m\n' "$*"; }
 _blue()  { printf '\033[34m%s\033[0m\n' "$*"; }
 section(){ printf '\n\033[1;36m── %s ──\033[0m\n' "$*"; }
+
+get_secret_value() {
+    local namespace="$1"
+    local name="$2"
+    local key="$3"
+    kubectl get secret "${name}" -n "${namespace}" -o json 2>/dev/null | \
+        python3 -c '
+import base64, json, sys
+try:
+    data = json.load(sys.stdin).get("data", {})
+    value = data.get(sys.argv[1], "")
+    print(base64.b64decode(value).decode("utf-8") if value else "", end="")
+except Exception:
+    pass
+' "${key}" 2>/dev/null || true
+}
+
+first_nonempty_secret_value() {
+    local name="$1"
+    local key="$2"
+    local namespace
+    local value
+    for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        value="$(get_secret_value "${namespace}" "${name}" "${key}")"
+        if [[ -n "${value}" ]]; then
+            printf '%s' "${value}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+first_nonempty_secret_value_or_blank() {
+    first_nonempty_secret_value "$@" || true
+}
+
+apply_literal_secret() {
+    local namespace="$1"
+    local name="$2"
+    shift 2
+    local -a args=()
+    local pair key value
+    for pair in "$@"; do
+        key="${pair%%=*}"
+        value="${pair#*=}"
+        [[ -n "${value}" ]] || continue
+        args+=(--from-literal="${key}=${value}")
+    done
+    if [[ "${#args[@]}" -eq 0 ]]; then
+        _yellow "      ${namespace}/${name} — skipped (no non-empty values)"
+        return
+    fi
+    kubectl -n "${namespace}" create secret generic "${name}" "${args[@]}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    _green "      ${namespace}/${name} — applied"
+}
+
+apply_literal_secret_all_namespaces() {
+    local name="$1"
+    shift
+    local namespace
+    for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        apply_literal_secret "${namespace}" "${name}" "$@"
+    done
+}
+
+resolve_ocir_pull_credentials() {
+    if [[ -n "${OCIR_USERNAME:-}" && -n "${OCIR_AUTH_TOKEN:-}" ]]; then
+        return 0
+    fi
+    [[ -f "${HOME}/.docker/config.json" ]] || return 1
+    local parsed
+    parsed="$(
+        OCIR_REGION="${OCIR_REGION}" python3 - <<'PYEOF'
+import base64
+import json
+import os
+import pathlib
+import sys
+
+path = pathlib.Path.home() / ".docker" / "config.json"
+data = json.loads(path.read_text())
+server = f"{os.environ['OCIR_REGION']}.ocir.io"
+entry = (data.get("auths") or {}).get(server) or {}
+auth = entry.get("auth")
+if not auth:
+    sys.exit(1)
+username, password = base64.b64decode(auth).decode().split(":", 1)
+print(f"{username}\t{password}")
+PYEOF
+    )" || return 1
+    IFS=$'\t' read -r OCIR_USERNAME OCIR_AUTH_TOKEN <<< "${parsed}"
+    export OCIR_USERNAME OCIR_AUTH_TOKEN
+    return 0
+}
+
+apply_ocir_pull_secret() {
+    local namespace="$1"
+    kubectl -n "${namespace}" create secret docker-registry ocir-pull-secret \
+        --docker-server="${OCIR_REGION}.ocir.io" \
+        --docker-username="${OCIR_USERNAME}" \
+        --docker-password="${OCIR_AUTH_TOKEN}" \
+        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    _green "      ${namespace}/ocir-pull-secret — applied"
+}
+
+ingress_controller_service_name() {
+    local candidate
+    for candidate in ingress-nginx-controller nginx-ingress-ingress-nginx-controller; do
+        if kubectl -n ingress-nginx get svc "${candidate}" >/dev/null 2>&1; then
+            printf '%s' "${candidate}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+render_and_apply_manifest() {
+    local namespace="$1"
+    local image_tag="$2"
+    local manifest_path="$3"
+    local rendered
+    rendered="$(mktemp)"
+    IMAGE_TAG="${image_tag}" envsubst < "${manifest_path}" > "${rendered}"
+    if [[ "${PUBLISH_VIA_INGRESS}" == "true" ]]; then
+        python3 - "${rendered}" <<'PYEOF' | kubectl apply -n "${namespace}" -f -
+import sys
+import yaml
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    docs = list(yaml.safe_load_all(handle))
+
+for doc in docs:
+    if not doc:
+        continue
+    if doc.get("kind") == "Service" and doc.get("spec", {}).get("type") == "LoadBalancer":
+        continue
+    print("---")
+    sys.stdout.write(yaml.safe_dump(doc, sort_keys=False))
+PYEOF
+    else
+        kubectl apply -n "${namespace}" -f "${rendered}"
+    fi
+    rm -f "${rendered}"
+}
+
+ensure_tls_secrets_from_oci_certificate() {
+    local cert_file key_file cert_id
+    cert_file="$(mktemp)"
+    key_file="$(mktemp)"
+    cert_id="$(
+        OCI_PROFILE="${OCI_PROFILE}" \
+        OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}" \
+        DNS_BASE_DOMAIN="${DNS_BASE_DOMAIN}" \
+        OCI_CERTIFICATE_OCID="${OCI_CERTIFICATE_OCID}" \
+        CERT_FILE="${cert_file}" \
+        KEY_FILE="${key_file}" \
+        python3 - <<'PYEOF'
+import os
+import sys
+import oci
+
+cfg = oci.config.from_file(profile_name=os.environ["OCI_PROFILE"])
+cert_id = os.environ.get("OCI_CERTIFICATE_OCID", "")
+
+if not cert_id:
+    client = oci.certificates_management.CertificatesManagementClient(cfg)
+    target_names = {
+        f"star.{os.environ['DNS_BASE_DOMAIN']}",
+        f"*.{os.environ['DNS_BASE_DOMAIN']}",
+    }
+    for cert in client.list_certificates(
+        compartment_id=os.environ["OCI_COMPARTMENT_ID"]
+    ).data:
+        if cert.name in target_names:
+            cert_id = cert.id
+            break
+
+if not cert_id:
+    sys.exit(2)
+
+bundle = oci.certificates.CertificatesClient(cfg).get_certificate_bundle(
+    cert_id,
+    certificate_bundle_type="CERTIFICATE_CONTENT_WITH_PRIVATE_KEY",
+).data
+
+certificate_pem = bundle.certificate_pem or ""
+chain_pem = bundle.cert_chain_pem or ""
+private_key_pem = bundle.private_key_pem or ""
+if not certificate_pem or not private_key_pem:
+    sys.exit(3)
+
+with open(os.environ["CERT_FILE"], "w", encoding="utf-8") as cert_handle:
+    cert_handle.write(certificate_pem.rstrip() + "\n")
+    if chain_pem:
+        cert_handle.write(chain_pem)
+
+with open(os.environ["KEY_FILE"], "w", encoding="utf-8") as key_handle:
+    key_handle.write(private_key_pem)
+
+print(cert_id)
+PYEOF
+    )"
+    local rc=$?
+    if [[ ${rc} -ne 0 ]]; then
+        rm -f "${cert_file}" "${key_file}"
+        return "${rc}"
+    fi
+
+    local namespace
+    for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        kubectl -n "${namespace}" create secret tls "${TLS_SECRET_NAME}" \
+            --cert="${cert_file}" \
+            --key="${key_file}" \
+            --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+        _green "      ${namespace}/${TLS_SECRET_NAME} — applied from OCI certificate"
+    done
+
+    rm -f "${cert_file}" "${key_file}"
+    printf '%s' "${cert_id}"
+}
 
 # ── Step 0: resolve OCI config ────────────────────────────────────────
 section "Step 0 — OCI profile validation"
@@ -137,6 +362,24 @@ PYEOF
         _red "stdin is not a TTY and OCI_COMPARTMENT_ID not set. Either export it or run interactively."
         exit 1
     fi
+fi
+
+if [[ -n "${OCI_COMPARTMENT_ID:-}" ]] && [[ -z "${OCI_COMPARTMENT_NAME:-}" ]]; then
+    OCI_COMPARTMENT_NAME="$(
+        OCI_PROFILE="${OCI_PROFILE}" OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}" python3 - <<'PYEOF'
+import os
+import oci
+
+cfg = oci.config.from_file(profile_name=os.environ["OCI_PROFILE"])
+identity = oci.identity.IdentityClient(cfg)
+compartment_id = os.environ["OCI_COMPARTMENT_ID"]
+try:
+    print(identity.get_compartment(compartment_id).data.name, end="")
+except oci.exceptions.ServiceError:
+    if compartment_id == cfg["tenancy"]:
+        print(identity.get_tenancy(compartment_id).data.name, end="")
+PYEOF
+    )"
 fi
 
 mkdir -p "$(dirname "${TENANCY_CACHE}")"
@@ -266,13 +509,49 @@ rm -rf "${WALLET_DIR}" && mkdir -p "${WALLET_DIR}" && unzip -q "${WALLET_ZIP}" -
 cd "${REPO_ROOT}"
 
 gen() { python3 -c 'import secrets; print(secrets.token_urlsafe(32))'; }
+AUTH_TOKEN_SECRET="${AUTH_TOKEN_SECRET:-$(first_nonempty_secret_value_or_blank octo-auth token-secret)}"
+INTERNAL_SERVICE_KEY="${INTERNAL_SERVICE_KEY:-$(first_nonempty_secret_value_or_blank octo-auth internal-service-key)}"
+APP_SECRET_KEY="${APP_SECRET_KEY:-$(first_nonempty_secret_value_or_blank octo-auth app-secret-key)}"
+BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-$(first_nonempty_secret_value_or_blank octo-auth bootstrap-admin-password)}"
+[[ -n "${AUTH_TOKEN_SECRET}" ]] || AUTH_TOKEN_SECRET="$(gen)"
+[[ -n "${INTERNAL_SERVICE_KEY}" ]] || INTERNAL_SERVICE_KEY="$(gen)"
+[[ -n "${APP_SECRET_KEY}" ]] || APP_SECRET_KEY="$(gen)"
+[[ -n "${BOOTSTRAP_ADMIN_PASSWORD}" ]] || BOOTSTRAP_ADMIN_PASSWORD="$(gen)"
+
+OCI_APM_ENDPOINT="${OCI_APM_ENDPOINT:-$(first_nonempty_secret_value_or_blank octo-apm endpoint)}"
+OCI_APM_PRIVATE_DATAKEY="${OCI_APM_PRIVATE_DATAKEY:-$(first_nonempty_secret_value_or_blank octo-apm private-key)}"
+OCI_APM_PUBLIC_DATAKEY="${OCI_APM_PUBLIC_DATAKEY:-$(first_nonempty_secret_value_or_blank octo-apm public-key)}"
+OCI_APM_RUM_ENDPOINT="${OCI_APM_RUM_ENDPOINT:-$(first_nonempty_secret_value_or_blank octo-apm rum-endpoint)}"
+OCI_APM_RUM_WEB_APPLICATION_OCID="${OCI_APM_RUM_WEB_APPLICATION_OCID:-$(first_nonempty_secret_value_or_blank octo-apm rum-web-application-ocid)}"
+
+OCI_LOG_GROUP_ID="${OCI_LOG_GROUP_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-group-id)}"
+OCI_LOG_ID="${OCI_LOG_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-id)}"
+OCI_LOG_CHAOS_AUDIT_ID="${OCI_LOG_CHAOS_AUDIT_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-chaos-audit-id)}"
+OCI_LOG_SECURITY_ID="${OCI_LOG_SECURITY_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-security-id)}"
+SPLUNK_HEC_URL="${SPLUNK_HEC_URL:-$(first_nonempty_secret_value_or_blank octo-logging splunk-hec-url)}"
+SPLUNK_HEC_TOKEN="${SPLUNK_HEC_TOKEN:-$(first_nonempty_secret_value_or_blank octo-logging splunk-hec-token)}"
+
+APM_CONSOLE_URL="${APM_CONSOLE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations apm-console-url)}"
+OPSI_CONSOLE_URL="${OPSI_CONSOLE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations opsi-console-url)}"
+DB_MANAGEMENT_CONSOLE_URL="${DB_MANAGEMENT_CONSOLE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations db-management-console-url)}"
+LOG_ANALYTICS_CONSOLE_URL="${LOG_ANALYTICS_CONSOLE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations log-analytics-console-url)}"
+WORKFLOW_API_BASE_URL="${WORKFLOW_API_BASE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations workflow-api-base-url)}"
+WORKFLOW_PUBLIC_API_BASE_URL="${WORKFLOW_PUBLIC_API_BASE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations workflow-public-api-base-url)}"
+
+if resolve_ocir_pull_credentials; then
+    for NS in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        apply_ocir_pull_secret "${NS}"
+    done
+else
+    _yellow "      ocir-pull-secret — skipped (set OCIR_USERNAME/OCIR_AUTH_TOKEN or docker login ${OCIR_REGION}.ocir.io first)"
+fi
+
 for NS in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
-    kubectl -n "$NS" create secret generic octo-auth \
-        --from-literal=token-secret=$(gen) \
-        --from-literal=internal-service-key=$(gen) \
-        --from-literal=app-secret-key=$(gen) \
-        --from-literal=bootstrap-admin-password=$(gen) \
-        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    apply_literal_secret "${NS}" octo-auth \
+        "token-secret=${AUTH_TOKEN_SECRET}" \
+        "internal-service-key=${INTERNAL_SERVICE_KEY}" \
+        "app-secret-key=${APP_SECRET_KEY}" \
+        "bootstrap-admin-password=${BOOTSTRAP_ADMIN_PASSWORD}"
     kubectl -n "$NS" create secret generic octo-atp \
         --from-literal=dsn="${ATP_DSN}" \
         --from-literal=username=ADMIN \
@@ -289,23 +568,33 @@ for NS in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
         --from-file="${WALLET_DIR}/keystore.jks" \
         --from-file="${WALLET_DIR}/truststore.jks" \
         --from-file="${WALLET_DIR}/ojdbc.properties" >/dev/null
-    kubectl -n "$NS" create secret generic octo-apm \
-        --from-literal=endpoint="${OCI_APM_ENDPOINT:-}" \
-        --from-literal=private-key="${OCI_APM_PRIVATE_DATAKEY:-}" \
-        --from-literal=public-key="${OCI_APM_PUBLIC_DATAKEY:-}" \
-        --from-literal=rum-endpoint="${OCI_APM_RUM_ENDPOINT:-}" \
-        --from-literal=rum-web-application-ocid="${OCI_APM_RUM_WEB_APPLICATION_OCID:-}" \
-        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-    kubectl -n "$NS" create secret generic octo-logging \
-        --from-literal=log-group-id="${OCI_LOG_GROUP_ID:-}" \
-        --from-literal=log-id="${OCI_LOG_ID:-}" \
-        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-    kubectl -n "$NS" create secret generic octo-oci-config \
-        --from-literal=compartment-id="${OCI_COMPARTMENT_ID}" \
-        --from-literal=genai-endpoint="${OCI_GENAI_ENDPOINT:-}" \
-        --from-literal=genai-model-id="${OCI_GENAI_MODEL_ID:-}" \
-        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 done
+apply_literal_secret_all_namespaces octo-apm \
+    "endpoint=${OCI_APM_ENDPOINT:-}" \
+    "private-key=${OCI_APM_PRIVATE_DATAKEY:-}" \
+    "public-key=${OCI_APM_PUBLIC_DATAKEY:-}" \
+    "rum-endpoint=${OCI_APM_RUM_ENDPOINT:-}" \
+    "rum-web-application-ocid=${OCI_APM_RUM_WEB_APPLICATION_OCID:-}"
+apply_literal_secret_all_namespaces octo-logging \
+    "log-group-id=${OCI_LOG_GROUP_ID:-}" \
+    "log-id=${OCI_LOG_ID:-}" \
+    "log-chaos-audit-id=${OCI_LOG_CHAOS_AUDIT_ID:-}" \
+    "log-security-id=${OCI_LOG_SECURITY_ID:-}" \
+    "splunk-hec-url=${SPLUNK_HEC_URL:-}" \
+    "splunk-hec-token=${SPLUNK_HEC_TOKEN:-}"
+apply_literal_secret_all_namespaces octo-oci-config \
+    "compartment-id=${OCI_COMPARTMENT_ID}" \
+    "genai-endpoint=${OCI_GENAI_ENDPOINT:-}" \
+    "genai-model-id=${OCI_GENAI_MODEL_ID:-}"
+apply_literal_secret_all_namespaces octo-integrations \
+    "crm-url=https://${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}" \
+    "shop-url=https://${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}" \
+    "workflow-api-base-url=${WORKFLOW_API_BASE_URL:-}" \
+    "workflow-public-api-base-url=${WORKFLOW_PUBLIC_API_BASE_URL:-}" \
+    "apm-console-url=${APM_CONSOLE_URL:-}" \
+    "opsi-console-url=${OPSI_CONSOLE_URL:-}" \
+    "db-management-console-url=${DB_MANAGEMENT_CONSOLE_URL:-}" \
+    "log-analytics-console-url=${LOG_ANALYTICS_CONSOLE_URL:-}"
 _green "Secrets seeded in ${K8S_NAMESPACE_SHOP} + ${K8S_NAMESPACE_CRM}"
 
 # ── Step 6: Build + push images ───────────────────────────────────────
@@ -348,8 +637,8 @@ export OCIR_REGION OCIR_TENANCY="${OCIR_NAMESPACE}" DNS_DOMAIN="${DNS_BASE_DOMAI
        CRM_PUBLIC_URL="https://${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}" \
        SHOP_PUBLIC_URL="https://${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}" \
        OCI_LB_SUBNET_OCID="${OCI_LB_SUBNET_OCID:-}"
-IMAGE_TAG="${SHOP_TAG}" envsubst < "${REPO_ROOT}/deploy/k8s/oke/shop/deployment.yaml" | kubectl apply -n "${K8S_NAMESPACE_SHOP}" -f - | head -5
-IMAGE_TAG="${CRM_TAG}" envsubst < "${REPO_ROOT}/deploy/k8s/oke/crm/deployment.yaml"  | kubectl apply -n "${K8S_NAMESPACE_CRM}"  -f - | head -5
+render_and_apply_manifest "${K8S_NAMESPACE_SHOP}" "${SHOP_TAG}" "${REPO_ROOT}/deploy/k8s/oke/shop/deployment.yaml"
+render_and_apply_manifest "${K8S_NAMESPACE_CRM}" "${CRM_TAG}" "${REPO_ROOT}/deploy/k8s/oke/crm/deployment.yaml"
 
 # Drop the IDCS_REDIRECT_URI env (partial-IDCS guard trips when secret octo-sso absent).
 kubectl -n "${K8S_NAMESPACE_SHOP}" set env deployment/octo-drone-shop      IDCS_REDIRECT_URI- IDCS_POST_LOGOUT_REDIRECT- >/dev/null || true
@@ -361,6 +650,8 @@ _green "Both deployments Ready"
 
 # ── Step 8: ingress ───────────────────────────────────────────────────
 section "Step 8 — Ingress"
+INGRESS_CLASS="${INGRESS_CLASS:-nginx}"
+EXISTING_INGRESS_SERVICE="$(ingress_controller_service_name || true)"
 VIRTUAL_ONLY=$(kubectl get nodes -o json | python3 -c "
 import sys, json
 items = json.load(sys.stdin).get('items', [])
@@ -375,7 +666,9 @@ is_virtual = all(any('virtual' in r.lower() for r in rlist) for rlist in roles) 
 print('true' if is_virtual else 'false')
 ")
 
-if [[ "${INSTALL_NGINX_INGRESS}" == "true" && "${VIRTUAL_ONLY}" == "false" ]]; then
+if [[ -n "${EXISTING_INGRESS_SERVICE}" ]]; then
+    _green "Reusing ingress controller service ${EXISTING_INGRESS_SERVICE}"
+elif [[ "${INSTALL_NGINX_INGRESS}" == "true" && "${VIRTUAL_ONLY}" == "false" ]]; then
     # Managed node pool present — nginx-ingress works.
     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null 2>&1 || true
     helm repo update >/dev/null 2>&1 || true
@@ -392,7 +685,7 @@ controller:
     default: true
 EOF
     helm upgrade --install nginx-ingress ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace -f /tmp/_octo-nginx-values.yaml --wait --timeout 5m >/dev/null
-    INGRESS_CLASS=nginx
+    EXISTING_INGRESS_SERVICE="$(ingress_controller_service_name || true)"
     _green "nginx-ingress installed"
 elif [[ "${VIRTUAL_ONLY}" == "true" ]]; then
     _yellow "Virtual-node-only cluster detected (KB-459). Classic LB Services + nginx-ingress need managed nodes."
@@ -527,7 +820,7 @@ controller:
     default: true
 EOF
         helm upgrade --install nginx-ingress ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace -f /tmp/_octo-nginx-values.yaml --wait --timeout 5m >/dev/null
-        INGRESS_CLASS=nginx
+        EXISTING_INGRESS_SERVICE="$(ingress_controller_service_name || true)"
         _green "nginx-ingress installed (pinned to managed nodes via nodeSelector)"
     else
         _yellow "OKE_ADD_NODE_POOL_IF_VIRTUAL=false — external exposure skipped."
@@ -536,13 +829,30 @@ EOF
         exit 0
     fi
 else
-    _yellow "INSTALL_NGINX_INGRESS=false — skipping ingress install"
-    exit 0
+    _yellow "INSTALL_NGINX_INGRESS=false and no shared ingress controller detected"
+    exit 1
 fi
 
 # ── Step 9: Ingress objects ───────────────────────────────────────────
 section "Step 9 — Ingress objects"
-: "${INGRESS_CLASS:=nginx}"
+TLS_ENABLED=false
+if [[ "${TLS_MODE}" != "skip" ]]; then
+    if OCI_CERT_ID="$(ensure_tls_secrets_from_oci_certificate 2>/dev/null)"; then
+        TLS_ENABLED=true
+        _green "TLS enabled via OCI certificate ${OCI_CERT_ID}"
+    else
+        _yellow "TLS secret provisioning skipped for ${DNS_BASE_DOMAIN} (TLS_MODE=${TLS_MODE})"
+        if [[ "${TLS_REQUIRED}" == "true" ]]; then
+            _red "TLS_REQUIRED=true but no usable OCI certificate was found"
+            exit 1
+        fi
+    fi
+fi
+
+SSL_REDIRECT=false
+if [[ "${TLS_ENABLED}" == "true" ]]; then
+    SSL_REDIRECT=true
+fi
 for spec in \
     "${K8S_NAMESPACE_SHOP}|${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}|octo-drone-shop|8080" \
     "${K8S_NAMESPACE_CRM}|${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}|enterprise-crm-portal|8080"; do
@@ -554,7 +864,7 @@ metadata:
   name: ${svc}-ingress
   namespace: ${ns}
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "${SSL_REDIRECT}"
 spec:
   ingressClassName: ${INGRESS_CLASS}
   rules:
@@ -568,17 +878,26 @@ spec:
                 name: ${svc}
                 port:
                   number: ${port}
+$(if [[ "${TLS_ENABLED}" == "true" ]]; then cat <<EOF2
+  tls:
+    - hosts:
+        - ${host}
+      secretName: ${TLS_SECRET_NAME}
+EOF2
+fi)
 EOF
 done
 _green "Ingress objects applied (class=${INGRESS_CLASS})"
 
 # ── Step 10: DNS ──────────────────────────────────────────────────────
 section "Step 10 — DNS (${DNS_MODE})"
-INGRESS_IP=$(kubectl -n ingress-nginx get svc nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+INGRESS_SERVICE_NAME="$(ingress_controller_service_name || true)"
+[[ -n "${INGRESS_SERVICE_NAME}" ]] || { _red "ingress controller service not found"; exit 1; }
+INGRESS_IP=$(kubectl -n ingress-nginx get svc "${INGRESS_SERVICE_NAME}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
 if [[ -z "${INGRESS_IP}" ]]; then
     _yellow "Waiting 30s for nginx LB IP…"
     sleep 30
-    INGRESS_IP=$(kubectl -n ingress-nginx get svc nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+    INGRESS_IP=$(kubectl -n ingress-nginx get svc "${INGRESS_SERVICE_NAME}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
 fi
 [[ -n "${INGRESS_IP}" ]] || { _red "nginx-ingress LB IP not ready"; exit 1; }
 _green "nginx-ingress IP: ${INGRESS_IP}"
@@ -587,6 +906,9 @@ _green "nginx-ingress IP: ${INGRESS_IP}"
 {
     echo "export INGRESS_IP=${INGRESS_IP}"
     echo "export DNS_MODE=${DNS_MODE}"
+    echo "export INGRESS_SERVICE_NAME=${INGRESS_SERVICE_NAME}"
+    echo "export TLS_ENABLED=${TLS_ENABLED}"
+    echo "export TLS_SECRET_NAME=${TLS_SECRET_NAME}"
     echo "export SHOP_FQDN=${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
     echo "export CRM_FQDN=${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
 } >> "${TENANCY_CACHE}"
@@ -662,12 +984,24 @@ for host in "${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}" "${CRM_SUBDOMAIN}.${DNS_BASE_
     [[ "${code}" == "200" || "${code}" == "302" ]] && \
         _green "  ${host}: / → HTTP ${code}, /ready ready=${ready}" || \
         _red   "  ${host}: / → HTTP ${code}, /ready ready=${ready}"
+    if [[ "${TLS_ENABLED}" == "true" ]]; then
+        https_code=$(curl -sS -m 15 --resolve "${host}:443:${INGRESS_IP}" -o /dev/null -w "%{http_code}" "https://${host}/" 2>/dev/null || echo 000)
+        https_ready=$(curl -sS -m 15 --resolve "${host}:443:${INGRESS_IP}" "https://${host}/ready" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('ready','?'))" 2>/dev/null || echo "?")
+        [[ "${https_code}" == "200" || "${https_code}" == "302" ]] && \
+            _green "  ${host}: / → HTTPS ${https_code}, /ready ready=${https_ready}" || \
+            _red   "  ${host}: / → HTTPS ${https_code}, /ready ready=${https_ready}"
+    fi
 done
 
 section "Bootstrap complete"
 _green "  ATP DSN:                    ${ATP_DSN}"
-_green "  Shop URL:                   http://${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
-_green "  CRM  URL:                   http://${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
+if [[ "${TLS_ENABLED}" == "true" ]]; then
+    _green "  Shop URL:                   https://${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
+    _green "  CRM  URL:                   https://${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
+else
+    _green "  Shop URL:                   http://${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
+    _green "  CRM  URL:                   http://${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
+fi
 _green "  kubectl context:            ${KUBE_CTX}"
 _green "  Tenancy cache:              ${TENANCY_CACHE}"
 _green "  Terraform tfvars:           ${TFVARS}"

@@ -22,6 +22,9 @@ REMOTE_DIR="${REMOTE_DIR:-/tmp/octo-apm-demo-shop}"
 NAMESPACE="${K8S_NAMESPACE:-octo-drone-shop}"
 DEPLOYMENT="${K8S_DEPLOYMENT:-octo-drone-shop}"
 CONTAINER="${K8S_CONTAINER:-app}"
+K8S_NAMESPACE_SHOP="${K8S_NAMESPACE_SHOP:-${NAMESPACE}}"
+K8S_NAMESPACE_CRM="${K8S_NAMESPACE_CRM:-enterprise-crm}"
+PUBLISH_VIA_INGRESS="${PUBLISH_VIA_INGRESS:-true}"
 TAG=$(date +%Y%m%d%H%M%S)
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -44,6 +47,36 @@ if $ROLLOUT; then
     CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}"
     VERIFY_URL="${VERIFY_URL:-${SHOP_PUBLIC_URL}/ready}"
 fi
+
+apply_manifest_dir() {
+    local manifest_dir="$1"
+    local rendered
+    local manifest
+    for manifest in "${manifest_dir}"/*.yaml; do
+        rendered="$(mktemp)"
+        envsubst < "${manifest}" > "${rendered}"
+        if [[ "${PUBLISH_VIA_INGRESS}" == "true" ]]; then
+            python3 - "${rendered}" <<'PYEOF' | kubectl apply -n "${NAMESPACE}" -f -
+import sys
+import yaml
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    docs = list(yaml.safe_load_all(handle))
+
+for doc in docs:
+    if not doc:
+        continue
+    if doc.get("kind") == "Service" and doc.get("spec", {}).get("type") == "LoadBalancer":
+        continue
+    print("---")
+    sys.stdout.write(yaml.safe_dump(doc, sort_keys=False))
+PYEOF
+        else
+            kubectl apply -n "${NAMESPACE}" -f "${rendered}"
+        fi
+        rm -f "${rendered}"
+    done
+}
 
 echo "================================================"
 echo " OCTO Drone Shop Deploy"
@@ -124,9 +157,8 @@ if $ROLLOUT; then
             echo "envsubst not found — install gettext (brew install gettext / apt-get install gettext-base)" >&2
             exit 1
         }
-        for f in "${manifest_dir}"/*.yaml; do
-            envsubst < "$f" | kubectl apply -n "${NAMESPACE}" -f -
-        done
+        export OCIR_REGION OCIR_TENANCY DNS_DOMAIN SHOP_PUBLIC_URL CRM_PUBLIC_URL K8S_NAMESPACE_SHOP K8S_NAMESPACE_CRM
+        apply_manifest_dir "${manifest_dir}"
     fi
 
     echo ""

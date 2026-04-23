@@ -14,6 +14,8 @@
 #   ./deploy/destroy.sh --yes           # no prompts
 #   ./deploy/destroy.sh --keep-atp      # leave the ATP alive
 #   ./deploy/destroy.sh --keep-images   # leave OCIR images in place
+#   ./deploy/destroy.sh --delete-shared-ingress
+#   ./deploy/destroy.sh --delete-managed-pool
 
 set -euo pipefail
 
@@ -24,11 +26,15 @@ CACHE="${SCRIPT_DIR}/.last-tenancy.env"
 KEEP_ATP=false
 KEEP_IMAGES=false
 AUTO_YES=false
+DELETE_SHARED_INGRESS=false
+DELETE_MANAGED_POOL=false
 for arg in "$@"; do
     case "$arg" in
         --yes|-y)      AUTO_YES=true ;;
         --keep-atp)    KEEP_ATP=true ;;
         --keep-images) KEEP_IMAGES=true ;;
+        --delete-shared-ingress) DELETE_SHARED_INGRESS=true ;;
+        --delete-managed-pool)   DELETE_MANAGED_POOL=true ;;
         -h|--help)
             sed -n '2,20p' "$0"
             exit 0
@@ -65,11 +71,16 @@ confirm() {
 
 _yellow "DESTROY WILL TOUCH:
   • K8s namespaces ${K8S_NAMESPACE_SHOP} + ${K8S_NAMESPACE_CRM}
-  • nginx-ingress release in ingress-nginx namespace
   • DNS records ${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN} + ${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}
   • Terraform state (ATP, optionally)
   • OCIR images (optionally)
 "
+if ! $DELETE_SHARED_INGRESS; then
+    _yellow "Shared ingress controller is preserved by default. Pass --delete-shared-ingress to remove it."
+fi
+if ! $DELETE_MANAGED_POOL; then
+    _yellow "Managed node pool is preserved by default. Pass --delete-managed-pool to remove octo-apm-managed-pool."
+fi
 _yellow "Compartment: ${OCI_COMPARTMENT_NAME:-?} (${OCI_COMPARTMENT_ID:0:40}...)"
 confirm "Continue?" || { echo "aborted"; exit 0; }
 
@@ -84,8 +95,10 @@ for NS in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
 done
 
 # ── 2. nginx-ingress ──────────────────────────────────────────────────
-section "2. nginx-ingress"
-if helm -n ingress-nginx status nginx-ingress >/dev/null 2>&1; then
+section "2. Shared ingress"
+if ! $DELETE_SHARED_INGRESS; then
+    _yellow "Skipping nginx-ingress removal. Shared ingress stays in place unless --delete-shared-ingress is passed."
+elif helm -n ingress-nginx status nginx-ingress >/dev/null 2>&1; then
     if confirm "Uninstall nginx-ingress helm release (shared infra — check if other apps use it)?"; then
         helm -n ingress-nginx uninstall nginx-ingress --wait --timeout 3m 2>&1 | head -3
         kubectl delete namespace ingress-nginx --ignore-not-found --timeout=60s 2>&1 | head -2
@@ -128,7 +141,9 @@ esac
 
 # ── 4. Managed node pool created by bootstrap (if any) ────────────────
 section "4. Managed node pool (created by bootstrap on virtual-node clusters)"
-if confirm "Delete the 'octo-apm-managed-pool' node pool if present?"; then
+if ! $DELETE_MANAGED_POOL; then
+    _yellow "Skipping octo-apm-managed-pool removal. Shared node capacity stays in place unless --delete-managed-pool is passed."
+elif confirm "Delete the 'octo-apm-managed-pool' node pool if present?"; then
     OCI_PROFILE="${OCI_PROFILE}" OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}" python3 - <<'PYEOF'
 import os, oci, sys
 cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
@@ -146,7 +161,7 @@ PYEOF
 fi
 
 # ── 5. ATP via terraform ──────────────────────────────────────────────
-section "4. ATP (terraform destroy)"
+section "5. ATP (terraform destroy)"
 if $KEEP_ATP; then
     _yellow "--keep-atp: skipping ATP"
 else

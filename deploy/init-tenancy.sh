@@ -69,24 +69,179 @@ ensure_repo() {
     return 1
 }
 
-create_secret_if_missing() {
+get_secret_value() {
+    local namespace="$1"
+    local name="$2"
+    local key="$3"
+    kubectl get secret "${name}" -n "${namespace}" -o json 2>/dev/null | \
+        python3 -c '
+import base64, json, sys
+try:
+    data = json.load(sys.stdin).get("data", {})
+    value = data.get(sys.argv[1], "")
+    print(base64.b64decode(value).decode("utf-8") if value else "", end="")
+except Exception:
+    pass
+' "${key}" 2>/dev/null || true
+}
+
+first_nonempty_secret_value() {
+    local name="$1"
+    local key="$2"
+    local namespace
+    local value
+    for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        value="$(get_secret_value "${namespace}" "${name}" "${key}")"
+        if [[ -n "${value}" ]]; then
+            printf '%s' "${value}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+first_nonempty_secret_value_or_blank() {
+    first_nonempty_secret_value "$@" || true
+}
+
+apply_literal_secret() {
     local namespace="$1"
     local name="$2"
     shift 2
-    if kubectl get secret "${name}" -n "${namespace}" >/dev/null 2>&1; then
-        echo "      ${namespace}/${name} — exists, skipping"
+    local -a args=()
+    local pair key value
+    for pair in "$@"; do
+        key="${pair%%=*}"
+        value="${pair#*=}"
+        [[ -n "${value}" ]] || continue
+        args+=(--from-literal="${key}=${value}")
+    done
+    if [[ "${#args[@]}" -eq 0 ]]; then
+        echo "      ${namespace}/${name} — skipped (no non-empty values)"
         return
     fi
-    kubectl create secret generic "${name}" -n "${namespace}" "$@" >/dev/null
-    echo "      ${namespace}/${name} — created"
+    kubectl -n "${namespace}" create secret generic "${name}" "${args[@]}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    echo "      ${namespace}/${name} — applied"
 }
 
-apply_secret_to_all_namespaces() {
+apply_literal_secret_all_namespaces() {
     local name="$1"
     shift
     local namespace
     for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
-        create_secret_if_missing "${namespace}" "${name}" "$@"
+        apply_literal_secret "${namespace}" "${name}" "$@"
+    done
+}
+
+resolve_ocir_pull_credentials() {
+    if [[ -n "${OCIR_USERNAME:-}" && -n "${OCIR_AUTH_TOKEN:-}" ]]; then
+        return 0
+    fi
+    [[ -f "${HOME}/.docker/config.json" ]] || return 1
+    local parsed
+    parsed="$(
+        OCIR_REGION="${OCIR_REGION}" python3 - <<'PYEOF'
+import base64
+import json
+import os
+import pathlib
+import sys
+
+path = pathlib.Path.home() / ".docker" / "config.json"
+data = json.loads(path.read_text())
+server = f"{os.environ['OCIR_REGION']}.ocir.io"
+entry = (data.get("auths") or {}).get(server) or {}
+auth = entry.get("auth")
+if not auth:
+    sys.exit(1)
+username, password = base64.b64decode(auth).decode().split(":", 1)
+print(f"{username}\t{password}")
+PYEOF
+    )" || return 1
+    IFS=$'\t' read -r OCIR_USERNAME OCIR_AUTH_TOKEN <<< "${parsed}"
+    export OCIR_USERNAME OCIR_AUTH_TOKEN
+    return 0
+}
+
+apply_ocir_pull_secret() {
+    local namespace="$1"
+    kubectl -n "${namespace}" create secret docker-registry ocir-pull-secret \
+        --docker-server="${OCIR_REGION}.ocir.io" \
+        --docker-username="${OCIR_USERNAME}" \
+        --docker-password="${OCIR_AUTH_TOKEN}" \
+        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    echo "      ${namespace}/ocir-pull-secret — applied"
+}
+
+sync_secret_from_first_existing() {
+    local name="$1"
+    local source_namespace=""
+    local namespace
+    for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        if kubectl get secret "${name}" -n "${namespace}" >/dev/null 2>&1; then
+            source_namespace="${namespace}"
+            break
+        fi
+    done
+    [[ -n "${source_namespace}" ]] || return 1
+
+    for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        kubectl get secret "${name}" -n "${source_namespace}" -o json | \
+            python3 -c '
+import json
+import sys
+import yaml
+
+doc = json.load(sys.stdin)
+doc["metadata"] = {
+    "name": doc["metadata"]["name"],
+    "namespace": sys.argv[1],
+}
+print(yaml.safe_dump(doc, sort_keys=False))
+' "${namespace}" | kubectl apply -f - >/dev/null
+        echo "      ${namespace}/${name} — synced from ${source_namespace}"
+    done
+}
+
+resolve_wallet_dir() {
+    if [[ -n "${ORACLE_WALLET_DIR:-}" ]]; then
+        [[ -d "${ORACLE_WALLET_DIR}" ]] || {
+            echo "ORACLE_WALLET_DIR does not exist: ${ORACLE_WALLET_DIR}" >&2
+            return 1
+        }
+        printf '%s' "${ORACLE_WALLET_DIR}"
+        return 0
+    fi
+
+    local temp_dir wallet_zip
+    temp_dir="$(mktemp -d)"
+    if [[ -n "${ORACLE_WALLET_ZIP:-}" ]]; then
+        [[ -f "${ORACLE_WALLET_ZIP}" ]] || {
+            echo "ORACLE_WALLET_ZIP does not exist: ${ORACLE_WALLET_ZIP}" >&2
+            rm -rf "${temp_dir}"
+            return 1
+        }
+        wallet_zip="${ORACLE_WALLET_ZIP}"
+    elif [[ -n "${ORACLE_WALLET_ZIP_B64:-}" ]]; then
+        wallet_zip="${temp_dir}/wallet.zip"
+        printf '%s' "${ORACLE_WALLET_ZIP_B64}" | python3 -c "import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read()))" > "${wallet_zip}"
+    else
+        rm -rf "${temp_dir}"
+        return 1
+    fi
+
+    unzip -q "${wallet_zip}" -d "${temp_dir}"
+    printf '%s' "${temp_dir}"
+}
+
+apply_wallet_secret_all_namespaces() {
+    local wallet_dir="$1"
+    local namespace
+    for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        kubectl -n "${namespace}" create secret generic octo-atp-wallet \
+            --from-file="${wallet_dir}" \
+            --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+        echo "      ${namespace}/octo-atp-wallet — applied"
     done
 }
 
@@ -109,82 +264,138 @@ done
 # ── 3. Seed shared Kubernetes secrets ─────────────────────────────────────
 echo "[3/4] Seeding shared Kubernetes secrets..."
 
-AUTH_TOKEN_SECRET="${AUTH_TOKEN_SECRET:-$(gen_secret)}"
-INTERNAL_SERVICE_KEY="${INTERNAL_SERVICE_KEY:-$(gen_secret)}"
-APP_SECRET_KEY="${APP_SECRET_KEY:-$(gen_secret)}"
-BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-$(gen_secret)}"
+AUTH_TOKEN_SECRET="${AUTH_TOKEN_SECRET:-$(first_nonempty_secret_value_or_blank octo-auth token-secret)}"
+INTERNAL_SERVICE_KEY="${INTERNAL_SERVICE_KEY:-$(first_nonempty_secret_value_or_blank octo-auth internal-service-key)}"
+APP_SECRET_KEY="${APP_SECRET_KEY:-$(first_nonempty_secret_value_or_blank octo-auth app-secret-key)}"
+BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-$(first_nonempty_secret_value_or_blank octo-auth bootstrap-admin-password)}"
+[[ -n "${AUTH_TOKEN_SECRET}" ]] || AUTH_TOKEN_SECRET="$(gen_secret)"
+[[ -n "${INTERNAL_SERVICE_KEY}" ]] || INTERNAL_SERVICE_KEY="$(gen_secret)"
+[[ -n "${APP_SECRET_KEY}" ]] || APP_SECRET_KEY="$(gen_secret)"
+[[ -n "${BOOTSTRAP_ADMIN_PASSWORD}" ]] || BOOTSTRAP_ADMIN_PASSWORD="$(gen_secret)"
 
-apply_secret_to_all_namespaces "octo-auth" \
-    "--from-literal=token-secret=${AUTH_TOKEN_SECRET}" \
-    "--from-literal=internal-service-key=${INTERNAL_SERVICE_KEY}" \
-    "--from-literal=app-secret-key=${APP_SECRET_KEY}" \
-    "--from-literal=bootstrap-admin-password=${BOOTSTRAP_ADMIN_PASSWORD}"
+if resolve_ocir_pull_credentials; then
+    for namespace in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
+        apply_ocir_pull_secret "${namespace}"
+    done
+else
+    echo "      ocir-pull-secret — skipped (set OCIR_USERNAME/OCIR_AUTH_TOKEN or docker login ${OCIR_REGION}.ocir.io first)"
+fi
 
+apply_literal_secret_all_namespaces "octo-auth" \
+    "token-secret=${AUTH_TOKEN_SECRET}" \
+    "internal-service-key=${INTERNAL_SERVICE_KEY}" \
+    "app-secret-key=${APP_SECRET_KEY}" \
+    "bootstrap-admin-password=${BOOTSTRAP_ADMIN_PASSWORD}"
+
+ORACLE_DSN="${ORACLE_DSN:-$(first_nonempty_secret_value_or_blank octo-atp dsn)}"
+ORACLE_USER="${ORACLE_USER:-$(first_nonempty_secret_value_or_blank octo-atp username)}"
+ORACLE_PASSWORD="${ORACLE_PASSWORD:-$(first_nonempty_secret_value_or_blank octo-atp password)}"
+ORACLE_WALLET_PASSWORD="${ORACLE_WALLET_PASSWORD:-$(first_nonempty_secret_value_or_blank octo-atp wallet-password)}"
 if [[ -n "${ORACLE_DSN:-}" && -n "${ORACLE_PASSWORD:-}" ]]; then
-    apply_secret_to_all_namespaces "octo-atp" \
-        "--from-literal=dsn=${ORACLE_DSN}" \
-        "--from-literal=username=${ORACLE_USER:-ADMIN}" \
-        "--from-literal=password=${ORACLE_PASSWORD}" \
-        "--from-literal=wallet-password=${ORACLE_WALLET_PASSWORD:-}"
+    apply_literal_secret_all_namespaces "octo-atp" \
+        "dsn=${ORACLE_DSN}" \
+        "username=${ORACLE_USER:-ADMIN}" \
+        "password=${ORACLE_PASSWORD}" \
+        "wallet-password=${ORACLE_WALLET_PASSWORD:-}"
 else
     echo "      octo-atp — skipped in both namespaces (ORACLE_DSN/ORACLE_PASSWORD not set)"
 fi
 
-apply_secret_to_all_namespaces "octo-apm" \
-    "--from-literal=private-key=${OCI_APM_PRIVATE_DATAKEY:-}" \
-    "--from-literal=public-key=${OCI_APM_PUBLIC_DATAKEY:-}" \
-    "--from-literal=endpoint=${OCI_APM_ENDPOINT:-}" \
-    "--from-literal=rum-endpoint=${OCI_APM_RUM_ENDPOINT:-}" \
-    "--from-literal=rum-web-application-ocid=${OCI_APM_RUM_WEB_APPLICATION_OCID:-}"
+wallet_dir=""
+if wallet_dir="$(resolve_wallet_dir)"; then
+    apply_wallet_secret_all_namespaces "${wallet_dir}"
+    if [[ "${wallet_dir}" != "${ORACLE_WALLET_DIR:-}" ]]; then
+        rm -rf "${wallet_dir}"
+    fi
+elif sync_secret_from_first_existing octo-atp-wallet; then
+    :
+else
+    echo "      octo-atp-wallet — skipped in both namespaces (set ORACLE_WALLET_DIR, ORACLE_WALLET_ZIP, or ORACLE_WALLET_ZIP_B64)"
+fi
 
-apply_secret_to_all_namespaces "octo-logging" \
-    "--from-literal=log-group-id=${OCI_LOG_GROUP_ID:-}" \
-    "--from-literal=log-id=${OCI_LOG_ID:-}" \
-    "--from-literal=log-chaos-audit-id=${OCI_LOG_GROUP_CHAOS_AUDIT:-}" \
-    "--from-literal=log-security-id=${OCI_LOG_SECURITY:-}"
+OCI_APM_PRIVATE_DATAKEY="${OCI_APM_PRIVATE_DATAKEY:-$(first_nonempty_secret_value_or_blank octo-apm private-key)}"
+OCI_APM_PUBLIC_DATAKEY="${OCI_APM_PUBLIC_DATAKEY:-$(first_nonempty_secret_value_or_blank octo-apm public-key)}"
+OCI_APM_ENDPOINT="${OCI_APM_ENDPOINT:-$(first_nonempty_secret_value_or_blank octo-apm endpoint)}"
+OCI_APM_RUM_ENDPOINT="${OCI_APM_RUM_ENDPOINT:-$(first_nonempty_secret_value_or_blank octo-apm rum-endpoint)}"
+OCI_APM_RUM_WEB_APPLICATION_OCID="${OCI_APM_RUM_WEB_APPLICATION_OCID:-$(first_nonempty_secret_value_or_blank octo-apm rum-web-application-ocid)}"
+apply_literal_secret_all_namespaces "octo-apm" \
+    "private-key=${OCI_APM_PRIVATE_DATAKEY:-}" \
+    "public-key=${OCI_APM_PUBLIC_DATAKEY:-}" \
+    "endpoint=${OCI_APM_ENDPOINT:-}" \
+    "rum-endpoint=${OCI_APM_RUM_ENDPOINT:-}" \
+    "rum-web-application-ocid=${OCI_APM_RUM_WEB_APPLICATION_OCID:-}"
+
+OCI_LOG_GROUP_ID="${OCI_LOG_GROUP_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-group-id)}"
+OCI_LOG_ID="${OCI_LOG_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-id)}"
+OCI_LOG_CHAOS_AUDIT_ID="${OCI_LOG_CHAOS_AUDIT_ID:-${OCI_LOG_GROUP_CHAOS_AUDIT:-$(first_nonempty_secret_value_or_blank octo-logging log-chaos-audit-id)}}"
+OCI_LOG_SECURITY_ID="${OCI_LOG_SECURITY_ID:-${OCI_LOG_SECURITY:-$(first_nonempty_secret_value_or_blank octo-logging log-security-id)}}"
+SPLUNK_HEC_URL="${SPLUNK_HEC_URL:-$(first_nonempty_secret_value_or_blank octo-logging splunk-hec-url)}"
+SPLUNK_HEC_TOKEN="${SPLUNK_HEC_TOKEN:-$(first_nonempty_secret_value_or_blank octo-logging splunk-hec-token)}"
+apply_literal_secret_all_namespaces "octo-logging" \
+    "log-group-id=${OCI_LOG_GROUP_ID:-}" \
+    "log-id=${OCI_LOG_ID:-}" \
+    "log-chaos-audit-id=${OCI_LOG_CHAOS_AUDIT_ID:-}" \
+    "log-security-id=${OCI_LOG_SECURITY_ID:-}" \
+    "splunk-hec-url=${SPLUNK_HEC_URL:-}" \
+    "splunk-hec-token=${SPLUNK_HEC_TOKEN:-}"
 
 if [[ -n "${IDCS_CLIENT_ID:-}" && -n "${IDCS_CLIENT_SECRET:-}" ]]; then
-    create_secret_if_missing "${K8S_NAMESPACE_SHOP}" "octo-sso" \
-        "--from-literal=idcs-client-id=${IDCS_CLIENT_ID}" \
-        "--from-literal=idcs-client-secret=${IDCS_CLIENT_SECRET}" \
-        "--from-literal=idcs-domain-url=${IDCS_DOMAIN_URL:-}" \
-        "--from-literal=idcs-redirect-uri=${SHOP_IDCS_REDIRECT_URI:-https://shop.${DNS_DOMAIN}/api/auth/sso/callback}" \
-        "--from-literal=idcs-post-logout-redirect=${SHOP_IDCS_POST_LOGOUT_REDIRECT:-https://shop.${DNS_DOMAIN}/login}"
-    create_secret_if_missing "${K8S_NAMESPACE_CRM}" "octo-sso" \
-        "--from-literal=idcs-client-id=${IDCS_CLIENT_ID}" \
-        "--from-literal=idcs-client-secret=${IDCS_CLIENT_SECRET}" \
-        "--from-literal=idcs-domain-url=${IDCS_DOMAIN_URL:-}" \
-        "--from-literal=idcs-redirect-uri=${CRM_IDCS_REDIRECT_URI:-https://crm.${DNS_DOMAIN}/api/auth/sso/callback}" \
-        "--from-literal=idcs-post-logout-redirect=${CRM_IDCS_POST_LOGOUT_REDIRECT:-https://crm.${DNS_DOMAIN}/login}"
+    apply_literal_secret "${K8S_NAMESPACE_SHOP}" "octo-sso" \
+        "idcs-client-id=${IDCS_CLIENT_ID}" \
+        "idcs-client-secret=${IDCS_CLIENT_SECRET}" \
+        "idcs-domain-url=${IDCS_DOMAIN_URL:-}" \
+        "idcs-redirect-uri=${SHOP_IDCS_REDIRECT_URI:-https://shop.${DNS_DOMAIN}/api/auth/sso/callback}" \
+        "idcs-post-logout-redirect=${SHOP_IDCS_POST_LOGOUT_REDIRECT:-https://shop.${DNS_DOMAIN}/login}"
+    apply_literal_secret "${K8S_NAMESPACE_CRM}" "octo-sso" \
+        "idcs-client-id=${IDCS_CLIENT_ID}" \
+        "idcs-client-secret=${IDCS_CLIENT_SECRET}" \
+        "idcs-domain-url=${IDCS_DOMAIN_URL:-}" \
+        "idcs-redirect-uri=${CRM_IDCS_REDIRECT_URI:-https://crm.${DNS_DOMAIN}/api/auth/sso/callback}" \
+        "idcs-post-logout-redirect=${CRM_IDCS_POST_LOGOUT_REDIRECT:-https://crm.${DNS_DOMAIN}/login}"
 else
     echo "      octo-sso — skipped in both namespaces (IDCS_CLIENT_ID/SECRET not set)"
 fi
 
-apply_secret_to_all_namespaces "octo-genai" \
-    "--from-literal=endpoint=${OCI_GENAI_ENDPOINT:-}" \
-    "--from-literal=compartment-id=${OCI_GENAI_COMPARTMENT_ID:-${OCI_COMPARTMENT_ID}}" \
-    "--from-literal=model-id=${OCI_GENAI_MODEL_ID:-}" \
-    "--from-literal=selectai-profile-name=${SELECTAI_PROFILE_NAME:-}"
+OCI_GENAI_ENDPOINT="${OCI_GENAI_ENDPOINT:-$(first_nonempty_secret_value_or_blank octo-genai endpoint)}"
+OCI_GENAI_COMPARTMENT_ID="${OCI_GENAI_COMPARTMENT_ID:-$(first_nonempty_secret_value_or_blank octo-genai compartment-id)}"
+OCI_GENAI_MODEL_ID="${OCI_GENAI_MODEL_ID:-$(first_nonempty_secret_value_or_blank octo-genai model-id)}"
+SELECTAI_PROFILE_NAME="${SELECTAI_PROFILE_NAME:-$(first_nonempty_secret_value_or_blank octo-genai selectai-profile-name)}"
+apply_literal_secret_all_namespaces "octo-genai" \
+    "endpoint=${OCI_GENAI_ENDPOINT:-}" \
+    "compartment-id=${OCI_GENAI_COMPARTMENT_ID:-${OCI_COMPARTMENT_ID}}" \
+    "model-id=${OCI_GENAI_MODEL_ID:-}" \
+    "selectai-profile-name=${SELECTAI_PROFILE_NAME:-}"
 
-apply_secret_to_all_namespaces "octo-oci-config" \
-    "--from-literal=compartment-id=${OCI_COMPARTMENT_ID}" \
-    "--from-literal=genai-endpoint=${OCI_GENAI_ENDPOINT:-}" \
-    "--from-literal=genai-model-id=${OCI_GENAI_MODEL_ID:-}"
+apply_literal_secret_all_namespaces "octo-oci-config" \
+    "compartment-id=${OCI_COMPARTMENT_ID}" \
+    "genai-endpoint=${OCI_GENAI_ENDPOINT:-}" \
+    "genai-model-id=${OCI_GENAI_MODEL_ID:-}"
 
-apply_secret_to_all_namespaces "octo-integrations" \
-    "--from-literal=crm-url=${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}" \
-    "--from-literal=shop-url=${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}" \
-    "--from-literal=workflow-api-base-url=${WORKFLOW_API_BASE_URL:-}" \
-    "--from-literal=workflow-public-api-base-url=${WORKFLOW_PUBLIC_API_BASE_URL:-}" \
-    "--from-literal=apm-console-url=${APM_CONSOLE_URL:-}" \
-    "--from-literal=opsi-console-url=${OPSI_CONSOLE_URL:-}" \
-    "--from-literal=db-management-console-url=${DB_MANAGEMENT_CONSOLE_URL:-}" \
-    "--from-literal=log-analytics-console-url=${LOG_ANALYTICS_CONSOLE_URL:-}" \
-    "--from-literal=slack-webhook-url=${SLACK_WEBHOOK_URL:-}" \
-    "--from-literal=stripe-api-key=${STRIPE_API_KEY:-}" \
-    "--from-literal=stripe-webhook-secret=${STRIPE_WEBHOOK_SECRET:-}" \
-    "--from-literal=paypal-client-id=${PAYPAL_CLIENT_ID:-}" \
-    "--from-literal=paypal-client-secret=${PAYPAL_CLIENT_SECRET:-}"
+WORKFLOW_API_BASE_URL="${WORKFLOW_API_BASE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations workflow-api-base-url)}"
+WORKFLOW_PUBLIC_API_BASE_URL="${WORKFLOW_PUBLIC_API_BASE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations workflow-public-api-base-url)}"
+APM_CONSOLE_URL="${APM_CONSOLE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations apm-console-url)}"
+OPSI_CONSOLE_URL="${OPSI_CONSOLE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations opsi-console-url)}"
+DB_MANAGEMENT_CONSOLE_URL="${DB_MANAGEMENT_CONSOLE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations db-management-console-url)}"
+LOG_ANALYTICS_CONSOLE_URL="${LOG_ANALYTICS_CONSOLE_URL:-$(first_nonempty_secret_value_or_blank octo-integrations log-analytics-console-url)}"
+SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-$(first_nonempty_secret_value_or_blank octo-integrations slack-webhook-url)}"
+STRIPE_API_KEY="${STRIPE_API_KEY:-$(first_nonempty_secret_value_or_blank octo-integrations stripe-api-key)}"
+STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-$(first_nonempty_secret_value_or_blank octo-integrations stripe-webhook-secret)}"
+PAYPAL_CLIENT_ID="${PAYPAL_CLIENT_ID:-$(first_nonempty_secret_value_or_blank octo-integrations paypal-client-id)}"
+PAYPAL_CLIENT_SECRET="${PAYPAL_CLIENT_SECRET:-$(first_nonempty_secret_value_or_blank octo-integrations paypal-client-secret)}"
+apply_literal_secret_all_namespaces "octo-integrations" \
+    "crm-url=${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}" \
+    "shop-url=${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}" \
+    "workflow-api-base-url=${WORKFLOW_API_BASE_URL:-}" \
+    "workflow-public-api-base-url=${WORKFLOW_PUBLIC_API_BASE_URL:-}" \
+    "apm-console-url=${APM_CONSOLE_URL:-}" \
+    "opsi-console-url=${OPSI_CONSOLE_URL:-}" \
+    "db-management-console-url=${DB_MANAGEMENT_CONSOLE_URL:-}" \
+    "log-analytics-console-url=${LOG_ANALYTICS_CONSOLE_URL:-}" \
+    "slack-webhook-url=${SLACK_WEBHOOK_URL:-}" \
+    "stripe-api-key=${STRIPE_API_KEY:-}" \
+    "stripe-webhook-secret=${STRIPE_WEBHOOK_SECRET:-}" \
+    "paypal-client-id=${PAYPAL_CLIENT_ID:-}" \
+    "paypal-client-secret=${PAYPAL_CLIENT_SECRET:-}"
 
 # ── 4. Terraform init (optional) ──────────────────────────────────────────
 echo "[4/4] Terraform init..."
