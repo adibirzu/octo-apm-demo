@@ -2922,6 +2922,8 @@
       
         
       
+        
+      
     
     
     
@@ -3019,6 +3021,34 @@
     
   
     Load Tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing/local-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Regression Stack
   
 
     
@@ -3813,11 +3843,27 @@ OCIDs, region slugs, or public hostnames are committed to source.</p>
 <ol>
 <li><strong>OCIR repository</strong> — creates <code>octo-drone-shop</code> if missing.</li>
 <li><strong>Kubernetes namespace</strong> — creates it if missing.</li>
-<li><strong>Bootstrap secrets</strong> — <code>octo-auth</code> (token + internal service key), <code>octo-atp</code> (DSN, user, password, wallet password). Keys are auto-generated when not supplied.</li>
+<li><strong>Bootstrap secrets</strong> — seven K8s secrets with auto-generated defaults where safe:<ul>
+<li><code>octo-auth</code> (token-secret, internal-service-key, app-secret-key, bootstrap-admin-password — all random if not supplied)</li>
+<li><code>octo-atp</code> (DSN, username, password, wallet password — skipped if <code>ORACLE_DSN</code>/<code>ORACLE_PASSWORD</code> not set)</li>
+<li><code>octo-apm</code> (APM data keys + endpoints — empty strings OK on first run; the OTel exporter becomes a no-op until populated)</li>
+<li><code>octo-logging</code> (log-group-id, log-id, chaos-audit log id, security log id)</li>
+<li><code>octo-sso</code> (IDCS client id/secret/domain — skipped if IDCS env not set)</li>
+<li><code>octo-genai</code> (GenAI endpoint + compartment + model id — all optional)</li>
+<li><code>octo-integrations</code> (Slack webhook URL, Stripe, PayPal — all optional)</li>
+</ul>
+</li>
 <li><strong>Terraform init</strong> — downloads the OCI provider in <code>deploy/terraform/</code>.</li>
 </ol>
-<p>Remaining secrets (IDCS, APM, RUM) are populated by the observability scripts in the next step.</p>
+<p>All APM / RUM / Logging / GenAI / Integration secrets can be left blank on first run and refreshed later by re-running the script with the env populated.</p>
 <h2 id="4-provision-observability">4. Provision observability<a class="headerlink" href="#4-provision-observability" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">One-shot recipe</p>
+<p>The full Terraform + env + init-tenancy wiring is documented end-to-end
+in <a href="https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md"><code>deploy/OBSERVABILITY-BOOTSTRAP.md</code></a> — copy the snippets into a
+single shell session and everything from APM to Stack Monitoring is
+wired in about 10 minutes.</p>
+</div>
 <h3 id="apm-domain-rum-web-application">APM Domain + RUM Web Application<a class="headerlink" href="#apm-domain-rum-web-application" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="nv">COMPARTMENT_ID</span><span class="o">=</span><span class="nv">$OCI_COMPARTMENT_ID</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-2">./deploy/oci/ensure_apm.sh<span class="w"> </span>--plan<span class="w">     </span><span class="c1"># review</span>
