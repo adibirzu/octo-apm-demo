@@ -150,8 +150,17 @@ def _push_to_oci_logging(level: str, message: str, extra: dict):
                 log_entry_batches=[batch],
             ),
         )
-    except Exception:
-        pass  # never break the request
+    except Exception as exc:
+        # Never break the request, but log once per minute so operators know
+        # ingestion is broken (see KB-456 for the parallel Monitoring issue).
+        global _last_logging_error_ts
+        now = time.time()
+        if now - _last_logging_error_ts > 60.0:
+            _last_logging_error_ts = now
+            logger.warning("OCI Logging put_logs failed: %s", exc)
+
+
+_last_logging_error_ts: float = 0.0
 
 
 def _push_to_splunk(level: str, message: str, extra: dict):
