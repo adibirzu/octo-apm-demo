@@ -2318,6 +2318,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#1a-app-servers-drill-down-oci-apm-service-monitoring-app-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1a. App Servers drill-down (OCI APM → Service Monitoring → App servers)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#2-traces-drill-down-oci-apm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3740,6 +3751,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#1a-app-servers-drill-down-oci-apm-service-monitoring-app-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1a. App Servers drill-down (OCI APM → Service Monitoring → App servers)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#2-traces-drill-down-oci-apm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3941,6 +3963,66 @@ Build an alarm on <code>app.errors.rate[5m].sum() &gt; 5</code> → Notification
 <p><strong>Drill to a single trace</strong>: in the Metrics panel, click the spike → 
 "View related traces" → lands in APM Trace Explorer filtered to that
 window.</p>
+<h2 id="1a-app-servers-drill-down-oci-apm-service-monitoring-app-servers">1a. App Servers drill-down (OCI APM → Service Monitoring → App servers)<a class="headerlink" href="#1a-app-servers-drill-down-oci-apm-service-monitoring-app-servers" title="Permanent link">&para;</a></h2>
+<p>Populated by the <code>octo-apm-java-demo</code> service — a tiny Spring Boot pod
+with the OCI APM Java agent attached. Python services (<code>shop</code>, <code>crm</code>)
+cannot populate this view because the OCI APM Python SDK does not emit
+server-info.</p>
+<p><strong>Console path</strong>: Observability &amp; Management → APM → Service Monitoring → <strong>App servers</strong></p>
+<table>
+<thead>
+<tr>
+<th>Card</th>
+<th>Source</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Apdex</td>
+<td>Java agent</td>
+<td>Satisfied/tolerating/frustrated ratio</td>
+</tr>
+<tr>
+<td>Active Servers (last 5 min)</td>
+<td>Java agent heartbeat</td>
+<td><code>1</code> — one JVM reporting</td>
+</tr>
+<tr>
+<td>Server restarts</td>
+<td>Java agent</td>
+<td>Pod restarts over the window</td>
+</tr>
+<tr>
+<td>Resource consumption (by request threads)</td>
+<td>Java agent</td>
+<td>Request-thread CPU + heap</td>
+</tr>
+<tr>
+<td>Server request rate (ops/min)</td>
+<td>Java agent</td>
+<td>Incoming HTTP rate</td>
+</tr>
+<tr>
+<td>App server CPU / req table</td>
+<td>Java agent</td>
+<td>APM version, VM name, VM version, Process CPU load %, Young GC time, Old GC time</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Generating traffic</strong>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1">kubectl<span class="w"> </span>port-forward<span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>svc/octo-apm-java-demo<span class="w"> </span><span class="m">18081</span>:80<span class="w"> </span><span class="p">&amp;</span>
+</span><span id="__span-2-2"><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span><span class="m">1</span>..30<span class="o">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-2-3"><span class="w">    </span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:18081/<span class="w"> </span>&gt;/dev/null
+</span><span id="__span-2-4"><span class="w">    </span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:18081/slow<span class="w"> </span>&gt;/dev/null<span class="w">     </span><span class="c1"># burn request threads</span>
+</span><span id="__span-2-5"><span class="w">    </span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:18081/allocate<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="c1"># force Young GC</span>
+</span><span id="__span-2-6"><span class="w">    </span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:18081/error<span class="w"> </span>&gt;/dev/null<span class="w">    </span><span class="c1"># frustrated Apdex samples</span>
+</span><span id="__span-2-7"><span class="w">    </span>sleep<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-2-8"><span class="k">done</span>
+</span></code></pre></div></p>
+<p>A CronJob (<code>deploy/k8s/oke/apm-java-demo/deployment.yaml</code>) also fires the
+same pattern every 5 min so the App Servers view never goes flat.</p>
+<p>Deploy + side-load the agent per <a href="https://github.com/adibirzu/octo-apm-demo/blob/main/services/apm-java-demo/README.md">services/apm-java-demo/README.md</a>.</p>
 <h2 id="2-traces-drill-down-oci-apm">2. Traces drill-down (OCI APM)<a class="headerlink" href="#2-traces-drill-down-oci-apm" title="Permanent link">&para;</a></h2>
 <p><strong>Console path</strong>: Observability &amp; Management → APM → Trace Explorer</p>
 <ul>
@@ -4064,9 +4146,9 @@ magic moment — one click spans three services.</p>
 </tbody>
 </table>
 <h2 id="reset-between-demos">Reset between demos<a class="headerlink" href="#reset-between-demos" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="c1"># Flush accumulated order rows + chaos state, then re-seed products.</span>
-</span><span id="__span-2-2">kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>deploy/octo-drone-shop<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><span class="w">    </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from server.database import reset_demo_data; reset_demo_data()&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><span class="c1"># Flush accumulated order rows + chaos state, then re-seed products.</span>
+</span><span id="__span-3-2">kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>deploy/octo-drone-shop<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><span class="w">    </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from server.database import reset_demo_data; reset_demo_data()&quot;</span>
 </span></code></pre></div>
 
 
