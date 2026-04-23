@@ -156,6 +156,50 @@ for testdir in shop crm tools/traffic-generator; do
     fi
 done
 
+# ── Template import smoke (catches Starlette signature break KB-448) ──
+section "Template rendering smoke"
+_template_smoke() {
+    local svc="$1"
+    (
+        cd "${REPO_ROOT}/${svc}" || return 1
+        APP_ENV=test APP_SECRET_KEY=smoke BOOTSTRAP_ADMIN_PASSWORD=smoke \
+        python - >/dev/null 2>/tmp/_octo_tpl_smoke.$$ <<PYEOF
+import sys
+from fastapi.testclient import TestClient
+from server.main import app
+client = TestClient(app)
+# We only check HTML rendering here (KB-448 canary). Readiness can fail
+# locally because ATP isn't configured in test env — that's not what we're
+# validating. A 500 on "/" means the TemplateResponse signature is wrong.
+html = client.get("/")
+if html.status_code < 500:
+    sys.stderr.write("SMOKE_OK\n")
+    sys.exit(0)
+sys.stderr.write(f"SMOKE_FAIL html={html.status_code} body={html.text[:200]}\n")
+sys.exit(1)
+PYEOF
+        rc=$?
+        grep -oE 'SMOKE_(OK|FAIL[^[:cntrl:]]*)' "/tmp/_octo_tpl_smoke.$$" 2>/dev/null | head -1
+        rm -f "/tmp/_octo_tpl_smoke.$$"
+        return $rc
+    )
+}
+
+if python -c "import fastapi" >/dev/null 2>&1; then
+    for svc in shop crm; do
+        if [[ -d "${REPO_ROOT}/${svc}/server" ]]; then
+            out=$(_template_smoke "${svc}")
+            if [[ "${out}" == "SMOKE_OK" ]]; then
+                ok "${svc} template smoke (/ → non-500)"
+            else
+                fail "${svc} template smoke: ${out:-no output}"
+            fi
+        fi
+    done
+else
+    warn "fastapi not installed — template smoke skipped"
+fi
+
 # ── Summary ───────────────────────────────────────────────────────────
 echo
 if [[ "${errors}" -gt 0 ]]; then

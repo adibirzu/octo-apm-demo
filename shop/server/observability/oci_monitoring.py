@@ -243,13 +243,22 @@ def _publisher_loop(compartment_id: str, start_time: float):
                 )
                 metric_details.append(md)
 
-            client.post_metric_data(
+            response = client.post_metric_data(
                 PostMetricDataDetails(metric_data=metric_details)
             )
-            logger.debug(
-                "OCI Monitoring: published %d metrics (requests=%d, errors=%d)",
-                len(metric_details), snapshot["requests"], snapshot["errors"],
-            )
+            # OCI returns 200 with failedMetricsCount + failedMetrics[] on
+            # partial failure — surface the partial failures loudly.
+            failed = getattr(response.data, "failed_metrics_count", 0) or 0
+            if failed > 0:
+                logger.warning(
+                    "OCI Monitoring partial failure: %d/%d metrics rejected",
+                    failed, len(metric_details),
+                )
+            else:
+                logger.info(
+                    "OCI Monitoring published %d metrics (requests=%d, errors=%d)",
+                    len(metric_details), snapshot["requests"], snapshot["errors"],
+                )
         except Exception as exc:
             logger.warning("OCI Monitoring publish failed: %s", exc)
 
