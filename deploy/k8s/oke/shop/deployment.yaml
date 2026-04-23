@@ -11,7 +11,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: octo-drone-shop
-  namespace: octo-shop-prod
+  namespace: ${K8S_NAMESPACE_SHOP}
   labels:
     app: octo-drone-shop
     app.kubernetes.io/part-of: octo-apm-demo
@@ -217,7 +217,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: octo-drone-shop
-  namespace: octo-shop-prod
+  namespace: ${K8S_NAMESPACE_SHOP}
   labels:
     app: octo-drone-shop
 spec:
@@ -235,7 +235,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: octo-drone-shop-lb
-  namespace: octo-shop-prod
+  namespace: ${K8S_NAMESPACE_SHOP}
   annotations:
     service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
     service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
@@ -261,7 +261,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: octo-drone-shop
-  namespace: octo-shop-prod
+  namespace: ${K8S_NAMESPACE_SHOP}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -288,7 +288,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: octo-drone-shop
-  namespace: octo-shop-prod
+  namespace: ${K8S_NAMESPACE_SHOP}
 spec:
   minAvailable: 1
   selector:
