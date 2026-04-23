@@ -10,6 +10,16 @@
 # that already has an ATP can pass an existing OCID via `atp_ocid_existing`.
 ###############################################################################
 
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = ">= 5.0.0"
+    }
+  }
+}
+
 variable "compartment_id" {
   type = string
 }
@@ -56,7 +66,11 @@ variable "admin_password" {
 variable "wallet_password" {
   type        = string
   sensitive   = true
-  description = "Password protecting the downloaded wallet zip."
+  description = "Password protecting the downloaded wallet zip. Min 8 chars — empty produces a zip that cannot be decrypted."
+  validation {
+    condition     = length(var.wallet_password) >= 8
+    error_message = "wallet_password must be at least 8 characters."
+  }
 }
 
 variable "whitelisted_ips" {
