@@ -300,10 +300,11 @@ def _render_page(request: Request, page: str, title: str, **context):
     """Render an HTML page with RUM injection."""
     if templates is None:
         return HTMLResponse(f"<h1>{title}</h1><p>Templates not configured</p>")
+    # Starlette >= 0.46 — must pass request as first positional arg.
     return templates.TemplateResponse(
+        request,
         f"{page}.html",
         {
-            "request": request,
             "title": title,
             "rum_endpoint": cfg.oci_apm_rum_endpoint,
             "rum_public_key": cfg.oci_apm_rum_public_datakey,
