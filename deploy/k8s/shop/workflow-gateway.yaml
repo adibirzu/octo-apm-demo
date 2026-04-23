@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: workflow-gateway
-          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-workflow-gateway:${IMAGE_TAG:-latest}
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-workflow-gateway:${IMAGE_TAG}
           ports:
             - containerPort: 8090
           env:
