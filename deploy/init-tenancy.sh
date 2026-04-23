@@ -110,10 +110,14 @@ fi
 # APM + RUM datakeys — collected via `terraform output` once the APM
 # module provisions. Leaves empty values on first run; deploy-shop.sh
 # tolerates missing keys (OTel exporter becomes a no-op).
+#
+# NOTE — key names match the ones read by deploy/k8s/oke/**.yaml:
+#   key: endpoint, key: private-key, key: public-key, key: rum-endpoint.
+# DO NOT rename without updating every deployment.yaml in lockstep.
 create_secret_if_missing "octo-apm" \
-    "--from-literal=apm-private-datakey=${OCI_APM_PRIVATE_DATAKEY:-}" \
-    "--from-literal=apm-public-datakey=${OCI_APM_PUBLIC_DATAKEY:-}" \
-    "--from-literal=apm-endpoint=${OCI_APM_ENDPOINT:-}" \
+    "--from-literal=private-key=${OCI_APM_PRIVATE_DATAKEY:-}" \
+    "--from-literal=public-key=${OCI_APM_PUBLIC_DATAKEY:-}" \
+    "--from-literal=endpoint=${OCI_APM_ENDPOINT:-}" \
     "--from-literal=rum-endpoint=${OCI_APM_RUM_ENDPOINT:-}" \
     "--from-literal=rum-web-application-ocid=${OCI_APM_RUM_WEB_APPLICATION_OCID:-}"
 
@@ -139,6 +143,16 @@ create_secret_if_missing "octo-genai" \
     "--from-literal=endpoint=${OCI_GENAI_ENDPOINT:-}" \
     "--from-literal=compartment-id=${OCI_GENAI_COMPARTMENT_ID:-${OCI_COMPARTMENT_ID}}" \
     "--from-literal=model-id=${OCI_GENAI_MODEL_ID:-}"
+
+# octo-oci-config — read by deploy/k8s/oke/shop/deployment.yaml. Seeded
+# with the manifest's expected key names (compartment-id, genai-endpoint,
+# genai-model-id). This is kept separate from octo-genai because the
+# manifest's required `OCI_COMPARTMENT_ID` mount has no `optional: true`
+# — a missing secret = CreateContainerConfigError on first deploy.
+create_secret_if_missing "octo-oci-config" \
+    "--from-literal=compartment-id=${OCI_COMPARTMENT_ID}" \
+    "--from-literal=genai-endpoint=${OCI_GENAI_ENDPOINT:-}" \
+    "--from-literal=genai-model-id=${OCI_GENAI_MODEL_ID:-}"
 
 # Integrations — Slack, Stripe, PayPal. All optional.
 create_secret_if_missing "octo-integrations" \

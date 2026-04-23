@@ -12,6 +12,16 @@
 #   OCI_LOG_GROUP_CHAOS_AUDIT -> log_chaos_audit_id
 ###############################################################################
 
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = ">= 5.0.0"
+    }
+  }
+}
+
 variable "compartment_id" {
   type = string
 }
