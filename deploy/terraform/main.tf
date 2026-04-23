@@ -259,6 +259,21 @@ module "stack_monitoring_atp" {
   autonomous_db_id = local.stack_monitoring_atp_ocid
 }
 
+module "oke" {
+  source                    = "./modules/oke"
+  count                     = var.create_oke ? 1 : 0
+  compartment_id            = var.compartment_id
+  cluster_name              = var.oke_cluster_name
+  kubernetes_version        = var.oke_kubernetes_version
+  vcn_cidr                  = var.oke_vcn_cidr
+  node_pool_size            = var.oke_node_pool_size
+  node_ocpus                = var.oke_node_ocpus
+  node_memory_gbs           = var.oke_node_memory_gbs
+  node_boot_volume_gbs      = var.oke_node_boot_volume_gbs
+  node_image_id             = var.oke_node_image_id
+  availability_domain_names = var.oke_availability_domain_names
+}
+
 output "atp" {
   value = var.create_atp ? {
     atp_id                  = module.atp[0].atp_id
@@ -301,4 +316,14 @@ output "logging" {
 
 output "stack_monitoring_atp_id" {
   value = length(module.stack_monitoring_atp) > 0 ? module.stack_monitoring_atp[0].monitored_resource_id : ""
+}
+
+output "oke" {
+  value = var.create_oke ? {
+    cluster_id    = module.oke[0].cluster_id
+    cluster_name  = module.oke[0].cluster_name
+    vcn_id        = module.oke[0].vcn_id
+    lb_subnet_id  = module.oke[0].lb_subnet_id
+  } : null
+  description = "OKE coordinates. Use cluster_id with `oci ce cluster create-kubeconfig`."
 }
