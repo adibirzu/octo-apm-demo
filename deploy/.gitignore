@@ -1,0 +1,2 @@
+# Per-tenancy state — contains compartment OCID picks + domain.
+.last-tenancy.env
