@@ -9,7 +9,7 @@
 ###############################################################################
 
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.5.0"
   required_providers {
     oci = {
       source  = "oracle/oci"
@@ -37,11 +37,13 @@ data "oci_apm_data_keys" "private" {
   data_key_type = "PRIVATE"
 }
 
-# Register a RUM Web Application config (optional).
-resource "oci_apm_config_config" "rum_web_app" {
-  count         = var.create_rum_web_app ? 1 : 0
-  apm_domain_id = oci_apm_apm_domain.this.id
-  config_type   = "WEB_APPLICATION"
-  display_name  = var.web_application_display_name
-  freeform_tags = var.freeform_tags
-}
+# RUM Web Application registration — OCI provider does NOT yet expose a
+# first-class resource for RUM web app creation (config_type "WEB_APPLICATION"
+# is rejected by the schema; valid values are AGENT/APDEX/MACS_APM_EXTENSION/
+# METRIC_GROUP/OPTIONS/SPAN_FILTER). Register the RUM web app via the OCI
+# Console under APM → RUM → Web Applications after this module runs, using
+# the APM domain + public data key outputs below. The page-embedded RUM SDK
+# needs only the public data key + RUM endpoint; the web-app OCID is a
+# metadata handle that isn't required for beacon ingestion.
+#
+# When the provider ships a dedicated resource, wire it here.
