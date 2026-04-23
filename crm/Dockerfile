@@ -8,8 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /build
 COPY crm/requirements.txt crm/requirements.txt
 COPY services/cache/client services/cache/client
-RUN pip install --no-cache-dir --prefix=/install -r crm/requirements.txt && \
-    pip install --no-cache-dir --prefix=/install --no-deps ./services/cache/client
+RUN pip install --no-cache-dir --prefix=/install --ignore-installed -r crm/requirements.txt && \
+    pip install --no-cache-dir --prefix=/install --ignore-installed --no-deps ./services/cache/client
 
 # ── Runtime stage: slim image with non-root user ────────────────
 FROM python:3.11-slim
@@ -25,7 +25,6 @@ COPY --from=builder /install /usr/local
 
 WORKDIR /app
 COPY crm/server/ ./server/
-COPY crm/.env.example ./.env.example
 
 RUN chown -R appuser:appuser /app
 USER appuser
