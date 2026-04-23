@@ -48,6 +48,24 @@ PROJECT_TAG_VAL="octo-apm-demo"
 : "${REMOTE_BUILD_HOST:=control-plane-oci}"
 : "${INSTALL_NGINX_INGRESS:=true}"
 : "${SKIP_APM_JAVA_DEMO:=true}"
+# When the cluster is virtual-node-only, classic LB / NLB Services are
+# unsupported. Two paths:
+#   true  — auto-provision a 2-node managed pool so nginx-ingress works.
+#   false — skip external exposure. Operator installs OCI Native Ingress
+#           Controller add-on manually (console one-click).
+: "${OKE_ADD_NODE_POOL_IF_VIRTUAL:=true}"
+: "${OKE_NODE_POOL_SIZE:=2}"
+: "${OKE_NODE_SHAPE:=VM.Standard.E5.Flex}"
+: "${OKE_NODE_OCPUS:=1}"
+: "${OKE_NODE_MEMORY_GBS:=8}"
+: "${OKE_NODE_BOOT_VOLUME_GBS:=93}"
+# DNS modes:
+#   auto   — PATCH the OCI DNS zone. Requires `DNS_BASE_DOMAIN` to exist
+#            as an OCI DNS zone the profile can write.
+#   manual — print the A records + exit. Operator adds them to whatever
+#            DNS provider they actually use (Route 53, Cloudflare, etc.).
+#   skip   — don't touch DNS. Smoke test uses `-H "Host: ..."`.
+: "${DNS_MODE:=auto}"
 
 # Tenancy cache — written once picked, skipped if re-run.
 TENANCY_CACHE="${SCRIPT_DIR}/.last-tenancy.env"
@@ -362,12 +380,123 @@ EOF
     INGRESS_CLASS=nginx
     _green "nginx-ingress installed"
 elif [[ "${VIRTUAL_ONLY}" == "true" ]]; then
-    _yellow "Detected virtual-node-only cluster — nginx-ingress + classic LB Services DO NOT WORK on virtual nodes (KB-459)."
-    _yellow "Options: (1) add a managed node pool to the cluster, OR (2) install OCI Native Ingress Controller via the OKE add-on:"
-    _yellow "    Console → OKE → Cluster → Add-ons → Native Ingress Controller → Install"
-    _yellow "    ./deploy/bootstrap.sh will skip the ingress + DNS steps. Shop+CRM are reachable in-cluster via ClusterIP Services."
-    _yellow "    Re-run this script after adding a node pool OR enabling NIC to finalize external exposure."
-    exit 0
+    _yellow "Virtual-node-only cluster detected (KB-459). Classic LB Services + nginx-ingress need managed nodes."
+    if [[ "${OKE_ADD_NODE_POOL_IF_VIRTUAL}" == "true" ]]; then
+        _yellow "Auto-provisioning a managed node pool (${OKE_NODE_POOL_SIZE} × ${OKE_NODE_SHAPE})…"
+        python3 - <<PYEOF
+import oci, sys, time
+cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+ce = oci.container_engine.ContainerEngineClient(cfg)
+net = oci.core.VirtualNetworkClient(cfg)
+iam = oci.identity.IdentityClient(cfg)
+cluster_id = "${CLUSTER_ID}"
+cluster = ce.get_cluster(cluster_id).data
+# Pick the private "nodesubnet" in the cluster's VCN.
+node_subnet = None
+for s in net.list_subnets(compartment_id=cluster.compartment_id, vcn_id=cluster.vcn_id).data:
+    if 'nodesubnet' in (s.display_name or '').lower() or (s.prohibit_public_ip_on_vnic and s.cidr_block != '10.0.0.0/28'):
+        node_subnet = s.id
+        break
+if not node_subnet:
+    print("no node subnet found", file=sys.stderr); sys.exit(1)
+# Pick ADs from the region.
+ads = [ad.name for ad in iam.list_availability_domains(compartment_id=cfg['tenancy']).data]
+# Find the newest Oracle Linux 8 OKE image matching the cluster k8s version.
+opts = ce.get_node_pool_options(node_pool_option_id=cluster_id).data
+image_id = None
+for src in (opts.sources or []):
+    sn = src.source_name or ''
+    if 'Oracle-Linux-8' in sn and 'aarch' not in sn.lower() and 'GPU' not in sn and cluster.kubernetes_version.lstrip('v') in sn:
+        image_id = src.image_id
+        break
+if not image_id:
+    print("no image found", file=sys.stderr); sys.exit(1)
+# Check if a pool already exists for us.
+for np in ce.list_node_pools(compartment_id=cluster.compartment_id, cluster_id=cluster_id).data:
+    if np.name == 'octo-apm-managed-pool':
+        print(f"NODE_POOL_ID={np.id}")
+        sys.exit(0)
+# Create.
+work_req = ce.create_node_pool(
+    oci.container_engine.models.CreateNodePoolDetails(
+        compartment_id=cluster.compartment_id,
+        cluster_id=cluster_id,
+        name='octo-apm-managed-pool',
+        kubernetes_version=cluster.kubernetes_version,
+        node_shape='${OKE_NODE_SHAPE}',
+        node_shape_config=oci.container_engine.models.CreateNodeShapeConfigDetails(
+            ocpus=${OKE_NODE_OCPUS},
+            memory_in_gbs=${OKE_NODE_MEMORY_GBS},
+        ),
+        node_source_details=oci.container_engine.models.NodeSourceViaImageDetails(
+            source_type='IMAGE',
+            image_id=image_id,
+            boot_volume_size_in_gbs=${OKE_NODE_BOOT_VOLUME_GBS},
+        ),
+        node_config_details=oci.container_engine.models.CreateNodePoolNodeConfigDetails(
+            size=${OKE_NODE_POOL_SIZE},
+            placement_configs=[
+                oci.container_engine.models.NodePoolPlacementConfigDetails(
+                    availability_domain=ads[0],
+                    subnet_id=node_subnet,
+                )
+            ],
+        ),
+        freeform_tags={"project": "octo-apm-demo", "managed-by": "bootstrap.sh"},
+    )
+).headers['opc-work-request-id']
+print(f"WORK_REQ={work_req}")
+# Poll the work request until the node pool is ACCEPTED/SUCCEEDED.
+deadline = time.time() + 600
+while time.time() < deadline:
+    wr = ce.get_work_request(work_req).data
+    print(f"  state={wr.status}", flush=True)
+    if wr.status == 'SUCCEEDED':
+        break
+    if wr.status in ('FAILED', 'CANCELED'):
+        print("node pool create failed", file=sys.stderr); sys.exit(1)
+    time.sleep(20)
+# Find the node pool we just created.
+for np in ce.list_node_pools(compartment_id=cluster.compartment_id, cluster_id=cluster_id).data:
+    if np.name == 'octo-apm-managed-pool':
+        print(f"NODE_POOL_ID={np.id}")
+        break
+PYEOF
+        _yellow "Waiting up to 10 min for node(s) to register as Ready…"
+        for _ in $(seq 1 60); do
+            n=$(kubectl get nodes -l oke.oraclecloud.com/node.info.managed=true -o json 2>/dev/null | python3 -c "import sys,json; print(sum(1 for n in json.load(sys.stdin).get('items',[]) if any(c['type']=='Ready' and c['status']=='True' for c in n.get('status',{}).get('conditions',[]))))" 2>/dev/null || echo 0)
+            if [[ "${n}" -ge 1 ]]; then
+                _green "Managed nodes Ready: ${n}"
+                break
+            fi
+            sleep 10
+        done
+        # Re-run the nginx install now that we have a managed node.
+        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null 2>&1 || true
+        helm repo update >/dev/null 2>&1 || true
+        cat > /tmp/_octo-nginx-values.yaml <<EOF
+controller:
+  replicaCount: 2
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
+      service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+      service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "100"
+  nodeSelector:
+    oke.oraclecloud.com/node.info.managed: "true"
+  ingressClassResource:
+    default: true
+EOF
+        helm upgrade --install nginx-ingress ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace -f /tmp/_octo-nginx-values.yaml --wait --timeout 5m >/dev/null
+        INGRESS_CLASS=nginx
+        _green "nginx-ingress installed (pinned to managed nodes via nodeSelector)"
+    else
+        _yellow "OKE_ADD_NODE_POOL_IF_VIRTUAL=false — external exposure skipped."
+        _yellow "To expose externally: run the OCI Native Ingress Controller add-on install."
+        _yellow "Alternative: rerun with OKE_ADD_NODE_POOL_IF_VIRTUAL=true."
+        exit 0
+    fi
 else
     _yellow "INSTALL_NGINX_INGRESS=false — skipping ingress install"
     exit 0
@@ -406,39 +535,79 @@ done
 _green "Ingress objects applied (class=${INGRESS_CLASS})"
 
 # ── Step 10: DNS ──────────────────────────────────────────────────────
-section "Step 10 — DNS A records"
+section "Step 10 — DNS (${DNS_MODE})"
 INGRESS_IP=$(kubectl -n ingress-nginx get svc nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
 if [[ -z "${INGRESS_IP}" ]]; then
     _yellow "Waiting 30s for nginx LB IP…"
     sleep 30
-    INGRESS_IP=$(kubectl -n ingress-nginx get svc nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    INGRESS_IP=$(kubectl -n ingress-nginx get svc nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
 fi
 [[ -n "${INGRESS_IP}" ]] || { _red "nginx-ingress LB IP not ready"; exit 1; }
 _green "nginx-ingress IP: ${INGRESS_IP}"
 
-python3 - <<PYEOF
-import oci
+# Persist for destroy.sh so it knows whether/which records to remove.
+{
+    echo "export INGRESS_IP=${INGRESS_IP}"
+    echo "export DNS_MODE=${DNS_MODE}"
+    echo "export SHOP_FQDN=${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
+    echo "export CRM_FQDN=${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"
+} >> "${TENANCY_CACHE}"
+
+case "${DNS_MODE}" in
+auto)
+    # Try to PATCH the OCI DNS zone. Fall through to `manual` if the zone
+    # doesn't exist or the profile lacks permission — still useful output.
+    if python3 - <<PYEOF; then
+import oci, sys
 cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
 dns = oci.dns.DnsClient(cfg)
 zone = "${DNS_BASE_DOMAIN}"
-for name in ("${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}", "${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"):
-    dns.patch_domain_records(
-        zone_name_or_id=zone,
-        domain=name,
-        patch_domain_records_details=oci.dns.models.PatchDomainRecordsDetails(
-            items=[
-                oci.dns.models.RecordOperation(
-                    operation="REMOVE", domain=name, rtype="A",
-                ),
-                oci.dns.models.RecordOperation(
-                    operation="ADD", domain=name, rtype="A",
-                    ttl=60, rdata="${INGRESS_IP}",
-                ),
-            ]
-        ),
-    )
-    print(f"  A {name} → ${INGRESS_IP}")
+try:
+    for name in ("${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}", "${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"):
+        dns.patch_domain_records(
+            zone_name_or_id=zone, domain=name,
+            patch_domain_records_details=oci.dns.models.PatchDomainRecordsDetails(
+                items=[
+                    oci.dns.models.RecordOperation(operation="REMOVE", domain=name, rtype="A"),
+                    oci.dns.models.RecordOperation(operation="ADD", domain=name, rtype="A", ttl=60, rdata="${INGRESS_IP}"),
+                ],
+            ),
+        )
+        print(f"  A {name} -> ${INGRESS_IP}", flush=True)
+except oci.exceptions.ServiceError as exc:
+    print(f"OCI DNS PATCH failed: {exc.status} {exc.code} — {exc.message[:120]}", file=sys.stderr)
+    sys.exit(2)
 PYEOF
+        _green "OCI DNS records updated"
+    else
+        _yellow "OCI DNS zone ${DNS_BASE_DOMAIN} not manageable — falling back to manual mode."
+        DNS_MODE=manual
+    fi
+    ;;
+esac
+
+if [[ "${DNS_MODE}" == "manual" ]]; then
+    cat <<EOF
+
+${YELLOW:-}────────────────────────────────────────────────────────────────
+  MANUAL DNS — add these records at your DNS provider (Cloudflare,
+  Route 53, NS1, Namecheap, in-house BIND, …):
+
+    ${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}.   A   ${INGRESS_IP}   TTL 60
+    ${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}.    A   ${INGRESS_IP}   TTL 60
+
+  Once propagated, curl-test:
+    curl -v http://${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}/ready
+    curl -v http://${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}/ready
+
+  Until then bootstrap.sh verifies via Host: header (see next step).
+────────────────────────────────────────────────────────────────
+EOF
+fi
+
+if [[ "${DNS_MODE}" == "skip" ]]; then
+    _yellow "DNS_MODE=skip — no DNS action. Smoke test will use Host: header only."
+fi
 
 # ── Step 11: Smoke test ───────────────────────────────────────────────
 section "Step 11 — Smoke test"

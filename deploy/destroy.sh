@@ -50,6 +50,7 @@ K8S_NAMESPACE_SHOP="${K8S_NAMESPACE_SHOP:-octo-drone-shop}"
 K8S_NAMESPACE_CRM="${K8S_NAMESPACE_CRM:-enterprise-crm}"
 SHOP_SUBDOMAIN="${SHOP_SUBDOMAIN:-shop}"
 CRM_SUBDOMAIN="${CRM_SUBDOMAIN:-crm}"
+DNS_MODE="${DNS_MODE:-auto}"
 
 _red()    { printf '\033[31m%s\033[0m\n' "$*"; }
 _green()  { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -93,8 +94,15 @@ fi
 
 # ── 3. DNS records ────────────────────────────────────────────────────
 section "3. DNS records"
-if confirm "Remove A records for ${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN} + ${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}?"; then
-    python3 - <<PYEOF
+case "${DNS_MODE}" in
+manual|skip)
+    _yellow "DNS_MODE=${DNS_MODE} — no OCI DNS changes. Manually remove these records at your DNS provider:"
+    _yellow "    ${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}.   A   (delete)"
+    _yellow "    ${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}.    A   (delete)"
+    ;;
+*)
+    if confirm "Remove A records for ${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN} + ${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN} from OCI DNS?"; then
+        python3 - <<PYEOF
 import oci
 cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
 dns = oci.dns.DnsClient(cfg)
@@ -111,9 +119,29 @@ for name in ("${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}", "${CRM_SUBDOMAIN}.${DNS_BAS
     except oci.exceptions.ServiceError as e:
         print(f"  skip {name}: {e.message[:80]}")
 PYEOF
+    fi
+    ;;
+esac
+
+# ── 4. Managed node pool created by bootstrap (if any) ────────────────
+section "4. Managed node pool (created by bootstrap on virtual-node clusters)"
+if confirm "Delete the 'octo-apm-managed-pool' node pool if present?"; then
+    python3 - <<PYEOF
+import oci, sys
+cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+ce = oci.container_engine.ContainerEngineClient(cfg)
+for cluster in ce.list_clusters(compartment_id="${OCI_COMPARTMENT_ID}").data:
+    for np in ce.list_node_pools(compartment_id="${OCI_COMPARTMENT_ID}", cluster_id=cluster.id).data:
+        if np.name == 'octo-apm-managed-pool':
+            try:
+                ce.delete_node_pool(np.id)
+                print(f"  deleted node pool {np.name} in cluster {cluster.name}")
+            except oci.exceptions.ServiceError as e:
+                print(f"  skip {np.name}: {e.message[:80]}")
+PYEOF
 fi
 
-# ── 4. ATP via terraform ──────────────────────────────────────────────
+# ── 5. ATP via terraform ──────────────────────────────────────────────
 section "4. ATP (terraform destroy)"
 if $KEEP_ATP; then
     _yellow "--keep-atp: skipping ATP"
@@ -128,8 +156,8 @@ else
     fi
 fi
 
-# ── 5. OCIR images ────────────────────────────────────────────────────
-section "5. OCIR repositories (project-created only)"
+# ── 6. OCIR images ────────────────────────────────────────────────────
+section "6. OCIR repositories (project-created only)"
 if $KEEP_IMAGES; then
     _yellow "--keep-images: skipping OCIR"
 else
@@ -149,8 +177,8 @@ PYEOF
     fi
 fi
 
-# ── 6. kubectl context + tfvars ───────────────────────────────────────
-section "6. Local cleanup"
+# ── 7. kubectl context + tfvars ───────────────────────────────────────
+section "7. Local cleanup"
 KUBE_CTX="octo-${OCI_COMPARTMENT_NAME:-tenancy}"
 if kubectl config get-contexts "${KUBE_CTX}" >/dev/null 2>&1; then
     if confirm "Remove kubectl context ${KUBE_CTX}?"; then
