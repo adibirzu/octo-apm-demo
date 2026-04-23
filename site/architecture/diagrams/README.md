@@ -43,3 +43,43 @@ on the PR can then diff the image directly.
 
 Arrows with **solid** strokes = synchronous request path. **Dashed**
 strokes = asynchronous, event-driven, or configuration flow.
+
+## Authoring gotchas
+
+drawio silently rejects a whole diagram if any `mxCell value="…"`
+attribute contains constructs its parser does not handle. Avoid:
+
+- HTML-escaped angle brackets inside text (`&lt;region&gt;`) — use
+  literal placeholders like `REGION.ocir.io/NAMESPACE/` instead.
+- Unicode bullets (`•`) — use hyphens or numbered lists.
+- Un-escaped quotation marks in node labels — use `&quot;` or drop.
+- Hex line-break entities (`&#xa;`) — prefer decimal `&#10;`. Both
+  are LF but decimal parses more reliably across drawio versions.
+
+When in doubt, validate XML locally:
+
+```bash
+python3 -c "import xml.etree.ElementTree as ET; ET.parse('file.drawio'); print('OK')"
+```
+
+…and run the duplicate-id + dangling-edge check:
+
+```bash
+python3 - <<'PY'
+import xml.etree.ElementTree as ET
+tree = ET.parse('file.drawio')
+ids = [c.get('id') for c in tree.iter('mxCell')]
+dups = [i for i in set(ids) if ids.count(i) > 1]
+print(f'cells={len(ids)} unique={len(set(ids))} dups={dups}')
+for c in tree.iter('mxCell'):
+    if c.get('edge') == '1':
+        for endpoint in ('source', 'target'):
+            ref = c.get(endpoint)
+            if ref and tree.find(f'.//mxCell[@id="{ref}"]') is None:
+                print(f'{c.get("id")}: dangling {endpoint}={ref}')
+PY
+```
+
+Past failure: `deploy-topology.drawio` with `&lt;region&gt;` escapes +
+bullet characters silently refused to open. Rewriting values with
+plain ASCII + `&#10;` line breaks fixed it.

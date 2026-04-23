@@ -143,6 +143,7 @@ nav:
   - Operations:
     - operations/index.md
     - Deployment: operations/deployment.md
+    - Deploy Readiness: operations/deploy-readiness.md
     - Chaos Engineering: operations/chaos.md
     - Alarms & Health: operations/alarms.md
   - Workshop:
