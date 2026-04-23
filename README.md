@@ -7,7 +7,8 @@ as independent containers under `shop/` and `crm/` so they keep the
 cross-service contract hardened in the upstream repos.
 
 **Docs site**: https://adibirzu.github.io/octo-apm-demo
-**Default hostnames**: `shop.example.tld` (Shop) · `crm.example.tld` (CRM)
+**Target hostnames (`DEFAULT` / `oci4cca`)**: `shop.cyber-sec.ro` (Shop) · `crm.cyber-sec.ro` (CRM)
+**Status (April 23, 2026)**: the OCI stack, OKE workloads, and OCI DNS records are in `oci4cca`, but public cutover is not complete because `cyber-sec.ro` is still delegated to Wix instead of OCI and the imported wildcard certificate `star.cyber-sec.ro` expired on April 16, 2025. Legacy CAP reference endpoints remain `https://shop.octodemo.cloud` · `https://crm.octodemo.cloud`.
 
 ## Repository layout
 
@@ -22,6 +23,7 @@ octo-apm-demo/
 │   ├── BOM.md                        # Bill of Materials (authoritative)
 │   ├── pre-flight-check.sh           # env + tooling validator
 │   ├── init-tenancy.sh               # idempotent new-tenancy bootstrap
+│   ├── deploy.sh                     # unified shop + crm build/push/rollout wrapper
 │   ├── deploy-shop.sh                # build + push + rollout for Shop
 │   ├── deploy-crm.sh                 # build + push + rollout for CRM
 │   ├── resource-manager/             # OCI Resource Manager stack (one-click)
@@ -85,11 +87,11 @@ ${EDITOR:-vi} .env                                   # set DNS_DOMAIN=example.tl
 # 3. Unzip the ATP wallet
 unzip /path/to/Wallet_<DB>.zip -d wallet
 
-# 4. TLS certs (bundled domains: drone.$DNS + backend.$DNS)
+# 4. TLS certs (bundled domains: shop.$DNS + crm.$DNS)
 sudo certbot certonly --standalone \
-  -d drone.${DNS_DOMAIN} -d backend.${DNS_DOMAIN}
-sudo cp /etc/letsencrypt/live/drone.${DNS_DOMAIN}/*.pem   nginx/tls/shop/
-sudo cp /etc/letsencrypt/live/backend.${DNS_DOMAIN}/*.pem nginx/tls/crm/
+  -d shop.${DNS_DOMAIN} -d crm.${DNS_DOMAIN}
+sudo cp /etc/letsencrypt/live/shop.${DNS_DOMAIN}/*.pem   nginx/tls/shop/
+sudo cp /etc/letsencrypt/live/crm.${DNS_DOMAIN}/*.pem nginx/tls/crm/
 
 # 5. Launch
 sudo ./install.sh
@@ -98,10 +100,10 @@ sudo ./install.sh
 Validate:
 
 ```bash
-curl -s https://drone.${DNS_DOMAIN}/ready   | jq
-curl -s https://backend.${DNS_DOMAIN}/ready | jq
-curl -s https://drone.${DNS_DOMAIN}/api/integrations/schema   | jq .info.title
-curl -s https://backend.${DNS_DOMAIN}/api/integrations/schema | jq .info.title
+curl -s https://shop.${DNS_DOMAIN}/ready   | jq
+curl -s https://crm.${DNS_DOMAIN}/ready | jq
+curl -s https://shop.${DNS_DOMAIN}/api/integrations/schema   | jq .info.title
+curl -s https://crm.${DNS_DOMAIN}/api/integrations/schema | jq .info.title
 ```
 
 Both `/ready` must show `database.reachable=true`; both `/api/integrations/schema`

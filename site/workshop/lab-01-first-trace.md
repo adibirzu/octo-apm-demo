@@ -101,7 +101,7 @@ PASS — Lab 01 complete
 |---|---|---|
 | Trace not in APM after 60 s | OCI APM ingestion lag | Wait another 60 s; OCI APM SLA is 1–2 min for first appearance |
 | `oci apm-traces trace get` returns 404 | Wrong APM Domain ID | `oci apm-control-plane apm-domain list --compartment-id $C --query 'data[].{name:"display-name", id:id}'` |
-| Trace has only one span | OTel auto-instrumentation off | Check the shop pod env: `kubectl exec -n octo-shop-prod <pod> -- env | grep OCI_APM_ENDPOINT` — must be set |
+| Trace has only one span | OTel auto-instrumentation off | Check the shop pod env: `kubectl exec -n octo-drone-shop <pod> -- env | grep OCI_APM_ENDPOINT` — must be set |
 
 ## Read more
 

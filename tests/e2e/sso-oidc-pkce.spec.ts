@@ -9,8 +9,8 @@
  *
  *   1. In IDCS → Applications → Add Application → Confidential Application
  *   2. Client type: Confidential. Allowed grants: Authorization Code, Refresh Token.
- *   3. Redirect URI: https://drone.${DNS_DOMAIN}/api/auth/sso/callback
- *   4. Post-logout redirect URI: https://drone.${DNS_DOMAIN}/login
+ *   3. Redirect URI: https://shop.${DNS_DOMAIN}/api/auth/sso/callback
+ *   4. Post-logout redirect URI: https://shop.${DNS_DOMAIN}/login
  *   5. Scopes: openid, profile, email
  *   6. Create a test user (OCTO_E2E_TEST_USER_EMAIL / OCTO_E2E_TEST_USER_PASSWORD)
  *      and assign it to the app.
@@ -22,7 +22,7 @@
 import { expect, test } from '@playwright/test';
 
 const SSO_ENABLED = process.env.SSO_E2E_ENABLED === '1';
-const SHOP_BASE = process.env.SHOP_BASE_URL || 'https://drone.octodemo.cloud';
+const SHOP_BASE = process.env.SHOP_BASE_URL || 'https://shop.cyber-sec.ro';
 const TEST_EMAIL = process.env.OCTO_E2E_TEST_USER_EMAIL || '';
 const TEST_PASSWORD = process.env.OCTO_E2E_TEST_USER_PASSWORD || '';
 

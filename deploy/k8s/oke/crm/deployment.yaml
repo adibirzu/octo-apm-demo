@@ -1,7 +1,7 @@
 # Enterprise CRM Portal — production Deployment on OKE.
 #
-# Namespace:        octo-backend-prod
-# Public hostname:  backend.${DNS_DOMAIN}  (default: backend.octodemo.cloud)
+# Namespace:        enterprise-crm
+# Public hostname:  crm.${DNS_DOMAIN}  (for DEFAULT/oci4cca: crm.cyber-sec.ro)
 # Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG}
 
 apiVersion: apps/v1
@@ -50,9 +50,9 @@ spec:
             - name: DNS_DOMAIN
               value: "${DNS_DOMAIN}"
             - name: CRM_BASE_URL
-              value: "https://backend.${DNS_DOMAIN}"
+              value: "https://crm.${DNS_DOMAIN}"
             - name: SERVICE_SHOP_URL
-              value: "http://octo-drone-shop.octo-shop-prod.svc.cluster.local:8080"
+              value: "http://octo-drone-shop.${K8S_NAMESPACE_SHOP}.svc.cluster.local:8080"
             - name: OCI_AUTH_MODE
               value: "instance_principal"
             # ── Cross-service
@@ -153,7 +153,7 @@ spec:
                   key: idcs-client-secret
                   optional: true
             - name: IDCS_REDIRECT_URI
-              value: "https://backend.${DNS_DOMAIN}/api/auth/sso/callback"
+              value: "https://crm.${DNS_DOMAIN}/api/auth/sso/callback"
             # ── Orders sync toggle
             - name: ORDERS_SYNC_ENABLED
               value: "true"

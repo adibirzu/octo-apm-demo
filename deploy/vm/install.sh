@@ -68,10 +68,10 @@ mv "${NGINX_OUT}" "${SCRIPT_DIR}/nginx/nginx.conf"
 
 mkdir -p "${SCRIPT_DIR}/nginx/tls/shop" "${SCRIPT_DIR}/nginx/tls/crm"
 if [[ ! -f "${SCRIPT_DIR}/nginx/tls/shop/fullchain.pem" ]]; then
-    echo "TLS certs not installed for drone.${DNS_DOMAIN}. Generate with:"
-    echo "  certbot certonly --standalone -d drone.${DNS_DOMAIN} -d backend.${DNS_DOMAIN}"
-    echo "  cp /etc/letsencrypt/live/drone.${DNS_DOMAIN}/*.pem deploy/vm/nginx/tls/shop/"
-    echo "  cp /etc/letsencrypt/live/backend.${DNS_DOMAIN}/*.pem  deploy/vm/nginx/tls/crm/"
+    echo "TLS certs not installed for shop.${DNS_DOMAIN}. Generate with:"
+    echo "  certbot certonly --standalone -d shop.${DNS_DOMAIN} -d crm.${DNS_DOMAIN}"
+    echo "  cp /etc/letsencrypt/live/shop.${DNS_DOMAIN}/*.pem deploy/vm/nginx/tls/shop/"
+    echo "  cp /etc/letsencrypt/live/crm.${DNS_DOMAIN}/*.pem  deploy/vm/nginx/tls/crm/"
     echo
     echo "Continuing anyway — nginx will fail to start until the certs are present."
 fi
@@ -97,6 +97,6 @@ systemctl enable --now octo.service
 echo
 echo "==============================================================="
 echo " Unified VM stack is up."
-echo "   Shop: https://drone.${DNS_DOMAIN}"
-echo "   CRM:  https://backend.${DNS_DOMAIN}"
+echo "   Shop: https://shop.${DNS_DOMAIN}"
+echo "   CRM:  https://crm.${DNS_DOMAIN}"
 echo "==============================================================="

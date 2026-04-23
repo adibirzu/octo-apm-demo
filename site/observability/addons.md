@@ -88,7 +88,7 @@ export OCI_COMPARTMENT_ID="ocid1.compartment.oc1...."
 Then run:
 ```bash
 COMPARTMENT_ID="$OCI_COMPARTMENT_ID" \
-SHOP_PUBLIC_URL="https://drone.${DNS_DOMAIN}" \
+SHOP_PUBLIC_URL="https://shop.${DNS_DOMAIN}" \
 ./deploy/oci/ensure_monitoring.sh
 ```
 

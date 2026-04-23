@@ -43,8 +43,8 @@ la_namespace       = "<lognamespace>"
 la_log_group_id    = "ocid1.loganalyticsloggroup.oc1..xxxx"
 waf_log_group_id   = "ocid1.loggroup.oc1..xxxx"
 
-shop_domain        = "drone.<your-domain>"
-crm_domain         = "backend.<your-domain>"
+shop_domain        = "shop.<your-domain>"
+crm_domain         = "crm.<your-domain>"
 ops_domain         = "ops.<your-domain>"
 coordinator_domain = "coordinator.<your-domain>"
 ```

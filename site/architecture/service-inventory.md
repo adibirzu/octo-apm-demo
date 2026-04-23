@@ -7,8 +7,8 @@ and which correlation-contract fields it emits.
 
 | Service | Source | Public URL | OTel `service.name` |
 |---|---|---|---|
-| Drone Shop | `shop/` | `https://drone.${DNS_DOMAIN}` | `octo-drone-shop` |
-| Enterprise CRM Portal | `crm/` | `https://backend.${DNS_DOMAIN}` | `enterprise-crm-portal` |
+| Drone Shop | `shop/` | `https://shop.${DNS_DOMAIN}` | `octo-drone-shop` |
+| Enterprise CRM Portal | `crm/` | `https://crm.${DNS_DOMAIN}` | `enterprise-crm-portal` |
 | Workflow Gateway (Go) | `shop/services/workflow-gateway/` | internal | `octo-workflow-gateway` |
 
 ## Platform services (OCI 360)
