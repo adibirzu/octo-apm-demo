@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://adibirzu.github.io/octo-apm-demo/workshop/lab-05-metric-and-alarm/">
+        <link rel="canonical" href="https://adibirzu.github.io/octo-apm-demo/observability/demo-drilldown/">
       
       
-        <link rel="prev" href="../lab-04-rum-outage-detection/">
+        <link rel="prev" href="../wire-up/">
       
       
-        <link rel="next" href="../lab-06-waf-event-investigation/">
+        <link rel="next" href="../../observability-v2/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Lab 05 — Custom metric + alarm - OCTO APM Demo — Unified Platform</title>
+        <title>Demo drill-down - OCTO APM Demo — Unified Platform</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#lab-05-custom-metric-alarm" class="md-skip">
+        <a href="#oci-observability-demo-drill-down" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Lab 05 — Custom metric + alarm
+              Demo drill-down
             
           </span>
         </div>
@@ -349,11 +349,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../observability/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -459,13 +461,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../workshop/" class="md-tabs__link">
           
   
   
@@ -1829,6 +1829,8 @@
       
   
   
+    
+  
   
   
     
@@ -1866,20 +1868,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../observability/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1897,13 +1902,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1923,7 +1928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/addons/" class="md-nav__link">
+      <a href="../addons/" class="md-nav__link">
         
   
   
@@ -1951,7 +1956,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/melts/" class="md-nav__link">
+      <a href="../melts/" class="md-nav__link">
         
   
   
@@ -1979,7 +1984,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/traces/" class="md-nav__link">
+      <a href="../traces/" class="md-nav__link">
         
   
   
@@ -2007,7 +2012,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/metrics/" class="md-nav__link">
+      <a href="../metrics/" class="md-nav__link">
         
   
   
@@ -2035,7 +2040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/logs/" class="md-nav__link">
+      <a href="../logs/" class="md-nav__link">
         
   
   
@@ -2063,7 +2068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/security/" class="md-nav__link">
+      <a href="../security/" class="md-nav__link">
         
   
   
@@ -2091,7 +2096,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/rum/" class="md-nav__link">
+      <a href="../rum/" class="md-nav__link">
         
   
   
@@ -2119,7 +2124,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/distributed-traces/" class="md-nav__link">
+      <a href="../distributed-traces/" class="md-nav__link">
         
   
   
@@ -2147,7 +2152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/enhancement-plan/" class="md-nav__link">
+      <a href="../enhancement-plan/" class="md-nav__link">
         
   
   
@@ -2175,7 +2180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/oci-360-development-plan/" class="md-nav__link">
+      <a href="../oci-360-development-plan/" class="md-nav__link">
         
   
   
@@ -2203,7 +2208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../observability/wire-up/" class="md-nav__link">
+      <a href="../wire-up/" class="md-nav__link">
         
   
   
@@ -2228,10 +2233,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../observability/demo-drilldown/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demo drill-down
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2247,6 +2279,136 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pre-demo-30-s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-demo (30 s)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-metrics-drill-down-oci-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Metrics drill-down (OCI Monitoring)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-traces-drill-down-oci-apm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Traces drill-down (OCI APM)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-rum-drill-down-oci-apm-real-user-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. RUM drill-down (OCI APM → Real User Monitoring)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-logs-drill-down-oci-logging-log-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Logs drill-down (OCI Logging → Log Analytics)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-stack-monitoring-atp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Stack Monitoring (ATP)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-events-remediation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Events → Remediation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-end-to-end-scenario-slow-checkout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. End-to-end scenario — "slow checkout"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-everything-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where everything lives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reset-between-demos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reset between demos
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3159,8 +3321,6 @@
       
   
   
-    
-  
   
   
     
@@ -3194,23 +3354,20 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../workshop/" class="md-nav__link ">
               
   
   
@@ -3228,13 +3385,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3254,7 +3411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-01-first-trace/" class="md-nav__link">
+      <a href="../../workshop/lab-01-first-trace/" class="md-nav__link">
         
   
   
@@ -3282,7 +3439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-02-trace-log-correlation/" class="md-nav__link">
+      <a href="../../workshop/lab-02-trace-log-correlation/" class="md-nav__link">
         
   
   
@@ -3310,7 +3467,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-03-slow-sql-drill-down/" class="md-nav__link">
+      <a href="../../workshop/lab-03-slow-sql-drill-down/" class="md-nav__link">
         
   
   
@@ -3338,7 +3495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-04-rum-outage-detection/" class="md-nav__link">
+      <a href="../../workshop/lab-04-rum-outage-detection/" class="md-nav__link">
         
   
   
@@ -3363,37 +3520,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Lab 05 — Custom metric + alarm
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../workshop/lab-05-metric-and-alarm/" class="md-nav__link">
         
   
   
@@ -3409,175 +3539,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#objective" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Objective
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#time-budget" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Time budget
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prerequisites
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Steps
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-confirm-custom-metrics-are-flowing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Confirm custom metrics are flowing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-create-an-alarm-console" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Create an alarm (Console)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-same-alarm-via-oci-cli" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Same alarm, via OCI CLI
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-trigger-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Trigger it
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-watch-the-alarm-fire" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Watch the alarm fire
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-resolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Resolve
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verify" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#read-more" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Read more
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3590,7 +3551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-06-waf-event-investigation/" class="md-nav__link">
+      <a href="../../workshop/lab-06-waf-event-investigation/" class="md-nav__link">
         
   
   
@@ -3618,7 +3579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-07-saved-search/" class="md-nav__link">
+      <a href="../../workshop/lab-07-saved-search/" class="md-nav__link">
         
   
   
@@ -3646,7 +3607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-08-stack-monitoring-atp/" class="md-nav__link">
+      <a href="../../workshop/lab-08-stack-monitoring-atp/" class="md-nav__link">
         
   
   
@@ -3674,7 +3635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-09-chaos-drill/" class="md-nav__link">
+      <a href="../../workshop/lab-09-chaos-drill/" class="md-nav__link">
         
   
   
@@ -3702,7 +3663,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../lab-10-failed-checkout/" class="md-nav__link">
+      <a href="../../workshop/lab-10-failed-checkout/" class="md-nav__link">
         
   
   
@@ -3757,10 +3718,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#objective" class="md-nav__link">
+  <a href="#pre-demo-30-s" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Objective
+        Pre-demo (30 s)
       
     </span>
   </a>
@@ -3768,10 +3729,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#time-budget" class="md-nav__link">
+  <a href="#1-metrics-drill-down-oci-monitoring" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Time budget
+        1. Metrics drill-down (OCI Monitoring)
       
     </span>
   </a>
@@ -3779,10 +3740,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#2-traces-drill-down-oci-apm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        2. Traces drill-down (OCI APM)
       
     </span>
   </a>
@@ -3790,93 +3751,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#steps" class="md-nav__link">
+  <a href="#3-rum-drill-down-oci-apm-real-user-monitoring" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Steps
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-confirm-custom-metrics-are-flowing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Confirm custom metrics are flowing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-create-an-alarm-console" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Create an alarm (Console)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-same-alarm-via-oci-cli" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Same alarm, via OCI CLI
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-trigger-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Trigger it
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-watch-the-alarm-fire" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Watch the alarm fire
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-resolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Resolve
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verify" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify
+        3. RUM drill-down (OCI APM → Real User Monitoring)
       
     </span>
   </a>
@@ -3884,10 +3762,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#4-logs-drill-down-oci-logging-log-analytics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Troubleshooting
+        4. Logs drill-down (OCI Logging → Log Analytics)
       
     </span>
   </a>
@@ -3895,10 +3773,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#read-more" class="md-nav__link">
+  <a href="#5-stack-monitoring-atp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Read more
+        5. Stack Monitoring (ATP)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-events-remediation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Events → Remediation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-end-to-end-scenario-slow-checkout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. End-to-end scenario — "slow checkout"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-everything-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where everything lives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reset-between-demos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reset between demos
       
     </span>
   </a>
@@ -3925,174 +3847,227 @@
   
 
 
-<h1 id="lab-05-custom-metric-alarm">Lab 05 — Custom metric + alarm<a class="headerlink" href="#lab-05-custom-metric-alarm" title="Permanent link">&para;</a></h1>
-<h2 id="objective">Objective<a class="headerlink" href="#objective" title="Permanent link">&para;</a></h2>
-<p>Publish a custom metric to OCI Monitoring, attach an alarm with the
-correlation contract annotations, and verify the alarm fires when
-conditions are met.</p>
-<h2 id="time-budget">Time budget<a class="headerlink" href="#time-budget" title="Permanent link">&para;</a></h2>
-<p>40 minutes.</p>
-<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Lab 01.</li>
-<li><code>OCI_COMPARTMENT_ID</code> set in the shop pod env (already done by
-  <code>deploy/init-tenancy.sh</code>).</li>
-</ul>
-<h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
-<h3 id="1-confirm-custom-metrics-are-flowing">1. Confirm custom metrics are flowing<a class="headerlink" href="#1-confirm-custom-metrics-are-flowing" title="Permanent link">&para;</a></h3>
-<p>The shop publishes a handful of custom metrics on startup
-(<code>shop/server/observability/oci_monitoring.py</code>). Confirm they're
-arriving:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">oci<span class="w"> </span>monitoring<span class="w"> </span>metric-data<span class="w"> </span>summarize-metrics-data<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-2"><span class="w">    </span>--compartment-id<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCI_COMPARTMENT_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><span class="w">    </span>--namespace<span class="w"> </span>octo_drone_shop<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-4"><span class="w">    </span>--query-text<span class="w"> </span><span class="s1">&#39;shop.checkout.count[1m].sum()&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-5"><span class="w">    </span>--start-time<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>date<span class="w"> </span>-u<span class="w"> </span>-v-1H<span class="w"> </span>+%Y-%m-%dT%H:%M:%SZ<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-6"><span class="w">    </span>--end-time<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>date<span class="w"> </span>-u<span class="w"> </span>+%Y-%m-%dT%H:%M:%SZ<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-7"><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.data[].aggregated-datapoints[-3:]&#39;</span>
+<h1 id="oci-observability-demo-drill-down">OCI Observability Demo Drill-Down<a class="headerlink" href="#oci-observability-demo-drill-down" title="Permanent link">&para;</a></h1>
+<p>One-page script for showing MELTS + Stack Monitoring drill-down against
+the live <code>shop.octodemo.cloud</code> + <code>crm.octodemo.cloud</code> deployment.</p>
+<h2 id="pre-demo-30-s">Pre-demo (30 s)<a class="headerlink" href="#pre-demo-30-s" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="c1"># Generate traffic so fresh trace/log/metric data lands during the walk-through</span>
+</span><span id="__span-0-2"><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span><span class="m">1</span>..30<span class="o">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-0-3"><span class="w">    </span>curl<span class="w"> </span>-sS<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>https://shop.octodemo.cloud/<span class="w">                      </span><span class="c1"># dashboard</span>
+</span><span id="__span-0-4"><span class="w">    </span>curl<span class="w"> </span>-sS<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>https://shop.octodemo.cloud/shop<span class="w">                  </span><span class="c1"># catalog</span>
+</span><span id="__span-0-5"><span class="w">    </span>curl<span class="w"> </span>-sS<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>https://shop.octodemo.cloud/api/products<span class="w">          </span><span class="c1"># API</span>
+</span><span id="__span-0-6"><span class="w">    </span>curl<span class="w"> </span>-sS<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>https://shop.octodemo.cloud/api/platform/status<span class="w">   </span><span class="c1"># cross-service aggregator</span>
+</span><span id="__span-0-7"><span class="w">    </span>sleep<span class="w"> </span><span class="m">1</span>
+</span><span id="__span-0-8"><span class="k">done</span>
 </span></code></pre></div>
-<p>If the array is empty, no requests have been made — generate some:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">20</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-</span><span id="__span-1-2"><span class="w">    </span>curl<span class="w"> </span>-sS<span class="w"> </span>https://drone.octodemo.cloud/api/products<span class="w"> </span>&gt;<span class="w"> </span>/dev/null
-</span><span id="__span-1-3"><span class="k">done</span>
-</span></code></pre></div>
-<p>Wait 60 s and re-query.</p>
-<h3 id="2-create-an-alarm-console">2. Create an alarm (Console)<a class="headerlink" href="#2-create-an-alarm-console" title="Permanent link">&para;</a></h3>
-<p>Console → Monitoring → <strong>Alarm Definitions → Create Alarm</strong>.</p>
+<h2 id="1-metrics-drill-down-oci-monitoring">1. Metrics drill-down (OCI Monitoring)<a class="headerlink" href="#1-metrics-drill-down-oci-monitoring" title="Permanent link">&para;</a></h2>
+<p><strong>Console path</strong>: Observability &amp; Management → Monitoring → Metrics Explorer</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Value</th>
+<th>Namespace</th>
+<th>Metric</th>
+<th>What it shows</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Alarm Name</td>
-<td><code>octo-shop-error-rate-lab05</code></td>
-</tr>
-<tr>
-<td>Alarm Severity</td>
-<td>Warning</td>
-</tr>
-<tr>
-<td>Compartment</td>
-<td>(your demo compartment)</td>
-</tr>
-<tr>
-<td>Metric Namespace</td>
 <td><code>octo_drone_shop</code></td>
+<td><code>app.health</code></td>
+<td>Rolling 0/1 heartbeat</td>
 </tr>
 <tr>
-<td>Metric Name</td>
-<td><code>shop.http.errors_5xx</code></td>
+<td><code>octo_drone_shop</code></td>
+<td><code>app.requests.rate</code></td>
+<td>Req/60s published by the pod</td>
 </tr>
 <tr>
-<td>Interval</td>
-<td>1 m</td>
+<td><code>octo_drone_shop</code></td>
+<td><code>app.errors.rate</code></td>
+<td>5xx/60s</td>
 </tr>
 <tr>
-<td>Statistic</td>
-<td>sum</td>
+<td><code>octo_drone_shop</code></td>
+<td><code>app.checkout.count</code></td>
+<td>Checkouts/min</td>
 </tr>
 <tr>
-<td>Trigger Operator</td>
-<td>greater than</td>
+<td><code>octo_drone_shop</code></td>
+<td><code>app.orders.count</code></td>
+<td>Order creations/min</td>
 </tr>
 <tr>
-<td>Trigger Value</td>
-<td>0</td>
+<td><code>octo_drone_shop</code></td>
+<td><code>app.db.latency_ms</code></td>
+<td>ATP round-trip on <code>/ready</code></td>
 </tr>
 <tr>
-<td>Alarm Body</td>
-<td><code>Shop is emitting 5xx errors. Run-id: {annotation.run_id}. Trace exemplar: {annotation.trace_exemplar}.</code></td>
+<td><code>octo_drone_shop</code></td>
+<td><code>app.crm.sync_age_s</code></td>
+<td>Seconds since last CRM sync</td>
 </tr>
 <tr>
-<td>Notifications Topic</td>
-<td>(any topic you control — or create a new one with email destination)</td>
+<td><code>octo_drone_shop</code></td>
+<td><code>app.sessions.active</code></td>
+<td>Active session gauge</td>
+</tr>
+<tr>
+<td><code>octo_drone_shop</code></td>
+<td><code>app.inventory.low_stock_products</code></td>
+<td>Products with stock &lt; 10</td>
+</tr>
+<tr>
+<td><code>oci_autonomous_database</code></td>
+<td><code>CpuUtilization</code></td>
+<td>ATP CPU %</td>
+</tr>
+<tr>
+<td><code>oci_autonomous_database</code></td>
+<td><code>CurrentLogons</code></td>
+<td>Active DB sessions</td>
+</tr>
+<tr>
+<td><code>oci_vcn</code> + <code>oci_oke_cluster</code></td>
+<td>built-in</td>
+<td>Network + node health</td>
 </tr>
 </tbody>
 </table>
-<p>Save.</p>
-<h3 id="3-same-alarm-via-oci-cli">3. Same alarm, via OCI CLI<a class="headerlink" href="#3-same-alarm-via-oci-cli" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1">oci<span class="w"> </span>monitoring<span class="w"> </span>alarm<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-2"><span class="w">    </span>--compartment-id<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCI_COMPARTMENT_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><span class="w">    </span>--display-name<span class="w"> </span><span class="s2">&quot;octo-shop-error-rate-lab05&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-4"><span class="w">    </span>--metric-compartment-id<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCI_COMPARTMENT_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-5"><span class="w">    </span>--namespace<span class="w"> </span><span class="s2">&quot;octo_drone_shop&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-6"><span class="w">    </span>--query-text<span class="w"> </span><span class="s2">&quot;shop.http.errors_5xx[1m].sum() &gt; 0&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-7"><span class="w">    </span>--severity<span class="w"> </span><span class="s2">&quot;WARNING&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-8"><span class="w">    </span>--body<span class="w"> </span><span class="s2">&quot;Shop is emitting 5xx errors. Run-id: {annotation.run_id}. Trace exemplar: {annotation.trace_exemplar}.&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-9"><span class="w">    </span>--destinations<span class="w"> </span><span class="s2">&quot;[\&quot;</span><span class="nv">$NOTIFICATIONS_TOPIC_OCID</span><span class="s2">\&quot;]&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-10"><span class="w">    </span>--is-enabled<span class="w"> </span><span class="nb">true</span>
+<p>Query template:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">octo_drone_shop/app.requests.rate[5m].mean()
 </span></code></pre></div>
-<h3 id="4-trigger-it">4. Trigger it<a class="headerlink" href="#4-trigger-it" title="Permanent link">&para;</a></h3>
-<p>Force a 5xx by hitting a route that intentionally fails:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">5</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-</span><span id="__span-3-2"><span class="w">    </span>curl<span class="w"> </span>-sS<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">&quot;%{http_code}\n&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-3"><span class="w">        </span>-X<span class="w"> </span>POST<span class="w"> </span>https://drone.octodemo.cloud/api/orders<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-4"><span class="w">        </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-5"><span class="w">        </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;customer_id&quot;: 0, &quot;items&quot;: []}&#39;</span>
-</span><span id="__span-3-6"><span class="k">done</span>
-</span></code></pre></div>
-<p>5xx responses (or 4xx — the shop emits a custom counter for both)
-should bump the metric within a minute.</p>
-<h3 id="5-watch-the-alarm-fire">5. Watch the alarm fire<a class="headerlink" href="#5-watch-the-alarm-fire" title="Permanent link">&para;</a></h3>
-<p>Console → Monitoring → Alarm Definitions → click your alarm. The
-state should flip from <code>OK</code> to <code>FIRING</code> within 60 s.</p>
-<p>The notification destination receives a payload with the annotations
-<strong>baked into the body</strong>. Check your email/Slack — the message should
-quote <code>Run-id: none</code> (since we didn't set one) and a real
-<code>Trace exemplar</code> from the offending request.</p>
-<h3 id="6-resolve">6. Resolve<a class="headerlink" href="#6-resolve" title="Permanent link">&para;</a></h3>
-<p>Wait two minutes without sending more bad requests. The alarm
-auto-resolves to <code>OK</code>.</p>
-<h2 id="verify">Verify<a class="headerlink" href="#verify" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">./tools/workshop/verify-05.sh
-</span></code></pre></div>
-<p>Expected:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1">✓ custom namespace octo_drone_shop has metrics in the last hour
-</span><span id="__span-5-2">✓ alarm &#39;octo-shop-error-rate-lab05&#39; exists
-</span><span id="__span-5-3">✓ alarm body references annotation contract (run_id, trace_exemplar)
-</span><span id="__span-5-4">PASS — Lab 05 complete
-</span></code></pre></div>
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+Build an alarm on <code>app.errors.rate[5m].sum() &gt; 5</code> → Notifications topic →
+<code>octo-remediator</code> playbook (tier-gated auto-fix).</p>
+<p><strong>Drill to a single trace</strong>: in the Metrics panel, click the spike → 
+"View related traces" → lands in APM Trace Explorer filtered to that
+window.</p>
+<h2 id="2-traces-drill-down-oci-apm">2. Traces drill-down (OCI APM)<a class="headerlink" href="#2-traces-drill-down-oci-apm" title="Permanent link">&para;</a></h2>
+<p><strong>Console path</strong>: Observability &amp; Management → APM → Trace Explorer</p>
+<ul>
+<li>Service: <code>octo-drone-shop-oke</code> and <code>enterprise-crm-portal</code>.</li>
+<li>Filter: <code>service.namespace = "octo"</code> to scope.</li>
+<li>Group-by: <code>http.route</code> to see per-endpoint latency distribution.</li>
+<li>Click a slow trace → timeline shows <code>HTTP GET /shop → sqlalchemy SELECT → httpx POST /api/orders → crm handler → ATP INSERT</code>.</li>
+<li>Every span carries <code>oracleApmTraceId</code> + <code>oracleApmSpanId</code> tags for
+  cross-linking with Log Analytics.</li>
+</ul>
+<p><strong>Typical demo flow</strong>:
+1. Filter <code>http.status_code &gt;= 500</code> over last 15 min → 0 results (healthy).
+2. Flip <code>service.name = octo-drone-shop-oke and operation = "POST /api/orders"</code> → order-creation histogram.
+3. Pick the p99 trace → expand timeline → highlight the ATP span and
+   click "Go to Log Analytics".</p>
+<h2 id="3-rum-drill-down-oci-apm-real-user-monitoring">3. RUM drill-down (OCI APM → Real User Monitoring)<a class="headerlink" href="#3-rum-drill-down-oci-apm-real-user-monitoring" title="Permanent link">&para;</a></h2>
+<p><strong>Console path</strong>: APM → Real User Monitoring → (web application: <code>octo-drone-shop-web</code>)</p>
+<ul>
+<li>Page views by URL, by country, by browser, by network type.</li>
+<li>Core Web Vitals: LCP, FID, CLS.</li>
+<li>Beacon → filter by <code>session_id</code> → full user journey.</li>
+</ul>
+<p>The beacon JS is embedded in <code>shop/server/templates/base.html</code>; public
+data key lands via the <code>octo-apm</code> K8s secret. Registration of the web
+application is a one-time OCI Console step — see
+<a href="https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md">OBSERVABILITY-BOOTSTRAP.md §7a</a>.</p>
+<h2 id="4-logs-drill-down-oci-logging-log-analytics">4. Logs drill-down (OCI Logging → Log Analytics)<a class="headerlink" href="#4-logs-drill-down-oci-logging-log-analytics" title="Permanent link">&para;</a></h2>
+<p><strong>Console path</strong>: Observability &amp; Management → Logging → Search</p>
+<ul>
+<li>Log Group: <code>octo-apm-demo</code></li>
+<li>Custom Logs: <code>octo-app</code>, <code>octo-chaos-audit</code>, <code>octo-security</code>.</li>
+</ul>
+<p><strong>Trace → logs</strong> correlation:
+1. Copy the <code>oracleApmTraceId</code> from an APM span.
+2. In Log Analytics, search <code>'oracleApmTraceId' = '&lt;id&gt;'</code> against source
+   <code>octo-shop-app-json</code>.
+3. Every log line produced during that request appears.</p>
+<p><strong>Saved searches</strong> (in <code>tools/la-saved-searches/</code>):
+- <code>slow-checkout-spans.json</code> — checkout &gt; p95 + their correlated logs
+- <code>errors-by-route.json</code> — 5xx grouped by http.route over 1h
+- <code>trace-to-logs.json</code> — one trace ID → all logs</p>
+<h2 id="5-stack-monitoring-atp">5. Stack Monitoring (ATP)<a class="headerlink" href="#5-stack-monitoring-atp" title="Permanent link">&para;</a></h2>
+<p><strong>Console path</strong>: Observability &amp; Management → Stack Monitoring → Monitored Resources → Autonomous Databases</p>
+<ul>
+<li>Resource: <code>octo-apm-demo-atp</code> (registered by
+  <code>deploy/terraform/modules/stack_monitoring</code>).</li>
+<li>Tabs: Overview, Metrics, Health History, Events, Alerts.</li>
+<li><strong>Demo click</strong>: SQL Performance → Top SQL tab → expand one statement →
+  <code>EXPLAIN PLAN</code> + wait event breakdown.</li>
+</ul>
+<p><strong>Cross-drill</strong>: from a shop pod trace in APM → click the DB span →
+Stack Monitoring loads the session with execution stats. This is the
+magic moment — one click spans three services.</p>
+<h2 id="6-events-remediation">6. Events → Remediation<a class="headerlink" href="#6-events-remediation" title="Permanent link">&para;</a></h2>
+<p><strong>Console path</strong>: Observability → Events → Rules</p>
+<ul>
+<li>Rule <code>octo-alarm-5xx-burst</code> fires on Monitoring alarm <code>app.errors.rate &gt; 5 for 5m</code>.</li>
+<li>Action: publish to Notifications topic <code>octo-alarms</code>.</li>
+<li>Subscriber: <code>octo-remediator</code> pod (HTTP endpoint).</li>
+<li>Remediator runs tier-gated playbook:</li>
+<li>LOW → auto-apply</li>
+<li>MEDIUM → wait for confirmation in Slack</li>
+<li>HIGH → page on-call</li>
+</ul>
+<p>Demo: <code>curl -X POST https://shop.octodemo.cloud/api/admin/chaos/apply \
+  -d '{"scenario_id":"payment-timeout"}'</code> → watch remediator react.</p>
+<h2 id="7-end-to-end-scenario-slow-checkout">7. End-to-end scenario — "slow checkout"<a class="headerlink" href="#7-end-to-end-scenario-slow-checkout" title="Permanent link">&para;</a></h2>
+<ol>
+<li>User reports <code>/checkout</code> is slow.</li>
+<li>APM Trace Explorer → filter <code>http.route = "POST /api/orders" and duration &gt; 2000ms</code>. One trace.</li>
+<li>Timeline shows 1.8 s spent in the <code>sqlalchemy SELECT customers</code> span.</li>
+<li>Click "Go to Stack Monitoring for this DB".</li>
+<li>SQL Performance → the offending SELECT is listed with <code>cpu_time_delta = 1.7s</code> and wait event <code>latch free</code>.</li>
+<li>Stack Monitoring's Advisor recommends an index on <code>customers.email</code>.</li>
+<li>Remediator playbook <code>create-index-customers-email</code> runs (LOW tier, auto-approved) after a one-line Slack confirmation.</li>
+<li>Metrics Explorer: <code>app.requests.rate</code> unchanged, <code>app.errors.rate</code>
+   flat, but the <code>oci_autonomous_database/CpuUtilization</code> drops by 30 %.</li>
+</ol>
+<p>That's the 5-minute demo.</p>
+<h2 id="where-everything-lives">Where everything lives<a class="headerlink" href="#where-everything-lives" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Symptom</th>
-<th>Cause</th>
-<th>Fix</th>
+<th>Signal</th>
+<th>Publisher</th>
+<th>Endpoint</th>
+<th>Code</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Empty <code>metric-data summarize-metrics-data</code></td>
-<td>App not publishing</td>
-<td>Check pod env <code>OCI_COMPARTMENT_ID</code>; restart pod</td>
+<td>Traces</td>
+<td>App → OTel SDK → <code>octo-otel-gateway</code> → OCI APM</td>
+<td><code>https://&lt;apm-domain&gt;.apm-agt.&lt;region&gt;.oci.oraclecloud.com</code></td>
+<td><code>shop/server/observability/otel_setup.py</code></td>
 </tr>
 <tr>
-<td>Alarm never fires</td>
-<td>Wrong query operator</td>
-<td><code>&gt; 0</code> is the trick; <code>&gt; 1</code> would need 2+ errors per minute</td>
+<td>Metrics</td>
+<td>App → MonitoringClient</td>
+<td><code>https://telemetry-ingestion.&lt;region&gt;.oraclecloud.com</code> <strong>(WRITE — not <code>telemetry.*</code>, see KB-456)</strong></td>
+<td><code>shop/server/observability/oci_monitoring.py</code></td>
 </tr>
 <tr>
-<td>Alarm body has literal <code>{annotation.run_id}</code></td>
-<td>Annotation not set on the metric</td>
-<td>The annotation contract requires the publisher to send the value; for now, leave it as <code>none</code> until lab 09 (chaos drill)</td>
+<td>Logs</td>
+<td>App → LoggingIngestionClient</td>
+<td><code>https://ingestion.logging.&lt;region&gt;.oci.oraclecloud.com</code></td>
+<td><code>shop/server/observability/logging_sdk.py</code></td>
+</tr>
+<tr>
+<td>RUM</td>
+<td>Browser → RUM beacon</td>
+<td><code>https://&lt;apm-domain&gt;.apm-agt.&lt;region&gt;.oci.oraclecloud.com</code></td>
+<td><code>shop/server/templates/base.html</code></td>
+</tr>
+<tr>
+<td>Stack Monitoring</td>
+<td>OCI-managed (ATP auto-reports)</td>
+<td>n/a</td>
+<td><code>deploy/terraform/modules/stack_monitoring</code></td>
 </tr>
 </tbody>
 </table>
-<h2 id="read-more">Read more<a class="headerlink" href="#read-more" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../observability/metrics/">Observability → Metrics</a></li>
-<li><a href="../../operations/alarms/">Operations → Alarms &amp; Health</a></li>
-<li><a href="https://docs.oracle.com/en-us/iaas/Content/Monitoring/home.htm">OCI Monitoring docs</a></li>
-</ul>
-<hr />
-<p><a href="../lab-04-rum-outage-detection/">← Lab 04</a>
-&nbsp;&nbsp;|&nbsp;&nbsp;
-<a href="../lab-06-waf-event-investigation/">Next: Lab 06 → WAF event investigation →</a></p>
+<h2 id="reset-between-demos">Reset between demos<a class="headerlink" href="#reset-between-demos" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="c1"># Flush accumulated order rows + chaos state, then re-seed products.</span>
+</span><span id="__span-2-2">kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>deploy/octo-drone-shop<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><span class="w">    </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from server.database import reset_demo_data; reset_demo_data()&quot;</span>
+</span></code></pre></div>
 
 
 
@@ -4130,7 +4105,7 @@ auto-resolves to <code>OK</code>.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../lab-04-rum-outage-detection/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Lab 04 — RUM outage detection">
+          <a href="../wire-up/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Signal wire-up map">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4140,20 +4115,20 @@ auto-resolves to <code>OK</code>.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Lab 04 — RUM outage detection
+                Signal wire-up map
               </div>
             </div>
           </a>
         
         
           
-          <a href="../lab-06-waf-event-investigation/" class="md-footer__link md-footer__link--next" aria-label="Next: Lab 06 — WAF event investigation">
+          <a href="../../observability-v2/" class="md-footer__link md-footer__link--next" aria-label="Next: Observability v2">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Lab 06 — WAF event investigation
+                Observability v2
               </div>
             </div>
             <div class="md-footer__button md-icon">
