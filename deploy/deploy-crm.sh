@@ -83,6 +83,27 @@ if $ROLLOUT; then
         IMAGE="${OCIR_REPO}:latest"
     fi
 
+    # First-time apply branch — render manifest via envsubst.
+    if ! kubectl get "deployment/${DEPLOYMENT}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+        echo
+        echo "[4/4] Deployment missing — first-time apply with envsubst..."
+        : "${OCIR_REGION:?Set OCIR_REGION for first-time apply}"
+        : "${OCIR_TENANCY:?Set OCIR_TENANCY for first-time apply}"
+        export OCIR_REGION OCIR_TENANCY DNS_DOMAIN SHOP_PUBLIC_URL CRM_PUBLIC_URL
+        export IMAGE_TAG="${TAG}"
+        manifest_dir="${REPO_ROOT}/deploy/k8s/oke/crm"
+        if [[ ! -d "${manifest_dir}" ]]; then
+            manifest_dir="${REPO_ROOT}/deploy/k8s/crm"
+        fi
+        command -v envsubst >/dev/null 2>&1 || {
+            echo "envsubst not found — install gettext (brew install gettext / apt-get install gettext-base)" >&2
+            exit 1
+        }
+        for f in "${manifest_dir}"/*.yaml; do
+            envsubst < "$f" | kubectl apply -n "${NAMESPACE}" -f -
+        done
+    fi
+
     echo
     echo "[4/4] Rolling out ${DEPLOYMENT} → ${IMAGE}..."
     kubectl set env "deployment/${DEPLOYMENT}" \

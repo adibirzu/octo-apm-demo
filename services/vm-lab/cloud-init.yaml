@@ -5,6 +5,20 @@
 # into Stack Monitoring) + stress-ng + the lab scripts cloned from the
 # repo. The VM sits idle until an operator runs
 # `apply-stress.sh KIND=cpu`.
+#
+# TENANCY PORTABILITY: this cloud-init template contains two regional
+# placeholders that MUST be substituted via envsubst before upload to
+# the VM (or via a Terraform `template_file` resource):
+#
+#   ${OCI_REGION}                       — e.g. us-ashburn-1 / eu-frankfurt-1
+#   ${MGMT_AGENT_BUCKET_NAMESPACE}      — Object Storage namespace hosting
+#                                         the Management Agent installer
+#                                         for this tenancy
+#
+# Example render:
+#   export OCI_REGION=eu-frankfurt-1
+#   export MGMT_AGENT_BUCKET_NAMESPACE=<your-tenancy-ns>
+#   envsubst < cloud-init.yaml > cloud-init.rendered.yaml
 
 package_update: true
 packages:
@@ -12,8 +26,9 @@ packages:
   - stress-ng
 
 runcmd:
-  # 1. Install OCI Management Agent (installer script requires internet)
-  - curl -fsSL https://objectstorage.us-ashburn-1.oraclecloud.com/n/idpviou0lb01/b/management-agent-install/o/install.py | sudo python3 - || true
+  # 1. Install OCI Management Agent — installer is region-pinned, and the
+  #    bucket namespace differs per tenancy.
+  - curl -fsSL "https://objectstorage.${OCI_REGION}.oraclecloud.com/n/${MGMT_AGENT_BUCKET_NAMESPACE}/b/management-agent-install/o/install.py" | sudo python3 - || true
 
   # 2. Clone octo-apm-demo to /opt/octo for the lab scripts
   - git clone --depth 1 https://github.com/adibirzu/octo-apm-demo.git /opt/octo

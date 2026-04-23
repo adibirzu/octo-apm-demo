@@ -1,0 +1,222 @@
+<mxfile host="app.diagrams.net" modified="2026-04-23T07:00:00.000Z" agent="octo-apm-demo" version="24.0.0" type="device">
+  <diagram name="Platform Overview" id="platform-overview">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="OCTO-APM-DEMO — Platform Overview" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1F2937" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1320" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="users" value="End users&#xa;(browsers + mobile)" style="shape=mxgraph.cisco19.user;html=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;fontColor=#111827;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="60" y="120" width="48" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="waf" value="OCI WAF&#xa;(DETECTION mode)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="120" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lb" value="OCI LoadBalancer&#xa;TLS + cert rotation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="460" y="120" width="170" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apigw" value="OCI API Gateway&#xa;rate limit + auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="690" y="120" width="170" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="oke" value="OCI OKE (Kubernetes) — namespaces: octo-drone-shop, enterprise-crm, ops" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;fontSize=13;fontStyle=1;verticalAlign=top;fontColor=#1E1B4B" vertex="1" parent="1">
+          <mxGeometry x="40" y="230" width="1320" height="380" as="geometry" />
+        </mxCell>
+
+        <mxCell id="shop" value="octo-drone-shop&#xa;FastAPI + Jinja + HTMX&#xa;port 8080" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="280" width="180" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="crm" value="enterprise-crm-portal&#xa;FastAPI + Jinja&#xa;port 8080" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="300" y="280" width="180" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="otelcol" value="octo-otel-gateway&#xa;OTel Collector&#xa;OTLP gRPC/HTTP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="530" y="280" width="170" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="asyncworker" value="octo-async-worker&#xa;Redis Streams consumer&#xa;(order sync, retries)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="740" y="280" width="170" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="remediator" value="octo-remediator&#xa;alarm-driven actions&#xa;(tier-gated)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="940" y="280" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="browser" value="octo-browser-runner&#xa;Playwright journeys&#xa;(synthetic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#6366F1;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1130" y="280" width="190" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="loadctl" value="octo-load-control&#xa;named profile orchestrator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#6366F1;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="400" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wfgw" value="octo-workflow-gateway&#xa;Go, HTTP router + OTel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="310" y="400" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cache" value="octo-cache&#xa;Redis client wrapper + OTel spans" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#9333EA;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="540" y="400" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="objpipe" value="octo-object-pipeline&#xa;Object Storage drainer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#9333EA;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="790" y="400" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge" value="octo-edge-gateway&#xa;TypeScript fuzzing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#6366F1;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1020" y="400" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="oke-legend" value="Application pods (FastAPI/Go) — Instrumentation layer (OTel) — Control plane (remediator/load-control) — Edge + synthetic (Playwright/TS)" style="text;html=1;align=left;fontSize=10;fontColor=#4B5563" vertex="1" parent="1">
+          <mxGeometry x="80" y="500" width="1280" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="datazone" value="Data plane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#9CA3AF;fontSize=13;fontStyle=1;verticalAlign=top;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="540" width="640" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="atp" value="Oracle Autonomous DB (ATP)&#xa;shared orders/customers/chaos_state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EF4444;strokeColor=#991B1B;fontColor=#FFFFFF;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="550" width="240" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="redis" value="OCI Cache (Redis)&#xa;streams + cache + rate-limit buckets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F97316;strokeColor=#9A3412;fontColor=#FFFFFF;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="320" y="550" width="220" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="objstor" value="OCI Object Storage&#xa;chaos state + wallet + artifacts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FB923C;strokeColor=#9A3412;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="560" y="550" width="110" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="obszone" value="OCI Observability + Security services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=13;fontStyle=1;verticalAlign=top;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="1320" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apm" value="OCI APM&#xa;traces + RUM&#xa;(apm-domain)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="690" width="130" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="monitoring" value="OCI Monitoring&#xa;custom metrics&#xa;(octo_drone_shop)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="210" y="690" width="130" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="logging" value="OCI Logging&#xa;app + chaos-audit + security&#xa;(LoggingIngestionClient)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="360" y="690" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="la" value="OCI Log Analytics&#xa;sources: octo-shop-app-json, octo-waf, chaos-audit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="550" y="690" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="stackmon" value="OCI Stack Monitoring&#xa;ATP monitored resource&#xa;(SQL perf + wait events)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="770" y="690" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="events" value="OCI Events + Alarms&#xa;→ Notifications topic&#xa;→ remediator trigger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="960" y="690" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="vault" value="OCI Vault&#xa;secrets + AES-256 master key&#xa;(Secrets Store CSI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1150" y="690" width="180" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="idcs" value="OCI IAM Identity Domain (IDCS)&#xa;SSO / ID-token (PyJWT)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="790" width="240" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="genai" value="OCI Generative AI&#xa;assistant (retrieval-augmented)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="320" y="790" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cloudguard" value="OCI Cloud Guard&#xa;posture + detectors" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="540" y="790" width="170" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="seczone" value="OCI Security Zone&#xa;compartment policy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="730" y="790" width="170" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ocir" value="OCI Container Registry (OCIR)&#xa;&lt;region&gt;.ocir.io/&lt;ns&gt;/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="920" y="790" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf" value="Terraform modules&#xa;atp, vault, logging, object_storage,&#xa;stack_monitoring, apm_domain, waf, iam" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#EA580C;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1160" y="790" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1F2937" edge="1" parent="1" source="users" target="waf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1F2937" edge="1" parent="1" source="waf" target="lb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1F2937" edge="1" parent="1" source="lb" target="apigw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#1F2937" edge="1" parent="1" source="apigw" target="oke">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#059669;dashed=1" edge="1" parent="1" source="shop" target="otelcol">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#059669;dashed=1" edge="1" parent="1" source="crm" target="otelcol">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#7C3AED" edge="1" parent="1" source="shop" target="asyncworker">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#7C3AED" edge="1" parent="1" source="asyncworker" target="crm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#991B1B" edge="1" parent="1" source="shop" target="atp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#991B1B" edge="1" parent="1" source="crm" target="atp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9A3412" edge="1" parent="1" source="shop" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#9A3412" edge="1" parent="1" source="asyncworker" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#059669" edge="1" parent="1" source="otelcol" target="apm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#059669" edge="1" parent="1" source="otelcol" target="monitoring">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#059669" edge="1" parent="1" source="shop" target="logging">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#059669" edge="1" parent="1" source="crm" target="logging">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#15803D;dashed=1" edge="1" parent="1" source="logging" target="la">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#15803D;dashed=1" edge="1" parent="1" source="atp" target="stackmon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#DC2626" edge="1" parent="1" source="events" target="remediator">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2563EB;dashed=1" edge="1" parent="1" source="vault" target="oke">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

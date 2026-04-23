@@ -107,6 +107,28 @@ if $ROLLOUT; then
         IMAGE="${OCIR_REPO}:latest"
     fi
 
+    # First-time apply: if the Deployment doesn't exist yet, render the
+    # manifest with envsubst and create it. Otherwise fall through to the
+    # faster `set image` + `set env` path.
+    if ! kubectl get "deployment/${DEPLOYMENT}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+        echo "[4/4] Deployment missing — first-time apply with envsubst..."
+        : "${OCIR_REGION:?Set OCIR_REGION for first-time apply (e.g. eu-frankfurt-1)}"
+        : "${OCIR_TENANCY:?Set OCIR_TENANCY for first-time apply (object storage namespace)}"
+        export OCIR_REGION OCIR_TENANCY DNS_DOMAIN CRM_PUBLIC_URL
+        export IMAGE_TAG="${TAG}"
+        manifest_dir="${REPO_ROOT}/deploy/k8s/oke/shop"
+        if [[ ! -d "${manifest_dir}" ]]; then
+            manifest_dir="${REPO_ROOT}/deploy/k8s/shop"
+        fi
+        command -v envsubst >/dev/null 2>&1 || {
+            echo "envsubst not found — install gettext (brew install gettext / apt-get install gettext-base)" >&2
+            exit 1
+        }
+        for f in "${manifest_dir}"/*.yaml; do
+            envsubst < "$f" | kubectl apply -n "${NAMESPACE}" -f -
+        done
+    fi
+
     echo ""
     echo "[4/4] Rolling out ${DEPLOYMENT} → ${IMAGE}..."
     echo "[4/4] Setting CRM_PUBLIC_URL=${CRM_PUBLIC_URL}"

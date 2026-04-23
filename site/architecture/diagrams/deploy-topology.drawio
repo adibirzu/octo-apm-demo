@@ -1,0 +1,129 @@
+<mxfile host="app.diagrams.net" modified="2026-04-23T07:00:00.000Z" agent="octo-apm-demo" version="24.0.0" type="device">
+  <diagram name="Deploy Topology" id="deploy-topology">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="OCTO-APM-DEMO — Deploy Topology: Build, Registry, Target Options" style="text;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1F2937" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1320" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="subtitle" value="Build path → OCIR → three deploy targets: OKE, single-VM (docker compose), local-stack (regression only)" style="text;html=1;align=center;verticalAlign=middle;fontSize=12;fontColor=#4B5563" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1320" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dev" value="Developer laptop (Apple Silicon)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;fontSize=12;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="300" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="src" value="git clone octo-apm-demo&#xa;+ shop-src + crm-src subtree" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6B7280;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="150" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="rsync" value="rsync -az shop/ + services/ →&#xa;control-plane-oci (x86_64 VM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6B7280;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="210" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="terraform-cli" value="terraform apply (from laptop)&#xa;reads terraform.tfvars" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6B7280;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="270" width="270" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="builder" value="Remote build host (x86_64)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="390" y="110" width="300" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="dockerbuild" value="docker build -f shop/Dockerfile .&#xa;docker build -f crm/Dockerfile .&#xa;(multi-stage, non-root, pinned base)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="405" y="150" width="270" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="tag" value="Tag: latest + timestamp&#xa;(YYYYMMDDHHMMSS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="405" y="240" width="270" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="push" value="docker push to OCIR&#xa;(prunes stale tags, keeps last 3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="405" y="300" width="270" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ocir" value="OCIR&#xa;&lt;region&gt;.ocir.io/&lt;ns&gt;/&#xa;• octo-drone-shop&#xa;• enterprise-crm-portal&#xa;• octo-workflow-gateway&#xa;• octo-otel-gateway&#xa;• octo-browser-runner&#xa;• octo-async-worker&#xa;• octo-remediator&#xa;• octo-object-pipeline&#xa;• octo-load-control" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=11;fontStyle=1;verticalAlign=top;align=left" vertex="1" parent="1">
+          <mxGeometry x="740" y="110" width="280" height="250" as="geometry" />
+        </mxCell>
+
+        <mxCell id="targets-label" value="Target: pick one (or all)" style="text;html=1;align=center;fontSize=14;fontStyle=1;fontColor=#1F2937" vertex="1" parent="1">
+          <mxGeometry x="40" y="400" width="1320" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="oke" value="1. OKE (production)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4F46E5;fontSize=13;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="40" y="440" width="420" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="oke-deploy" value="deploy/deploy-shop.sh + deploy-crm.sh&#xa;first-time: envsubst &lt; *.yaml | kubectl apply&#xa;subsequent: kubectl set image + set env" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="475" width="390" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oke-ingress" value="LoadBalancer Service + WAF policy&#xa;DNS: drone.${DNS_DOMAIN}, backend.${DNS_DOMAIN}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="555" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="oke-secrets" value="Vault via Secrets Store CSI&#xa;7 secrets: auth, atp, apm, logging, sso, genai, integrations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="615" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="oke-hpa" value="HPA: 2-6 replicas per service&#xa;CPU 70% + custom metric (queue depth)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="675" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="oke-obs" value="Full OCI observability stack&#xa;APM + RUM + Logging + LA + Stack Monitoring + Events" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="55" y="735" width="390" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="vm" value="2. Single-VM (demo / air-gapped)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;fontSize=13;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="490" y="440" width="420" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="vm-compose" value="deploy/vm/docker-compose-unified.yml&#xa;shop + crm + nginx (TLS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="505" y="475" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="vm-atp" value="Oracle ATP (managed)&#xa;wallet mounted at /opt/oracle/wallet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="505" y="535" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="vm-ma" value="OCI Management Agent on VM&#xa;(host metrics → Stack Monitoring)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="505" y="595" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="vm-env" value=".env file sourced from Vault (optional)&#xa;or KMS-encrypted envelope" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="505" y="655" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="vm-obs" value="Same OCI observability stack as OKE&#xa;(instance principal auth)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBF7D0;strokeColor=#15803D;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="505" y="715" width="390" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="local" value="3. local-stack (regression only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3F2;strokeColor=#DC2626;fontSize=13;fontStyle=1;verticalAlign=top" vertex="1" parent="1">
+          <mxGeometry x="940" y="440" width="420" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="local-compose" value="deploy/local-stack/docker-compose.test.yml&#xa;build context = repo root" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DC2626;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="955" y="475" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="local-pg" value="Postgres 16 (ATP stand-in)&#xa;Redis 7 (cache, streams, rate-limit)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DC2626;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="955" y="535" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="local-ports" value="Host ports:&#xa;18080 shop, 18090 crm, 15432 pg, 16379 redis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DC2626;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="955" y="595" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="local-disabled" value="OCI exporters DISABLED&#xa;(OCI_AUTH_MODE=disabled, OTLP endpoint empty)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DC2626;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="955" y="655" width="390" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="local-use" value="Use for: Playwright E2E, k6, CI without OCI creds&#xa;NOT for: ATP-specific SQL paths, OCI integration smoke" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#991B1B;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="955" y="715" width="390" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf-callout" value="Terraform modules (run once per tenancy):&#xa;atp, vault, object_storage, logging, stack_monitoring, apm_domain, waf, log_pipeline, iam, api_gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#EA580C;fontSize=11;align=left" vertex="1" parent="1">
+          <mxGeometry x="40" y="850" width="1320" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#6B7280" edge="1" parent="1" source="dev" target="builder">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#D97706" edge="1" parent="1" source="builder" target="ocir">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2563EB" edge="1" parent="1" source="ocir" target="oke">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2563EB" edge="1" parent="1" source="ocir" target="vm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#DC2626;dashed=1" edge="1" parent="1" source="dev" target="local">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

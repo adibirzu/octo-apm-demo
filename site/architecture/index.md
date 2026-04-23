@@ -14,9 +14,28 @@ The OCTO Drone Shop uses a **modular, framework-based architecture** that enable
 
 | Component | Tech | Routes | Purpose |
 |---|---|---|---|
-| Drone Shop | Python/FastAPI | 98 | Commerce, SSO, chaos, observability, CRM sync |
+| Drone Shop | Python/FastAPI | 114 | Commerce, SSO, chaos, observability, CRM sync, payment webhooks, partner/public APIs, platform status |
 | Workflow Gateway | Go | ~15 | Select AI, query lab, ATP sweeps, component health |
-| Enterprise CRM | Python/FastAPI | ~80 | CRM, simulation proxy, distributed traces |
+| Enterprise CRM | Python/FastAPI | 132 | CRM, simulation proxy, distributed traces, chaos admin, cross-service contract |
+| OTel Gateway | OTel Collector | — | Central OTLP ingress → OCI APM + Prometheus + file |
+| Async Worker | Python | — | Redis-Streams consumer for order fan-out + XCLAIM recovery |
+| Remediator | Python | — | Alarm-driven playbooks (LOW/MEDIUM/HIGH tier gating) |
+| Browser Runner | Playwright + TS | — | Synthetic journey executor |
+| Load Control | Python | — | Named-profile traffic orchestrator |
+| Cache | Redis + client | — | OTel-instrumented cache with span enrichment |
+| Edge Gateway | TypeScript | — | Edge-fuzz + request shaping |
+| Object Pipeline | Python | — | Object Storage drainer + upload |
+
+## Diagrams
+
+Drawio sources live in [`diagrams/`](diagrams/README.md) and open at
+[app.diagrams.net](https://app.diagrams.net):
+
+- **Platform Overview** — [`diagrams/platform-overview.drawio`](diagrams/platform-overview.drawio). Users → WAF → OKE → data + observability plane, every service + every OCI backend.
+- **Observability Flow** — [`diagrams/observability-flow.drawio`](diagrams/observability-flow.drawio). MELTS signal flow: traces / logs / metrics / events / SQL-perf routed to OCI APM / Logging / Log Analytics / Stack Monitoring / Events.
+- **Deploy Topology** — [`diagrams/deploy-topology.drawio`](diagrams/deploy-topology.drawio). Build path + OCIR + three deploy targets (OKE, single-VM, local-stack).
+
+See the [diagrams README](diagrams/README.md) for the shape / colour legend and CLI re-render commands.
 
 ## Sections
 
