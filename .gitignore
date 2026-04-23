@@ -44,7 +44,6 @@ coordinator.log
 debug_restart*.log
 
 # Terraform
-.terraform/
 *.tfstate
 *.tfstate.backup
 deploy/resource-manager/build/
@@ -54,3 +53,5 @@ deploy/credentials.env
 deploy/vm/nginx/tls/shop/*.pem
 deploy/vm/nginx/tls/crm/*.pem
 deploy/vm/wallet/
+.terraform/
+.terraform.lock.hcl

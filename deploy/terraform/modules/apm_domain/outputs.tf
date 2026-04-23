@@ -29,8 +29,8 @@ output "apm_private_datakey" {
 }
 
 output "rum_web_application_id" {
-  value       = var.create_rum_web_app ? oci_apm_config_config.rum_web_app[0].id : ""
-  description = "OCID of the RUM web application config (set as OCI_APM_WEB_APPLICATION)."
+  value       = ""
+  description = "RUM web application OCID — returned by the OCI Console after manual registration (see main.tf note). Leave OCI_APM_WEB_APPLICATION empty for beacon-only use."
 }
 
 output "rum_endpoint" {

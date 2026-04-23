@@ -4,7 +4,7 @@
 ###############################################################################
 
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.5.0"
   required_providers {
     oci = {
       source  = "oracle/oci"
@@ -219,12 +219,12 @@ module "la_pipeline_app_logs" {
 ###############################################################################
 
 module "atp" {
-  source                   = "./modules/atp"
-  count                    = var.create_atp ? 1 : 0
-  compartment_id           = var.compartment_id
-  admin_password           = var.atp_admin_password
-  wallet_password          = var.atp_wallet_password
-  whitelisted_ips          = var.atp_whitelisted_ips
+  source          = "./modules/atp"
+  count           = var.create_atp ? 1 : 0
+  compartment_id  = var.compartment_id
+  admin_password  = var.atp_admin_password
+  wallet_password = var.atp_wallet_password
+  whitelisted_ips = var.atp_whitelisted_ips
 }
 
 module "vault" {

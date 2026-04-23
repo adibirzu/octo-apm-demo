@@ -38,21 +38,21 @@ variable "key_display_name" {
 variable "secrets" {
   type = map(string)
   default = {
-    INTERNAL_SERVICE_KEY       = ""
-    AUTH_TOKEN_SECRET          = ""
-    APP_SECRET_KEY             = ""
-    BOOTSTRAP_ADMIN_PASSWORD   = ""
-    ORACLE_PASSWORD            = ""
-    ORACLE_WALLET_PASSWORD     = ""
-    OCI_APM_PRIVATE_DATAKEY    = ""
-    OCI_APM_PUBLIC_DATAKEY     = ""
-    IDCS_CLIENT_ID             = ""
-    IDCS_CLIENT_SECRET         = ""
-    SLACK_WEBHOOK_URL          = ""
-    STRIPE_API_KEY             = ""
-    STRIPE_WEBHOOK_SECRET      = ""
-    PAYPAL_CLIENT_ID           = ""
-    PAYPAL_CLIENT_SECRET       = ""
+    INTERNAL_SERVICE_KEY     = ""
+    AUTH_TOKEN_SECRET        = ""
+    APP_SECRET_KEY           = ""
+    BOOTSTRAP_ADMIN_PASSWORD = ""
+    ORACLE_PASSWORD          = ""
+    ORACLE_WALLET_PASSWORD   = ""
+    OCI_APM_PRIVATE_DATAKEY  = ""
+    OCI_APM_PUBLIC_DATAKEY   = ""
+    IDCS_CLIENT_ID           = ""
+    IDCS_CLIENT_SECRET       = ""
+    SLACK_WEBHOOK_URL        = ""
+    STRIPE_API_KEY           = ""
+    STRIPE_WEBHOOK_SECRET    = ""
+    PAYPAL_CLIENT_ID         = ""
+    PAYPAL_CLIENT_SECRET     = ""
   }
   sensitive = true
 }
@@ -121,6 +121,6 @@ output "master_key_id" {
 }
 
 output "secret_ids" {
-  value = { for k, s in oci_vault_secret.this : k => s.id }
+  value       = { for k, s in oci_vault_secret.this : k => s.id }
   description = "Map of secret name → secret OCID — feed to SecretProviderClass."
 }
