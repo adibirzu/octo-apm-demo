@@ -1,0 +1,8 @@
+# Placeholder so the directory exists in git.
+#
+# Drop the OCI APM Java agent zip here as `apm-java-agent.zip` to have
+# the deploy script unpack it and bundle into the image.
+#
+# The agent is downloaded from:
+#   OCI Console → Observability & Management → APM → <APM Domain>
+#     → Agent Registration Keys → Java
