@@ -8,7 +8,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: enterprise-crm-portal
-  namespace: octo-backend-prod
+  namespace: ${K8S_NAMESPACE_CRM}
   labels:
     app: enterprise-crm-portal
     app.kubernetes.io/part-of: octo-apm-demo
@@ -197,7 +197,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: enterprise-crm-portal
-  namespace: octo-backend-prod
+  namespace: ${K8S_NAMESPACE_CRM}
   labels:
     app: enterprise-crm-portal
 spec:
@@ -214,7 +214,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: enterprise-crm-portal-lb
-  namespace: octo-backend-prod
+  namespace: ${K8S_NAMESPACE_CRM}
   annotations:
     service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
     service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
@@ -239,7 +239,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: enterprise-crm-portal
-  namespace: octo-backend-prod
+  namespace: ${K8S_NAMESPACE_CRM}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -266,7 +266,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: enterprise-crm-portal
-  namespace: octo-backend-prod
+  namespace: ${K8S_NAMESPACE_CRM}
 spec:
   minAvailable: 1
   selector:
