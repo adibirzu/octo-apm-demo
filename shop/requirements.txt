@@ -29,6 +29,11 @@ PyJWT[crypto]==2.12.1
 
 psutil>=7.2.2
 
+# Transitive — opentelemetry-instrumentation imports `packaging` but
+# does not declare it as a runtime dep on some platforms. Pin here so
+# container builds are reproducible.
+packaging>=23.0
+
 # Redis client — rate limit + cache + async order stream
 redis[hiredis]>=5.0,<6.0
 
