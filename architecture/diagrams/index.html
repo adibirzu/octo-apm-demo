@@ -1204,6 +1204,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#authoring-gotchas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authoring gotchas
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3024,6 +3035,8 @@
       
         
       
+        
+      
     
     
     
@@ -3093,6 +3106,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/deploy-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deploy Readiness
   
 
     
@@ -3591,6 +3632,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#authoring-gotchas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authoring gotchas
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3664,6 +3716,38 @@ on the PR can then diff the image directly.</p>
 </ul>
 <p>Arrows with <strong>solid</strong> strokes = synchronous request path. <strong>Dashed</strong>
 strokes = asynchronous, event-driven, or configuration flow.</p>
+<h2 id="authoring-gotchas">Authoring gotchas<a class="headerlink" href="#authoring-gotchas" title="Permanent link">&para;</a></h2>
+<p>drawio silently rejects a whole diagram if any <code>mxCell value="…"</code>
+attribute contains constructs its parser does not handle. Avoid:</p>
+<ul>
+<li>HTML-escaped angle brackets inside text (<code>&amp;lt;region&amp;gt;</code>) — use
+  literal placeholders like <code>REGION.ocir.io/NAMESPACE/</code> instead.</li>
+<li>Unicode bullets (<code>•</code>) — use hyphens or numbered lists.</li>
+<li>Un-escaped quotation marks in node labels — use <code>&amp;quot;</code> or drop.</li>
+<li>Hex line-break entities (<code>&amp;#xa;</code>) — prefer decimal <code>&amp;#10;</code>. Both
+  are LF but decimal parses more reliably across drawio versions.</li>
+</ul>
+<p>When in doubt, validate XML locally:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1">python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import xml.etree.ElementTree as ET; ET.parse(&#39;file.drawio&#39;); print(&#39;OK&#39;)&quot;</span>
+</span></code></pre></div>
+<p>…and run the duplicate-id + dangling-edge check:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1">python3<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;&#39;PY&#39;</span>
+</span><span id="__span-2-2"><span class="s">import xml.etree.ElementTree as ET</span>
+</span><span id="__span-2-3"><span class="s">tree = ET.parse(&#39;file.drawio&#39;)</span>
+</span><span id="__span-2-4"><span class="s">ids = [c.get(&#39;id&#39;) for c in tree.iter(&#39;mxCell&#39;)]</span>
+</span><span id="__span-2-5"><span class="s">dups = [i for i in set(ids) if ids.count(i) &gt; 1]</span>
+</span><span id="__span-2-6"><span class="s">print(f&#39;cells={len(ids)} unique={len(set(ids))} dups={dups}&#39;)</span>
+</span><span id="__span-2-7"><span class="s">for c in tree.iter(&#39;mxCell&#39;):</span>
+</span><span id="__span-2-8"><span class="s">    if c.get(&#39;edge&#39;) == &#39;1&#39;:</span>
+</span><span id="__span-2-9"><span class="s">        for endpoint in (&#39;source&#39;, &#39;target&#39;):</span>
+</span><span id="__span-2-10"><span class="s">            ref = c.get(endpoint)</span>
+</span><span id="__span-2-11"><span class="s">            if ref and tree.find(f&#39;.//mxCell[@id=&quot;{ref}&quot;]&#39;) is None:</span>
+</span><span id="__span-2-12"><span class="s">                print(f&#39;{c.get(&quot;id&quot;)}: dangling {endpoint}={ref}&#39;)</span>
+</span><span id="__span-2-13"><span class="s">PY</span>
+</span></code></pre></div>
+<p>Past failure: <code>deploy-topology.drawio</code> with <code>&amp;lt;region&amp;gt;</code> escapes +
+bullet characters silently refused to open. Rewriting values with
+plain ASCII + <code>&amp;#10;</code> line breaks fixed it.</p>
 
 
 

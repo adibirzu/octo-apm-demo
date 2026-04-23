@@ -3118,6 +3118,8 @@
       
         
       
+        
+      
     
     
     
@@ -3187,6 +3189,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/deploy-readiness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deploy Readiness
   
 
     
@@ -3895,6 +3925,23 @@ single shell session and everything from APM to Stack Monitoring is
 wired in about 10 minutes.</p>
 </div>
 <h3 id="apm-domain-rum-web-application">APM Domain + RUM Web Application<a class="headerlink" href="#apm-domain-rum-web-application" title="Permanent link">&para;</a></h3>
+<p>Two equivalent paths — pick one:</p>
+<p><strong>Terraform (preferred, tenancy-portable):</strong> set <code>create_apm_domain = true</code>
+in <code>deploy/terraform/terraform.tfvars</code> and run <code>terraform apply</code>. Outputs
+include <code>apm_data_upload_endpoint</code>, <code>apm_private_datakey</code>,
+<code>apm_public_datakey</code>, and <code>rum_endpoint</code>. See <a href="https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/terraform/README.md"><code>deploy/terraform/README.md</code></a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">RUM web-app OCID is a manual step</p>
+<p>OCI's Terraform provider does not yet expose a resource for creating
+a RUM web application (<code>config_type = "WEB_APPLICATION"</code> is
+rejected). After <code>terraform apply</code>, register the web app in the
+Console: <strong>Observability &amp; Management → APM → Real User Monitoring
+→ Create Web Application</strong>. Copy the OCID into <code>octo-apm</code> K8s
+secret as <code>rum-web-application-ocid</code>. Beacon ingestion works
+without this OCID — the JS SDK only needs the public data key +
+endpoint. See <a href="https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md#7a-rum-web-application-one-manual-step">OBSERVABILITY-BOOTSTRAP.md §7a</a>.</p>
+</div>
+<p><strong>Shell script (legacy, still supported):</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="nv">COMPARTMENT_ID</span><span class="o">=</span><span class="nv">$OCI_COMPARTMENT_ID</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-2">./deploy/oci/ensure_apm.sh<span class="w"> </span>--plan<span class="w">     </span><span class="c1"># review</span>
 </span><span id="__span-2-3"><span class="nv">PLAN_ONLY</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
