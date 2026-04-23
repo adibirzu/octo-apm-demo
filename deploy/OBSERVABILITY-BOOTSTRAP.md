@@ -56,7 +56,7 @@ Resources created:
 
 | Resource | Module | Outputs |
 |---|---|---|
-| APM Domain + RUM web app | `apm_domain` | `apm_endpoint`, `apm_private_datakey`, `apm_public_datakey`, `rum_endpoint`, `rum_web_application_id` |
+| APM Domain + data keys + RUM endpoint | `apm_domain` | `apm_endpoint`, `apm_private_datakey`, `apm_public_datakey`, `rum_endpoint`, `rum_web_application_id` (empty — see §7a) |
 | ATP (1 OCPU, 1 TB, auto-scale) | `atp` | `atp_id`, `atp_wallet_b64`, `atp_connection_strings` |
 | Vault + AES-256 master key + secret OCIDs | `vault` | `vault_id`, `secret_ids` |
 | Object Storage buckets (chaos-state, wallet, artifacts) | `object_storage` | bucket names |
@@ -85,7 +85,7 @@ export OCI_APM_PRIVATE_DATAKEY=$(terraform output -raw apm_private_datakey)
 export OCI_APM_PUBLIC_DATAKEY=$(terraform output -raw apm_public_datakey)
 export OCI_APM_ENDPOINT=$(terraform output -json apm_domain | jq -r .apm_data_upload_endpoint)
 export OCI_APM_RUM_ENDPOINT=$(terraform output -json apm_domain | jq -r .rum_endpoint)
-export OCI_APM_RUM_WEB_APPLICATION_OCID=$(terraform output -json apm_domain | jq -r .rum_web_application_id)
+# OCI_APM_RUM_WEB_APPLICATION_OCID is populated manually — see §7a.
 
 export OCI_LOG_GROUP_ID=$(terraform output -json logging | jq -r .log_group_id)
 export OCI_LOG_ID=$(terraform output -json logging | jq -r .log_app_id)
@@ -125,6 +125,36 @@ export OCIR_REPO=${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal
 | LA search | OCI Log Analytics → source `octo-shop-app-json` | rows visible within 2 min of traffic |
 | ATP monitoring | OCI Observability → Stack Monitoring → Autonomous Databases | `octo-apm-demo-atp` shown as Up, SQL perf chart populated |
 | WAF pipeline | OCI Log Analytics → source `octo-waf` | both shop + crm WAF traffic |
+
+## 7a. RUM Web Application (one manual step)
+
+The OCI Terraform provider does **not** yet expose a first-class
+resource for creating an APM RUM web application. `oci_apm_config_config`
+rejects `config_type = "WEB_APPLICATION"` (valid values: `AGENT`,
+`APDEX`, `MACS_APM_EXTENSION`, `METRIC_GROUP`, `OPTIONS`, `SPAN_FILTER`).
+
+Create the web app in the Console — this is a 30-second step, done once
+per tenancy:
+
+1. OCI Console → Observability & Management → Application Performance Monitoring → Real User Monitoring.
+2. Select the APM domain created by `modules/apm_domain` (default name `octo-apm`).
+3. Click **Create Web Application** → name `octo-drone-shop-web` → copy the web-app OCID.
+4. Export and re-run `init-tenancy.sh` (or update the secret directly):
+
+```bash
+export OCI_APM_RUM_WEB_APPLICATION_OCID=ocid1.apmwebapplication.oc1..xxxx
+kubectl create secret generic octo-apm -n octo-drone-shop \
+  --from-literal=apm-private-datakey="${OCI_APM_PRIVATE_DATAKEY}" \
+  --from-literal=apm-public-datakey="${OCI_APM_PUBLIC_DATAKEY}" \
+  --from-literal=apm-endpoint="${OCI_APM_ENDPOINT}" \
+  --from-literal=rum-endpoint="${OCI_APM_RUM_ENDPOINT}" \
+  --from-literal=rum-web-application-ocid="${OCI_APM_RUM_WEB_APPLICATION_OCID}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Beacon ingestion works without this OCID (the RUM JS SDK only needs the
+public data key + endpoint) — the web-app OCID is a metadata handle
+used by the UI for filtering beacons into named applications.
 
 ## 7. Stack Monitoring details for ATP
 
