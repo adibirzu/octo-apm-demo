@@ -8,8 +8,8 @@ into APM + RUM + OCI Logging → Log Analytics + Stack Monitoring.
 
 | Service | Namespace | Deployment | In-cluster URL | Public hostname |
 |---|---|---|---|---|
-| Drone Shop | `octo-shop-prod` | `octo-drone-shop` | `http://octo-drone-shop.octo-shop-prod.svc.cluster.local:8080` | `drone.${DNS_DOMAIN}` |
-| Enterprise CRM | `octo-backend-prod` | `enterprise-crm-portal` | `http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080` | `backend.${DNS_DOMAIN}` |
+| Drone Shop | `octo-drone-shop` | `octo-drone-shop` | `http://octo-drone-shop.octo-drone-shop.svc.cluster.local:8080` | `shop.${DNS_DOMAIN}` |
+| Enterprise CRM | `enterprise-crm` | `enterprise-crm-portal` | `http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080` | `crm.${DNS_DOMAIN}` |
 
 Names deliberately differ from the unified-VM path so both deployments
 can co-exist on the same tenancy (different compartments or clusters)
@@ -65,21 +65,14 @@ trace explorer URL.
 
 ## Image build + push
 
-The root-level `deploy/deploy-shop.sh` and `deploy/deploy-crm.sh` handle
-build + push + rollout. Point them at the OKE namespaces:
+The root-level `deploy/deploy.sh` wrapper orchestrates both services and
+delegates to `deploy/deploy-shop.sh` + `deploy/deploy-crm.sh` under the hood:
 
 ```bash
-# Drone Shop
-OCIR_REPO=${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop \
-K8S_NAMESPACE=octo-shop-prod \
-K8S_DEPLOYMENT=octo-drone-shop \
-./deploy/deploy-shop.sh
-
-# Enterprise CRM
-OCIR_REPO=${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal \
-K8S_NAMESPACE=octo-backend-prod \
-K8S_DEPLOYMENT=enterprise-crm-portal \
-./deploy/deploy-crm.sh
+OCIR_REGION=${OCIR_REGION} \
+OCIR_TENANCY=${OCIR_TENANCY} \
+DNS_DOMAIN=${DNS_DOMAIN} \
+./deploy/deploy.sh
 ```
 
 Both scripts build on a remote x86_64 host (ARM laptops cannot cross-
@@ -109,10 +102,10 @@ The outputs (`apm_data_upload_endpoint`, `apm_public_datakey`,
 ## Validate
 
 ```bash
-curl -s https://drone.${DNS_DOMAIN}/ready   | jq
-curl -s https://backend.${DNS_DOMAIN}/ready | jq
-curl -s https://drone.${DNS_DOMAIN}/api/integrations/schema   | jq .info.title
-curl -s https://backend.${DNS_DOMAIN}/api/integrations/schema | jq .info.title
+curl -s https://shop.${DNS_DOMAIN}/ready   | jq
+curl -s https://crm.${DNS_DOMAIN}/ready | jq
+curl -s https://shop.${DNS_DOMAIN}/api/integrations/schema   | jq .info.title
+curl -s https://crm.${DNS_DOMAIN}/api/integrations/schema | jq .info.title
 ```
 
 When both `/ready` return `database.reachable=true` and both schema
@@ -122,8 +115,8 @@ endpoints return an OpenAPI doc advertising `InternalServiceKey` in
 ## Rollback
 
 ```bash
-kubectl rollout undo deployment/octo-drone-shop       -n octo-shop-prod
-kubectl rollout undo deployment/enterprise-crm-portal -n octo-backend-prod
+kubectl rollout undo deployment/octo-drone-shop       -n octo-drone-shop
+kubectl rollout undo deployment/enterprise-crm-portal -n enterprise-crm
 ```
 
 ## Legacy

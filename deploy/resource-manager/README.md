@@ -16,6 +16,14 @@ and DB sizing, so hard-coding those would break portability.
 # → deploy/resource-manager/build/octo-stack.zip
 ```
 
+Or create/update the stack directly from the repo:
+
+```bash
+OCI_PROFILE=DEFAULT \
+OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
+./deploy/resource-manager/upsert-stack.sh
+```
+
 Then in the OCI Console:
 
 1. Developer Services → Resource Manager → Stacks → Create Stack

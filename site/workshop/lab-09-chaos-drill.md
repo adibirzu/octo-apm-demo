@@ -134,7 +134,7 @@ PASS — Lab 09 complete
 | Symptom | Cause | Fix |
 |---|---|---|
 | `chaos/apply` returns 401 | Missing or wrong `X-Internal-Service-Key` | Check shared secret matches the CRM Pod env |
-| Symptoms invisible | Chaos profile not actually applied | Check the chaos_state table: `kubectl exec -n octo-backend-prod <pod> -- python -c "from server.database import ..."` |
+| Symptoms invisible | Chaos profile not actually applied | Check the chaos_state table: `kubectl exec -n enterprise-crm <pod> -- python -c "from server.database import ..."` |
 | APM trace filter returns nothing | The shop didn't receive any requests during the window | Hit `/api/products` with the `X-Run-Id` header in step 3 |
 
 ## Read more

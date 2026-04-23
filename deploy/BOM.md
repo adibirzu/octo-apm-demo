@@ -119,8 +119,8 @@ Auth: instance principal from the builder host's dynamic group + `docker login` 
 | Item | Purpose |
 |---|---|
 | `DNS_DOMAIN` (e.g. `tenant-a.customer.example`) | One variable that derives every public URL |
-| A record `drone.${DNS_DOMAIN}` | → OCI LB / VM IP |
-| A record `backend.${DNS_DOMAIN}` | → OCI LB / VM IP |
+| A record `shop.${DNS_DOMAIN}` | → OCI LB / VM IP |
+| A record `crm.${DNS_DOMAIN}` | → OCI LB / VM IP |
 | A record `ops.${DNS_DOMAIN}` | optional |
 | A record `coordinator.${DNS_DOMAIN}` | optional |
 | TLS certificate per hostname | LetsEncrypt (VM path) or OCI Certificates (OKE path) |

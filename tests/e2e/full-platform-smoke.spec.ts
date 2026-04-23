@@ -11,8 +11,8 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
 const ENABLED = process.env.FULL_PLATFORM_E2E_ENABLED === "1";
-const SHOP = process.env.SHOP_BASE_URL || "https://drone.octodemo.cloud";
-const CRM = process.env.CRM_BASE_URL || "https://backend.octodemo.cloud";
+const SHOP = process.env.SHOP_BASE_URL || "https://shop.cyber-sec.ro";
+const CRM = process.env.CRM_BASE_URL || "https://crm.cyber-sec.ro";
 const LOAD_CONTROL = process.env.LOAD_CONTROL_URL || "";
 const REMEDIATOR = process.env.REMEDIATOR_URL || "";
 const OBJECT_PIPELINE = process.env.OBJECT_PIPELINE_URL || "";

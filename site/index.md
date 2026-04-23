@@ -4,12 +4,14 @@
 
 [:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-drone-shop){ .md-button .md-button--primary }
 [:octicons-mark-github-16: CRM Portal](https://github.com/adibirzu/enterprise-crm-portal){ .md-button .md-button--primary }
-[:material-rocket-launch: Shop URL Template](https://shop.example.cloud){ .md-button }
-[:material-rocket-launch: CRM URL Template](https://crm.example.cloud){ .md-button }
+[:material-domain: DNS Cutover](operations/current-status.md#dns-and-cutover-status){ .md-button }
+[:material-clipboard-text: Current Status](operations/current-status.md){ .md-button }
 
 ---
 
 ## What is OCTO?
+
+Current `DEFAULT` / `oci4cca` target hostnames are `shop.cyber-sec.ro` and `crm.cyber-sec.ro`. Public cutover is not live yet because `cyber-sec.ro` is still delegated to Wix rather than the OCI DNS zone in `Adrian_Birzu`, and the imported wildcard certificate `star.cyber-sec.ro` expired on April 16, 2025; see [Current Status](operations/current-status.md) for the exact blockers and the legacy CAP reference endpoints.
 
 The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.
 
@@ -27,6 +29,7 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 - **Public and private CRM URLs are split** — browser-visible links use `https://crm.example.cloud`, while backend service-to-service calls may continue to use a private service endpoint.
 - **Frontend hardening is live** — CRM page rendering, observability beacon ingestion, CSP-safe scripts, and favicon handling were updated to remove recent runtime errors.
 - **Enhancement roadmap is published** — the docs now define the rollout path for complex flows, OCI APM, OCI Logging, Log Analytics, drilldowns, and DB tooling.
+- **Deployment status is now published** — the docs include a dated OCI + runtime snapshot for the validated `oci4cca` / `DEFAULT` environment.
 
 <div class="grid cards" markdown>
 

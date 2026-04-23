@@ -80,7 +80,13 @@ if command -v terraform >/dev/null 2>&1; then
     else
         warn "deploy/terraform/* fmt drift (run terraform fmt -recursive)"
     fi
-    if terraform -chdir="${REPO_ROOT}/deploy/resource-manager" fmt -check -recursive >/dev/null 2>&1; then
+    rm_tf_files=()
+    while IFS= read -r tf_file; do
+        rm_tf_files+=("${tf_file}")
+    done < <(find "${REPO_ROOT}/deploy/resource-manager" \
+        -path "${REPO_ROOT}/deploy/resource-manager/build" -prune -o \
+        -type f -name "*.tf" -print)
+    if [[ "${#rm_tf_files[@]}" -gt 0 ]] && terraform fmt -check "${rm_tf_files[@]}" >/dev/null 2>&1; then
         ok "deploy/resource-manager/* fmt clean"
     else
         warn "deploy/resource-manager/* fmt drift"
@@ -146,6 +152,13 @@ fi
 
 # ── Python tests (shop, crm, tools) ───────────────────────────────────
 section "Python test suites"
+if (cd "${REPO_ROOT}" && python3 -m pytest -q tests/test_unified_deploy_surface.py >/dev/null 2>&1); then
+    ok "root unified deploy pytest"
+else
+    fail "root unified deploy pytest"
+    (cd "${REPO_ROOT}" && python3 -m pytest -q tests/test_unified_deploy_surface.py 2>&1 | tail -20 | sed 's/^/         /')
+fi
+
 for testdir in shop crm tools/traffic-generator; do
     if [[ -d "${REPO_ROOT}/${testdir}" ]] && find "${REPO_ROOT}/${testdir}" -name "test_*.py" -print -quit | grep -q .; then
         if (cd "${REPO_ROOT}/${testdir}" && python -m pytest -q --no-header 2>&1 | tail -1 | grep -q "passed"); then

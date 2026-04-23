@@ -8,14 +8,14 @@ into APM + RUM + OCI Logging → Log Analytics + Stack Monitoring.
 
 | Concern | Value |
 |---|---|
-| Shop namespace | `octo-shop-prod` |
-| CRM namespace | `octo-backend-prod` |
+| Shop namespace | `octo-drone-shop` |
+| CRM namespace | `enterprise-crm` |
 | Shop Deployment | `octo-drone-shop` |
 | CRM Deployment | `enterprise-crm-portal` |
-| Shop in-cluster URL | `http://octo-drone-shop.octo-shop-prod.svc.cluster.local:8080` |
-| CRM in-cluster URL | `http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080` |
-| Shop public hostname | `drone.${DNS_DOMAIN}` (default `drone.octodemo.cloud`) |
-| CRM public hostname | `backend.${DNS_DOMAIN}` (default `backend.octodemo.cloud`) |
+| Shop in-cluster URL | `http://octo-drone-shop.octo-drone-shop.svc.cluster.local:8080` |
+| CRM in-cluster URL | `http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080` |
+| Shop public hostname | `shop.${DNS_DOMAIN}` (for `DEFAULT` / `oci4cca`, use `shop.cyber-sec.ro`) |
+| CRM public hostname | `crm.${DNS_DOMAIN}` (for `DEFAULT` / `oci4cca`, use `crm.cyber-sec.ro`) |
 
 Deliberately different from the unified-VM names so both deployments
 can co-exist on the same tenancy (different compartments / clusters)
@@ -24,7 +24,7 @@ without collisions.
 ## One-shot apply
 
 ```bash
-DNS_DOMAIN=octodemo.cloud \
+DNS_DOMAIN=cyber-sec.ro \
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
 OCI_LB_SUBNET_OCID=ocid1.subnet.oc1..xxx \
@@ -57,9 +57,9 @@ Each service gets two Kubernetes Services:
 | Service | Type | Purpose |
 |---|---|---|
 | `octo-drone-shop` | ClusterIP | in-cluster callbacks (used by CRM) |
-| `octo-drone-shop-lb` | LoadBalancer | public shop traffic (drone.${DNS_DOMAIN}) |
+| `octo-drone-shop-lb` | LoadBalancer | public shop traffic (shop.${DNS_DOMAIN}) |
 | `enterprise-crm-portal` | ClusterIP | in-cluster callbacks (used by Shop) |
-| `enterprise-crm-portal-lb` | LoadBalancer | public CRM traffic (backend.${DNS_DOMAIN}) |
+| `enterprise-crm-portal-lb` | LoadBalancer | public CRM traffic (crm.${DNS_DOMAIN}) |
 
 The public LBs are annotated with:
 
@@ -102,8 +102,8 @@ Analytics parser extracts it as a searchable field.
 
 ## Cross-service contract on OKE
 
-- Shop calls CRM at `http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080`
-- CRM calls Shop at `http://octo-drone-shop.octo-shop-prod.svc.cluster.local:8080`
+- Shop calls CRM at `http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080`
+- CRM calls Shop at `http://octo-drone-shop.octo-drone-shop.svc.cluster.local:8080`
 - Both send `X-Internal-Service-Key: $INTERNAL_SERVICE_KEY` — the
   shared value is pulled from `octo-auth:internal-service-key` on both
   sides.
@@ -118,17 +118,10 @@ The root-level `deploy/deploy-shop.sh` and `deploy/deploy-crm.sh`
 handle build + push + rollout. Point them at the OKE namespaces:
 
 ```bash
-# Build + push + rollout Shop
-OCIR_REPO=${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop \
-K8S_NAMESPACE=octo-shop-prod \
-K8S_DEPLOYMENT=octo-drone-shop \
-./deploy/deploy-shop.sh
-
-# Build + push + rollout CRM
-OCIR_REPO=${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal \
-K8S_NAMESPACE=octo-backend-prod \
-K8S_DEPLOYMENT=enterprise-crm-portal \
-./deploy/deploy-crm.sh
+OCIR_REGION=${OCIR_REGION} \
+OCIR_TENANCY=${OCIR_TENANCY} \
+DNS_DOMAIN=${DNS_DOMAIN} \
+./deploy/deploy.sh
 ```
 
 Both scripts build on a remote x86_64 host (ARM laptops cannot cross-
@@ -138,8 +131,8 @@ appropriate Deployment.
 ## Rollback
 
 ```bash
-kubectl rollout undo deployment/octo-drone-shop       -n octo-shop-prod
-kubectl rollout undo deployment/enterprise-crm-portal -n octo-backend-prod
+kubectl rollout undo deployment/octo-drone-shop       -n octo-drone-shop
+kubectl rollout undo deployment/enterprise-crm-portal -n enterprise-crm
 ```
 
 ## DNS + TLS
@@ -147,8 +140,8 @@ kubectl rollout undo deployment/enterprise-crm-portal -n octo-backend-prod
 The LBs come up with public IPs; point DNS:
 
 ```
-drone.${DNS_DOMAIN}    A    <shop LB IP>
-backend.${DNS_DOMAIN}  A    <crm LB IP>
+shop.${DNS_DOMAIN}    A    <shop LB IP>
+crm.${DNS_DOMAIN}     A    <crm LB IP>
 ```
 
 TLS options:

@@ -10,13 +10,13 @@ variable "compartment_id" {
 
 variable "shop_domain" {
   type        = string
-  default     = "drone.example.cloud"
+  default     = "shop.example.cloud"
   description = "Public hostname for the drone shop frontend."
 }
 
 variable "crm_domain" {
   type        = string
-  default     = "backend.example.cloud"
+  default     = "crm.example.cloud"
   description = "Public hostname for the CRM portal."
 }
 

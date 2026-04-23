@@ -8,7 +8,7 @@
 # Usage:
 #   # fully non-interactive
 #   OCI_PROFILE=DEFAULT OCI_COMPARTMENT_ID=ocid1.compartment... \
-#   DNS_DOMAIN=shop.example.tld \
+#   DNS_BASE_DOMAIN=cyber-sec.ro \
 #   OCIR_NAMESPACE=<ns> \
 #   ./deploy/bootstrap.sh
 #
@@ -24,7 +24,7 @@
 #   5. Build + push shop + crm images via the remote x86_64 builder.
 #   6. Apply k8s manifests (shop, crm, optional apm-java-demo).
 #   7. Install nginx-ingress (if not present) + Ingress objects.
-#   8. Create cyber-sec.ro DNS A records pointing at the ingress LB.
+#   8. Create DNS A records in the configured base domain pointing at the ingress LB.
 #   9. Smoke-verify every HTML + JSON endpoint over the public FQDN.
 #
 # Tagging: every OCI resource created here carries freeform_tag
@@ -81,12 +81,12 @@ section(){ printf '\n\033[1;36m── %s ──\033[0m\n' "$*"; }
 section "Step 0 — OCI profile validation"
 if ! oci iam user get --user-id "$(python3 -c "import oci; print(oci.config.from_file(profile_name='${OCI_PROFILE}')['user'])")" --profile "${OCI_PROFILE}" >/dev/null 2>&1; then
     # The Python SDK path is more reliable than the CLI for broken installs.
-    python3 - <<PYEOF
-import oci, sys
-cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+    OCI_PROFILE="${OCI_PROFILE}" python3 - <<'PYEOF'
+import os, oci, sys
+cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 iam = oci.identity.IdentityClient(cfg)
 user = iam.get_user(cfg['user']).data
-print(f"profile=${OCI_PROFILE} user={user.name} tenancy={cfg['tenancy'][:40]}... region={cfg['region']}")
+print(f"profile={os.environ['OCI_PROFILE']} user={user.name} tenancy={cfg['tenancy'][:40]}... region={cfg['region']}")
 PYEOF
 fi
 
@@ -105,9 +105,9 @@ fi
 if [[ -z "${OCI_COMPARTMENT_ID:-}" ]]; then
     if [[ -t 0 ]]; then
         _blue "No OCI_COMPARTMENT_ID in env. Listing compartments under tenancy…"
-        python3 - <<PYEOF > /tmp/_octo_compartments.tsv
-import oci
-cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+        OCI_PROFILE="${OCI_PROFILE}" python3 - <<'PYEOF' > /tmp/_octo_compartments.tsv
+import os, oci
+cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 iam = oci.identity.IdentityClient(cfg)
 comps = iam.list_compartments(
     compartment_id=cfg['tenancy'],
@@ -165,20 +165,20 @@ export OCIR_NAMESPACE OCIR_REGION="${OCI_REGION}" OCIR_TENANCY="${OCIR_NAMESPACE
 _green "OCIR ns: ${OCIR_NAMESPACE}"
 
 # Ensure repos exist (tagged).
-python3 - <<PYEOF
-import oci
-cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+OCI_PROFILE="${OCI_PROFILE}" OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}" python3 - <<'PYEOF'
+import os, oci
+cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 client = oci.artifacts.ArtifactsClient(cfg)
 for name in ["octo-drone-shop", "enterprise-crm-portal", "octo-apm-java-demo"]:
     try:
         client.create_container_repository(
             oci.artifacts.models.CreateContainerRepositoryDetails(
-                compartment_id="${OCI_COMPARTMENT_ID}",
+                compartment_id=os.environ['OCI_COMPARTMENT_ID'],
                 display_name=name,
                 is_public=False,
             )
         )
-        print(f"  created ${name}")
+        print(f"  created {name}")
     except oci.exceptions.ServiceError as e:
         if e.status in (409,):
             print(f"  exists  {name}")
@@ -294,6 +294,7 @@ for NS in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
         --from-literal=private-key="${OCI_APM_PRIVATE_DATAKEY:-}" \
         --from-literal=public-key="${OCI_APM_PUBLIC_DATAKEY:-}" \
         --from-literal=rum-endpoint="${OCI_APM_RUM_ENDPOINT:-}" \
+        --from-literal=rum-web-application-ocid="${OCI_APM_RUM_WEB_APPLICATION_OCID:-}" \
         --dry-run=client -o yaml | kubectl apply -f - >/dev/null
     kubectl -n "$NS" create secret generic octo-logging \
         --from-literal=log-group-id="${OCI_LOG_GROUP_ID:-}" \
@@ -311,19 +312,33 @@ _green "Secrets seeded in ${K8S_NAMESPACE_SHOP} + ${K8S_NAMESPACE_CRM}"
 section "Step 6 — Build + push (remote VM ${REMOTE_BUILD_HOST})"
 build_service() {
     local svc="$1" repo="$2" dir="$3" ns="$4"
+    local logfile="/tmp/_octo_build_${svc}.log"
+    # Capture full output to a log; set +o pipefail so grep's exit code
+    # doesn't kill the parent script when matches are sparse.
+    set +o pipefail
     OCIR_REPO="${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/${repo}" \
       DNS_DOMAIN="${DNS_BASE_DOMAIN}" \
       K8S_NAMESPACE="${ns}" \
       REMOTE_HOST="${REMOTE_BUILD_HOST}" \
       REMOTE_DIR="${dir}" \
-      bash "${SCRIPT_DIR}/deploy-${svc}.sh" --build-only 2>&1 | grep -E "Image:|Build complete|Push complete|failed to build|ERROR"
+      bash "${SCRIPT_DIR}/deploy-${svc}.sh" --build-only > "${logfile}" 2>&1
+    local rc=$?
+    set -o pipefail
+    grep -E "Image:|Build complete|Push complete|failed to build|ERROR" "${logfile}" || true
+    if [[ $rc -ne 0 ]]; then
+        _red "  ${svc} build exited ${rc}. Full log:"
+        tail -20 "${logfile}"
+        return $rc
+    fi
 }
 build_service shop octo-drone-shop /tmp/octo-apm-demo-shop "${K8S_NAMESPACE_SHOP}"
 build_service crm  enterprise-crm-portal /tmp/octo-apm-demo-crm  "${K8S_NAMESPACE_CRM}"
 
-# Tag resolution: pick the timestamp the build just produced.
-SHOP_TAG=$(ssh "${REMOTE_BUILD_HOST}" "docker images ${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/octo-drone-shop --format '{{.Tag}}' | grep -vE '^latest$' | sort -r | head -1")
-CRM_TAG=$(ssh "${REMOTE_BUILD_HOST}" "docker images ${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/enterprise-crm-portal --format '{{.Tag}}' | grep -vE '^latest$' | sort -r | head -1")
+# Tag resolution — the most recently-built image, not `latest` label.
+SHOP_TAG=$(ssh "${REMOTE_BUILD_HOST}" "docker images ${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/octo-drone-shop --format '{{.Tag}}'" 2>/dev/null | grep -vE '^latest$' | sort -r | head -1 || true)
+CRM_TAG=$(ssh "${REMOTE_BUILD_HOST}" "docker images ${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/enterprise-crm-portal --format '{{.Tag}}'" 2>/dev/null | grep -vE '^latest$' | sort -r | head -1 || true)
+[[ -n "${SHOP_TAG}" ]] || { _red "Shop image tag resolution failed"; exit 1; }
+[[ -n "${CRM_TAG}" ]] || { _red "CRM image tag resolution failed"; exit 1; }
 _green "Shop image: ${SHOP_TAG} · CRM image: ${CRM_TAG}"
 
 # ── Step 7: Apply k8s manifests ───────────────────────────────────────
@@ -383,13 +398,20 @@ elif [[ "${VIRTUAL_ONLY}" == "true" ]]; then
     _yellow "Virtual-node-only cluster detected (KB-459). Classic LB Services + nginx-ingress need managed nodes."
     if [[ "${OKE_ADD_NODE_POOL_IF_VIRTUAL}" == "true" ]]; then
         _yellow "Auto-provisioning a managed node pool (${OKE_NODE_POOL_SIZE} × ${OKE_NODE_SHAPE})…"
-        python3 - <<PYEOF
-import oci, sys, time
-cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+        OCI_PROFILE="${OCI_PROFILE}" \
+          CLUSTER_ID="${CLUSTER_ID}" \
+          OKE_NODE_SHAPE="${OKE_NODE_SHAPE}" \
+          OKE_NODE_OCPUS="${OKE_NODE_OCPUS}" \
+          OKE_NODE_MEMORY_GBS="${OKE_NODE_MEMORY_GBS}" \
+          OKE_NODE_BOOT_VOLUME_GBS="${OKE_NODE_BOOT_VOLUME_GBS}" \
+          OKE_NODE_POOL_SIZE="${OKE_NODE_POOL_SIZE}" \
+          python3 - <<'PYEOF'
+import os, oci, sys, time
+cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 ce = oci.container_engine.ContainerEngineClient(cfg)
 net = oci.core.VirtualNetworkClient(cfg)
 iam = oci.identity.IdentityClient(cfg)
-cluster_id = "${CLUSTER_ID}"
+cluster_id = os.environ['CLUSTER_ID']
 cluster = ce.get_cluster(cluster_id).data
 # Pick the private "nodesubnet" in the cluster's VCN.
 node_subnet = None
@@ -423,24 +445,40 @@ work_req = ce.create_node_pool(
         cluster_id=cluster_id,
         name='octo-apm-managed-pool',
         kubernetes_version=cluster.kubernetes_version,
-        node_shape='${OKE_NODE_SHAPE}',
+        node_shape=os.environ['OKE_NODE_SHAPE'],
         node_shape_config=oci.container_engine.models.CreateNodeShapeConfigDetails(
-            ocpus=${OKE_NODE_OCPUS},
-            memory_in_gbs=${OKE_NODE_MEMORY_GBS},
+            ocpus=float(os.environ['OKE_NODE_OCPUS']),
+            memory_in_gbs=float(os.environ['OKE_NODE_MEMORY_GBS']),
         ),
         node_source_details=oci.container_engine.models.NodeSourceViaImageDetails(
             source_type='IMAGE',
             image_id=image_id,
-            boot_volume_size_in_gbs=${OKE_NODE_BOOT_VOLUME_GBS},
+            boot_volume_size_in_gbs=int(os.environ['OKE_NODE_BOOT_VOLUME_GBS']),
         ),
         node_config_details=oci.container_engine.models.CreateNodePoolNodeConfigDetails(
-            size=${OKE_NODE_POOL_SIZE},
+            size=int(os.environ['OKE_NODE_POOL_SIZE']),
             placement_configs=[
                 oci.container_engine.models.NodePoolPlacementConfigDetails(
                     availability_domain=ads[0],
                     subnet_id=node_subnet,
                 )
             ],
+            # Cluster uses OCI_VCN_IP_NATIVE — node pool must match or
+            # the API rejects with "pod network options didn't match".
+            node_pool_pod_network_option_details=(
+                oci.container_engine.models.OciVcnIpNativePodNetworkOptionDetails(
+                    cni_type="OCI_VCN_IP_NATIVE",
+                    pod_subnet_ids=[node_subnet],
+                )
+                if cluster.cluster_pod_network_options
+                and any(
+                    p.cni_type == "OCI_VCN_IP_NATIVE"
+                    for p in (cluster.cluster_pod_network_options or [])
+                )
+                else oci.container_engine.models.FlannelOverlayPodNetworkOptionDetails(
+                    cni_type="FLANNEL_OVERLAY",
+                )
+            ),
         ),
         freeform_tags={"project": "octo-apm-demo", "managed-by": "bootstrap.sh"},
     )
@@ -529,7 +567,7 @@ spec:
               service:
                 name: ${svc}
                 port:
-                  number: 80
+                  number: ${port}
 EOF
 done
 _green "Ingress objects applied (class=${INGRESS_CLASS})"
@@ -557,25 +595,31 @@ case "${DNS_MODE}" in
 auto)
     # Try to PATCH the OCI DNS zone. Fall through to `manual` if the zone
     # doesn't exist or the profile lacks permission — still useful output.
-    if python3 - <<PYEOF; then
-import oci, sys
-cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+    if OCI_PROFILE="${OCI_PROFILE}" \
+       DNS_BASE_DOMAIN="${DNS_BASE_DOMAIN}" \
+       SHOP_SUBDOMAIN="${SHOP_SUBDOMAIN}" \
+       CRM_SUBDOMAIN="${CRM_SUBDOMAIN}" \
+       INGRESS_IP="${INGRESS_IP}" python3 - <<'PYEOF'; then
+import os, oci, sys
+cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 dns = oci.dns.DnsClient(cfg)
-zone = "${DNS_BASE_DOMAIN}"
+zone = os.environ['DNS_BASE_DOMAIN']
+ingress_ip = os.environ['INGRESS_IP']
 try:
-    for name in ("${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}", "${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"):
+    for sub in (os.environ['SHOP_SUBDOMAIN'], os.environ['CRM_SUBDOMAIN']):
+        name = f"{sub}.{zone}"
         dns.patch_domain_records(
             zone_name_or_id=zone, domain=name,
             patch_domain_records_details=oci.dns.models.PatchDomainRecordsDetails(
                 items=[
                     oci.dns.models.RecordOperation(operation="REMOVE", domain=name, rtype="A"),
-                    oci.dns.models.RecordOperation(operation="ADD", domain=name, rtype="A", ttl=60, rdata="${INGRESS_IP}"),
+                    oci.dns.models.RecordOperation(operation="ADD", domain=name, rtype="A", ttl=60, rdata=ingress_ip),
                 ],
             ),
         )
-        print(f"  A {name} -> ${INGRESS_IP}", flush=True)
+        print(f"  A {name} -> {ingress_ip}", flush=True)
 except oci.exceptions.ServiceError as exc:
-    print(f"OCI DNS PATCH failed: {exc.status} {exc.code} — {exc.message[:120]}", file=sys.stderr)
+    print(f"OCI DNS PATCH failed: {exc.status} {exc.code} - {exc.message[:120]}", file=sys.stderr)
     sys.exit(2)
 PYEOF
         _green "OCI DNS records updated"

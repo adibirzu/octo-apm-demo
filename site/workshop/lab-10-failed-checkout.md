@@ -67,13 +67,13 @@ but no child spans on the CRM side — typical of a network failure that
 never reached the peer. Check:
 
 ```bash
-kubectl get pods -n octo-backend-prod
+kubectl get pods -n enterprise-crm
 ```
 
 Notice one of two CRM pods is `CrashLoopBackOff`.
 
 ```bash
-kubectl logs -n octo-backend-prod <bad-pod> --previous | tail -30
+kubectl logs -n enterprise-crm <bad-pod> --previous | tail -30
 ```
 
 The trailing log shows an `OperationalError: ATP wallet expired` —
@@ -99,7 +99,7 @@ one-off.
 
 ```bash
 # Force the bad pod to restart with the fresh wallet mount
-kubectl delete pod -n octo-backend-prod <bad-pod>
+kubectl delete pod -n enterprise-crm <bad-pod>
 ```
 
 It comes back healthy within 60 s. Re-test:

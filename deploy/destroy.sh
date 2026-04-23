@@ -102,12 +102,15 @@ manual|skip)
     ;;
 *)
     if confirm "Remove A records for ${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN} + ${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN} from OCI DNS?"; then
-        python3 - <<PYEOF
-import oci
-cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+        OCI_PROFILE="${OCI_PROFILE}" DNS_BASE_DOMAIN="${DNS_BASE_DOMAIN}" \
+          SHOP_SUBDOMAIN="${SHOP_SUBDOMAIN}" CRM_SUBDOMAIN="${CRM_SUBDOMAIN}" \
+          python3 - <<'PYEOF'
+import os, oci
+cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 dns = oci.dns.DnsClient(cfg)
-zone = "${DNS_BASE_DOMAIN}"
-for name in ("${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}", "${CRM_SUBDOMAIN}.${DNS_BASE_DOMAIN}"):
+zone = os.environ['DNS_BASE_DOMAIN']
+for sub in (os.environ['SHOP_SUBDOMAIN'], os.environ['CRM_SUBDOMAIN']):
+    name = f"{sub}.{zone}"
     try:
         dns.patch_domain_records(
             zone_name_or_id=zone, domain=name,
@@ -126,12 +129,13 @@ esac
 # ── 4. Managed node pool created by bootstrap (if any) ────────────────
 section "4. Managed node pool (created by bootstrap on virtual-node clusters)"
 if confirm "Delete the 'octo-apm-managed-pool' node pool if present?"; then
-    python3 - <<PYEOF
-import oci, sys
-cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+    OCI_PROFILE="${OCI_PROFILE}" OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}" python3 - <<'PYEOF'
+import os, oci, sys
+cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 ce = oci.container_engine.ContainerEngineClient(cfg)
-for cluster in ce.list_clusters(compartment_id="${OCI_COMPARTMENT_ID}").data:
-    for np in ce.list_node_pools(compartment_id="${OCI_COMPARTMENT_ID}", cluster_id=cluster.id).data:
+comp = os.environ['OCI_COMPARTMENT_ID']
+for cluster in ce.list_clusters(compartment_id=comp).data:
+    for np in ce.list_node_pools(compartment_id=comp, cluster_id=cluster.id).data:
         if np.name == 'octo-apm-managed-pool':
             try:
                 ce.delete_node_pool(np.id)
@@ -162,11 +166,11 @@ if $KEEP_IMAGES; then
     _yellow "--keep-images: skipping OCIR"
 else
     if confirm "Delete OCIR repos octo-drone-shop, enterprise-crm-portal, octo-apm-java-demo in compartment?"; then
-        python3 - <<PYEOF
-import oci
-cfg = oci.config.from_file(profile_name="${OCI_PROFILE}")
+        OCI_PROFILE="${OCI_PROFILE}" OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}" python3 - <<'PYEOF'
+import os, oci
+cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 client = oci.artifacts.ArtifactsClient(cfg)
-for r in client.list_container_repositories(compartment_id="${OCI_COMPARTMENT_ID}").data.items:
+for r in client.list_container_repositories(compartment_id=os.environ['OCI_COMPARTMENT_ID']).data.items:
     if r.display_name in {"octo-drone-shop", "enterprise-crm-portal", "octo-apm-java-demo"}:
         try:
             client.delete_container_repository(r.id)

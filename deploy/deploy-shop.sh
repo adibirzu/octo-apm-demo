@@ -5,9 +5,9 @@
 # and rolls out on OKE with zero-downtime rolling update.
 #
 # Usage:
-#   ./deploy/deploy.sh                  # Build + push + rollout
-#   ./deploy/deploy.sh --build-only     # Build + push, no rollout
-#   ./deploy/deploy.sh --rollout-only   # Rollout existing latest tag
+#   ./deploy/deploy-shop.sh                  # Build + push + rollout
+#   ./deploy/deploy-shop.sh --build-only     # Build + push, no rollout
+#   ./deploy/deploy-shop.sh --rollout-only   # Rollout existing latest tag
 #
 # Prerequisites:
 #   - SSH access to the remote build host
@@ -18,7 +18,7 @@ set -euo pipefail
 
 OCIR_REPO="${OCIR_REPO:?Set OCIR_REPO (e.g. <region>.ocir.io/<namespace>/octo-drone-shop)}"
 REMOTE_HOST="${REMOTE_HOST:-remote-builder}"
-REMOTE_DIR="/tmp/octo-apm-demo-shop"
+REMOTE_DIR="${REMOTE_DIR:-/tmp/octo-apm-demo-shop}"
 NAMESPACE="${K8S_NAMESPACE:-octo-drone-shop}"
 DEPLOYMENT="${K8S_DEPLOYMENT:-octo-drone-shop}"
 CONTAINER="${K8S_CONTAINER:-app}"
@@ -39,9 +39,9 @@ done
 # has historically caused CRM/shop URLs to publish placeholder hostnames in
 # production, so we refuse to guess.
 if $ROLLOUT; then
-    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (e.g. tenant-a.example.invalid) for SHOP/CRM URL derivation, or pass --build-only.}"
-    SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://drone.${DNS_DOMAIN}}"
-    CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://backend.${DNS_DOMAIN}}"
+    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/oci4cca use cyber-sec.ro) for SHOP/CRM URL derivation, or pass --build-only.}"
+    SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}"
+    CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}"
     VERIFY_URL="${VERIFY_URL:-${SHOP_PUBLIC_URL}/ready}"
 fi
 

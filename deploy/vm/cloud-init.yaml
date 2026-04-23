@@ -34,7 +34,7 @@ write_files:
       ORACLE_PASSWORD=TODO
       ORACLE_WALLET_PASSWORD=TODO
       WALLET_PAR_URL=https://objectstorage...TODO
-      REPO_URL=https://github.com/adibirzu/octo-drone-shop.git
+      REPO_URL=https://github.com/adibirzu/octo-apm-demo.git
 
 runcmd:
   # 1. Clone the repo (unified deploy files only)
@@ -47,8 +47,8 @@ runcmd:
   - bash -c '. /etc/octo/bootstrap.env; curl -fsSL "${WALLET_PAR_URL}" -o /tmp/wallet.zip && unzip -o /tmp/wallet.zip -d /opt/octo/deploy/vm/wallet'
 
   # 3. Obtain TLS certificates (standalone mode — port 80 must be free)
-  - bash -c '. /etc/octo/bootstrap.env; certbot certonly --standalone --non-interactive --agree-tos --register-unsafely-without-email -d drone.${DNS_DOMAIN} -d backend.${DNS_DOMAIN} || true'
-  - bash -c '. /etc/octo/bootstrap.env; mkdir -p /opt/octo/deploy/vm/nginx/tls/shop /opt/octo/deploy/vm/nginx/tls/crm; cp /etc/letsencrypt/live/drone.${DNS_DOMAIN}/*.pem /opt/octo/deploy/vm/nginx/tls/shop/ 2>/dev/null || true; cp /etc/letsencrypt/live/backend.${DNS_DOMAIN}/*.pem /opt/octo/deploy/vm/nginx/tls/crm/ 2>/dev/null || true'
+  - bash -c '. /etc/octo/bootstrap.env; certbot certonly --standalone --non-interactive --agree-tos --register-unsafely-without-email -d shop.${DNS_DOMAIN} -d crm.${DNS_DOMAIN} || true'
+  - bash -c '. /etc/octo/bootstrap.env; mkdir -p /opt/octo/deploy/vm/nginx/tls/shop /opt/octo/deploy/vm/nginx/tls/crm; cp /etc/letsencrypt/live/shop.${DNS_DOMAIN}/*.pem /opt/octo/deploy/vm/nginx/tls/shop/ 2>/dev/null || true; cp /etc/letsencrypt/live/crm.${DNS_DOMAIN}/*.pem /opt/octo/deploy/vm/nginx/tls/crm/ 2>/dev/null || true'
 
   # 4. Run the idempotent installer
   - bash /opt/octo/deploy/vm/install.sh

@@ -16,7 +16,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 OCIR_REPO="${OCIR_REPO:?Set OCIR_REPO (e.g. <region>.ocir.io/<namespace>/enterprise-crm-portal)}"
 REMOTE_HOST="${REMOTE_HOST:-remote-builder}"
-REMOTE_DIR="/tmp/octo-apm-demo-crm"
+REMOTE_DIR="${REMOTE_DIR:-/tmp/octo-apm-demo-crm}"
 NAMESPACE="${K8S_NAMESPACE:-enterprise-crm}"
 DEPLOYMENT="${K8S_DEPLOYMENT:-enterprise-crm-portal}"
 CONTAINER="${K8S_CONTAINER:-crm}"
@@ -32,9 +32,9 @@ for arg in "$@"; do
 done
 
 if $ROLLOUT; then
-    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (e.g. octodemo.cloud) for backend URL derivation, or pass --build-only.}"
-    CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://backend.${DNS_DOMAIN}}"
-    SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://drone.${DNS_DOMAIN}}"
+    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/oci4cca use cyber-sec.ro) for backend URL derivation, or pass --build-only.}"
+    CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}"
+    SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}"
     VERIFY_URL="${VERIFY_URL:-${CRM_PUBLIC_URL}/ready}"
 fi
 
