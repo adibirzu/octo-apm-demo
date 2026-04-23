@@ -144,3 +144,60 @@ variable "stack_monitoring_atp_id" {
   default     = ""
   description = "ATP OCID to register. If create_atp=true this is auto-wired to the new DB."
 }
+
+###############################################################################
+# OKE — provision when the tenancy has no usable cluster. Reuse an existing
+# one by passing create_oke = false + existing_cluster_id (no wiring yet —
+# root module currently consumes the output only when create_oke=true).
+###############################################################################
+
+variable "create_oke" {
+  type    = bool
+  default = false
+}
+
+variable "oke_cluster_name" {
+  type    = string
+  default = "octo-apm-demo-oke"
+}
+
+variable "oke_kubernetes_version" {
+  type    = string
+  default = "v1.31.1"
+}
+
+variable "oke_vcn_cidr" {
+  type    = string
+  default = "10.0.0.0/16"
+}
+
+variable "oke_node_pool_size" {
+  type    = number
+  default = 3
+}
+
+variable "oke_node_ocpus" {
+  type    = number
+  default = 2
+}
+
+variable "oke_node_memory_gbs" {
+  type    = number
+  default = 16
+}
+
+variable "oke_node_boot_volume_gbs" {
+  type    = number
+  default = 93
+}
+
+variable "oke_node_image_id" {
+  type    = string
+  default = ""
+  description = "OKE-managed node image OCID. Required when create_oke=true."
+}
+
+variable "oke_availability_domain_names" {
+  type    = list(string)
+  default = []
+}
