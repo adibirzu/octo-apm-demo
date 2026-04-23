@@ -2,10 +2,17 @@
 # OCI Stack Monitoring — register the ATP DB as a monitored resource so
 # the ATP SQL performance + wait events surface in Observability Home.
 #
-# Stack Monitoring uses a resource-type of `oci_autonomous_database`.
-# Agent-less monitoring is enabled via the ATP's built-in metrics; no
-# Management Agent needed for DB-level visibility (agent is only needed
-# for host-level metrics which ATP abstracts away).
+# Stack Monitoring's registration for Autonomous DBs is deliberately
+# minimal from Terraform's side: OCI already knows the ATP exists (by
+# `external_id` = autonomous_database OCID) and auto-collects the
+# built-in metric stream. This module is the declarative hand-shake that
+# says "surface this DB in Stack Monitoring dashboards".
+#
+# NOTE: The richer agent-led monitoring (custom SQL capture, host-level
+# resources, alarms wired to DB sessions) requires an OCI Management
+# Agent registered with `oci_stack_monitoring_monitored_resources_list_member`.
+# That is out of scope for this module — ATP's built-in signal is enough
+# for the default demo.
 ###############################################################################
 
 variable "compartment_id" {
@@ -25,7 +32,7 @@ variable "autonomous_db_id" {
 variable "external_id" {
   type        = string
   default     = ""
-  description = "Optional external identifier — e.g. SQL Developer Web connection alias."
+  description = "Optional external identifier — defaults to the ATP OCID."
 }
 
 variable "properties" {
@@ -39,26 +46,13 @@ resource "oci_stack_monitoring_monitored_resource" "atp" {
   name           = var.monitored_resource_name
   type           = "oci_autonomous_database"
   display_name   = var.monitored_resource_name
-
-  management_agent_id = null
-
-  external_id = var.external_id == "" ? null : var.external_id
+  external_id    = var.external_id == "" ? var.autonomous_db_id : var.external_id
 
   dynamic "properties" {
     for_each = var.properties
     content {
       name  = properties.key
       value = properties.value
-    }
-  }
-
-  additional_aliases {
-    name   = "atp_ocid"
-    source = "terraform"
-    credential {
-      name    = "atp_identity"
-      service = "oci_autonomous_database"
-      key_id  = var.autonomous_db_id
     }
   }
 
