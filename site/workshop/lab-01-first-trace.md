@@ -24,7 +24,7 @@ echo "traceparent we'll inject: $TRACEPARENT"
 curl -sS \
     -H "traceparent: $TRACEPARENT" \
     -H "X-Workflow-Id: workshop-lab-01" \
-    https://drone.octodemo.cloud/api/products | jq '.[0]'
+    https://shop.example.tld/api/products | jq '.[0]'
 ```
 
 The `traceparent` header is the W3C standard the shop's OTel SDK reads.

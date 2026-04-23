@@ -52,7 +52,7 @@ The flame chart shows:
   - `lookup_customer` (8 ms — fine)
   - `lookup_products` (15 ms — fine)
   - `crm.sync_order` (4250 ms — **timeout**)
-    - `httpx.POST https://backend.octodemo.cloud/api/orders` —
+    - `httpx.POST https://crm.example.tld/api/orders` —
       circuit breaker `OPEN`
   - SQL `INSERT INTO orders` (succeeded)
   - response status = 500
@@ -105,7 +105,7 @@ kubectl delete pod -n octo-backend-prod <bad-pod>
 It comes back healthy within 60 s. Re-test:
 
 ```bash
-curl -sS https://backend.octodemo.cloud/ready | jq
+curl -sS https://crm.example.tld/ready | jq
 # database.reachable=true, healthy
 ```
 
@@ -118,7 +118,7 @@ it up on the next run and push it to CRM. You can either:
 - Manually trigger the reconciliation right now:
   ```bash
   curl -sS -X POST -H "X-Internal-Service-Key: $KEY" \
-      https://drone.octodemo.cloud/api/integrations/crm/sync-order \
+      https://shop.example.tld/api/integrations/crm/sync-order \
       -d '{"order_id": <from trace>}'
   ```
 - Or wait for the 5-min cycle.
