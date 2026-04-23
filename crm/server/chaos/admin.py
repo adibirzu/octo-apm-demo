@@ -248,9 +248,9 @@ def chaos_admin_page(request: Request) -> HTMLResponse:
     templates = _get_templates()
     nonce = getattr(request.state, "csp_nonce", "")
     return templates.TemplateResponse(
+        request,
         "chaos_admin.html",
         {
-            "request": request,
             "title": "Chaos Control",
             "brand_name": os.getenv("APP_NAME", "Enterprise CRM"),
             "service_name": os.getenv("SERVICE_NAME_CRM", "octo-enterprise-crm"),

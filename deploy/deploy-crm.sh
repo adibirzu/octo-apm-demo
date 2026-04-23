@@ -19,7 +19,7 @@ REMOTE_HOST="${REMOTE_HOST:-remote-builder}"
 REMOTE_DIR="/tmp/octo-apm-demo-crm"
 NAMESPACE="${K8S_NAMESPACE:-enterprise-crm}"
 DEPLOYMENT="${K8S_DEPLOYMENT:-enterprise-crm-portal}"
-CONTAINER="${K8S_CONTAINER:-app}"
+CONTAINER="${K8S_CONTAINER:-crm}"
 TAG=$(date +%Y%m%d%H%M%S)
 
 BUILD=true

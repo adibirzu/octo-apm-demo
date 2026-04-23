@@ -284,9 +284,14 @@ def _render_page(request: Request, page: str, title: str, **ctx):
     request.state.page_name = ctx.get("module") or page
     request.state.module_name = ctx.get("module") or page
     request.state.template_name = f"{page}.html"
+    # Starlette >= 0.46 requires (request, name, context). Legacy (name, context)
+    # overload was removed — it silently treated `name` as `request` and the
+    # context dict as `name`, yielding `TypeError: unhashable type: 'dict'`
+    # inside Jinja's template cache.
     return templates.TemplateResponse(
+        request,
         f"{page}.html",
-        {"request": request, "title": title,
+        {"title": title,
          "csp_nonce": getattr(request.state, "csp_nonce", ""),
          "rum_endpoint": cfg.oci_apm_rum_endpoint,
          "rum_public_key": cfg.oci_apm_public_datakey,
