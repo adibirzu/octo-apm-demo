@@ -88,7 +88,7 @@ the OKE Deployment can be rolled independently of secret rotation:
 | `OCI_APM_PRIVATE_DATAKEY` | `octo-apm:private-key` |
 | `OCI_APM_PUBLIC_DATAKEY` | `octo-apm:public-key` |
 | `OCI_APM_RUM_ENDPOINT` | `octo-apm:rum-endpoint` |
-| `OCI_APM_WEB_APPLICATION` | `octo-apm:web-application` |
+| `OCI_APM_WEB_APPLICATION` | `octo-apm:rum-web-application-ocid` |
 | `OCI_LOG_ID` | `octo-logging:log-id` |
 | `OCI_LOG_GROUP_ID` | `octo-logging:log-group-id` |
 | `OCI_COMPARTMENT_ID` | `octo-oci-config:compartment-id` |
