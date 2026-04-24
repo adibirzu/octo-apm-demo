@@ -53,7 +53,7 @@ Full walkthrough: [deploy/oke/README.md](https://github.com/adibirzu/octo-apm-de
 | Signal | Env var | Secret reference | Destination |
 |---|---|---|---|
 | Traces | `OCI_APM_ENDPOINT`, `OCI_APM_PRIVATE_DATAKEY` | `octo-apm:endpoint` + `private-key` | OCI APM Domain |
-| RUM | `OCI_APM_RUM_ENDPOINT`, `OCI_APM_PUBLIC_DATAKEY`, `OCI_APM_WEB_APPLICATION` | `octo-apm:rum-endpoint` + `public-key` + `web-application` | OCI APM RUM |
+| RUM | `OCI_APM_RUM_ENDPOINT`, `OCI_APM_PUBLIC_DATAKEY`, `OCI_APM_WEB_APPLICATION` | `octo-apm:rum-endpoint` + `public-key` + `rum-web-application-ocid` | OCI APM RUM |
 | Logs | `OCI_LOG_ID`, `OCI_LOG_GROUP_ID` | `octo-logging:log-id` + `log-group-id` | OCI Logging → Service Connector → Log Analytics (source `octo-shop-app-json`) |
 | Metrics | `OCI_COMPARTMENT_ID`, `OCI_MONITORING_NAMESPACE` | `octo-oci-config:compartment-id` | OCI Monitoring custom metrics + alarms |
 

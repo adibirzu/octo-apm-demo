@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Ensure an OCI APM Domain + RUM Web Application exist in the target
-# tenancy, and emit the env vars the app needs (OCI_APM_ENDPOINT,
+# Ensure an OCI APM Domain exist in the target tenancy, and emit the
+# env vars the app needs (OCI_APM_ENDPOINT,
 # OCI_APM_PUBLIC_DATAKEY, OCI_APM_PRIVATE_DATAKEY, OCI_APM_RUM_ENDPOINT,
 # OCI_APM_WEB_APPLICATION) on stdout for operator consumption.
 #
@@ -50,6 +50,79 @@ export TF_VAR_waf_log_group_id="${WAF_LOG_GROUP_ID}"
 export TF_VAR_la_namespace="${LA_NAMESPACE}"
 export TF_VAR_la_log_group_id="${LA_LOG_GROUP_ID}"
 
+read_outputs_json() {
+    terraform output -json 2>/dev/null || echo "{}"
+}
+
+print_apm_exports() {
+    local outputs_json apm_endpoint rum_endpoint rum_app public_key private_key
+    outputs_json="$(read_outputs_json)"
+    apm_endpoint="$(
+        OUTPUTS_JSON="${outputs_json}" python3 - <<'PY'
+import json
+import os
+
+outputs = json.loads(os.environ["OUTPUTS_JSON"])
+apm_domain = (outputs.get("apm_domain") or {}).get("value") or {}
+print(apm_domain.get("apm_data_upload_endpoint", ""), end="")
+PY
+    )"
+    rum_endpoint="$(
+        OUTPUTS_JSON="${outputs_json}" python3 - <<'PY'
+import json
+import os
+
+outputs = json.loads(os.environ["OUTPUTS_JSON"])
+apm_domain = (outputs.get("apm_domain") or {}).get("value") or {}
+print(apm_domain.get("rum_endpoint", ""), end="")
+PY
+    )"
+    rum_app="$(
+        OUTPUTS_JSON="${outputs_json}" python3 - <<'PY'
+import json
+import os
+
+outputs = json.loads(os.environ["OUTPUTS_JSON"])
+apm_domain = (outputs.get("apm_domain") or {}).get("value") or {}
+print(apm_domain.get("rum_web_application_id", ""), end="")
+PY
+    )"
+    public_key="$(
+        OUTPUTS_JSON="${outputs_json}" python3 - <<'PY'
+import json
+import os
+
+outputs = json.loads(os.environ["OUTPUTS_JSON"])
+print((outputs.get("apm_public_datakey") or {}).get("value", ""), end="")
+PY
+    )"
+    private_key="$(
+        OUTPUTS_JSON="${outputs_json}" python3 - <<'PY'
+import json
+import os
+
+outputs = json.loads(os.environ["OUTPUTS_JSON"])
+print((outputs.get("apm_private_datakey") or {}).get("value", ""), end="")
+PY
+    )"
+
+    if [[ -z "${apm_endpoint}" || -z "${public_key}" || -z "${private_key}" ]]; then
+        echo "APM outputs are not present in the current Terraform state." >&2
+        echo "Run with --apply first, or verify TF_VAR_create_apm_domain=true for this workspace." >&2
+        return 1
+    fi
+
+    echo
+    echo "# Export these env vars to wire the app to the provisioned APM Domain:"
+    cat <<EOF
+export OCI_APM_ENDPOINT="${apm_endpoint}"
+export OCI_APM_RUM_ENDPOINT="${rum_endpoint:-${apm_endpoint}}"
+export OCI_APM_WEB_APPLICATION="${rum_app}"
+export OCI_APM_PUBLIC_DATAKEY="${public_key}"
+export OCI_APM_PRIVATE_DATAKEY="${private_key}"
+EOF
+}
+
 cd "${TF_DIR}"
 
 case "${mode}" in
@@ -70,20 +143,5 @@ case "${mode}" in
 esac
 
 if [[ "${mode}" == "apply" || "${mode}" == "print" ]]; then
-    echo
-    echo "# Export these env vars to wire the app to the provisioned APM Domain:"
-    terraform output -raw apm_public_datakey >/dev/null 2>&1 && {
-        APM_ENDPOINT=$(terraform output -json apm_domain | python3 -c "import json,sys;print(json.load(sys.stdin)['apm_data_upload_endpoint'])")
-        RUM_ENDPOINT=$(terraform output -json apm_domain | python3 -c "import json,sys;print(json.load(sys.stdin)['rum_endpoint'])")
-        RUM_APP=$(terraform output -json apm_domain | python3 -c "import json,sys;print(json.load(sys.stdin)['rum_web_application_id'])")
-        PUBLIC_KEY=$(terraform output -raw apm_public_datakey)
-        PRIVATE_KEY=$(terraform output -raw apm_private_datakey)
-        cat <<EOF
-export OCI_APM_ENDPOINT="${APM_ENDPOINT}"
-export OCI_APM_RUM_ENDPOINT="${RUM_ENDPOINT}"
-export OCI_APM_WEB_APPLICATION="${RUM_APP}"
-export OCI_APM_PUBLIC_DATAKEY="${PUBLIC_KEY}"
-export OCI_APM_PRIVATE_DATAKEY="${PRIVATE_KEY}"
-EOF
-    }
+    print_apm_exports
 fi

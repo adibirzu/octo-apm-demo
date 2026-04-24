@@ -96,14 +96,14 @@ Auth: instance principal from the builder host's dynamic group + `docker login` 
 | APM Domain | `ensure_apm.sh` / RM module / `apm_domain` TF module | `OCI_APM_ENDPOINT` |
 | APM public data key | Same | `OCI_APM_PUBLIC_DATAKEY` |
 | APM private data key | Same | `OCI_APM_PRIVATE_DATAKEY` (sensitive) |
-| RUM Web Application | `ensure_apm.sh` (WEB_APPLICATION config) | `OCI_APM_WEB_APPLICATION` |
+| RUM Web Application | OCI Console (manual step after the APM domain exists) | `OCI_APM_WEB_APPLICATION` |
 | Logging log group | OCI Console / Terraform | `OCI_LOG_GROUP_ID` |
 | Application log (inside group) | OCI Console / Terraform | `OCI_LOG_ID` |
 | Log Analytics namespace | One per tenancy (usually auto) | `LA_NAMESPACE` |
 | Log Analytics log group | OCI Console / Terraform | `LA_LOG_GROUP_ID` |
 | Log Analytics source `octo-shop-app-json` | `tools/create_la_source.py --apply` | — |
 | Service Connector (app log → LA) | `la_pipeline_app_logs` module | — |
-| Stack Monitoring MonitoredResource (ATP) | `ensure_stack_monitoring.sh` | — |
+| Stack Monitoring MonitoredResource (ATP) | `ensure_stack_monitoring.sh` (requires a current `stack-monitoring resource create` prereq surface) | — |
 | Custom metrics + alarms | `ensure_monitoring.sh` | `OCI_MONITORING_NAMESPACE` |
 
 ## 8. WAF (optional but recommended)

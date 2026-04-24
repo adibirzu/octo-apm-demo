@@ -31,7 +31,7 @@ Each service's k8s manifest references these Secrets; populate once via
 | `octo-apm` | `private-key` | otel-gateway |
 | `octo-apm` | `public-key` | shop, crm (browser SDK inject) |
 | `octo-apm` | `rum-endpoint` | shop, crm |
-| `octo-apm` | `web-application` | shop (OCI_APM_WEB_APPLICATION) |
+| `octo-apm` | `rum-web-application-ocid` | shop (OCI_APM_WEB_APPLICATION) |
 | `octo-logging` | `log-id` | shop, crm |
 | `octo-logging` | `log-group-id` | shop, crm |
 | `octo-oci-config` | `compartment-id` | shop (GenAI + Monitoring) |
