@@ -75,6 +75,8 @@ def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
     destroy = read_text("deploy/destroy.sh")
     deploy_crm = read_text("deploy/deploy-crm.sh")
     init_tenancy = read_text("deploy/init-tenancy.sh")
+    ensure_apm = read_text("deploy/oci/ensure_apm.sh")
+    ensure_stack_monitoring = read_text("deploy/oci/ensure_stack_monitoring.sh")
     deploy_oke = read_text("deploy/oke/deploy-oke.sh")
     readme = read_text("README.md")
     site_index = read_text("site/index.md")
@@ -90,6 +92,9 @@ def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
     assert "Shared ingress controller is preserved by default." in destroy
     assert "OCI_LOG_CHAOS_AUDIT_ID" in init_tenancy
     assert "OCI_LOG_SECURITY_ID" in init_tenancy
+    assert "print_apm_exports" in ensure_apm
+    assert "stack-monitoring resource create" in ensure_stack_monitoring
+    assert "MANAGEMENT_AGENT_ID" in ensure_stack_monitoring
     assert 'CONTAINER="${K8S_CONTAINER:-app}"' in deploy_crm
     assert 'SERVICE_SHOP_URL="${SERVICE_SHOP_URL:-http://octo-drone-shop.' in deploy_crm
     assert "DNS_DOMAIN=cyber-sec.ro" in deploy_oke
