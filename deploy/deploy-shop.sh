@@ -78,6 +78,53 @@ PYEOF
     done
 }
 
+ingress_controller_service_name() {
+    local candidate
+    for candidate in ingress-nginx-controller nginx-ingress-ingress-nginx-controller; do
+        if kubectl -n ingress-nginx get svc "${candidate}" >/dev/null 2>&1; then
+            printf '%s' "${candidate}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+url_field() {
+    python3 - "$1" "$2" <<'PYEOF'
+from urllib.parse import urlsplit
+import sys
+
+url = urlsplit(sys.argv[1])
+field = sys.argv[2]
+if field == "host":
+    print(url.hostname or "", end="")
+elif field == "port":
+    if url.port:
+        print(url.port, end="")
+    else:
+        print(443 if (url.scheme or "https") == "https" else 80, end="")
+PYEOF
+}
+
+VERIFY_RESOLVE_HOSTPORT=""
+VERIFY_INGRESS_IP=""
+resolve_verify_over_ingress() {
+    local url="$1"
+    local ingress_service host port
+    host="$(url_field "${url}" host)"
+    port="$(url_field "${url}" port)"
+    VERIFY_INGRESS_IP="${VERIFY_INGRESS_IP:-${INGRESS_IP:-}}"
+    if [[ -z "${VERIFY_INGRESS_IP}" ]]; then
+        ingress_service="$(ingress_controller_service_name || true)"
+        if [[ -n "${ingress_service}" ]]; then
+            VERIFY_INGRESS_IP="$(kubectl -n ingress-nginx get svc "${ingress_service}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
+        fi
+    fi
+    if [[ -n "${host}" && -n "${port}" && -n "${VERIFY_INGRESS_IP}" ]]; then
+        VERIFY_RESOLVE_HOSTPORT="${host}:${port}:${VERIFY_INGRESS_IP}"
+    fi
+}
+
 echo "================================================"
 echo " OCTO Drone Shop Deploy"
 echo " OCIR:  ${OCIR_REPO}"
@@ -184,7 +231,13 @@ if $ROLLOUT; then
     echo ""
     echo "Checking /ready endpoint..."
     sleep 5
-    READY=$(curl -s --max-time 10 "${VERIFY_URL}" 2>/dev/null || echo '{"ready": false}')
+    resolve_verify_over_ingress "${VERIFY_URL}"
+    curl_args=(-s --max-time 10)
+    if [[ -n "${VERIFY_RESOLVE_HOSTPORT}" ]]; then
+        echo "Verifying via ingress IP ${VERIFY_INGRESS_IP} (${VERIFY_RESOLVE_HOSTPORT%%:*})"
+        curl_args+=(--resolve "${VERIFY_RESOLVE_HOSTPORT}")
+    fi
+    READY=$(curl "${curl_args[@]}" "${VERIFY_URL}" 2>/dev/null || echo '{"ready": false}')
     echo "$READY" | python3 -m json.tool 2>/dev/null || echo "$READY"
 fi
 

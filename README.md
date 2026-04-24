@@ -8,7 +8,7 @@ cross-service contract hardened in the upstream repos.
 
 **Docs site**: https://adibirzu.github.io/octo-apm-demo
 **Target hostnames (`DEFAULT` / `oci4cca`)**: `shop.cyber-sec.ro` (Shop) · `crm.cyber-sec.ro` (CRM)
-**Status (April 23, 2026)**: the OCI stack, OKE workloads, shared ingress IP `144.24.173.224`, and OCI DNS records for `shop.cyber-sec.ro` / `crm.cyber-sec.ro` are in `oci4cca`. Public HTTPS is live on both hosts, backed by the imported wildcard certificate `star.cyber-sec.ro` (current bundle version 4, valid from April 23, 2026 through November 7, 2026) loaded into Kubernetes as `cyber-sec-ro-tls`. Public delegation still points at Wix nameservers rather than the OCI zone, but the public `A` records currently resolve to the same ingress IP. Legacy CAP reference endpoints remain `https://shop.octodemo.cloud` · `https://crm.octodemo.cloud`.
+**Status (April 24, 2026)**: the OCI stack, OKE workloads, shared ingress IP `144.24.173.224`, wildcard certificate `star.cyber-sec.ro` (bundle version 4, valid from April 23, 2026 through November 7, 2026), ATP, and observability secrets are in `oci4cca`. The Shop and CRM apps are healthy through the shared ingress when routed with `shop.cyber-sec.ro` / `crm.cyber-sec.ro` as TLS hosts, but public DNS is not cut over yet: `cyber-sec.ro` is still delegated to Wix nameservers, so external resolvers do not use the OCI zone `A` records. Update the active Wix-hosted rrsets or delegate the domain to OCI to make the sites publicly reachable without `--resolve`. Legacy CAP reference endpoints remain `https://shop.octodemo.cloud` · `https://crm.octodemo.cloud`.
 
 ## Repository layout
 

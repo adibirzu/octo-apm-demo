@@ -107,3 +107,33 @@ def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
     assert "crm.cyber-sec.ro" in current_status
     assert "version `4`" in current_status
     assert "Wix" in current_status
+
+
+def test_bootstrap_detects_external_dns_authority_and_falls_back_to_manual() -> None:
+    bootstrap = read_text("deploy/bootstrap.sh")
+
+    assert "dig +short NS" in bootstrap
+    assert "Public delegation for ${DNS_BASE_DOMAIN} is not using the OCI DNS zone." in bootstrap
+    assert "Switching effective DNS mode to manual." in bootstrap
+    assert "terraform -chdir=\"${SCRIPT_DIR}/terraform\" output -json \"${output_name}\"" in bootstrap
+    assert "log_group_id" in bootstrap
+    assert '|| "${code}" == "308"' in bootstrap
+
+
+def test_service_rollouts_can_verify_via_ingress_ip_before_dns_cutover() -> None:
+    deploy_shop = read_text("deploy/deploy-shop.sh")
+    deploy_crm = read_text("deploy/deploy-crm.sh")
+
+    for script in (deploy_shop, deploy_crm):
+        assert "--resolve" in script
+        assert "Verifying via ingress IP" in script
+        assert "ingress-nginx-controller" in script
+
+
+def test_unified_wrapper_and_atp_helper_recover_preserved_runtime_dependencies() -> None:
+    deploy_wrapper = read_text("deploy/deploy.sh")
+    ensure_atp = read_text("deploy/oci/ensure_atp.sh")
+
+    assert "ATP is STOPPED — starting" in deploy_wrapper
+    assert "Shared ingress is not healthy." in deploy_wrapper
+    assert "ATP is STOPPED — starting" in ensure_atp

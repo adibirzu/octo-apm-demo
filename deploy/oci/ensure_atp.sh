@@ -33,6 +33,24 @@ EXISTING_ID="$(oci db autonomous-database list \
 
 if [[ -n "${EXISTING_ID}" && "${EXISTING_ID}" != "null" ]]; then
   echo "ATP already exists: ${EXISTING_ID}"
+  EXISTING_STATE="$(oci db autonomous-database get \
+    --autonomous-database-id "${EXISTING_ID}" \
+    --query 'data."lifecycle-state"' \
+    --raw-output)"
+  if [[ "${EXISTING_STATE}" == "STOPPED" ]]; then
+    echo "ATP is STOPPED — starting ${EXISTING_ID}..."
+    oci db autonomous-database start --autonomous-database-id "${EXISTING_ID}" >/dev/null
+    if [[ "${WAIT_FOR_AVAILABLE}" == "true" ]]; then
+      oci db autonomous-database get \
+        --autonomous-database-id "${EXISTING_ID}" \
+        --wait-for-state AVAILABLE >/dev/null
+    fi
+  elif [[ "${EXISTING_STATE}" != "AVAILABLE" && "${WAIT_FOR_AVAILABLE}" == "true" ]]; then
+    echo "Waiting for existing ATP to become AVAILABLE (current state: ${EXISTING_STATE})..."
+    oci db autonomous-database get \
+      --autonomous-database-id "${EXISTING_ID}" \
+      --wait-for-state AVAILABLE >/dev/null
+  fi
   oci db autonomous-database get --autonomous-database-id "${EXISTING_ID}" \
     --query 'data.{id:id,display_name:"display-name",db_name:"db-name",state:"lifecycle-state",connection_strings:"connection-strings"."all-connection-strings"}' \
     --output json
