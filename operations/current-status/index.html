@@ -3856,7 +3856,7 @@
 
 
 <h1 id="current-status">Current Status<a class="headerlink" href="#current-status" title="Permanent link">&para;</a></h1>
-<p>Snapshot date: <strong>April 23, 2026</strong></p>
+<p>Snapshot date: <strong>April 24, 2026</strong></p>
 <p>This page records the current validated state of the unified OCTO deployment in the <code>oci4cca</code> tenancy using the <code>DEFAULT</code> OCI profile.</p>
 <h2 id="tenancy-confirmation">Tenancy confirmation<a class="headerlink" href="#tenancy-confirmation" title="Permanent link">&para;</a></h2>
 <ul>
@@ -3869,16 +3869,17 @@
 <li>The intended <code>oci4cca</code> public hostnames are <code>shop.cyber-sec.ro</code> and <code>crm.cyber-sec.ro</code>.</li>
 <li>The OCI DNS zone <code>cyber-sec.ro</code> exists in compartment <code>Adrian_Birzu</code>.</li>
 <li>OCI DNS A records for <code>shop.cyber-sec.ro</code> and <code>crm.cyber-sec.ro</code> are present in that zone and now point to the active ingress IP <code>144.24.173.224</code>.</li>
-<li>Public internet delegation for <code>cyber-sec.ro</code> is still pointed at Wix nameservers, not the OCI nameservers for the <code>Adrian_Birzu</code> zone.</li>
-<li>Public DNS currently resolves both hostnames to <code>144.24.173.224</code>, so browser access is live today.</li>
-<li>Operational implication: until the registrar delegation moves from Wix to OCI, the public Wix-hosted rrsets and the OCI zone must stay aligned.</li>
+<li>Public internet delegation for <code>cyber-sec.ro</code> is still pointed at Wix nameservers (<code>ns2.wixdns.net</code>, <code>ns3.wixdns.net</code>), not the OCI nameservers for the <code>Adrian_Birzu</code> zone.</li>
+<li>As of April 24, 2026, public resolvers such as <code>1.1.1.1</code> return <strong>no A record</strong> for either <code>shop.cyber-sec.ro</code> or <code>crm.cyber-sec.ro</code>.</li>
+<li>Operational implication: until the active Wix-hosted rrsets are updated or delegation moves from Wix to OCI, the apps are not publicly reachable by normal DNS resolution.</li>
 </ul>
 <h2 id="tls-status">TLS status<a class="headerlink" href="#tls-status" title="Permanent link">&para;</a></h2>
 <ul>
 <li>OCI Certificates contains an imported certificate named <code>star.cyber-sec.ro</code>.</li>
 <li>Its current certificate bundle resolves to version <code>4</code>, valid from <strong>April 23, 2026</strong> until <strong>November 7, 2026</strong>.</li>
 <li>The deployment scripts now load that certificate and private key into Kubernetes TLS secrets named <code>cyber-sec-ro-tls</code> so the shared ingress can terminate <code>shop.cyber-sec.ro</code> and <code>crm.cyber-sec.ro</code>.</li>
-<li>Result: direct <code>https://shop.cyber-sec.ro/ready</code> and <code>https://crm.cyber-sec.ro/ready</code> return <code>200 OK</code>, and plain HTTP now redirects to HTTPS.</li>
+<li><code>openssl s_client -connect 144.24.173.224:443 -servername shop.cyber-sec.ro</code> presents <code>CN=*.cyber-sec.ro</code>.</li>
+<li>Result: host-routed HTTPS checks with <code>curl --resolve</code> return <code>200 OK</code> for both <code>/ready</code> endpoints, and plain HTTP on the ingress redirects to HTTPS.</li>
 </ul>
 <h2 id="runtime-status">Runtime status<a class="headerlink" href="#runtime-status" title="Permanent link">&para;</a></h2>
 <ul>
@@ -3886,38 +3887,43 @@
 <li>Managed node pool: <code>octo-apm-managed-pool</code></li>
 <li>Shared ingress controller: <code>ingress-nginx/nginx-ingress-ingress-nginx-controller</code> at <code>2/2</code></li>
 <li>Shared ingress IP: <code>144.24.173.224</code></li>
-<li>ATP: <code>octo-apm-demo-atp</code></li>
+<li>ATP: <code>octo-apm-demo-atp</code> at <code>AVAILABLE</code></li>
+<li>Managed ingress nodes <code>10.0.10.20</code> and <code>10.0.10.36</code> are back to <code>Ready</code></li>
 <li>Shop deployment: <code>octo-drone-shop</code> at <code>2/2</code> in namespace <code>octo-drone-shop</code></li>
 <li>CRM deployment: <code>enterprise-crm-portal</code> at <code>2/2</code> in namespace <code>enterprise-crm</code></li>
-<li>Public HTTPS <code>/ready</code> returns <code>ready=true</code> for both <code>shop.cyber-sec.ro</code> and <code>crm.cyber-sec.ro</code>.</li>
-<li>Public HTTP <code>/ready</code> redirects to the equivalent HTTPS endpoint for both hosts.</li>
-<li>Both <code>/api/integrations/schema</code> endpoints resolve correctly through the public <code>cyber-sec.ro</code> hosts.</li>
+<li><code>curl --resolve shop.cyber-sec.ro:443:144.24.173.224 https://shop.cyber-sec.ro/ready</code> returns <code>ready=true</code> and <code>database=connected</code>.</li>
+<li><code>curl --resolve crm.cyber-sec.ro:443:144.24.173.224 https://crm.cyber-sec.ro/ready</code> returns <code>ready=true</code> and <code>database=connected</code>.</li>
+<li>Public browser access through normal DNS is still blocked until the authoritative <code>A</code> records are fixed at the active DNS provider.</li>
 <li>Legacy ingress hostnames still present in the cluster: <code>shop.octodemo.cloud</code> and <code>crm.octodemo.cloud</code></li>
 </ul>
 <h2 id="observability-status">Observability status<a class="headerlink" href="#observability-status" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Server-side APM is configured in both apps (<code>apm_configured=true</code> on both <code>/ready</code> endpoints).</li>
-<li>Browser RUM is active on both apps (<code>rum_configured=true</code> on both <code>/ready</code> endpoints).</li>
-<li>OCI Logging is configured in both namespaces, including the app, chaos audit, and security log OCIDs.</li>
-<li>OCI Logging Analytics is wired through the created service connector for the application log stream.</li>
-<li>The optional OCI APM RUM web-application OCID remains unset; beacon ingestion still works, but named RUM application metadata remains a manual OCI Console step.</li>
+<li>Both namespaces have populated <code>octo-apm</code> secrets with the APM endpoint plus public/private data keys.</li>
+<li>Both <code>/ready</code> endpoints report <code>apm_configured=true</code> and <code>rum_configured=true</code>.</li>
+<li>Both namespaces have populated <code>octo-logging</code> secrets with the shared OCI log group, application log, chaos-audit log, and security log OCIDs.</li>
+<li>OCI Logging log group <code>octo-apm-demo</code> is <code>ACTIVE</code>.</li>
+<li>OCI Service Connector <code>la-pipeline-octo-shop-app</code> is <code>ACTIVE</code>, so the Log Analytics pipeline for the shop application log stream exists.</li>
+<li>OCI Stack Monitoring onboarding for the ATP is still a manual/conditional step because the current helper requires a management agent plus DB connection details.</li>
 </ul>
 <h2 id="what-was-wrong">What was wrong<a class="headerlink" href="#what-was-wrong" title="Permanent link">&para;</a></h2>
 <ul>
-<li>The repo and docs treated CAP endpoints (<code>shop.octodemo.cloud</code>, <code>crm.octodemo.cloud</code>) as if they were the validated <code>oci4cca</code> public surface.</li>
-<li>Several deployment examples still hardcoded <code>octodemo.cloud</code>, which pushed operators toward the wrong tenancy/domain pairing.</li>
-<li>The root bootstrap path had a real functional bug: generated Ingress objects always targeted service port <code>80</code> even when the actual backend services exposed <code>8080</code>.</li>
-<li>The legacy bootstrap/init flow also generated per-namespace auth keys, skipped the OCIR pull secret, and wrote empty observability secrets into CRM, which broke the unified manifests on a clean redeploy.</li>
+<li>The repo and docs treated <code>cyber-sec.ro</code> as publicly live just because the OCI DNS zone and <code>A</code> records existed, even though the internet was still delegated to Wix.</li>
+<li>ATP had been left in <code>STOPPED</code>, which caused both apps to fail Oracle ATP startup and readiness.</li>
+<li>The managed ingress nodes had been left stopped as well, which broke the shared <code>ingress-nginx</code> controller.</li>
+<li>The service rollout scripts verified only through the public hostname, so they could report a failed deployment even when the ingress, TLS certificate, and app pods were healthy behind the load balancer.</li>
+<li>Earlier bootstrap/init bugs around ingress port selection, OCIR pull secrets, and per-namespace secret drift were already fixed in the April 23 deploy-script cleanup.</li>
 </ul>
 <h2 id="current-remediation">Current remediation<a class="headerlink" href="#current-remediation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>deploy/deploy.sh</code> exists and remains the canonical unified build/push/rollout wrapper.</li>
-<li><code>deploy/bootstrap.sh</code> now routes generated Ingress objects to the declared backend service port, reuses the shared ingress controller, imports the OCI wildcard certificate, and preserves non-empty APM / Logging / integration secrets.</li>
+<li><code>deploy/bootstrap.sh</code> now routes generated Ingress objects to the declared backend service port, reuses the shared ingress controller, imports the OCI wildcard certificate, preserves non-empty APM / Logging / integration secrets, and automatically falls back to manual DNS mode when the OCI zone is not the public authority.</li>
 <li><code>deploy/init-tenancy.sh</code> now keeps auth consistent across both namespaces, recreates <code>ocir-pull-secret</code>, and can sync wallet / observability secrets instead of leaving CRM blank.</li>
 <li><code>deploy/destroy.sh</code> now defaults to deleting only the shop / CRM workloads and keeps shared ingress and the managed node pool unless explicitly asked to remove them.</li>
+<li><code>deploy/deploy.sh</code> now auto-starts a stopped ATP before rollout and fails early if the shared ingress is unhealthy.</li>
+<li><code>deploy/deploy-shop.sh</code> and <code>deploy/deploy-crm.sh</code> now verify through the ingress IP with <code>--resolve</code>, so rollout validation still works before public DNS cutover.</li>
+<li><code>deploy/oci/ensure_atp.sh</code> now starts a stopped existing ATP instead of treating it as already usable.</li>
 <li><code>deploy/resource-manager/upsert-stack.sh</code> packages and creates or updates the unified OCI Resource Manager stack from this repo.</li>
-<li>Deployment comments, wizard defaults, and E2E defaults now target <code>cyber-sec.ro</code> for <code>DEFAULT</code> / <code>oci4cca</code>.</li>
-<li>The docs now distinguish the <code>oci4cca</code> target domain from the legacy CAP reference endpoints.</li>
+<li>Deployment comments, wizard defaults, E2E defaults, and the published docs now target <code>cyber-sec.ro</code> for <code>DEFAULT</code> / <code>oci4cca</code> while calling out the remaining DNS cutover blocker explicitly.</li>
 </ul>
 <h2 id="legacy-cap-reference">Legacy CAP reference<a class="headerlink" href="#legacy-cap-reference" title="Permanent link">&para;</a></h2>
 <ul>
@@ -3929,6 +3935,10 @@
 <ul>
 <li>Focused root regression test: <code>tests/test_unified_deploy_surface.py</code></li>
 <li>Broader script/doc validator: <code>deploy/verify.sh</code></li>
+<li>Live DNS check: <code>dig +short NS cyber-sec.ro @1.1.1.1</code></li>
+<li>Live ingress/TLS checks:</li>
+<li><code>curl --resolve shop.cyber-sec.ro:443:144.24.173.224 https://shop.cyber-sec.ro/ready</code></li>
+<li><code>curl --resolve crm.cyber-sec.ro:443:144.24.173.224 https://crm.cyber-sec.ro/ready</code></li>
 </ul>
 
 
