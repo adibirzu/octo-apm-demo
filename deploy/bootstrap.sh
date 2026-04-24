@@ -197,6 +197,32 @@ ingress_controller_service_name() {
     return 1
 }
 
+normalize_nameserver_list() {
+    tr '[:upper:]' '[:lower:]' | sed 's/\.$//' | sed '/^$/d' | sort -u
+}
+
+oci_zone_nameservers() {
+    OCI_PROFILE="${OCI_PROFILE}" \
+    DNS_BASE_DOMAIN="${DNS_BASE_DOMAIN}" \
+    python3 - <<'PYEOF'
+import os
+import oci
+
+cfg = oci.config.from_file(profile_name=os.environ["OCI_PROFILE"])
+dns = oci.dns.DnsClient(cfg)
+zone = dns.get_zone(os.environ["DNS_BASE_DOMAIN"]).data
+for nameserver in zone.nameservers or []:
+    host = getattr(nameserver, "hostname", "") or ""
+    if host:
+        print(host)
+PYEOF
+}
+
+public_zone_nameservers() {
+    command -v dig >/dev/null 2>&1 || return 1
+    dig +short NS "${DNS_BASE_DOMAIN}" 2>/dev/null
+}
+
 render_and_apply_manifest() {
     local namespace="$1"
     local image_tag="$2"
@@ -518,16 +544,53 @@ BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-$(first_nonempty_secret_va
 [[ -n "${APP_SECRET_KEY}" ]] || APP_SECRET_KEY="$(gen)"
 [[ -n "${BOOTSTRAP_ADMIN_PASSWORD}" ]] || BOOTSTRAP_ADMIN_PASSWORD="$(gen)"
 
+terraform_output_value() {
+    local output_name="$1"
+    local nested_key="${2:-}"
+    terraform -chdir="${SCRIPT_DIR}/terraform" output -json "${output_name}" 2>/dev/null | \
+        python3 - "${nested_key}" <<'PYEOF'
+import json
+import sys
+
+try:
+    value = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+
+nested_key = sys.argv[1]
+if nested_key:
+    value = value.get(nested_key, "") if isinstance(value, dict) else ""
+
+if value is None:
+    sys.exit(0)
+if isinstance(value, bool):
+    print("true" if value else "false", end="")
+elif isinstance(value, (dict, list)):
+    sys.exit(0)
+else:
+    print(value, end="")
+PYEOF
+}
+
 OCI_APM_ENDPOINT="${OCI_APM_ENDPOINT:-$(first_nonempty_secret_value_or_blank octo-apm endpoint)}"
+[[ -n "${OCI_APM_ENDPOINT}" ]] || OCI_APM_ENDPOINT="$(terraform_output_value apm_domain apm_data_upload_endpoint)"
 OCI_APM_PRIVATE_DATAKEY="${OCI_APM_PRIVATE_DATAKEY:-$(first_nonempty_secret_value_or_blank octo-apm private-key)}"
+[[ -n "${OCI_APM_PRIVATE_DATAKEY}" ]] || OCI_APM_PRIVATE_DATAKEY="$(terraform_output_value apm_private_datakey)"
 OCI_APM_PUBLIC_DATAKEY="${OCI_APM_PUBLIC_DATAKEY:-$(first_nonempty_secret_value_or_blank octo-apm public-key)}"
+[[ -n "${OCI_APM_PUBLIC_DATAKEY}" ]] || OCI_APM_PUBLIC_DATAKEY="$(terraform_output_value apm_public_datakey)"
 OCI_APM_RUM_ENDPOINT="${OCI_APM_RUM_ENDPOINT:-$(first_nonempty_secret_value_or_blank octo-apm rum-endpoint)}"
+[[ -n "${OCI_APM_RUM_ENDPOINT}" ]] || OCI_APM_RUM_ENDPOINT="$(terraform_output_value apm_domain rum_endpoint)"
 OCI_APM_RUM_WEB_APPLICATION_OCID="${OCI_APM_RUM_WEB_APPLICATION_OCID:-$(first_nonempty_secret_value_or_blank octo-apm rum-web-application-ocid)}"
+[[ -n "${OCI_APM_RUM_WEB_APPLICATION_OCID}" ]] || OCI_APM_RUM_WEB_APPLICATION_OCID="$(terraform_output_value apm_domain rum_web_application_id)"
 
 OCI_LOG_GROUP_ID="${OCI_LOG_GROUP_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-group-id)}"
+[[ -n "${OCI_LOG_GROUP_ID}" ]] || OCI_LOG_GROUP_ID="$(terraform_output_value logging log_group_id)"
 OCI_LOG_ID="${OCI_LOG_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-id)}"
+[[ -n "${OCI_LOG_ID}" ]] || OCI_LOG_ID="$(terraform_output_value logging log_app_id)"
 OCI_LOG_CHAOS_AUDIT_ID="${OCI_LOG_CHAOS_AUDIT_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-chaos-audit-id)}"
+[[ -n "${OCI_LOG_CHAOS_AUDIT_ID}" ]] || OCI_LOG_CHAOS_AUDIT_ID="$(terraform_output_value logging log_chaos_audit_id)"
 OCI_LOG_SECURITY_ID="${OCI_LOG_SECURITY_ID:-$(first_nonempty_secret_value_or_blank octo-logging log-security-id)}"
+[[ -n "${OCI_LOG_SECURITY_ID}" ]] || OCI_LOG_SECURITY_ID="$(terraform_output_value logging log_security_id)"
 SPLUNK_HEC_URL="${SPLUNK_HEC_URL:-$(first_nonempty_secret_value_or_blank octo-logging splunk-hec-url)}"
 SPLUNK_HEC_TOKEN="${SPLUNK_HEC_TOKEN:-$(first_nonempty_secret_value_or_blank octo-logging splunk-hec-token)}"
 
@@ -902,6 +965,16 @@ fi
 [[ -n "${INGRESS_IP}" ]] || { _red "nginx-ingress LB IP not ready"; exit 1; }
 _green "nginx-ingress IP: ${INGRESS_IP}"
 
+PUBLIC_NS="$(public_zone_nameservers 2>/dev/null | normalize_nameserver_list || true)"
+OCI_ZONE_NS="$(oci_zone_nameservers 2>/dev/null | normalize_nameserver_list || true)"
+if [[ "${DNS_MODE}" == "auto" && -n "${PUBLIC_NS}" && -n "${OCI_ZONE_NS}" && "${PUBLIC_NS}" != "${OCI_ZONE_NS}" ]]; then
+    _yellow "Public delegation for ${DNS_BASE_DOMAIN} is not using the OCI DNS zone."
+    _yellow "  Public NS: $(echo "${PUBLIC_NS}" | tr '\n' ' ' | sed 's/ *$//')"
+    _yellow "  OCI NS:    $(echo "${OCI_ZONE_NS}" | tr '\n' ' ' | sed 's/ *$//')"
+    _yellow "Switching effective DNS mode to manual. Update the active DNS provider or delegate the zone to OCI."
+    DNS_MODE=manual
+fi
+
 # Persist for destroy.sh so it knows whether/which records to remove.
 {
     echo "export INGRESS_IP=${INGRESS_IP}"
@@ -981,13 +1054,13 @@ for host in "${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}" "${CRM_SUBDOMAIN}.${DNS_BASE_
     # Try via ingress IP directly (DNS propagation takes up to TTL).
     code=$(curl -sS -m 10 -H "Host: ${host}" -o /dev/null -w "%{http_code}" "http://${INGRESS_IP}/" 2>/dev/null || echo 000)
     ready=$(curl -sS -m 10 -H "Host: ${host}" "http://${INGRESS_IP}/ready" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('ready','?'))" 2>/dev/null || echo "?")
-    [[ "${code}" == "200" || "${code}" == "302" ]] && \
+    [[ "${code}" == "200" || "${code}" == "302" || "${code}" == "308" ]] && \
         _green "  ${host}: / → HTTP ${code}, /ready ready=${ready}" || \
         _red   "  ${host}: / → HTTP ${code}, /ready ready=${ready}"
     if [[ "${TLS_ENABLED}" == "true" ]]; then
         https_code=$(curl -sS -m 15 --resolve "${host}:443:${INGRESS_IP}" -o /dev/null -w "%{http_code}" "https://${host}/" 2>/dev/null || echo 000)
         https_ready=$(curl -sS -m 15 --resolve "${host}:443:${INGRESS_IP}" "https://${host}/ready" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('ready','?'))" 2>/dev/null || echo "?")
-        [[ "${https_code}" == "200" || "${https_code}" == "302" ]] && \
+        [[ "${https_code}" == "200" || "${https_code}" == "302" || "${https_code}" == "308" ]] && \
             _green "  ${host}: / → HTTPS ${https_code}, /ready ready=${https_ready}" || \
             _red   "  ${host}: / → HTTPS ${https_code}, /ready ready=${https_ready}"
     fi

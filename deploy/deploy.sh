@@ -13,6 +13,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TENANCY_CACHE="${SCRIPT_DIR}/.last-tenancy.env"
 
 usage() {
     sed -n '2,16p' "$0"
@@ -20,6 +21,7 @@ usage() {
 
 RUN_SHOP=true
 RUN_CRM=true
+BUILD_ONLY=false
 forward_args=()
 
 for arg in "$@"; do
@@ -29,6 +31,10 @@ for arg in "$@"; do
             ;;
         --crm-only)
             RUN_SHOP=false
+            ;;
+        --build-only)
+            BUILD_ONLY=true
+            forward_args+=("$arg")
             ;;
         -h|--help)
             usage
@@ -61,6 +67,113 @@ fi
 
 SHOP_OCIR_REPO="${SHOP_OCIR_REPO:-${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop}"
 CRM_OCIR_REPO="${CRM_OCIR_REPO:-${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal}"
+
+cached_env_value() {
+    local key="$1"
+    [[ -f "${TENANCY_CACHE}" ]] || return 1
+    sed -n "s/^export ${key}=//p" "${TENANCY_CACHE}" | tail -1
+}
+
+discover_atp_ocid() {
+    local compartment_id profile atp_id
+    if [[ -n "${ATP_OCID:-}" ]]; then
+        printf '%s' "${ATP_OCID}"
+        return 0
+    fi
+    if [[ -n "${AUTONOMOUS_DATABASE_ID:-}" ]]; then
+        printf '%s' "${AUTONOMOUS_DATABASE_ID}"
+        return 0
+    fi
+    compartment_id="${OCI_COMPARTMENT_ID:-$(cached_env_value OCI_COMPARTMENT_ID || true)}"
+    profile="${OCI_PROFILE:-$(cached_env_value OCI_PROFILE || true)}"
+    [[ -n "${compartment_id}" ]] || return 1
+    profile="${profile:-DEFAULT}"
+    atp_id="$(
+        oci db autonomous-database list \
+            --profile "${profile}" \
+            --compartment-id "${compartment_id}" \
+            --all \
+            --query "data[?\"display-name\"=='${ATP_DISPLAY_NAME:-octo-apm-demo-atp}'].id | [0]" \
+            --raw-output 2>/dev/null || true
+    )"
+    [[ -n "${atp_id}" && "${atp_id}" != "null" ]] || return 1
+    printf '%s' "${atp_id}"
+}
+
+ensure_atp_available() {
+    command -v oci >/dev/null 2>&1 || return 0
+    local atp_id profile state
+    atp_id="$(discover_atp_ocid || true)"
+    [[ -n "${atp_id}" ]] || return 0
+    profile="${OCI_PROFILE:-$(cached_env_value OCI_PROFILE || true)}"
+    profile="${profile:-DEFAULT}"
+    state="$(
+        oci db autonomous-database get \
+            --profile "${profile}" \
+            --autonomous-database-id "${atp_id}" \
+            --query 'data."lifecycle-state"' \
+            --raw-output 2>/dev/null || true
+    )"
+    case "${state}" in
+        AVAILABLE)
+            echo "ATP ready: ${atp_id}"
+            ;;
+        STOPPED)
+            echo "ATP is STOPPED — starting ${atp_id}..."
+            oci db autonomous-database start \
+                --profile "${profile}" \
+                --autonomous-database-id "${atp_id}" >/dev/null
+            oci db autonomous-database get \
+                --profile "${profile}" \
+                --autonomous-database-id "${atp_id}" \
+                --wait-for-state AVAILABLE >/dev/null
+            echo "ATP ready: ${atp_id}"
+            ;;
+        STARTING|STOPPING|PROVISIONING)
+            echo "Waiting for ATP ${atp_id} to become AVAILABLE (current state: ${state})..."
+            oci db autonomous-database get \
+                --profile "${profile}" \
+                --autonomous-database-id "${atp_id}" \
+                --wait-for-state AVAILABLE >/dev/null
+            echo "ATP ready: ${atp_id}"
+            ;;
+        "")
+            echo "ATP state check skipped — unable to resolve lifecycle state for ${atp_id}" >&2
+            ;;
+        *)
+            echo "ATP is in unexpected state ${state} (${atp_id}). Continuing, but rollout may fail." >&2
+            ;;
+    esac
+}
+
+ingress_controller_service_name() {
+    local candidate
+    for candidate in ingress-nginx-controller nginx-ingress-ingress-nginx-controller; do
+        if kubectl -n ingress-nginx get svc "${candidate}" >/dev/null 2>&1; then
+            printf '%s' "${candidate}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+assert_shared_ingress_ready() {
+    local ingress_service available endpoints
+    ingress_service="$(ingress_controller_service_name || true)"
+    [[ -n "${ingress_service}" ]] || return 0
+    available="$(
+        kubectl -n ingress-nginx get deployment \
+            -l app.kubernetes.io/component=controller,app.kubernetes.io/name=ingress-nginx \
+            -o jsonpath='{.items[0].status.availableReplicas}' 2>/dev/null || echo 0
+    )"
+    endpoints="$(kubectl -n ingress-nginx get endpoints "${ingress_service}" -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)"
+    if [[ "${available:-0}" -lt 1 || -z "${endpoints// }" ]]; then
+        echo "Shared ingress is not healthy. Recover the managed ingress nodes before rollout." >&2
+        kubectl get nodes -o wide >&2 || true
+        kubectl -n ingress-nginx get deploy,pods,svc,endpoints -o wide >&2 || true
+        return 1
+    fi
+}
 
 run_service() {
     local name="$1"
@@ -107,6 +220,11 @@ run_service() {
         bash "${SCRIPT_DIR}/${script}"
     fi
 }
+
+if ! $BUILD_ONLY; then
+    ensure_atp_available
+    assert_shared_ingress_ready
+fi
 
 if $RUN_SHOP; then
     run_service \
