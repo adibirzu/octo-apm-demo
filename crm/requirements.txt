@@ -19,7 +19,7 @@ opentelemetry-instrumentation-fastapi==0.62b0
 opentelemetry-instrumentation-sqlalchemy==0.62b0
 opentelemetry-instrumentation-httpx==0.62b0
 opentelemetry-instrumentation-logging==0.62b0
-opentelemetry-exporter-prometheus==0.62b0
+opentelemetry-exporter-prometheus==0.62b1
 prometheus-client==0.25.0
 oci==2.172.0
 pydantic==2.13.3
