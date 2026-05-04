@@ -1,0 +1,23 @@
+{{- if .Values.namespaces.create }}
+{{- if .Values.shop.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.shop.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: shop
+    octo.oracle.com/tier: production
+---
+{{- end }}
+{{- if .Values.crm.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.crm.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: crm
+    octo.oracle.com/tier: production
+{{- end }}
+{{- end }}

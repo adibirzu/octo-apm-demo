@@ -25,8 +25,8 @@ module "edge_gateway" {
   compartment_id     = var.compartment_id
   display_name       = "octo-edge-gateway"
   gateway_subnet_id  = var.edge_subnet_id
-  shop_backend_url   = "https://drone.${var.dns_domain}"
-  crm_backend_url    = "https://backend.${var.dns_domain}"
+  shop_backend_url   = "https://shop.${var.dns_domain}"
+  crm_backend_url    = "https://crm.${var.dns_domain}"
   log_group_id       = var.edge_log_group_id
   idcs_jwks_uri      = var.idcs_jwks_uri
   idcs_issuer        = var.idcs_issuer

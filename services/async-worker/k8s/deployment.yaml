@@ -43,7 +43,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OCTO_WORKER_CRM_BASE_URL
-              value: "http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080"
+              value: "http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080"
             - name: OCTO_WORKER_INTERNAL_SERVICE_KEY
               valueFrom:
                 secretKeyRef:

@@ -1,0 +1,24 @@
+apiVersion: v2
+name: octo-apm-demo
+description: |
+  octo-apm-demo stack — Drone Shop + Enterprise CRM Portal on an existing OKE
+  cluster, wired to a shared OCI Autonomous DB (ATP) with OCI APM, Log
+  Analytics, and IDCS SSO integrations. Deploys the same workloads that
+  deploy/bootstrap.sh provisions, without the compartment/ATP/DNS automation,
+  for operators who already have an OKE cluster and want to BYO secrets.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.27.0-0"
+keywords:
+  - oci
+  - oke
+  - apm
+  - observability
+  - demo
+home: https://github.com/oracle/octo-apm-demo
+maintainers:
+  - name: octo-apm-demo maintainers
+annotations:
+  artifacthub.io/license: UPL-1.0
+  artifacthub.io/category: observability

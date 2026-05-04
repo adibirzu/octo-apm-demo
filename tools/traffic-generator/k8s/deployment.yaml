@@ -35,9 +35,9 @@ spec:
           image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-traffic-generator:${IMAGE_TAG:-latest}
           env:
             - name: OCTO_TRAFFIC_SHOP_BASE_URL
-              value: "https://drone.${DNS_DOMAIN}"
+              value: "https://shop.${DNS_DOMAIN}"
             - name: OCTO_TRAFFIC_CRM_BASE_URL
-              value: "https://backend.${DNS_DOMAIN}"
+              value: "https://crm.${DNS_DOMAIN}"
             - name: OCTO_TRAFFIC_TARGET_RPS
               value: "2.0"
             - name: OCTO_TRAFFIC_CONCURRENT_SESSION_LIMIT

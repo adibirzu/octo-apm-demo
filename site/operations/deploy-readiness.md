@@ -1,66 +1,76 @@
-# Deploy readiness — what has been verified
+# Deploy Readiness
 
-Every item on this page is checked by `deploy/verify.sh` on each push.
-Green checkmarks are assertions that have actually run against the
-current `main` commit; they are not aspirations.
+This page explains what the repo can verify automatically before a
+rollout. It is **not** the live status page for the shared `DEFAULT`
+tenancy.
 
-## Green for production
+## Repo-level verification
 
-| Check | How verified |
-|---|---|
-| `terraform validate` on root + 10 modules | `cd deploy/terraform && terraform validate` — `Success!` |
-| `terraform fmt -check -recursive` | `verify.sh` step "Terraform fmt + validate" |
-| `docker compose config` on unified VM stack | `verify.sh` step "Docker compose config" (per-run random tokens) |
-| JSON manifests (LA parsers, dashboards, saved searches) | `verify.sh` step "JSON manifests" |
-| YAML manifests (k8s deployments, ingress, cloud-init, compose) | `verify.sh` step "YAML fmt" |
-| Pre-flight required-var enforcement | `verify.sh` step "Pre-flight required-var enforcement" |
-| `mkdocs build --strict` | `verify.sh` step "MkDocs strict build" |
-| Shop pytest (87 tests) | `verify.sh` step "shop pytest" |
-| CRM pytest (39 tests) | `verify.sh` step "crm pytest" |
-| Traffic-generator pytest | `verify.sh` step "tools/traffic-generator pytest" |
-| Dependabot alerts: 0 open | `gh api repos/.../dependabot/alerts` — empty |
-| Shop route inventory (114 paths) | `python -c "from server.main import app; [r.path for r in app.routes]"` |
-| CRM route inventory (132 paths) | Same, against `crm/server/main.py` |
-
-Run it yourself:
+Run the canonical verifier from the repo root:
 
 ```bash
-cd octo-apm-demo
-./deploy/verify.sh
-# → VERIFY PASSED — 0 warning(s)
+bash deploy/verify.sh
 ```
 
-## Manual steps not covered by terraform
+`deploy/verify.sh` currently checks:
 
-Two OCI features currently have no first-class Terraform resource in
-the provider. Document them in your tenancy runbook:
+- shell syntax for every `deploy/*.sh`
+- plain YAML parsing for non-Helm manifests
+- Helm chart render and `helm lint` for `deploy/helm/octo-apm-demo`
+- JSON manifest validity
+- Terraform format drift plus root-stack `terraform validate`
+- `docker compose config` for the unified VM stack
+- pre-flight required-variable enforcement
+- `mkdocs build --strict`
+- root deploy tests, provisioning-wizard tests, and shop/crm/tool pytest suites
+- lightweight template-render smoke for both apps
 
-| Step | Why manual | When to do it |
+Supplementary targeted checks:
+
+```bash
+python3 -m pytest -q tests/test_unified_deploy_surface.py
+python3 -m pytest -q services/load-control/tests/test_profiles.py \
+  services/load-control/tests/test_api.py \
+  services/load-control/tests/test_runs.py
+```
+
+## Manual steps still outside Terraform
+
+Two OCI integrations still require operator follow-through:
+
+| Step | Why manual | Current helper |
 |---|---|---|
-| RUM web application registration | `oci_apm_config_config` rejects `config_type = "WEB_APPLICATION"`. | Once per tenancy, after `terraform apply`. Console: APM → RUM → Create Web Application. |
-| Log Analytics source registration | Source identifier is not on the `oci_sch_service_connector.target` schema. | Once per LA source. Use `deploy/oci/ensure_la_sources.sh` or the Console. |
+| RUM web application registration | `oci_apm_config_config` still rejects `config_type = "WEB_APPLICATION"` | Console after `terraform apply` |
+| Log Analytics source registration | LA source binding is outside the current Service Connector schema | `python3 tools/create_la_source.py ...` or Console |
 
-Both leave the app fully functional without them — the RUM beacon
-ingests using public data key + endpoint, and LA picks up the JSON
-format automatically. They add UI grouping and named-source
-filtering respectively.
+## What repo verification does not prove
 
-## What verify.sh does not cover
+| Concern | Why it is separate |
+|---|---|
+| Live ATP state | Requires real tenancy state; the shared `DEFAULT` ATP can still be `STOPPED` |
+| Ingress/controller health | Depends on current OKE node readiness |
+| Public DNS correctness | Depends on live OCI DNS records and delegation |
+| OCIR pull behavior on the current node class | Requires a real pod pull on the target cluster |
+| Playwright E2E | Requires a deployed, reachable tenancy plus optional SSO/test credentials |
 
-| Concern | Why | Where to look |
-|---|---|---|
-| Live ATP connectivity | Requires real wallet + credentials | `deploy/pre-flight-check.sh` warns if unset |
-| APM trace ingestion end-to-end | Requires real APM endpoint + data key | Manual — hit `/ready` then inspect APM Trace Explorer |
-| RUM beacon emission | Requires real browser + DNS | `site/observability/rum.md` |
-| k6 load + chaos burst | Out of CI scope | `k6/` directory + `site/testing/load-tests.md` |
-| Playwright E2E | Requires a running stack | `deploy/local-stack/` brings up a hermetic target |
+## Fresh-tenancy gate before E2E
+
+Do not hand a tenancy to Playwright until all of these pass:
+
+1. `kubectl get deploy -n octo-drone-shop octo-drone-shop` shows `2/2`.
+2. `kubectl get deploy -n enterprise-crm enterprise-crm-portal` shows `2/2`.
+3. `kubectl -n ingress-nginx get endpoints` shows non-empty controller endpoints.
+4. `oci db autonomous-database get ...` shows `AVAILABLE` for `octo-apm-demo-atp`.
+5. Public DNS resolves `shop.<domain>` and `crm.<domain>`, or you have a temporary host override.
+6. `INTERNAL_SERVICE_KEY` exists for cross-service smoke.
+7. `octo-sso` plus an OCI IAM Identity Domain test user exist before the SSO spec.
 
 ## Failure triage
 
-| Symptom | Fix |
+| Symptom | First place to look |
 |---|---|
-| `Pre-flight FAILED` | Fill in the reported env var; see `deploy/pre-flight-check.sh` |
-| `terraform validate` error on new provider | Check `deploy/terraform/README.md` §"When you hit a provider schema error" |
-| `docker compose config` fails | Bad substitution — check `.env` file has no newline-embedded values |
-| `mkdocs build --strict` complains about missing nav | Add the page to `mkdocs.yml` `nav:` or delete it |
-| Shop/CRM pytest fails | Run the suite locally (`cd shop && pytest -x --tb=short`) — conftest.py handles fakeredis + module stubs |
+| `VERIFY FAILED` in the Helm section | Run `helm template` / `helm lint` manually with the same flags |
+| Public hostnames do not resolve | `dig +noall +answer shop.<domain> @1.1.1.1` |
+| Ingress `0/2` with no endpoints | `kubectl -n ingress-nginx get deploy,pods,endpoints -o wide` |
+| Pods stuck in `ContainerCreateFailed` | `kubectl describe pod ...` plus OCIR pull-secret refresh |
+| `/ready` still fails after rollout | Check ATP state and wallet/auth secrets first |

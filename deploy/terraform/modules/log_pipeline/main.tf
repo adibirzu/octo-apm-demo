@@ -69,7 +69,7 @@ resource "oci_sch_service_connector" "this" {
     # schema for the Logging Analytics target in the current OCI Terraform
     # provider.
     # The Log Analytics source (var.la_source_name) is set on the ingest
-    # configuration on the LA side via deploy/oci/ensure_la_sources.sh.
+    # configuration on the LA side via shop/tools/create_la_source.py.
     kind         = "loggingAnalytics"
     log_group_id = var.la_log_group_id
   }

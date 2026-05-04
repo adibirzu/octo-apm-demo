@@ -7,7 +7,7 @@ before traffic is shifted.
 
 Usage:
     python tools/rollout-validator/validate.py \\
-        --namespace octo-shop-prod \\
+        --namespace octo-drone-shop \\
         --label-selector app=octo-drone-shop \\
         --expected-tag 20260423-abc123 \\
         --timeout 300

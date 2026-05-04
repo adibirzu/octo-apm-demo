@@ -90,9 +90,9 @@ variable "tags" {
 }
 
 resource "oci_database_autonomous_database" "this" {
-  compartment_id           = var.compartment_id
-  db_name                  = var.db_name
-  display_name             = var.display_name
+  compartment_id = var.compartment_id
+  db_name        = var.db_name
+  display_name   = var.display_name
   # OCI deprecated OCPU compute model for new Autonomous DBs in 2024-q4.
   # `compute_model = ECPU` + `compute_count` is the required pairing.
   # Setting cpu_core_count on a new ADB now raises

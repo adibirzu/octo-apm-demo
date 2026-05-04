@@ -33,7 +33,7 @@ variable "gateway_subnet_id" {
 
 variable "shop_backend_url" {
   type        = string
-  description = "Upstream URL for /api/* shop traffic (e.g. https://drone.${DNS_DOMAIN} or an LB OCID)."
+  description = "Upstream URL for /api/* shop traffic (e.g. https://shop.${DNS_DOMAIN} or an LB OCID)."
 }
 
 variable "crm_backend_url" {

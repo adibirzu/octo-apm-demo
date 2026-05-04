@@ -1,0 +1,14 @@
+{{- if and .Values.crm.enabled .Values.crm.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: enterprise-crm-portal
+  namespace: {{ .Values.crm.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.crm.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "octo.crm.selectorLabels" . | nindent 6 }}
+{{- end }}

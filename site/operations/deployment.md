@@ -1,13 +1,33 @@
 # Deployment
 
-## Automated Deploy Script
+For the `DEFAULT` profile, use `cyber-sec.ro` as both the bootstrap base
+domain (`DNS_BASE_DOMAIN`) and the rollout host domain (`DNS_DOMAIN`).
+Check [Current Status](current-status.md) before relying on the shared
+tenancy; it is not E2E-ready as of April 25, 2026.
 
-For the `DEFAULT` / `oci4cca` environment, set `DNS_DOMAIN=cyber-sec.ro`.
+## First-time tenancy bootstrap
+
+Use `deploy/bootstrap.sh` for a fresh tenancy or a newly selected
+compartment:
+
+```bash
+OCI_PROFILE=DEFAULT \
+OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
+DNS_BASE_DOMAIN=cyber-sec.ro \
+REMOTE_BUILD_HOST=control-plane-oci \
+./deploy/bootstrap.sh
+```
+
+This is the canonical end-to-end path: OCIR repos, kubeconfig, ATP,
+wallet/secret seeding, shared ingress, TLS loading, DNS, and initial
+Shop+CRM rollout.
+
+## Ongoing rollouts
 
 ```bash
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
-DNS_DOMAIN=<your-domain> \
+DNS_DOMAIN=cyber-sec.ro \
 ./deploy/deploy.sh                  # Build + push + rollout
 
 ./deploy/deploy.sh --build-only     # Build + push, no rollout
@@ -15,6 +35,10 @@ DNS_DOMAIN=<your-domain> \
 ./deploy/deploy.sh --shop-only      # Only the shop service
 ./deploy/deploy.sh --crm-only       # Only the CRM service
 ```
+
+Use `deploy/init-tenancy.sh` only when the cluster, ATP, and ingress are
+already managed out-of-band and you want the repo to seed namespaces,
+repos, and secrets without running the full lifecycle wrapper.
 
 ## Manual Workflow
 
@@ -50,6 +74,17 @@ kubectl set image deployment/octo-drone-shop \
 
 kubectl rollout status deployment/octo-drone-shop -n octo-drone-shop
 ```
+
+## Verification
+
+```bash
+kubectl -n ingress-nginx get deploy,svc,pods,endpoints -o wide
+kubectl get deploy -n octo-drone-shop octo-drone-shop
+kubectl get deploy -n enterprise-crm enterprise-crm-portal
+```
+
+Both app deployments must show `2/2` before root Playwright E2E is
+considered runnable.
 
 ## K8s Configuration
 

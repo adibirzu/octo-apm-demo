@@ -15,11 +15,11 @@ class TrafficConfig(BaseSettings):
 
     # ── Targets ──
     shop_base_url: str = Field(
-        default="https://drone.octodemo.cloud",
+        default="https://shop.cyber-sec.ro",
         description="Drone Shop public URL.",
     )
     crm_base_url: str = Field(
-        default="https://backend.octodemo.cloud",
+        default="https://crm.cyber-sec.ro",
         description="Enterprise CRM public URL (for partner-mode simulations).",
     )
     verify_tls: bool = True

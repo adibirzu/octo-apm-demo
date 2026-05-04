@@ -113,3 +113,38 @@ Verified against oci4cca / Adrian_Birzu compartment:
 | Full destroy (`--yes`) | All the above + ATP terraform destroy + OCIR repos + local kubectl context |
 
 Post-destroy `kubectl get ns` showed only: `default`, `kube-node-lease`, `kube-public`, `kube-system`. Post-destroy `kubectl get deploy -A` showed only `coredns` and `kube-dns-autoscaler`. Zero collateral damage.
+
+## Helm chart (alternative to raw envsubst)
+
+For clusters that already ran bootstrap.sh once (so the Secrets are
+seeded), the workloads can be redeployed via Helm instead of the
+per-app `deploy-{shop,crm}.sh` + envsubst manifests:
+
+```bash
+helm upgrade --install octo-apm-demo deploy/helm/octo-apm-demo \
+  --namespace octo-drone-shop \
+  --set namespaces.create=false \
+  --set global.dnsDomain=${DNS_BASE_DOMAIN} \
+  --set global.image.tenancy=${OCIR_NAMESPACE} \
+  --set global.image.tag=${IMAGE_TAG} \
+  --set ingress.tls.secretName=cyber-sec-ro-tls
+```
+
+The chart consumes the same Secrets (`octo-atp`, `octo-auth`,
+`octo-apm`, `octo-logging`, `octo-oci-config`, `octo-sso`,
+`octo-atp-wallet`) that bootstrap.sh seeds, uses the same env-var
+contract, and emits additional Helm ownership labels
+(`app.kubernetes.io/managed-by=Helm`). `helm rollback` works for free.
+
+Use the chart when:
+- Your OKE cluster is already set up (no VCN/cluster provisioning needed)
+- You want atomic upgrade/rollback semantics instead of per-file apply
+- You want GitOps (ArgoCD, Flux) to own the workloads
+
+Use bootstrap.sh when:
+- You're starting from a fresh compartment with no ATP, OCIR repos, DNS records, or ingress controller
+- You want automated TLS cert loading from OCI Certificates
+- You want automated DNS record PATCH in OCI DNS
+- The 60–90 min end-to-end provisioning flow is acceptable
+
+See [`deploy/helm/octo-apm-demo/README.md`](helm/octo-apm-demo/README.md) for the full chart reference.

@@ -11,7 +11,7 @@
 
 ## What is OCTO?
 
-Current `DEFAULT` / `oci4cca` target hostnames are `shop.cyber-sec.ro` and `crm.cyber-sec.ro`. The shared ingress serves them from `144.24.173.224`, and the deployment flow loads the valid OCI Certificates wildcard `star.cyber-sec.ro` certificate (current version 4) into Kubernetes. The apps are healthy behind that ingress, but public DNS is not cut over yet because `cyber-sec.ro` is still delegated to Wix rather than the OCI zone in `Adrian_Birzu`; see [Current Status](operations/current-status.md) for the exact runtime details, the required DNS cutover, and the legacy CAP reference endpoints.
+Current `DEFAULT` target hostnames remain `shop.cyber-sec.ro` and `crm.cyber-sec.ro`, but treat them as an operational snapshot, not a permanently live demo endpoint. As of **April 25, 2026**, public DNS for both hosts returns no `A` record, the shared ingress controller has no live endpoints because the managed node pool is `NotReady`, both app deployments are `0/2`, and ATP `octo-apm-demo-atp` is `STOPPED`. See [Current Status](operations/current-status.md) for the exact runtime evidence, blocker order, and fresh-tenancy guidance.
 
 The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.
 

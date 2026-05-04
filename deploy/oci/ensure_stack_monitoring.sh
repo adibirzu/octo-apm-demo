@@ -22,6 +22,17 @@
 
 set -euo pipefail
 
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
+
 : "${COMPARTMENT_ID:?Set COMPARTMENT_ID}"
 : "${AUTONOMOUS_DATABASE_ID:?Set AUTONOMOUS_DATABASE_ID (ATP OCID)}"
 SM_RESOURCE_NAME="${SM_RESOURCE_NAME:-octo-atp}"

@@ -51,9 +51,9 @@ OCI Notifications delivers this shape to `/events/alarm`:
   "body": "CPU pressure sustained for 5m on octo-drone-shop",
   "severity": "CRITICAL",
   "metric_name": "container_cpu_utilisation",
-  "dimensions": {"deployment": "octo-drone-shop", "namespace": "octo-shop-prod"},
+  "dimensions": {"deployment": "octo-drone-shop", "namespace": "octo-drone-shop"},
   "annotations": {
-    "target_namespace": "octo-shop-prod",
+    "target_namespace": "octo-drone-shop",
     "target_deployment": "octo-drone-shop",
     "min_replicas_increment": "2"
   }
@@ -79,7 +79,7 @@ envsubst < k8s/deployment.yaml | kubectl apply -f -
 
 1. Console → Notifications → create a Topic `octo-alarms`.
 2. Add Subscription: Protocol `HTTPS (Custom URL)`, Endpoint
-   `https://backend.octodemo.cloud/remediator/events/alarm` (routed
+   `https://crm.<your-domain>/remediator/events/alarm` (routed
    through the edge gateway).
 3. Create an Alarm → Destinations → select `octo-alarms` topic.
 

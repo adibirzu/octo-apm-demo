@@ -20,6 +20,17 @@
 
 set -euo pipefail
 
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
+
 : "${COMPARTMENT_ID:?COMPARTMENT_ID is required}"
 : "${LOAD_BALANCER_OCID:?LOAD_BALANCER_OCID is required (OKE LB OCID)}"
 WAF_POLICY_NAME="${WAF_POLICY_NAME:-octo-drone-shop-waf}"

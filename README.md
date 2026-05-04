@@ -8,7 +8,9 @@ cross-service contract hardened in the upstream repos.
 
 **Docs site**: https://adibirzu.github.io/octo-apm-demo
 **Target hostnames (`DEFAULT` / `oci4cca`)**: `shop.cyber-sec.ro` (Shop) · `crm.cyber-sec.ro` (CRM)
-**Status (April 24, 2026)**: the OCI stack, OKE workloads, shared ingress IP `144.24.173.224`, wildcard certificate `star.cyber-sec.ro` (bundle version 4, valid from April 23, 2026 through November 7, 2026), ATP, and observability secrets are in `oci4cca`. The Shop and CRM apps are healthy through the shared ingress when routed with `shop.cyber-sec.ro` / `crm.cyber-sec.ro` as TLS hosts, but public DNS is not cut over yet: `cyber-sec.ro` is still delegated to Wix nameservers, so external resolvers do not use the OCI zone `A` records. Update the active Wix-hosted rrsets or delegate the domain to OCI to make the sites publicly reachable without `--resolve`. Legacy CAP reference endpoints remain `https://shop.octodemo.cloud` · `https://crm.octodemo.cloud`.
+**Status (April 25, 2026)**: the tracked `DEFAULT` deployment is currently degraded. Public DNS for `shop.cyber-sec.ro` and `crm.cyber-sec.ro` returns no `A` record, the shared ingress load balancer still exists but the ingress controller is `0/2` because the managed node pool is `NotReady`, both app deployments are `0/2`, and ATP `octo-apm-demo-atp` is `STOPPED`. Use `deploy/bootstrap.sh` for fresh tenancies, and check [`site/operations/current-status.md`](site/operations/current-status.md) before treating the shared `DEFAULT` environment as E2E-ready.
+
+[![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
 
 ## Repository layout
 
@@ -28,9 +30,12 @@ octo-apm-demo/
 │   ├── deploy-crm.sh                 # build + push + rollout for CRM
 │   ├── resource-manager/             # OCI Resource Manager stack (one-click)
 │   ├── vm/                           # Unified single-VM compose + cloud-init
-│   ├── k8s/                          # OKE manifests
+│   ├── k8s/                          # OKE manifests (envsubst-templated)
 │   │   ├── shop/
 │   │   └── crm/
+│   ├── helm/octo-apm-demo/           # Helm chart — drop-in onto an existing OKE cluster
+│   ├── bootstrap.sh                  # End-to-end tenancy lifecycle (ATP + secrets + build + ingress + DNS + TLS)
+│   ├── destroy.sh                    # Targeted teardown — never touches the OKE cluster itself
 │   ├── terraform/modules/            # apm_domain, waf, log_pipeline, iam, api_gateway,
 │   │                                 # atp, vault, object_storage, logging, stack_monitoring
 │   ├── local-stack/                  # hermetic docker-compose for regression (postgres + redis)
@@ -48,7 +53,9 @@ octo-apm-demo/
 | Path | Entry point | When to use |
 |---|---|---|
 | **OKE** | `deploy/k8s/oke/{shop,crm}/*.yaml` + `deploy/deploy-{shop,crm}.sh` | Production, HA, rolling updates. First-time rollout auto-runs `envsubst` on manifests. |
-| **OCI Resource Manager stack** | `deploy/resource-manager/` | Console one-click bootstrap of APM + RUM + LA + WAF |
+| **OKE (Helm, existing cluster)** | `deploy/helm/octo-apm-demo/` | Drop-in for operators who already have OKE + secrets. `helm upgrade --install`, `helm rollback`, one release owns both apps. See [`deploy/helm/octo-apm-demo/README.md`](deploy/helm/octo-apm-demo/README.md). |
+| **Bootstrap (unified)** | `deploy/bootstrap.sh` + `deploy/destroy.sh` | End-to-end lifecycle: compartment picker → OCIR → kubeconfig → ATP terraform → seed secrets → build+push → apply manifests → ingress + DNS + TLS + smoke test. See [`deploy/BOOTSTRAP-README.md`](deploy/BOOTSTRAP-README.md). |
+| **OCI Resource Manager stack** | `deploy/resource-manager/` | Console one-click bootstrap of APM + RUM + LA + WAF. Use the Deploy to Oracle Cloud button above. |
 | **Unified single VM** | `deploy/vm/docker-compose-unified.yml` | Demos, workshops, air-gapped — both services on one Compute instance |
 | **local-stack** | `deploy/local-stack/docker-compose.test.yml` | Hermetic regression — Playwright + k6 + CI without OCI credentials. NOT for prod. |
 

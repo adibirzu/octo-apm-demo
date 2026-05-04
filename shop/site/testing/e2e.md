@@ -1,53 +1,49 @@
 # E2E Tests
 
-237 Playwright tests across 8 spec files covering the full application surface.
+This page covers two different Playwright layers:
 
-## Test Dimensions
+- `shop/tests/e2e/` for the shop-local regression suite.
+- Root `tests/e2e/` for deployed-tenancy smoke after bootstrap.
 
-| Spec File | Tests | What It Covers |
-|---|---|---|
-| `health.spec.ts` | Health checks, readiness probes, DB connectivity |
-| `shopping-flow.spec.ts` | Full buyer journey: storefront → cart → checkout → orders |
-| `cross-service.spec.ts` | Shop↔CRM bidirectional sync, distributed trace propagation |
-| `melts.spec.ts` | MELTS stack: Prometheus metrics, 360 dashboard, traceparent, security |
-| `auth-sso.spec.ts` | SSO status, IDCS flow, token validation, protected endpoints |
-| `simulation.spec.ts` | Chaos controls gated behind SSO, input validation |
-| `availability.spec.ts` | Concurrency (10 parallel health, 5 parallel ready), malformed payloads |
-| `k6-integration.spec.ts` | k6 test file validation (structure, BASE_URL) |
+## Shop-local suite
 
-## Running Tests
+Use the shop-local suite while iterating on the storefront and its
+cross-service contract:
 
-=== "Local"
+```bash
+cd shop
+npm install
+npm run test:e2e
+```
 
-    ```bash
-    npm install
-    npm run test:e2e
-    ```
+To point the suite at a live environment instead of localhost:
 
-=== "Against Live OKE"
+```bash
+cd shop
+SHOP_URL=https://shop.<your-domain> \
+CRM_URL=https://crm.<your-domain> \
+npm run test:e2e
+```
 
-    ```bash
-    SHOP_URL=https://shop.example.cloud \
-    CRM_URL=https://crm.example.cloud \
-    npm run test:e2e
-    ```
+## Hand-off to unified tenancy smoke
 
-=== "Single Spec"
+After the root `deploy/bootstrap.sh` flow finishes, switch to the root
+repo smoke specs:
 
-    ```bash
-    npx playwright test tests/e2e/melts.spec.ts
-    ```
+```bash
+SHOP_BASE_URL=https://shop.<your-domain> \
+CRM_BASE_URL=https://crm.<your-domain> \
+INTERNAL_SERVICE_KEY=<shared-secret> \
+CROSS_SERVICE_E2E_ENABLED=1 \
+npx playwright test tests/e2e/cross-service-smoke.spec.ts
+```
 
-## Configuration
+If SSO is configured for the tenancy:
 
-```typescript
-// playwright.config.ts
-{
-  projects: [
-    { name: 'chromium' },  // Browser tests
-    { name: 'api' }        // Lightweight API tests
-  ],
-  timeout: isLive ? 45000 : 20000,  // OKE vs local timeouts
-  reporter: [['html'], ['junit']]
-}
+```bash
+SHOP_BASE_URL=https://shop.<your-domain> \
+OCTO_E2E_TEST_USER_EMAIL=e2e@example.com \
+OCTO_E2E_TEST_USER_PASSWORD='***' \
+SSO_E2E_ENABLED=1 \
+npx playwright test tests/e2e/sso-oidc-pkce.spec.ts
 ```

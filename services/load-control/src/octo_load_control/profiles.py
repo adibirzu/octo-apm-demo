@@ -49,7 +49,7 @@ class Profile:
     name: ProfileName
     description: str
     target_type: str              # db | web | crm | browser | app | cache | stream | container | vm | edge
-    target_name: str              # e.g. atp, drone.octodemo.cloud
+    target_name: str              # e.g. atp, shop.${DNS_DOMAIN}
     executor: ExecutorKind
     executor_args: dict[str, Any] = field(default_factory=dict)
     expected_signals: tuple[str, ...] = field(default_factory=tuple)
@@ -107,7 +107,7 @@ PROFILES: dict[ProfileName, Profile] = {
         name=ProfileName.WEB_CHECKOUT_SURGE,
         description="End-to-end storefront + CRM order path under load.",
         target_type="web",
-        target_name="drone.octodemo.cloud",
+        target_name="shop.${DNS_DOMAIN}",
         executor=ExecutorKind.TRAFFIC_GENERATOR,
         executor_args={"target_rps": 30.0, "burst_multiplier": 2.0},
         expected_signals=(
@@ -121,10 +121,9 @@ PROFILES: dict[ProfileName, Profile] = {
         name=ProfileName.CRM_BACKOFFICE_SURGE,
         description="Operator-heavy workload on admin modules.",
         target_type="crm",
-        target_name="backend.octodemo.cloud",
+        target_name="crm.${DNS_DOMAIN}",
         executor=ExecutorKind.TRAFFIC_GENERATOR,
         executor_args={
-            "target_base_url": "https://backend.octodemo.cloud",
             "target_rps": 5.0,
             "paths": ["/api/customers", "/api/tickets", "/api/products"],
         },
@@ -137,7 +136,7 @@ PROFILES: dict[ProfileName, Profile] = {
         name=ProfileName.BROWSER_JOURNEY,
         description="Real page navigation, cart, checkout, error + retry paths.",
         target_type="browser",
-        target_name="drone.octodemo.cloud",
+        target_name="shop.${DNS_DOMAIN}",
         executor=ExecutorKind.BROWSER_RUNNER,
         executor_args={"journey": "catalog-to-checkout", "iterations": 5},
         expected_signals=(
@@ -150,7 +149,7 @@ PROFILES: dict[ProfileName, Profile] = {
         name=ProfileName.APP_EXCEPTION_STORM,
         description="Error-rate + trace + alert validation.",
         target_type="app",
-        target_name="drone.octodemo.cloud",
+        target_name="shop.${DNS_DOMAIN}",
         executor=ExecutorKind.TRAFFIC_GENERATOR,
         executor_args={"target_rps": 5.0, "failure_injection_rate": 0.9},
         expected_signals=("shop.http.errors_5xx ↑", "alarm 'error-rate' FIRING"),
@@ -187,11 +186,11 @@ PROFILES: dict[ProfileName, Profile] = {
         name=ProfileName.CONTAINER_CPU_PRESSURE,
         description="CPU throttling + HPA / alarm response.",
         target_type="container",
-        target_name="octo-shop-prod/octo-drone-shop",
+        target_name="octo-drone-shop/octo-drone-shop",
         executor=ExecutorKind.K8S_STRESS,
         executor_args={
             "kind": "cpu-stress",
-            "target_namespace": "octo-shop-prod",
+            "target_namespace": "octo-drone-shop",
             "target_pod_label": "app=octo-drone-shop",
         },
         expected_signals=(
@@ -205,11 +204,11 @@ PROFILES: dict[ProfileName, Profile] = {
         name=ProfileName.CONTAINER_MEMORY_PRESSURE,
         description="OOM, restart, degraded latency.",
         target_type="container",
-        target_name="octo-shop-prod/octo-drone-shop",
+        target_name="octo-drone-shop/octo-drone-shop",
         executor=ExecutorKind.K8S_STRESS,
         executor_args={
             "kind": "memory-stress",
-            "target_namespace": "octo-shop-prod",
+            "target_namespace": "octo-drone-shop",
             "target_pod_label": "app=octo-drone-shop",
             "allocate_mb": 1024,
         },

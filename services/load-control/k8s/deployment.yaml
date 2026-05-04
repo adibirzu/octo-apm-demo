@@ -35,7 +35,7 @@ spec:
             - name: TRAFFIC_GENERATOR_URL
               value: "http://octo-traffic-generator.octo-traffic.svc.cluster.local:8080"
             - name: CRM_CHAOS_ADMIN_URL
-              value: "http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080"
+              value: "http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080"
             - name: OCI_EVENTS_TOPIC_URL
               valueFrom:
                 secretKeyRef:

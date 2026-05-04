@@ -33,6 +33,17 @@
 
 set -euo pipefail
 
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PROJECT_TAG_KEY="project"
@@ -148,12 +159,48 @@ apply_literal_secret_all_namespaces() {
 
 resolve_ocir_pull_credentials() {
     if [[ -n "${OCIR_USERNAME:-}" && -n "${OCIR_AUTH_TOKEN:-}" ]]; then
+        normalize_ocir_username_namespace
         return 0
     fi
-    [[ -f "${HOME}/.docker/config.json" ]] || return 1
     local parsed
-    parsed="$(
-        OCIR_REGION="${OCIR_REGION}" python3 - <<'PYEOF'
+    parsed="$(read_remote_ocir_pull_credentials 2>/dev/null || true)"
+    if [[ -z "${parsed}" ]]; then
+        parsed="$(read_local_ocir_pull_credentials 2>/dev/null || true)"
+    fi
+    [[ -n "${parsed}" ]] || return 1
+    IFS=$'\t' read -r OCIR_USERNAME OCIR_AUTH_TOKEN <<< "${parsed}"
+    normalize_ocir_username_namespace
+    export OCIR_USERNAME OCIR_AUTH_TOKEN
+    return 0
+}
+
+read_remote_ocir_pull_credentials() {
+    [[ -n "${REMOTE_BUILD_HOST:-}" ]] || return 1
+    ssh -o BatchMode=yes -o ConnectTimeout=5 \
+        "${REMOTE_BUILD_HOST}" "OCIR_REGION='${OCIR_REGION}' python3 -" <<'PYEOF'
+import base64
+import json
+import os
+import pathlib
+import sys
+
+path = pathlib.Path.home() / ".docker" / "config.json"
+data = json.loads(path.read_text())
+server = f"{os.environ['OCIR_REGION']}.ocir.io"
+entry = (data.get("auths") or {}).get(server) or {}
+if entry.get("auth"):
+    username, password = base64.b64decode(entry["auth"]).decode().split(":", 1)
+else:
+    username, password = entry.get("username", ""), entry.get("password", "")
+if not username or not password:
+    sys.exit(1)
+print(f"{username}\t{password}")
+PYEOF
+}
+
+read_local_ocir_pull_credentials() {
+    [[ -f "${HOME}/.docker/config.json" ]] || return 1
+    OCIR_REGION="${OCIR_REGION}" python3 - <<'PYEOF'
 import base64
 import json
 import os
@@ -170,10 +217,25 @@ if not auth:
 username, password = base64.b64decode(auth).decode().split(":", 1)
 print(f"{username}\t{password}")
 PYEOF
-    )" || return 1
-    IFS=$'\t' read -r OCIR_USERNAME OCIR_AUTH_TOKEN <<< "${parsed}"
-    export OCIR_USERNAME OCIR_AUTH_TOKEN
-    return 0
+}
+
+normalize_ocir_username_namespace() {
+    local expected_namespace="${OCIR_NAMESPACE:-${OCIR_TENANCY:-}}"
+    local current_namespace suffix
+    [[ -n "${expected_namespace}" && -n "${OCIR_USERNAME:-}" ]] || return 0
+
+    if [[ "${OCIR_USERNAME}" == */* ]]; then
+        current_namespace="${OCIR_USERNAME%%/*}"
+        suffix="${OCIR_USERNAME#*/}"
+        if [[ "${current_namespace}" != "${expected_namespace}" ]]; then
+            OCIR_USERNAME="${expected_namespace}/${suffix}"
+            _yellow "      ocir-pull-secret username namespace normalized to current tenancy"
+        fi
+    else
+        OCIR_USERNAME="${expected_namespace}/${OCIR_USERNAME}"
+        _yellow "      ocir-pull-secret username namespace added for current tenancy"
+    fi
+    export OCIR_USERNAME
 }
 
 apply_ocir_pull_secret() {
@@ -190,6 +252,17 @@ ingress_controller_service_name() {
     local candidate
     for candidate in ingress-nginx-controller nginx-ingress-ingress-nginx-controller; do
         if kubectl -n ingress-nginx get svc "${candidate}" >/dev/null 2>&1; then
+            printf '%s' "${candidate}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+ingress_controller_deployment_name() {
+    local candidate
+    for candidate in ingress-nginx-controller nginx-ingress-ingress-nginx-controller; do
+        if kubectl -n ingress-nginx get deployment "${candidate}" >/dev/null 2>&1; then
             printf '%s' "${candidate}"
             return 0
         fi
@@ -221,6 +294,121 @@ PYEOF
 public_zone_nameservers() {
     command -v dig >/dev/null 2>&1 || return 1
     dig +short NS "${DNS_BASE_DOMAIN}" 2>/dev/null
+}
+
+ensure_autonomous_database_available() {
+    local atp_id="$1"
+    local state
+    [[ -n "${atp_id}" ]] || return 0
+    command -v oci >/dev/null 2>&1 || return 0
+    state="$(
+        oci db autonomous-database get \
+            --profile "${OCI_PROFILE}" \
+            --autonomous-database-id "${atp_id}" \
+            --query 'data."lifecycle-state"' \
+            --raw-output
+    )"
+    case "${state}" in
+        AVAILABLE)
+            _green "ATP lifecycle state: AVAILABLE"
+            ;;
+        STOPPED)
+            _yellow "ATP is STOPPED — starting ${atp_id:0:40}..."
+            oci db autonomous-database start \
+                --profile "${OCI_PROFILE}" \
+                --autonomous-database-id "${atp_id}" >/dev/null
+            oci db autonomous-database get \
+                --profile "${OCI_PROFILE}" \
+                --autonomous-database-id "${atp_id}" \
+                --wait-for-state AVAILABLE >/dev/null
+            _green "ATP lifecycle state: AVAILABLE"
+            ;;
+        STARTING|STOPPING|PROVISIONING)
+            _yellow "Waiting for ATP to become AVAILABLE (current state: ${state})..."
+            oci db autonomous-database get \
+                --profile "${OCI_PROFILE}" \
+                --autonomous-database-id "${atp_id}" \
+                --wait-for-state AVAILABLE >/dev/null
+            _green "ATP lifecycle state: AVAILABLE"
+            ;;
+        *)
+            _yellow "ATP lifecycle state is ${state}; rollout may fail if the listener is unavailable"
+            ;;
+    esac
+}
+
+start_stopped_real_nodes_for_ingress() {
+    command -v oci >/dev/null 2>&1 || return 0
+    local node_name provider_id instance_id state
+    local -a wait_nodes=()
+    while IFS=$'\t' read -r node_name provider_id; do
+        [[ -n "${node_name}" && -n "${provider_id}" ]] || continue
+        instance_id="${provider_id#oci://}"
+        state="$(
+            oci compute instance get \
+                --profile "${OCI_PROFILE}" \
+                --instance-id "${instance_id}" \
+                --query 'data."lifecycle-state"' \
+                --raw-output 2>/dev/null || true
+        )"
+        if [[ "${state}" == "STOPPED" ]]; then
+            _yellow "Starting stopped OKE worker ${node_name} (${instance_id:0:40}...)"
+            oci compute instance action \
+                --profile "${OCI_PROFILE}" \
+                --action START \
+                --instance-id "${instance_id}" \
+                --wait-for-state RUNNING >/dev/null
+            wait_nodes+=("node/${node_name}")
+        elif [[ -n "${state}" && "${state}" != "RUNNING" ]]; then
+            _yellow "OKE worker ${node_name} is ${state}; waiting for Kubernetes readiness may still fail"
+            wait_nodes+=("node/${node_name}")
+        fi
+    done < <(kubectl get nodes -o json | python3 -c '
+import json
+import sys
+
+items = json.load(sys.stdin).get("items", [])
+for node in items:
+    labels = node.get("metadata", {}).get("labels", {})
+    if "node-role.kubernetes.io/virtual-node" in labels:
+        continue
+    conditions = {
+        c.get("type"): c.get("status")
+        for c in node.get("status", {}).get("conditions", [])
+    }
+    if conditions.get("Ready") == "True":
+        continue
+    provider_id = node.get("spec", {}).get("providerID") or ""
+    if provider_id.startswith(("ocid1.instance", "oci://ocid1.instance")):
+        print(f"{node.get('metadata', {}).get('name', '')}\t{provider_id}")
+'
+)
+    if [[ "${#wait_nodes[@]}" -gt 0 ]]; then
+        kubectl wait --for=condition=Ready "${wait_nodes[@]}" --timeout=600s
+    fi
+}
+
+ensure_ingress_controller_ready() {
+    local service_name="$1"
+    local deployment_name
+    deployment_name="$(ingress_controller_deployment_name || true)"
+    [[ -n "${deployment_name}" ]] || return 0
+
+    if kubectl -n ingress-nginx rollout status "deployment/${deployment_name}" --timeout=20s >/dev/null 2>&1; then
+        if kubectl -n ingress-nginx get endpoints "${service_name}" -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q .; then
+            _green "Ingress controller Ready (${deployment_name})"
+            return 0
+        fi
+    fi
+
+    _yellow "Ingress controller exists but is not Ready; checking stopped managed workers."
+    start_stopped_real_nodes_for_ingress
+    kubectl -n ingress-nginx rollout status "deployment/${deployment_name}" --timeout=300s
+    if ! kubectl -n ingress-nginx get endpoints "${service_name}" -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q .; then
+        _red "ingress controller service ${service_name} has no endpoints"
+        exit 1
+    fi
+    _green "Ingress controller Ready (${deployment_name})"
 }
 
 render_and_apply_manifest() {
@@ -433,11 +621,18 @@ print(oci.object_storage.ObjectStorageClient(cfg).get_namespace().data)
 export OCIR_NAMESPACE OCIR_REGION="${OCI_REGION}" OCIR_TENANCY="${OCIR_NAMESPACE}"
 _green "OCIR ns: ${OCIR_NAMESPACE}"
 
-# Ensure repos exist (tagged).
+# Ensure repos exist (tagged). Freeform tags let destroy.sh find the
+# repos without a hardcoded list — new repos added to REPO_NAMES must
+# only appear here.
+PROJECT_TAG_KEY="${PROJECT_TAG_KEY}" PROJECT_TAG_VAL="${PROJECT_TAG_VAL}" \
 OCI_PROFILE="${OCI_PROFILE}" OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}" python3 - <<'PYEOF'
 import os, oci
 cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
 client = oci.artifacts.ArtifactsClient(cfg)
+tags = {
+    os.environ['PROJECT_TAG_KEY']: os.environ['PROJECT_TAG_VAL'],
+    "managed-by": "bootstrap.sh",
+}
 for name in ["octo-drone-shop", "enterprise-crm-portal", "octo-apm-java-demo"]:
     try:
         client.create_container_repository(
@@ -445,12 +640,38 @@ for name in ["octo-drone-shop", "enterprise-crm-portal", "octo-apm-java-demo"]:
                 compartment_id=os.environ['OCI_COMPARTMENT_ID'],
                 display_name=name,
                 is_public=False,
+                freeform_tags=tags,
             )
         )
         print(f"  created {name}")
     except oci.exceptions.ServiceError as e:
         if e.status in (409,):
-            print(f"  exists  {name}")
+            # Backfill tags on pre-existing (untagged) repos so destroy.sh
+            # can find them. Walk the compartment to find the matching id.
+            try:
+                # list_call_get_all_results returns flattened items under .data
+                # (not a Collection with .items — that's only on a raw list call).
+                for repo in oci.pagination.list_call_get_all_results(
+                    client.list_container_repositories,
+                    compartment_id=os.environ['OCI_COMPARTMENT_ID'],
+                ).data:
+                    if repo.display_name == name and not (repo.freeform_tags or {}).get(
+                        os.environ['PROJECT_TAG_KEY']
+                    ):
+                        merged = dict(repo.freeform_tags or {})
+                        merged.update(tags)
+                        client.update_container_repository(
+                            repo.id,
+                            oci.artifacts.models.UpdateContainerRepositoryDetails(
+                                freeform_tags=merged,
+                            ),
+                        )
+                        print(f"  tagged  {name}")
+                        break
+                else:
+                    print(f"  exists  {name}")
+            except oci.exceptions.ServiceError as inner:
+                print(f"  exists  {name} (tag backfill skipped: {inner.status})")
         else:
             print(f"  err     {name}: {e.message[:60]}")
 PYEOF
@@ -522,6 +743,8 @@ terraform init -input=false -no-color >/dev/null
 # Idempotent — only adds/updates ATP.
 terraform apply -auto-approve -var-file="${TFVARS}" -target=module.atp -no-color 2>&1 | grep -E "Apply complete|Error:|^module\.atp" | head -5
 
+ATP_ID=$(terraform output -json atp | python3 -c "import sys,json; print(json.load(sys.stdin)['atp_id'])")
+ensure_autonomous_database_available "${ATP_ID}"
 ATP_DB_NAME=$(terraform output -json atp | python3 -c "import sys,json; print(json.load(sys.stdin)['atp_db_name'].lower())")
 ATP_DSN="${ATP_DB_NAME}_low"
 _green "ATP ready, DSN alias: ${ATP_DSN}"
@@ -547,17 +770,33 @@ BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-$(first_nonempty_secret_va
 terraform_output_value() {
     local output_name="$1"
     local nested_key="${2:-}"
-    terraform -chdir="${SCRIPT_DIR}/terraform" output -json "${output_name}" 2>/dev/null | \
-        python3 - "${nested_key}" <<'PYEOF'
+    # Round-trip the output through a temp file — piping terraform into
+    # `python3 - "$arg" <<'HEREDOC'` has a latent bug where the heredoc
+    # does not override the pipe for stdin, so python executes the JSON
+    # as its script and exits 1, silently killing bootstrap under
+    # `set -o pipefail + set -e` (KB-462). Terraform also returns exit 1
+    # when an output isn't present (e.g. we applied -target=module.atp
+    # so apm_domain was never materialised) — swallow that via `|| true`.
+    local tmp_json
+    tmp_json="$(mktemp)"
+    terraform -chdir="${SCRIPT_DIR}/terraform" output -json "${output_name}" \
+        > "${tmp_json}" 2>/dev/null || true
+    if [[ ! -s "${tmp_json}" ]]; then
+        rm -f "${tmp_json}"
+        return 0
+    fi
+    TF_OUTPUT_FILE="${tmp_json}" TF_NESTED_KEY="${nested_key}" python3 - <<'PYEOF'
 import json
+import os
 import sys
 
 try:
-    value = json.load(sys.stdin)
+    with open(os.environ["TF_OUTPUT_FILE"], "r", encoding="utf-8") as handle:
+        value = json.load(handle)
 except Exception:
     sys.exit(0)
 
-nested_key = sys.argv[1]
+nested_key = os.environ.get("TF_NESTED_KEY", "")
 if nested_key:
     value = value.get(nested_key, "") if isinstance(value, dict) else ""
 
@@ -570,6 +809,7 @@ elif isinstance(value, (dict, list)):
 else:
     print(value, end="")
 PYEOF
+    rm -f "${tmp_json}"
 }
 
 OCI_APM_ENDPOINT="${OCI_APM_ENDPOINT:-$(first_nonempty_secret_value_or_blank octo-apm endpoint)}"
@@ -665,30 +905,44 @@ section "Step 6 — Build + push (remote VM ${REMOTE_BUILD_HOST})"
 build_service() {
     local svc="$1" repo="$2" dir="$3" ns="$4"
     local logfile="/tmp/_octo_build_${svc}.log"
-    # Capture full output to a log; set +o pipefail so grep's exit code
-    # doesn't kill the parent script when matches are sparse.
-    set +o pipefail
-    OCIR_REPO="${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/${repo}" \
-      DNS_DOMAIN="${DNS_BASE_DOMAIN}" \
-      K8S_NAMESPACE="${ns}" \
-      REMOTE_HOST="${REMOTE_BUILD_HOST}" \
-      REMOTE_DIR="${dir}" \
-      bash "${SCRIPT_DIR}/deploy-${svc}.sh" --build-only > "${logfile}" 2>&1
-    local rc=$?
-    set -o pipefail
-    grep -E "Image:|Build complete|Push complete|failed to build|ERROR" "${logfile}" || true
-    if [[ $rc -ne 0 ]]; then
-        _red "  ${svc} build exited ${rc}. Full log:"
+    local rc=1 attempt
+    for attempt in 1 2 3; do
+        # Capture full output to a log; set +o pipefail so grep's exit code
+        # doesn't kill the parent script when matches are sparse.
+        set +e +o pipefail
+        OCIR_REPO="${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/${repo}" \
+          DNS_DOMAIN="${DNS_BASE_DOMAIN}" \
+          K8S_NAMESPACE="${ns}" \
+          REMOTE_HOST="${REMOTE_BUILD_HOST}" \
+          REMOTE_DIR="${dir}" \
+          bash "${SCRIPT_DIR}/deploy-${svc}.sh" --build-only > "${logfile}" 2>&1
+        rc=$?
+        set -e -o pipefail
+        grep -E "Image:|Build complete|Push complete|failed to build|ERROR|Forbidden|unauthorized|denied" "${logfile}" || true
+        if [[ $rc -eq 0 ]]; then
+            return 0
+        fi
+        _yellow "  ${svc} build/push attempt ${attempt}/3 failed (rc=${rc})"
         tail -20 "${logfile}"
-        return $rc
-    fi
+        [[ "${attempt}" -lt 3 ]] && sleep $((attempt * 30))
+    done
+    return "${rc}"
 }
 build_service shop octo-drone-shop /tmp/octo-apm-demo-shop "${K8S_NAMESPACE_SHOP}"
 build_service crm  enterprise-crm-portal /tmp/octo-apm-demo-crm  "${K8S_NAMESPACE_CRM}"
 
-# Tag resolution — the most recently-built image, not `latest` label.
-SHOP_TAG=$(ssh "${REMOTE_BUILD_HOST}" "docker images ${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/octo-drone-shop --format '{{.Tag}}'" 2>/dev/null | grep -vE '^latest$' | sort -r | head -1 || true)
-CRM_TAG=$(ssh "${REMOTE_BUILD_HOST}" "docker images ${OCIR_REGION}.ocir.io/${OCIR_NAMESPACE}/enterprise-crm-portal --format '{{.Tag}}'" 2>/dev/null | grep -vE '^latest$' | sort -r | head -1 || true)
+# Tag resolution — use the build logs from this run rather than the remote
+# Docker tag list, which can contain stale branch tags that sort after dates.
+resolve_built_tag() {
+    local repo="$1" logfile="$2"
+    local image_ref tag
+    image_ref=$(grep -Eo "${OCIR_REGION}[.]ocir[.]io/${OCIR_NAMESPACE}/${repo}:[^[:space:]]+" "${logfile}" | grep -v ':latest$' | tail -1 || true)
+    tag="${image_ref##*:}"
+    [[ "${tag}" != "${image_ref}" && -n "${tag}" ]] || return 1
+    printf '%s\n' "${tag}"
+}
+SHOP_TAG=$(resolve_built_tag octo-drone-shop /tmp/_octo_build_shop.log || true)
+CRM_TAG=$(resolve_built_tag enterprise-crm-portal /tmp/_octo_build_crm.log || true)
 [[ -n "${SHOP_TAG}" ]] || { _red "Shop image tag resolution failed"; exit 1; }
 [[ -n "${CRM_TAG}" ]] || { _red "CRM image tag resolution failed"; exit 1; }
 _green "Shop image: ${SHOP_TAG} · CRM image: ${CRM_TAG}"
@@ -731,6 +985,7 @@ print('true' if is_virtual else 'false')
 
 if [[ -n "${EXISTING_INGRESS_SERVICE}" ]]; then
     _green "Reusing ingress controller service ${EXISTING_INGRESS_SERVICE}"
+    ensure_ingress_controller_ready "${EXISTING_INGRESS_SERVICE}"
 elif [[ "${INSTALL_NGINX_INGRESS}" == "true" && "${VIRTUAL_ONLY}" == "false" ]]; then
     # Managed node pool present — nginx-ingress works.
     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null 2>&1 || true
@@ -750,6 +1005,7 @@ EOF
     helm upgrade --install nginx-ingress ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace -f /tmp/_octo-nginx-values.yaml --wait --timeout 5m >/dev/null
     EXISTING_INGRESS_SERVICE="$(ingress_controller_service_name || true)"
     _green "nginx-ingress installed"
+    ensure_ingress_controller_ready "${EXISTING_INGRESS_SERVICE}"
 elif [[ "${VIRTUAL_ONLY}" == "true" ]]; then
     _yellow "Virtual-node-only cluster detected (KB-459). Classic LB Services + nginx-ingress need managed nodes."
     if [[ "${OKE_ADD_NODE_POOL_IF_VIRTUAL}" == "true" ]]; then
@@ -885,6 +1141,7 @@ EOF
         helm upgrade --install nginx-ingress ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace -f /tmp/_octo-nginx-values.yaml --wait --timeout 5m >/dev/null
         EXISTING_INGRESS_SERVICE="$(ingress_controller_service_name || true)"
         _green "nginx-ingress installed (pinned to managed nodes via nodeSelector)"
+        ensure_ingress_controller_ready "${EXISTING_INGRESS_SERVICE}"
     else
         _yellow "OKE_ADD_NODE_POOL_IF_VIRTUAL=false — external exposure skipped."
         _yellow "To expose externally: run the OCI Native Ingress Controller add-on install."

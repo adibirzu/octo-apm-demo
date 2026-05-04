@@ -1,7 +1,7 @@
 """CLI entry point — used by octo-load-control's EDGE_FUZZ executor
 and as a standalone ops tool.
 
-  octo-edge-fuzz --target https://api.drone.octodemo.cloud \\
+  octo-edge-fuzz --target https://shop.cyber-sec.ro \\
                  --count 500 --run-id <uuid>
 """
 

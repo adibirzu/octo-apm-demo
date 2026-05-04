@@ -36,8 +36,8 @@ cd services/browser-runner
 npm install
 npx playwright install chromium
 
-OCTO_BROWSER_SHOP_URL=https://drone.octodemo.cloud \
-OCTO_BROWSER_CRM_URL=https://backend.octodemo.cloud \
+OCTO_BROWSER_SHOP_URL=https://shop.cyber-sec.ro \
+OCTO_BROWSER_CRM_URL=https://crm.cyber-sec.ro \
 OCTO_BROWSER_ITERATIONS=3 \
 OCTO_BROWSER_HEADLESS=false \
 npx tsx src/run-journey.ts catalog-to-checkout
@@ -48,7 +48,8 @@ npx tsx src/run-journey.ts catalog-to-checkout
 ```bash
 JOURNEY=catalog-to-checkout \
 RUN_ID=$(uuidgen) \
-DNS_DOMAIN=octodemo.cloud \
+SHOP_BASE_URL=https://shop.<your-domain> \
+CRM_BASE_URL=https://crm.<your-domain> \
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
 IMAGE_TAG=latest \
@@ -103,7 +104,7 @@ npm test
 ```
 
 Full journey execution is validated by running the binary against
-`drone.octodemo.cloud` with `OCTO_BROWSER_HEADLESS=false` and
+`shop.<your-domain>` with `OCTO_BROWSER_HEADLESS=false` and
 eyeballing the Playwright browser window.
 
 ## Build + push

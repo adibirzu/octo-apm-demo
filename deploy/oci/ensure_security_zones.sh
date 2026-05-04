@@ -22,6 +22,17 @@
 
 set -euo pipefail
 
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
+
 : "${COMPARTMENT_ID:?COMPARTMENT_ID is required}"
 ZONE_NAME="${ZONE_NAME:-octo-drone-shop-zone}"
 RECIPE_NAME="${RECIPE_NAME:-octo-drone-shop-recipe}"
