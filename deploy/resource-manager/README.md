@@ -20,11 +20,9 @@ stack package from the `resource-manager-stack` GitHub Release:
 https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip
 ```
 
-The `resource-manager-stack` workflow rebuilds that zip from
-`deploy/resource-manager/` and `deploy/terraform/` on every main-branch
-stack change and uploads it to the release asset URL.
-On a fresh fork, run that workflow once before using the button so the
-release asset exists.
+For this upstream repo, the release asset is already published. On a
+fresh fork, build the zip and upload it to an equivalent public release
+asset before using a fork-specific button URL.
 
 ```bash
 ./deploy/resource-manager/stack-package.sh
