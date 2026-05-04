@@ -40,8 +40,9 @@ APM/RUM, Log Analytics, and WAF sections with native OCI pickers.
 
 The button uses the published GitHub Release stack package at
 `https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip`.
-On a fresh fork, run the `resource-manager-stack` workflow once before
-using the button so that release asset exists.
+For this upstream repo, that release asset is already published. On a
+fresh fork, build the zip and upload it to an equivalent public release
+asset before using a fork-specific button URL.
 
 Full details: [deploy/resource-manager/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/resource-manager/README.md).
 
