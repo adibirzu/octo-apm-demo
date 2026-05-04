@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
+# Render the OCI API Gateway deployment spec for the workflow gateway.
+#
+# Usage:
+#   WORKFLOW_BACKEND_URL=https://workflow.example.com \
+#   DNS_DOMAIN=cyber-sec.ro \
+#   ./deploy/oci/render_workflow_gateway_api_spec.sh
+
 set -euo pipefail
+
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
 
 TEMPLATE_PATH="${TEMPLATE_PATH:-$(dirname "$0")/workflow-gateway-api-spec.template.json}"
 WORKFLOW_BACKEND_URL="${WORKFLOW_BACKEND_URL:-}"

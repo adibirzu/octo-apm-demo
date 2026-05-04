@@ -20,7 +20,7 @@ operator forgets.
 
 ```bash
 RUN_ID=$(uuidgen) \
-TARGET_NAMESPACE=octo-shop-prod \
+TARGET_NAMESPACE=octo-drone-shop \
 CPU_LOAD_PERCENT=80 \
 DURATION_SECONDS=300 \
 envsubst < services/container-lab/k8s/cpu-stress.yaml | kubectl apply -f -
@@ -39,9 +39,9 @@ executor lands (tracked as KG-031), launching is a single
 | Signal | Where |
 |---|---|
 | Container CPU utilization | Stack Monitoring → Monitored Resource `octo-drone-shop` |
-| HPA scaling | `kubectl describe hpa -n octo-shop-prod octo-drone-shop` |
-| CPU throttling | `kubectl top pod -n octo-shop-prod` + OCI Monitoring metric `container.cpu_throttling_nanoseconds` |
-| OOMKilled | `kubectl get pods -n octo-shop-prod -o wide`; OCI Logging `eventLog` search for `OOMKilled` |
+| HPA scaling | `kubectl describe hpa -n octo-drone-shop octo-drone-shop` |
+| CPU throttling | `kubectl top pod -n octo-drone-shop` + OCI Monitoring metric `container.cpu_throttling_nanoseconds` |
+| OOMKilled | `kubectl get pods -n octo-drone-shop -o wide`; OCI Logging `eventLog` search for `OOMKilled` |
 | Node disk latency | Stack Monitoring → node Monitored Resource → Performance chart |
 
 Every stress Job tags its spans + logs with `run_id=${RUN_ID}` so the

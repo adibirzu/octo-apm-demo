@@ -85,11 +85,36 @@ _yellow "Compartment: ${OCI_COMPARTMENT_NAME:-?} (${OCI_COMPARTMENT_ID:0:40}...)
 confirm "Continue?" || { echo "aborted"; exit 0; }
 
 # ── 1. Kubernetes namespaces ──────────────────────────────────────────
+# Pods blocked by PDB during graceful termination keep the namespace in
+# Terminating state past the 180s timeout. We detect that, force-delete
+# stuck pods, then re-check — rather than letting set -o pipefail abort
+# the whole destroy flow (KB-460).
 section "1. K8s namespaces + workloads"
 for NS in "${K8S_NAMESPACE_SHOP}" "${K8S_NAMESPACE_CRM}"; do
     if kubectl get ns "$NS" >/dev/null 2>&1; then
         if confirm "Delete namespace ${NS} (removes Deployments, Services, Ingress, Secrets)?"; then
+            set +e
             kubectl delete namespace "$NS" --wait=true --timeout=180s 2>&1 | head -3
+            rc=$?
+            set -e
+            if [[ $rc -ne 0 ]] && kubectl get ns "$NS" >/dev/null 2>&1; then
+                _yellow "  namespace ${NS} still terminating — force-deleting stuck pods"
+                # Ignore PDB during destroy; pods held by PDB block ns finalization.
+                kubectl -n "$NS" delete pdb --all --ignore-not-found >/dev/null 2>&1 || true
+                for pod in $(kubectl -n "$NS" get pods -o name 2>/dev/null); do
+                    kubectl -n "$NS" delete "$pod" --force --grace-period=0 >/dev/null 2>&1 || true
+                done
+                # Let the namespace controller finish (max 60s).
+                for i in 1 2 3 4 5 6; do
+                    kubectl get ns "$NS" >/dev/null 2>&1 || break
+                    sleep 10
+                done
+                if kubectl get ns "$NS" >/dev/null 2>&1; then
+                    _red "  namespace ${NS} still stuck after force-delete — inspect manually"
+                else
+                    _green "  namespace ${NS} removed"
+                fi
+            fi
         fi
     fi
 done
@@ -180,18 +205,42 @@ section "6. OCIR repositories (project-created only)"
 if $KEEP_IMAGES; then
     _yellow "--keep-images: skipping OCIR"
 else
-    if confirm "Delete OCIR repos octo-drone-shop, enterprise-crm-portal, octo-apm-java-demo in compartment?"; then
-        OCI_PROFILE="${OCI_PROFILE}" OCI_COMPARTMENT_ID="${OCI_COMPARTMENT_ID}" python3 - <<'PYEOF'
+    # OCIR repo uniqueness is scoped to the tenancy OCIR namespace, not a
+    # single compartment. Repos pushed from prior runs in *other* compartments
+    # (root, my-demo, a prior tenancy export) still conflict on bootstrap.sh
+    # re-create. Walk the whole subtree + tenancy root so destroy.sh does
+    # not leave orphans that block the next bootstrap (KB-461).
+    if confirm "Delete OCIR repos octo-drone-shop, enterprise-crm-portal, octo-apm-java-demo tenancy-wide?"; then
+        OCI_PROFILE="${OCI_PROFILE}" python3 - <<'PYEOF'
 import os, oci
 cfg = oci.config.from_file(profile_name=os.environ['OCI_PROFILE'])
-client = oci.artifacts.ArtifactsClient(cfg)
-for r in client.list_container_repositories(compartment_id=os.environ['OCI_COMPARTMENT_ID']).data.items:
-    if r.display_name in {"octo-drone-shop", "enterprise-crm-portal", "octo-apm-java-demo"}:
-        try:
-            client.delete_container_repository(r.id)
-            print(f"  deleted {r.display_name}")
-        except oci.exceptions.ServiceError as e:
-            print(f"  skip {r.display_name}: {e.message[:80]}")
+iam = oci.identity.IdentityClient(cfg)
+art = oci.artifacts.ArtifactsClient(cfg)
+tenancy = cfg['tenancy']
+targets = {"octo-drone-shop", "enterprise-crm-portal", "octo-apm-java-demo"}
+scopes = [type("O", (), {"id": tenancy, "name": "<root>"})] + list(
+    oci.pagination.list_call_get_all_results(
+        iam.list_compartments, compartment_id=tenancy,
+        compartment_id_in_subtree=True, lifecycle_state="ACTIVE", limit=500
+    ).data
+)
+deleted = 0
+for c in scopes:
+    try:
+        repos = oci.pagination.list_call_get_all_results(
+            art.list_container_repositories, compartment_id=c.id
+        ).data
+    except oci.exceptions.ServiceError as e:
+        continue
+    for r in repos:
+        if r.display_name in targets:
+            try:
+                art.delete_container_repository(r.id)
+                print(f"  deleted {c.name}/{r.display_name}")
+                deleted += 1
+            except oci.exceptions.ServiceError as e:
+                print(f"  skip {c.name}/{r.display_name}: {e.message[:80]}")
+print(f"  total {deleted} repo(s) deleted")
 PYEOF
     fi
 fi

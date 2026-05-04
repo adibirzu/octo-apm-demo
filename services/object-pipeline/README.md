@@ -38,7 +38,7 @@ register in `handlers.HANDLERS`, add tests.
    - Condition: bucket name `octo-invoices`
    - Action: Notifications topic `octo-object-pipeline`
 3. Notifications subscription: `HTTPS Custom URL` →
-   `https://backend.octodemo.cloud/object-pipeline/events/object-storage`
+   `https://crm.<your-domain>/object-pipeline/events/object-storage`
    (through the edge gateway).
 
 ## Observability

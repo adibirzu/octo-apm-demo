@@ -9,7 +9,7 @@
 # Prerequisites:
 #   - OCI CLI configured (instance_principal or config file)
 #   - COMPARTMENT_ID set
-#   - SHOP_PUBLIC_URL set (e.g. https://drone.example.cloud)
+#   - SHOP_PUBLIC_URL set (e.g. https://shop.example.cloud)
 #
 # Usage:
 #   COMPARTMENT_ID="ocid1.compartment...." \
@@ -18,6 +18,17 @@
 #   ./deploy/oci/ensure_monitoring.sh
 
 set -euo pipefail
+
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
 
 : "${COMPARTMENT_ID:?COMPARTMENT_ID is required}"
 : "${SHOP_PUBLIC_URL:?SHOP_PUBLIC_URL is required (e.g. https://shop.<your-domain>)}"

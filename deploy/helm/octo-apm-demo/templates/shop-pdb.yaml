@@ -1,0 +1,14 @@
+{{- if and .Values.shop.enabled .Values.shop.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: octo-drone-shop
+  namespace: {{ .Values.shop.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.shop.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "octo.shop.selectorLabels" . | nindent 6 }}
+{{- end }}

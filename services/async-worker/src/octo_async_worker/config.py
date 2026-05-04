@@ -34,8 +34,8 @@ class WorkerConfig(BaseSettings):
     retry_backoff_max_ms: int = Field(default=30_000, ge=1000)
 
     # ── Downstream targets ──
-    crm_base_url: str = Field(default="https://backend.octodemo.cloud")
-    shop_base_url: str = Field(default="https://drone.octodemo.cloud")
+    crm_base_url: str = Field(default="https://crm.cyber-sec.ro")
+    shop_base_url: str = Field(default="https://shop.cyber-sec.ro")
     internal_service_key: str = Field(default="")
 
     # ── Observability ──

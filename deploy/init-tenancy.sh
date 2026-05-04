@@ -10,8 +10,26 @@
 #
 # Designed to be run ONCE per tenancy. After this succeeds, use
 # ./deploy/deploy.sh for ongoing rollouts.
+#
+# Usage:
+#   DNS_DOMAIN=cyber-sec.ro \
+#   OCIR_REGION=eu-frankfurt-1 \
+#   OCIR_TENANCY=<namespace> \
+#   OCI_COMPARTMENT_ID=ocid1.compartment... \
+#   ./deploy/init-tenancy.sh
 
 set -euo pipefail
+
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -135,6 +153,7 @@ apply_literal_secret_all_namespaces() {
 
 resolve_ocir_pull_credentials() {
     if [[ -n "${OCIR_USERNAME:-}" && -n "${OCIR_AUTH_TOKEN:-}" ]]; then
+        normalize_ocir_username_namespace
         return 0
     fi
     [[ -f "${HOME}/.docker/config.json" ]] || return 1
@@ -159,8 +178,28 @@ print(f"{username}\t{password}")
 PYEOF
     )" || return 1
     IFS=$'\t' read -r OCIR_USERNAME OCIR_AUTH_TOKEN <<< "${parsed}"
+    normalize_ocir_username_namespace
     export OCIR_USERNAME OCIR_AUTH_TOKEN
     return 0
+}
+
+normalize_ocir_username_namespace() {
+    local expected_namespace="${OCIR_NAMESPACE:-${OCIR_TENANCY:-}}"
+    local current_namespace suffix
+    [[ -n "${expected_namespace}" && -n "${OCIR_USERNAME:-}" ]] || return 0
+
+    if [[ "${OCIR_USERNAME}" == */* ]]; then
+        current_namespace="${OCIR_USERNAME%%/*}"
+        suffix="${OCIR_USERNAME#*/}"
+        if [[ "${current_namespace}" != "${expected_namespace}" ]]; then
+            OCIR_USERNAME="${expected_namespace}/${suffix}"
+            echo "      ocir-pull-secret username namespace normalized to current tenancy"
+        fi
+    else
+        OCIR_USERNAME="${expected_namespace}/${OCIR_USERNAME}"
+        echo "      ocir-pull-secret username namespace added for current tenancy"
+    fi
+    export OCIR_USERNAME
 }
 
 apply_ocir_pull_secret() {

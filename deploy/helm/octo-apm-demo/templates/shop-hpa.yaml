@@ -1,0 +1,29 @@
+{{- if and .Values.shop.enabled .Values.shop.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: octo-drone-shop
+  namespace: {{ .Values.shop.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: octo-drone-shop
+  minReplicas: {{ .Values.shop.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.shop.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.shop.autoscaling.cpuTargetUtilization }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.shop.autoscaling.memoryTargetUtilization }}
+{{- end }}

@@ -9,7 +9,7 @@ Examples:
   OCTO_TRAFFIC_RUN_DURATION_SECONDS=60 octo-traffic
 
   # Point at a different environment
-  OCTO_TRAFFIC_SHOP_BASE_URL=https://staging-drone.octodemo.cloud \\
+  OCTO_TRAFFIC_SHOP_BASE_URL=https://shop.staging.example.cloud \\
     OCTO_TRAFFIC_TARGET_RPS=10 octo-traffic
 """
 

@@ -1,0 +1,125 @@
+{{- if .Values.shop.enabled }}
+{{- $shop := .Values.shop }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-drone-shop
+  namespace: {{ $shop.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+    {{- include "octo.shop.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: shop
+spec:
+  replicas: {{ $shop.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "octo.shop.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "octo.labels" . | nindent 8 }}
+        {{- include "octo.shop.selectorLabels" . | nindent 8 }}
+      annotations:
+        octo.oracle.com/restartedAt: {{ printf "%s-r%d" (toString (default .Values.global.image.tag $shop.image.tag)) (int .Release.Revision) | quote }}
+    spec:
+      {{- if .Values.global.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.global.image.pullSecretName }}
+      {{- end }}
+      containers:
+        - name: app
+          image: {{ include "octo.image" (list . $shop) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: APP_NAME
+              value: octo-drone-shop
+            - name: OTEL_SERVICE_NAME
+              value: octo-drone-shop
+            - name: APP_RUNTIME
+              value: oke
+            - name: ENVIRONMENT
+              value: production
+            - name: DNS_DOMAIN
+              value: {{ .Values.global.dnsDomain | quote }}
+            - name: SERVICE_CRM_URL
+              value: {{ printf "http://enterprise-crm-portal.%s.svc.cluster.local:8080" .Values.crm.namespace | quote }}
+            - name: CRM_PUBLIC_URL
+              value: {{ printf "https://%s" (include "octo.fqdn" (list . .Values.crm)) | quote }}
+            - name: OCI_AUTH_MODE
+              value: {{ .Values.global.ociAuthMode | quote }}
+            - name: AUTH_TOKEN_SECRET
+              valueFrom: {secretKeyRef: {name: octo-auth, key: token-secret}}
+            - name: INTERNAL_SERVICE_KEY
+              valueFrom: {secretKeyRef: {name: octo-auth, key: internal-service-key}}
+            - name: ORACLE_DSN
+              valueFrom: {secretKeyRef: {name: octo-atp, key: dsn}}
+            - name: ORACLE_USER
+              valueFrom: {secretKeyRef: {name: octo-atp, key: username}}
+            - name: ORACLE_PASSWORD
+              valueFrom: {secretKeyRef: {name: octo-atp, key: password}}
+            - name: ORACLE_WALLET_DIR
+              value: /opt/oracle/wallet
+            - name: ORACLE_WALLET_PASSWORD
+              valueFrom: {secretKeyRef: {name: octo-atp, key: wallet-password}}
+            - name: OCI_APM_ENDPOINT
+              valueFrom: {secretKeyRef: {name: octo-apm, key: endpoint, optional: true}}
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom: {secretKeyRef: {name: octo-apm, key: private-key, optional: true}}
+            - name: OCI_APM_PUBLIC_DATAKEY
+              valueFrom: {secretKeyRef: {name: octo-apm, key: public-key, optional: true}}
+            - name: OCI_APM_RUM_ENDPOINT
+              valueFrom: {secretKeyRef: {name: octo-apm, key: rum-endpoint, optional: true}}
+            - name: OCI_APM_WEB_APPLICATION
+              valueFrom: {secretKeyRef: {name: octo-apm, key: rum-web-application-ocid, optional: true}}
+            - name: OCI_LOG_ID
+              valueFrom: {secretKeyRef: {name: octo-logging, key: log-id, optional: true}}
+            - name: OCI_LOG_GROUP_ID
+              valueFrom: {secretKeyRef: {name: octo-logging, key: log-group-id, optional: true}}
+            - name: OCI_COMPARTMENT_ID
+              valueFrom: {secretKeyRef: {name: octo-oci-config, key: compartment-id}}
+            - name: OCI_GENAI_ENDPOINT
+              valueFrom: {secretKeyRef: {name: octo-oci-config, key: genai-endpoint, optional: true}}
+            - name: OCI_GENAI_MODEL_ID
+              valueFrom: {secretKeyRef: {name: octo-oci-config, key: genai-model-id, optional: true}}
+            - name: IDCS_DOMAIN_URL
+              valueFrom: {secretKeyRef: {name: octo-sso, key: idcs-domain-url, optional: true}}
+            - name: IDCS_CLIENT_ID
+              valueFrom: {secretKeyRef: {name: octo-sso, key: idcs-client-id, optional: true}}
+            - name: IDCS_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: octo-sso, key: idcs-client-secret, optional: true}}
+            {{- range $k, $v := $shop.env.extra }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: wallet
+              mountPath: /opt/oracle/wallet
+              readOnly: true
+          readinessProbe:
+            httpGet: {path: /ready, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /ready, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml $shop.resources | nindent 12 }}
+      volumes:
+        - name: wallet
+          secret:
+            secretName: octo-atp-wallet
+      terminationGracePeriodSeconds: 45
+{{- end }}

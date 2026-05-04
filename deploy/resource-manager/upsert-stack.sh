@@ -11,12 +11,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_ZIP="${SCRIPT_DIR}/build/octo-stack.zip"
 
-: "${OCI_PROFILE:=DEFAULT}"
-: "${OCI_COMPARTMENT_ID:?Set OCI_COMPARTMENT_ID}"
-: "${STACK_DISPLAY_NAME:=octo-apm-demo-unified-stack}"
-: "${STACK_DESCRIPTION:=Unified OCI Resource Manager stack for the OCTO APM Demo deploy surface.}"
-: "${TERRAFORM_VERSION:=}"
-
 usage() {
     sed -n '2,8p' "$0"
 }
@@ -29,6 +23,12 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+: "${OCI_PROFILE:=DEFAULT}"
+: "${OCI_COMPARTMENT_ID:?Set OCI_COMPARTMENT_ID}"
+: "${STACK_DISPLAY_NAME:=octo-apm-demo-unified-stack}"
+: "${STACK_DESCRIPTION:=Unified OCI Resource Manager stack for the OCTO APM Demo deploy surface.}"
+: "${TERRAFORM_VERSION:=}"
 
 echo "[stack] Packaging Resource Manager zip..."
 bash "${SCRIPT_DIR}/stack-package.sh" >/dev/null

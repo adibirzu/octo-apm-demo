@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from server.config import cfg
@@ -280,6 +281,22 @@ async def create_order(request: Request):
                 payload_source_order_id
                 or f"manual-{customer.id}-{uuid4().hex[:12]}"
             )
+            if payload_source_system and payload_source_order_id:
+                existing_result = await db.execute(
+                    select(Order).where(
+                        Order.source_system == source_system,
+                        Order.source_order_id == source_order_id,
+                    )
+                )
+                existing_order = existing_result.scalars().first()
+                if existing_order:
+                    return {
+                        "status": "created",
+                        "order_id": existing_order.id,
+                        "id": existing_order.id,
+                        "total": float(existing_order.total or 0),
+                        "deduped": True,
+                    }
             order = Order(
                 customer_id=customer.id,
                 total=computed_total,
@@ -294,7 +311,26 @@ async def create_order(request: Request):
                 correlation_id=correlation_id,
             )
             db.add(order)
-            await db.flush()
+            try:
+                await db.flush()
+            except IntegrityError:
+                await db.rollback()
+                existing_result = await db.execute(
+                    select(Order).where(
+                        Order.source_system == source_system,
+                        Order.source_order_id == source_order_id,
+                    )
+                )
+                existing_order = existing_result.scalars().first()
+                if existing_order:
+                    return {
+                        "status": "created",
+                        "order_id": existing_order.id,
+                        "id": existing_order.id,
+                        "total": float(existing_order.total or 0),
+                        "deduped": True,
+                    }
+                raise
 
             for item in order_items:
                 db.add(

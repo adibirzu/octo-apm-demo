@@ -1,0 +1,45 @@
+{{ .Chart.Name }} {{ .Chart.Version }} installed as release "{{ .Release.Name }}".
+
+Components:
+{{- if .Values.shop.enabled }}
+  - Shop : namespace={{ .Values.shop.namespace }}  host=https://{{ include "octo.fqdn" (list . .Values.shop) }}
+{{- end }}
+{{- if .Values.crm.enabled }}
+  - CRM  : namespace={{ .Values.crm.namespace }}  host=https://{{ include "octo.fqdn" (list . .Values.crm) }}
+{{- end }}
+
+{{- if not .Values.secrets.create }}
+
+Secrets policy: REFERENCE-ONLY (secrets.create=false). Make sure these
+Secrets exist in each namespace before pods will start:
+
+  octo-atp          (dsn, username, password, wallet-password)
+  octo-atp-wallet   (wallet.zip — binary from ATP download)
+  octo-auth         (token-secret, internal-service-key, app-secret-key,
+                     bootstrap-admin-password)
+  octo-oci-config   (compartment-id, [genai-endpoint, genai-model-id])
+  octo-apm          (optional: endpoint, private-key, public-key,
+                     rum-endpoint, rum-web-application-ocid)
+  octo-logging      (optional: log-group-id, log-id, log-chaos-audit-id,
+                     log-security-id)
+  octo-sso          (optional: idcs-domain-url, idcs-client-id,
+                     idcs-client-secret)
+
+Run deploy/bootstrap.sh to seed them from terraform outputs, or follow
+the "Bring-your-own-secrets" section of the chart README.
+{{- else }}
+
+Secrets policy: CHART-MANAGED (secrets.create=true). Keep your filled
+values.yaml OUT of git.
+{{- end }}
+
+Check pods:
+  kubectl get pods -n {{ .Values.shop.namespace }}
+  kubectl get pods -n {{ .Values.crm.namespace }}
+
+Ingress:
+{{- if .Values.ingress.enabled }}
+  kubectl get ingress -A | grep octo
+{{- else }}
+  Ingress disabled. Expose via your own LoadBalancer / Service.
+{{- end }}

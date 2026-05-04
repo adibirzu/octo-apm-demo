@@ -16,8 +16,8 @@ receivers:
         endpoint: 0.0.0.0:4318
         cors:
           allowed_origins:
-            - https://drone.${env:DNS_DOMAIN}
-            - https://backend.${env:DNS_DOMAIN}
+            - https://shop.${env:DNS_DOMAIN}
+            - https://crm.${env:DNS_DOMAIN}
 
   # Prometheus scrape for the few services that expose /metrics
   # without OTLP push (workflow-gateway).
@@ -28,7 +28,7 @@ receivers:
           scrape_interval: 30s
           static_configs:
             - targets:
-                - workflow-gateway.octo-shop-prod.svc.cluster.local:9090
+                - workflow-gateway.octo-drone-shop.svc.cluster.local:9090
 
 processors:
   # Apply the correlation contract — ensure every signal carries the

@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
+# Enable OCI database observability services for the OCTO ATP.
+#
+# Enables Autonomous Database Management and Operations Insights for an
+# existing Autonomous Database.
+#
+# Usage:
+#   AUTONOMOUS_DATABASE_ID=ocid1.autonomousdatabase... \
+#   ./deploy/oci/ensure_db_observability.sh
+
 set -euo pipefail
+
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
 
 if ! command -v oci >/dev/null 2>&1; then
   echo "ERROR: OCI CLI is required." >&2

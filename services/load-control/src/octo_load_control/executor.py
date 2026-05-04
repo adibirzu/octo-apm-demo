@@ -30,6 +30,18 @@ class ExecutorBackend:
         self._traffic = traffic_generator_client
         self._chaos = chaos_admin_client
 
+    @staticmethod
+    def _dns_domain() -> str:
+        return os.getenv("DNS_DOMAIN", "cyber-sec.ro")
+
+    @classmethod
+    def _shop_base_url(cls) -> str:
+        return os.getenv("SHOP_BASE_URL") or f"https://shop.{cls._dns_domain()}"
+
+    @classmethod
+    def _crm_base_url(cls) -> str:
+        return os.getenv("CRM_BASE_URL") or f"https://crm.{cls._dns_domain()}"
+
     async def dispatch(self, *, profile: Profile, run: Run) -> dict[str, Any]:
         """Launch the executor for ``profile`` and return metadata recorded
         on the Run. Caller is responsible for persisting updates."""
@@ -60,7 +72,8 @@ class ExecutorBackend:
             "RUN_ID": run.run_id,
             "JOURNEY": journey,
             "ITERATIONS": str(iterations),
-            "DNS_DOMAIN": os.getenv("DNS_DOMAIN", "octodemo.cloud"),
+            "SHOP_BASE_URL": self._shop_base_url(),
+            "CRM_BASE_URL": self._crm_base_url(),
             "OCIR_REGION": os.getenv("OCIR_REGION", ""),
             "OCIR_TENANCY": os.getenv("OCIR_TENANCY", ""),
             "IMAGE_TAG": os.getenv("IMAGE_TAG", "latest"),
@@ -104,7 +117,7 @@ class ExecutorBackend:
         manifest = manifest_map.get(kind, manifest_map["cpu-stress"])
         env = {
             "RUN_ID": run.run_id,
-            "TARGET_NAMESPACE": profile.executor_args.get("target_namespace", "octo-shop-prod"),
+            "TARGET_NAMESPACE": profile.executor_args.get("target_namespace", "octo-drone-shop"),
             "TARGET_POD_LABEL": profile.executor_args.get("target_pod_label", "app=octo-drone-shop"),
             "DURATION_SECONDS": str(run.duration_seconds),
             "CPU_LOAD_PERCENT": str(profile.executor_args.get("cpu_load_percent", 80)),
@@ -179,7 +192,7 @@ class ExecutorBackend:
                 "error": "octo-edge-fuzz not on PATH — install services/edge-fuzz/ package into the same image",
             }
 
-        target = profile.executor_args.get("target_url") or os.getenv("OCTO_EDGE_TARGET", "https://api.drone.octodemo.cloud")
+        target = profile.executor_args.get("target_url") or os.getenv("OCTO_EDGE_TARGET", self._shop_base_url())
         args = [
             "octo-edge-fuzz",
             "--target", target,
@@ -196,11 +209,18 @@ class ExecutorBackend:
 
     async def _run_traffic_generator(self, *, profile: Profile, run: Run) -> dict[str, Any]:
         headers = {"X-Run-Id": run.run_id}
+        executor_args = dict(profile.executor_args)
+        executor_args.setdefault("shop_base_url", self._shop_base_url())
+        executor_args.setdefault("crm_base_url", self._crm_base_url())
+        executor_args.setdefault(
+            "target_base_url",
+            self._crm_base_url() if profile.target_type == "crm" else self._shop_base_url(),
+        )
         payload = {
             "run_id": run.run_id,
             "profile": profile.name.value,
             "duration_seconds": run.duration_seconds,
-            **profile.executor_args,
+            **executor_args,
         }
         try:
             resp = await self._traffic.post("/control/start", json=payload, headers=headers)

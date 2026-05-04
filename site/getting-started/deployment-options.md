@@ -20,6 +20,8 @@ WAF, shared Autonomous Database, observability wired via `ensure_apm.sh`
 
 ## OCI Resource Manager stack
 
+[![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+
 A pre-packaged Terraform stack that provisions only the **tenancy-level
 observability + security surface** (APM Domain, RUM app, Log Analytics
 Service Connectors, WAF policies). It does **not** create OKE or the
@@ -36,7 +38,12 @@ Stacks → Create Stack** (source = My Configuration, file =
 `octo-stack.zip`). The schema groups variables into Tenancy, DNS,
 APM/RUM, Log Analytics, and WAF sections with native OCI pickers.
 
-Full details: [deploy/resource-manager/README.md](https://github.com/adibirzu/octo-drone-shop/blob/main/deploy/resource-manager/README.md).
+The button uses the published GitHub Release stack package at
+`https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip`.
+On a fresh fork, run the `resource-manager-stack` workflow once before
+using the button so that release asset exists.
+
+Full details: [deploy/resource-manager/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/resource-manager/README.md).
 
 ## Unified single VM
 
@@ -51,9 +58,9 @@ unzip /path/to/Wallet_<DB>.zip -d wallet
 sudo ./install.sh
 ```
 
-Or paste [`deploy/vm/cloud-init.yaml`](https://github.com/adibirzu/octo-drone-shop/blob/main/deploy/vm/cloud-init.yaml) into the
+Or paste [`deploy/vm/cloud-init.yaml`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/cloud-init.yaml) into the
 OCI Console Compute create form for a one-shot bootstrap. Full
-walkthrough: [deploy/vm/README.md](https://github.com/adibirzu/octo-drone-shop/blob/main/deploy/vm/README.md).
+walkthrough: [deploy/vm/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/README.md).
 
 ## Matrix of cross-service contract parity
 

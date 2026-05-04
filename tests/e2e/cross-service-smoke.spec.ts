@@ -21,9 +21,16 @@ const ENABLED = process.env.CROSS_SERVICE_E2E_ENABLED === '1';
 const SHOP = process.env.SHOP_BASE_URL || 'https://shop.cyber-sec.ro';
 const CRM = process.env.CRM_BASE_URL || 'https://crm.cyber-sec.ro';
 const INTERNAL_KEY = process.env.INTERNAL_SERVICE_KEY || '';
+const SHOP_HOST_HEADER = process.env.SHOP_HOST_HEADER || '';
+const CRM_HOST_HEADER = process.env.CRM_HOST_HEADER || '';
 
-async function getJson(request: APIRequestContext, url: string): Promise<any> {
-  const resp = await request.get(url);
+function serviceHeaders(service: 'shop' | 'crm', extra: Record<string, string> = {}): Record<string, string> {
+  const host = service === 'shop' ? SHOP_HOST_HEADER : CRM_HOST_HEADER;
+  return host ? { ...extra, Host: host } : { ...extra };
+}
+
+async function getJson(request: APIRequestContext, url: string, headers?: Record<string, string>): Promise<any> {
+  const resp = await request.get(url, { headers });
   expect(resp.ok()).toBeTruthy();
   return resp.json();
 }
@@ -32,8 +39,8 @@ test.describe('cross-service contract smoke', () => {
   test.skip(!ENABLED, 'set CROSS_SERVICE_E2E_ENABLED=1 to run against a deployed env');
 
   test('shop + CRM both publish /api/integrations/schema', async ({ request }) => {
-    const shopSchema = await getJson(request, `${SHOP}/api/integrations/schema`);
-    const crmSchema = await getJson(request, `${CRM}/api/integrations/schema`);
+    const shopSchema = await getJson(request, `${SHOP}/api/integrations/schema`, serviceHeaders('shop'));
+    const crmSchema = await getJson(request, `${CRM}/api/integrations/schema`, serviceHeaders('crm'));
 
     expect(String(shopSchema.openapi || '')).toMatch(/^3\./);
     expect(String(crmSchema.openapi || '')).toMatch(/^3\./);
@@ -49,12 +56,13 @@ test.describe('cross-service contract smoke', () => {
 
     const withoutKey = await request.post(`${CRM}/api/orders`, {
       data: { customer_id: 42, items: [{ product_id: 1, quantity: 1, unit_price: 1.0 }] },
+      headers: serviceHeaders('crm'),
     });
     expect(withoutKey.status()).toBe(401);
 
     const withKey = await request.post(`${CRM}/api/orders`, {
       data: { customer_id: 42, items: [{ product_id: 1, quantity: 1, unit_price: 1.0 }] },
-      headers: { 'X-Internal-Service-Key': INTERNAL_KEY },
+      headers: serviceHeaders('crm', { 'X-Internal-Service-Key': INTERNAL_KEY }),
     });
     expect([200, 201, 404]).toContain(withKey.status()); // 404 if customer 42 does not exist in this tenancy — still proves auth passed
   });
@@ -71,7 +79,7 @@ test.describe('cross-service contract smoke', () => {
       source_order_id: String(orderId),
       idempotency_token: `90000000-0000-0000-0000-${orderId.toString().padStart(12, '0')}`,
     };
-    const headers = { 'X-Internal-Service-Key': INTERNAL_KEY };
+    const headers = serviceHeaders('crm', { 'X-Internal-Service-Key': INTERNAL_KEY });
 
     const first = await request.post(`${CRM}/api/orders`, { data: payload, headers });
     expect([200, 201]).toContain(first.status());
@@ -90,8 +98,8 @@ test.describe('cross-service contract smoke', () => {
   });
 
   test('shop /ready and CRM /ready both report database.reachable', async ({ request }) => {
-    const shopReady = await getJson(request, `${SHOP}/ready`);
-    const crmReady = await getJson(request, `${CRM}/ready`);
+    const shopReady = await getJson(request, `${SHOP}/ready`, serviceHeaders('shop'));
+    const crmReady = await getJson(request, `${CRM}/ready`, serviceHeaders('crm'));
 
     // Different apps may report slightly different keys; accept either.
     const shopDbOk = shopReady.database?.reachable ?? shopReady.ready ?? false;
@@ -111,7 +119,7 @@ test.describe('cross-service contract smoke', () => {
     const traceparent = `00-${traceId}-${spanId}-01`;
 
     const resp = await request.get(`${SHOP}/api/integrations/crm/health`, {
-      headers: { traceparent },
+      headers: serviceHeaders('shop', { traceparent }),
     });
     // 200 if CRM is reachable; 503 if CRM is down. Either way, not 500.
     expect([200, 503]).toContain(resp.status());

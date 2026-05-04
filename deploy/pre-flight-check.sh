@@ -24,6 +24,17 @@
 
 set -uo pipefail
 
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
+
 errors=0
 warnings=0
 

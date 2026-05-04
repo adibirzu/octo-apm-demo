@@ -1,0 +1,18 @@
+{{- if .Values.shop.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-drone-shop
+  namespace: {{ .Values.shop.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+    {{- include "octo.shop.selectorLabels" . | nindent 4 }}
+spec:
+  type: {{ .Values.shop.service.type }}
+  selector:
+    {{- include "octo.shop.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.shop.service.port }}
+      targetPort: http
+{{- end }}

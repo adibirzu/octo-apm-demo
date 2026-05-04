@@ -38,6 +38,9 @@ class _FakeScalarResult:
     def scalars(self):
         return self
 
+    def first(self):
+        return self._items[0] if self._items else None
+
     def __iter__(self):
         return iter(self._items)
 
@@ -50,6 +53,8 @@ class _FakeCustomer:
 
 
 class _FakeDb:
+    existing_order: Any = None
+
     def __init__(self) -> None:
         self.added: list[Any] = []
         self.flushed: int = 0
@@ -58,6 +63,8 @@ class _FakeDb:
         return _FakeCustomer(customer_id=pk) if pk else None
 
     async def execute(self, _stmt: Any) -> _FakeScalarResult:
+        if self.existing_order is not None and "orders.source_system" in str(_stmt):
+            return _FakeScalarResult([self.existing_order])
         # No products matched → order_items list will be empty but fine
         return _FakeScalarResult([])
 
@@ -175,3 +182,32 @@ def test_post_order_honors_payload_source_order_id(
     assert resp.status_code == 200
     assert captured["source_system"] == "octo-drone-shop"
     assert captured["source_order_id"] == "99"
+
+
+@pytest.mark.portability
+def test_post_order_returns_existing_order_on_idempotent_retry(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A retry with the same source_system + source_order_id must not try
+    to insert a duplicate row and surface the DB unique constraint as 500."""
+    _set_internal_key(monkeypatch, "")
+    monkeypatch.setattr(
+        _FakeDb,
+        "existing_order",
+        SimpleNamespace(id=1234, total=1.0),
+        raising=False,
+    )
+
+    resp = client.post(
+        "/api/orders",
+        json={
+            "customer_id": 42,
+            "items": [{"product_id": 1, "quantity": 1, "unit_price": 1.0}],
+            "source_system": "octo-drone-shop",
+            "source_order_id": "99",
+            "idempotency_token": "00000000-0000-0000-0000-000000000001",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["order_id"] == 1234
+    assert resp.json()["deduped"] is True

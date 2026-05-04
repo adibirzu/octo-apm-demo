@@ -46,7 +46,7 @@
         <mxCell id="oke_deploy" value="deploy/deploy-shop.sh + deploy-crm.sh&#10;first-time: envsubst pipes manifests to kubectl apply&#10;subsequent: kubectl set image + set env" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;fontSize=11" vertex="1" parent="1">
           <mxGeometry x="55" y="475" width="390" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="oke_ingress" value="LoadBalancer Service plus WAF policy&#10;DNS: drone.DOMAIN, backend.DOMAIN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;fontSize=11" vertex="1" parent="1">
+        <mxCell id="oke_ingress" value="LoadBalancer Service plus WAF policy&#10;DNS: shop.DOMAIN, crm.DOMAIN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;fontSize=11" vertex="1" parent="1">
           <mxGeometry x="55" y="555" width="390" height="50" as="geometry" />
         </mxCell>
         <mxCell id="oke_secrets" value="Vault via Secrets Store CSI&#10;7 secrets: auth, atp, apm, logging, sso, genai, integrations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4F46E5;fontSize=11" vertex="1" parent="1">

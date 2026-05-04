@@ -35,7 +35,7 @@ and which correlation-contract fields it emits.
 | LA saved searches | `tools/la-saved-searches/` | APM ↔ LA round-trip dashboards + smoke test. |
 | Workshop verifiers | `tools/workshop/` | Per-lab pass/fail scripts + `certify.sh`. |
 | Provisioning wizard | `deploy/wizard/` | Interactive TUI — discovery + plan + dispatch. |
-| Deploy verifier | `deploy/verify.sh` | 8 categories of pre-flight: shell, YAML, JSON, terraform fmt, compose, pre-flight, mkdocs, pytest. |
+| Deploy verifier | `deploy/verify.sh` | Provisioning surface smoke: shell, plain YAML, Helm render/lint, JSON, terraform fmt + validate, compose, pre-flight, mkdocs, pytest, template smoke. |
 
 ## Correlation contract coverage
 
@@ -61,21 +61,11 @@ OCI Events emitted by the platform follow
 | `com.octodemo.object-pipeline.*.processed` | Object-pipeline per-bucket handler |
 | `com.octodemo.async-worker.*` | Future: async-worker DLQ escalations |
 
-## Test totals (as of this session)
+## Validation surfaces
 
-| Component | Tests |
+| Surface | Scope |
 |---|---|
-| shop | 35 |
-| crm | 29 |
-| traffic-generator | 10 |
-| load-control | 36 |
-| cache | 6 |
-| browser-runner | 6 |
-| edge-fuzz | 4 |
-| async-worker | 9 |
-| remediator | 14 |
-| object-pipeline | 8 |
-| wizard | 7 |
-| **Total** | **164+** |
-
-`deploy/verify.sh`: 8 categories, 0 errors, 0 warnings on a clean checkout.
+| `python3 -m pytest -q tests/test_unified_deploy_surface.py` | Deploy/docs invariants for the unified repo |
+| `python3 -m pytest -q deploy/wizard/tests/test_plan.py` | Provisioning wizard plan composition |
+| `bash deploy/verify.sh` | Shell, plain YAML/JSON, Helm render + lint, terraform fmt, compose, pre-flight, mkdocs, pytest, template smoke |
+| `tests/e2e/*.spec.ts` | Deployed-tenancy smoke for cross-service, SSO, and optional full-platform coverage |

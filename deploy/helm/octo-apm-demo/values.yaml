@@ -1,0 +1,178 @@
+# octo-apm-demo — default values.
+#
+# This chart assumes the target OKE cluster already exists. It will not
+# provision ATP, APM, DNS zones, or OCIR repositories — those are the
+# responsibility of deploy/bootstrap.sh or the operator's own pipeline.
+#
+# The chart exposes two components (shop, crm) plus a shared secret
+# skeleton. By default it DOES NOT create secrets — it references existing
+# secrets named `octo-atp`, `octo-auth`, `octo-apm`, `octo-logging`,
+# `octo-oci-config`, `octo-sso`, `octo-atp-wallet` that bootstrap.sh seeds.
+# Flip `secrets.create: true` to render them from values (use --set-file
+# for the wallet zip). See README.md for the one-shot install flow.
+
+global:
+  # Public base domain for shop/crm FQDNs. Shop is served at
+  # "<shop.subdomain>.<dnsDomain>" and CRM at "<crm.subdomain>.<dnsDomain>".
+  dnsDomain: example.com
+
+  # OCIR image coordinates. Both components pull from the same registry
+  # namespace — override per-component via shop.image.* / crm.image.* if
+  # images live in different repos.
+  image:
+    region: eu-frankfurt-1
+    tenancy: ""   # OCIR namespace (e.g. "frxxxxxx"). REQUIRED.
+    tag: latest
+    pullPolicy: IfNotPresent
+    pullSecretName: ocir-pull-secret
+
+  # OCI auth mode for the workloads. "instance_principal" requires that the
+  # node pool's dynamic group has the necessary policies. Alternative:
+  # "workload_identity" (OKE enhanced clusters only).
+  ociAuthMode: instance_principal
+
+  # Pod labels applied to every workload.
+  commonLabels:
+    app.kubernetes.io/part-of: octo-apm-demo
+
+# ── Secrets policy ──────────────────────────────────────────────────────
+# createSecrets=false (default) → this chart only references secrets.
+# createSecrets=true            → chart renders them from `values.secretsData`
+#                                  and --set-file input. Use sparingly and
+#                                  NEVER check the filled values.yaml into
+#                                  git.
+secrets:
+  create: false
+  # Used only when secrets.create=true. Required runtime fields are validated
+  # at render time so Helm fails before creating pods that cannot start.
+  # Optional integration fields are skipped when empty so optional secretKeyRef
+  # lookups stay truly optional.
+  data:
+    atp:
+      dsn: ""
+      username: ""
+      password: ""
+      walletPassword: ""
+    auth:
+      tokenSecret: ""
+      internalServiceKey: ""
+      appSecretKey: ""
+      bootstrapAdminPassword: ""
+    apm:
+      endpoint: ""
+      privateKey: ""
+      publicKey: ""
+      rumEndpoint: ""
+      rumWebApplicationOcid: ""
+    logging:
+      logGroupId: ""
+      logId: ""
+      logChaosAuditId: ""
+      logSecurityId: ""
+    ociConfig:
+      compartmentId: ""
+      genaiEndpoint: ""
+      genaiModelId: ""
+    sso:
+      idcsDomainUrl: ""
+      idcsClientId: ""
+      idcsClientSecret: ""
+  # Base64-encoded ATP wallet zip. Supply via --set-file like:
+  #   --set-file secrets.atpWalletB64=./wallet.zip.b64
+  # (Plain unencoded ZIP via --set-file secrets.atpWallet=./wallet.zip also
+  # works — the template base64-encodes whichever is set.)
+  atpWallet: ""
+  atpWalletB64: ""
+
+# ── Shop ────────────────────────────────────────────────────────────────
+shop:
+  enabled: true
+  namespace: octo-drone-shop
+  # Leaf subdomain; FQDN = "<subdomain>.<global.dnsDomain>".
+  subdomain: shop
+  replicas: 2
+  image:
+    repository: octo-drone-shop
+    # Inherit region/tenancy/tag from global.image unless set here.
+    region: ""
+    tenancy: ""
+    tag: ""
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    cpuTargetUtilization: 70
+    memoryTargetUtilization: 75
+  pdb:
+    enabled: true
+    minAvailable: 1
+  service:
+    type: ClusterIP
+    port: 8080
+  env:
+    extra: {}
+
+# ── CRM ─────────────────────────────────────────────────────────────────
+crm:
+  enabled: true
+  namespace: enterprise-crm
+  subdomain: crm
+  replicas: 2
+  image:
+    repository: enterprise-crm-portal
+    region: ""
+    tenancy: ""
+    tag: ""
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    cpuTargetUtilization: 70
+    memoryTargetUtilization: 75
+  pdb:
+    enabled: true
+    minAvailable: 1
+  service:
+    type: ClusterIP
+    port: 8080
+  ordersSync:
+    enabled: true
+    intervalSeconds: 300
+  env:
+    extra: {}
+
+# ── Ingress ─────────────────────────────────────────────────────────────
+# Chart assumes an ingress controller already exists (nginx-ingress,
+# oci-native-ingress-controller, etc). Set ingress.enabled=false if the
+# cluster has none and you want to expose via LoadBalancer Services only.
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  tls:
+    enabled: true
+    # Chart does NOT create TLS secrets — reference a pre-created one, or
+    # set tls.secretName to "" to disable TLS on the Ingress.
+    secretName: octo-apm-demo-tls
+
+# ── Namespaces ──────────────────────────────────────────────────────────
+# Whether the chart creates the shop + crm namespaces. Set to false if the
+# caller already manages namespaces out-of-band (bootstrap.sh, GitOps).
+namespaces:
+  create: true

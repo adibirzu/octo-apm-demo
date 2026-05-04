@@ -7,7 +7,7 @@
 #
 # Apply:
 #   RUN_ID=$(uuidgen) \
-#   TARGET_NAMESPACE=octo-shop-prod \
+#   TARGET_NAMESPACE=octo-drone-shop \
 #   CPU_LOAD_PERCENT=80 \
 #   DURATION_SECONDS=300 \
 #   envsubst < k8s/cpu-stress.yaml | kubectl apply -f -

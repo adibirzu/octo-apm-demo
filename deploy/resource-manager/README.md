@@ -1,5 +1,7 @@
 # OCI Resource Manager stack
 
+[![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+
 One-click tenancy bootstrap for the observability + integration surface
 (APM Domain + RUM, Log Analytics app-log pipeline, WAF policies).
 Uploaded to **OCI Console → Resource Manager → Stacks**.
@@ -10,6 +12,19 @@ widgets. This is intentional: tenancies vary wildly in network layout
 and DB sizing, so hard-coding those would break portability.
 
 ## Package + upload
+
+The button above opens OCI Resource Manager with the latest published
+stack package from the `resource-manager-stack` GitHub Release:
+
+```text
+https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip
+```
+
+The `resource-manager-stack` workflow rebuilds that zip from
+`deploy/resource-manager/` and `deploy/terraform/` on every main-branch
+stack change and uploads it to the release asset URL.
+On a fresh fork, run that workflow once before using the button so the
+release asset exists.
 
 ```bash
 ./deploy/resource-manager/stack-package.sh

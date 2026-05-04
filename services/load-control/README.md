@@ -94,7 +94,7 @@ docker build --platform linux/amd64 \
     services/load-control/
 docker push ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-load-control:latest
 
-DNS_DOMAIN=octodemo.cloud OCIR_REGION=… OCIR_TENANCY=… IMAGE_TAG=latest \
+OCIR_REGION=… OCIR_TENANCY=… IMAGE_TAG=latest \
 envsubst < services/load-control/k8s/deployment.yaml | kubectl apply -f -
 ```
 

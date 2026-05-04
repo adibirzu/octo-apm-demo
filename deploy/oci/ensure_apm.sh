@@ -14,8 +14,17 @@
 # Required env:
 #   COMPARTMENT_ID        OCI compartment OCID for the domain
 #   TF_DIR (optional)     path to deploy/terraform (defaults to ../terraform)
+#
+# Usage:
+#   COMPARTMENT_ID=ocid1.compartment... ./deploy/oci/ensure_apm.sh --plan
+#   COMPARTMENT_ID=ocid1.compartment... ./deploy/oci/ensure_apm.sh --apply
+#   ./deploy/oci/ensure_apm.sh --print
 
 set -euo pipefail
+
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="${TF_DIR:-${SCRIPT_DIR}/../terraform}"
@@ -27,6 +36,10 @@ for arg in "$@"; do
         --plan)  mode="plan" ;;
         --apply) mode="apply" ;;
         --print) mode="print" ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
         *) echo "Unknown arg: ${arg}" >&2; exit 2 ;;
     esac
 done
