@@ -89,12 +89,23 @@ discover_atp_ocid() {
     [[ -n "${compartment_id}" ]] || return 1
     profile="${profile:-DEFAULT}"
     atp_id="$(
+        ATP_DISPLAY_NAME="${ATP_DISPLAY_NAME:-octo-apm-demo-atp}" \
         oci db autonomous-database list \
             --profile "${profile}" \
             --compartment-id "${compartment_id}" \
             --all \
-            --query "data[?\"display-name\"=='${ATP_DISPLAY_NAME:-octo-apm-demo-atp}'].id | [0]" \
-            --raw-output 2>/dev/null || true
+            --output json 2>/dev/null | python3 -c '
+import json, os, sys
+target = os.environ["ATP_DISPLAY_NAME"]
+try:
+    items = json.load(sys.stdin).get("data", [])
+except Exception:
+    sys.exit(0)
+for item in items:
+    if item.get("display-name") == target and item.get("lifecycle-state") != "TERMINATED":
+        print(item.get("id", ""), end="")
+        break
+' || true
     )"
     [[ -n "${atp_id}" && "${atp_id}" != "null" ]] || return 1
     printf '%s' "${atp_id}"

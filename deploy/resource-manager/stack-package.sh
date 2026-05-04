@@ -3,9 +3,23 @@
 # upload. The zip MUST be flat at the root — Resource Manager rejects
 # nested stacks inside a single archive.
 #
+# Usage:
+#   ./deploy/resource-manager/stack-package.sh
+#
 # Output: deploy/resource-manager/build/octo-stack.zip
 
 set -euo pipefail
+
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"

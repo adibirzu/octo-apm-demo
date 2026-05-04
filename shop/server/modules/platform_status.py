@@ -36,7 +36,7 @@ router = APIRouter(tags=["meta"])
 # deployments where everything talks to localhost:port.
 _DEFAULT_TARGETS: dict[str, str] = {
     "octo-drone-shop": "http://localhost:8080",
-    "enterprise-crm-portal": "http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080",
+    "enterprise-crm-portal": "http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080",
     "octo-load-control": "http://load-control.octo-load-control:8080",
     "octo-remediator": "http://remediator.octo-remediator:8080",
     "octo-object-pipeline": "http://object-pipeline.octo-object:8080",

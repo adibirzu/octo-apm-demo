@@ -192,8 +192,8 @@ variable "oke_node_boot_volume_gbs" {
 }
 
 variable "oke_node_image_id" {
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
   description = "OKE-managed node image OCID. Required when create_oke=true."
 }
 

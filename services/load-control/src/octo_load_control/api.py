@@ -66,7 +66,7 @@ def create_app(
             "TRAFFIC_GENERATOR_URL", "http://traffic-generator.octo-traffic.svc.cluster.local:8080"
         )
         chaos_base = os.getenv(
-            "CRM_CHAOS_ADMIN_URL", "http://enterprise-crm-portal.octo-backend-prod.svc.cluster.local:8080"
+            "CRM_CHAOS_ADMIN_URL", "http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080"
         )
         executor = ExecutorBackend(
             traffic_generator_client=httpx.AsyncClient(base_url=traffic_base, timeout=5.0),

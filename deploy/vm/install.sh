@@ -14,8 +14,23 @@
 #
 # Inputs: deploy/vm/.env (created from deploy/vm/.env.template)
 #         deploy/vm/wallet/ (unzipped ATP wallet)
+#
+# Usage:
+#   sudo ./deploy/vm/install.sh
+#   sudo ENV_FILE=/path/to/filled.env ./deploy/vm/install.sh
 
 set -euo pipefail
+
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${ENV_FILE:-${SCRIPT_DIR}/.env}"

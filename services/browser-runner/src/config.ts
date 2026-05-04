@@ -59,8 +59,8 @@ function randomHex(chars: number): string {
 
 export function loadConfig(): BrowserRunnerConfig {
   return {
-    shopBaseUrl: env("OCTO_BROWSER_SHOP_URL", "https://drone.octodemo.cloud"),
-    crmBaseUrl: env("OCTO_BROWSER_CRM_URL", "https://backend.octodemo.cloud"),
+    shopBaseUrl: env("OCTO_BROWSER_SHOP_URL", "https://shop.cyber-sec.ro"),
+    crmBaseUrl: env("OCTO_BROWSER_CRM_URL", "https://crm.cyber-sec.ro"),
 
     runId: env("OCTO_BROWSER_RUN_ID") || generateRunId(),
     operator: env("OCTO_BROWSER_OPERATOR", "browser-runner"),

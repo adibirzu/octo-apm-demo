@@ -10,8 +10,8 @@ terraform validate   # Success! The configuration is valid.
 terraform apply
 ```
 
-`verify.sh` runs `terraform fmt -check` + `terraform validate` on every
-push; CI fails if either drifts.
+Run `bash deploy/verify.sh` before pushing; it includes Terraform format
+and validation checks alongside the rest of the deploy surface.
 
 ## Modules
 
@@ -60,7 +60,8 @@ Common fixes:
   Oracle exposes a resource.
 - `log_source_name` is not part of the
   `oci_sch_service_connector.target` schema when `kind = "loganalytics"`.
-  Set the LA source via `deploy/oci/ensure_la_sources.sh` instead.
+  Register the LA source separately via
+  `python3 shop/tools/create_la_source.py ...`.
 - `oci_stack_monitoring_monitored_resource.credential` requires
   `source` (not `key_id`) — for Autonomous DBs, drop the block entirely
   and pass the ATP OCID as `external_id`.

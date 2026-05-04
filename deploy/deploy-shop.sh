@@ -16,6 +16,17 @@
 
 set -euo pipefail
 
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
+
 OCIR_REPO="${OCIR_REPO:?Set OCIR_REPO (e.g. <region>.ocir.io/<namespace>/octo-drone-shop)}"
 REMOTE_HOST="${REMOTE_HOST:-remote-builder}"
 REMOTE_DIR="${REMOTE_DIR:-/tmp/octo-apm-demo-shop}"

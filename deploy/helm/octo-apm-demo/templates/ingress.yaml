@@ -1,0 +1,67 @@
+{{- if .Values.ingress.enabled }}
+{{- if .Values.shop.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: octo-drone-shop-ingress
+  namespace: {{ .Values.shop.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if and .Values.ingress.tls.enabled .Values.ingress.tls.secretName }}
+  tls:
+    - hosts:
+        - {{ include "octo.fqdn" (list . .Values.shop) | quote }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ include "octo.fqdn" (list . .Values.shop) | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: octo-drone-shop
+                port:
+                  number: {{ .Values.shop.service.port }}
+---
+{{- end }}
+{{- if .Values.crm.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: enterprise-crm-portal-ingress
+  namespace: {{ .Values.crm.namespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if and .Values.ingress.tls.enabled .Values.ingress.tls.secretName }}
+  tls:
+    - hosts:
+        - {{ include "octo.fqdn" (list . .Values.crm) | quote }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ include "octo.fqdn" (list . .Values.crm) | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: enterprise-crm-portal
+                port:
+                  number: {{ .Values.crm.service.port }}
+{{- end }}
+{{- end }}

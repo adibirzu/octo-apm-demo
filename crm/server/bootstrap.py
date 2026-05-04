@@ -333,6 +333,32 @@ def _ensure_catalog_schema(sync_conn) -> None:
             )
         )
 
+    # Shop's Campaign model pre-dates CRM's richer one — it is missing
+    # `updated_at` + `created_by`. When shop runs create_all first on a
+    # shared ATP, the campaigns table lands without those columns. CRM
+    # then INSERTs with RETURNING on them and trips ORA-00904. Repair.
+    if "campaigns" in tables:
+        campaign_cols = {col["name"] for col in inspector.get_columns("campaigns")}
+        missing_campaign_columns: dict[str, str] = {}
+        if "updated_at" not in campaign_cols:
+            missing_campaign_columns["updated_at"] = (
+                "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                if dialect == "oracle"
+                else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+            )
+        if "created_by" not in campaign_cols:
+            missing_campaign_columns["created_by"] = (
+                "NUMBER(10)" if dialect == "oracle" else "INTEGER"
+            )
+        for col_name, col_ddl in missing_campaign_columns.items():
+            sync_conn.execute(
+                text(
+                    f"ALTER TABLE campaigns ADD ({col_name} {col_ddl})"
+                    if dialect == "oracle"
+                    else f"ALTER TABLE campaigns ADD COLUMN {col_name} {col_ddl}"
+                )
+            )
+
 
 async def _ensure_demo_shops(session) -> list[Shop]:
     demo_shops = [

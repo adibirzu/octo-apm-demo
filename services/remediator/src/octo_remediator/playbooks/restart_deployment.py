@@ -27,7 +27,7 @@ class RestartDeploymentPlaybook(Playbook):
     def extract_params(self, alarm: dict[str, Any]) -> dict[str, Any]:
         ann = alarm.get("annotations") or {}
         return {
-            "namespace": ann.get("target_namespace", "octo-shop-prod"),
+            "namespace": ann.get("target_namespace", "octo-drone-shop"),
             "deployment": ann.get("target_deployment", "octo-drone-shop"),
         }
 

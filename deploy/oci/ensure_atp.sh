@@ -1,9 +1,27 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
 # Ensures a dedicated ATP exists for this component.
 # If the requested ATP already exists, it is reused.
 # If missing, a new ATP is created.
+#
+# Usage:
+#   COMPARTMENT_ID=ocid1.compartment... \
+#   DISPLAY_NAME=octo-apm-demo-atp \
+#   DB_NAME=octoapm \
+#   ADMIN_PASSWORD='<password>' \
+#   ./deploy/oci/ensure_atp.sh
+
+set -euo pipefail
+
+show_usage() {
+    awk 'NR == 1 { next } /^$/ { exit } /^#/ { sub(/^# ?/, ""); print }' "$0"
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_usage
+        exit 0
+        ;;
+esac
 
 if ! command -v oci >/dev/null 2>&1; then
   echo "ERROR: OCI CLI is required." >&2

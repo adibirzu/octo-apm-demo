@@ -31,6 +31,8 @@ spec:
       annotations:
         octo.oracle.com/restartedAt: "${IMAGE_TAG}"
     spec:
+      imagePullSecrets:
+        - name: ocir-pull-secret
       containers:
         - name: app
           image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG}
@@ -152,8 +154,6 @@ spec:
                   name: octo-sso
                   key: idcs-client-secret
                   optional: true
-            - name: IDCS_REDIRECT_URI
-              value: "https://crm.${DNS_DOMAIN}/api/auth/sso/callback"
             # ── Orders sync toggle
             - name: ORDERS_SYNC_ENABLED
               value: "true"

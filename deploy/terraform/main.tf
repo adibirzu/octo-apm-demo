@@ -13,8 +13,6 @@ terraform {
   }
 }
 
-provider "oci" {}
-
 module "waf_shop" {
   source            = "./modules/waf"
   compartment_id    = var.compartment_id
@@ -320,10 +318,10 @@ output "stack_monitoring_atp_id" {
 
 output "oke" {
   value = var.create_oke ? {
-    cluster_id    = module.oke[0].cluster_id
-    cluster_name  = module.oke[0].cluster_name
-    vcn_id        = module.oke[0].vcn_id
-    lb_subnet_id  = module.oke[0].lb_subnet_id
+    cluster_id   = module.oke[0].cluster_id
+    cluster_name = module.oke[0].cluster_name
+    vcn_id       = module.oke[0].vcn_id
+    lb_subnet_id = module.oke[0].lb_subnet_id
   } : null
   description = "OKE coordinates. Use cluster_id with `oci ce cluster create-kubeconfig`."
 }

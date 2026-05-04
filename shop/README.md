@@ -24,7 +24,7 @@ ATP-backed drone commerce platform with full OCI observability, IDCS SSO, cross-
 - **Shop UI** — product grid, cart, checkout, dealer locations, workflow panels, Select AI, query lab
 
 ### Testing
-- **E2E** — 237 Playwright tests across 8 dimensions (health, shopping, cross-service, MELTS, auth, simulation, availability, k6)
+- **E2E** — shop-local Playwright regression in `shop/tests/e2e/`, plus root `tests/e2e/` smoke for deployed tenancies
 - **k6 stress tests** — 3 suites (shop-only, cross-service, ATP database) with light/moderate/heavy profiles
 - **OCI Health Checks** — HTTP `/ready` probe every 30s
 
@@ -62,7 +62,7 @@ Full matrix in [site/getting-started/deployment-options.md](site/getting-started
 The complete, minimal list of tenancy resources, secrets, CLIs, and
 images needed to redeploy from a blank slate lives in
 **[deploy/BOM.md](deploy/BOM.md)**. `pre-flight-check.sh`,
-`init-tenancy.sh`, and the Resource Manager schema all validate
+`bootstrap.sh`, and the Resource Manager schema all validate
 against it — if they disagree, the BOM wins and the mismatch is a
 bug to raise.
 
@@ -70,12 +70,11 @@ bug to raise.
 
 | Step | Script | Purpose |
 |---|---|---|
-| 1 | `deploy/pre-flight-check.sh` | Validates required env vars, detects placeholder leaks (`example.cloud` etc.), checks CLI tools + kubectl context |
-| 2 | `deploy/init-tenancy.sh` | Idempotent bootstrap: OCIR repo, K8s namespace, initial Secrets (`octo-auth`, `octo-atp`), `terraform init` |
-| 3 | `deploy/oci/ensure_apm.sh --apply` | Provisions OCI APM Domain + RUM Web Application; emits `export OCI_APM_*` for Secret population |
-| 4 | `python3 tools/create_la_source.py --apply` | Registers Log Analytics source `octo-shop-app-json` + JSON parser for trace-correlated search |
-| 5 | `deploy/oci/ensure_stack_monitoring.sh` (DRY_RUN=false) | Registers the ATP as a Stack Monitoring MonitoredResource |
-| 6 | `deploy/deploy.sh` | Build + push + OKE rollout |
+| 1 | `deploy/bootstrap.sh` | Canonical unified bootstrap: OCI profile validation, kube context, ATP, secrets, Shop + CRM rollout, ingress, DNS, smoke |
+| 2 | `deploy/oci/ensure_apm.sh --apply` | Optional APM Domain + RUM Web Application provisioning when you need full observability |
+| 3 | `python3 tools/create_la_source.py --apply` | Optional Log Analytics source + parser registration |
+| 4 | `deploy/oci/ensure_stack_monitoring.sh` | Optional ATP registration in Stack Monitoring |
+| 5 | `tests/e2e/*.spec.ts` | Deployed-tenancy smoke after the bootstrap is healthy |
 
 Full walkthrough: [site/getting-started/new-tenancy.md](site/getting-started/new-tenancy.md).
 
@@ -83,7 +82,7 @@ Full walkthrough: [site/getting-started/new-tenancy.md](site/getting-started/new
 
 Two supported modes:
 
-1. **Plain Kubernetes Secrets** — created by `deploy/init-tenancy.sh`. Simplest; fine for demos.
+1. **Plain Kubernetes Secrets** — created by `deploy/bootstrap.sh`. Simplest; fine for demos.
 2. **OCI Vault via Secrets Store CSI Driver** — template at
    [deploy/k8s/secret-provider-class.yaml](deploy/k8s/secret-provider-class.yaml).
    Mounts Vault secrets as files; the app already supports `*_FILE` variants
@@ -110,7 +109,7 @@ Two supported modes:
 | [deploy/oci/ensure_apm.sh](deploy/oci/ensure_apm.sh) | APM Domain + RUM Web Application provisioning (plan/apply/print) |
 | [deploy/oci/ensure_stack_monitoring.sh](deploy/oci/ensure_stack_monitoring.sh) | Register ATP as Stack Monitoring MonitoredResource |
 | [deploy/pre-flight-check.sh](deploy/pre-flight-check.sh) | Env + placeholder + tooling pre-flight |
-| [deploy/init-tenancy.sh](deploy/init-tenancy.sh) | Idempotent new-tenancy bootstrap |
+| [deploy/bootstrap.sh](deploy/bootstrap.sh) | Canonical new-tenancy bootstrap |
 | [tools/create_la_source.py](tools/create_la_source.py) | Log Analytics source + JSON parser registrar |
 | [site/getting-started/new-tenancy.md](site/getting-started/new-tenancy.md) | End-to-end new-tenancy playbook |
 
@@ -128,7 +127,7 @@ Two supported modes:
 | `services/workflow-gateway/` | Go workflow gateway (Select AI, query lab, ATP sweeps) |
 | `k6/cross_service_stress.js` | k6: Shop + CRM + ATP distributed trace stress test |
 | `k6/db_stress.js` | k6: ATP database stress (writes, N+1, slow queries, checkout storms) |
-| `tests/e2e/` | 237 Playwright E2E tests (8 spec files) |
+| `tests/e2e/` | Shop-local Playwright suite; use root `tests/e2e/` for deployed-tenancy smoke |
 
 ## Required production inputs
 
@@ -169,11 +168,18 @@ envsubst < deploy/k8s/deployment.yaml | kubectl apply -f -
 ## Testing
 
 ```bash
-# E2E (237 tests)
+# Shop-local E2E
 npm run test:e2e
 
-# Against live tenancy
+# Against a deployed tenancy
 SHOP_URL=https://shop.<your-domain> CRM_URL=https://crm.<your-domain> npm run test:e2e
+
+# Root deploy-targeted smoke
+SHOP_BASE_URL=https://shop.<your-domain> \
+CRM_BASE_URL=https://crm.<your-domain> \
+INTERNAL_SERVICE_KEY=<shared-secret> \
+CROSS_SERVICE_E2E_ENABLED=1 \
+npx playwright test tests/e2e/cross-service-smoke.spec.ts
 
 # k6 stress tests
 k6 run --env DNS_DOMAIN=<your-domain> k6/cross_service_stress.js

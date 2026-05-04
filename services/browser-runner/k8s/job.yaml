@@ -41,9 +41,9 @@ spec:
             - name: OCTO_BROWSER_JOURNEY
               value: "${JOURNEY}"
             - name: OCTO_BROWSER_SHOP_URL
-              value: "https://drone.${DNS_DOMAIN}"
+              value: "${SHOP_BASE_URL}"
             - name: OCTO_BROWSER_CRM_URL
-              value: "https://backend.${DNS_DOMAIN}"
+              value: "${CRM_BASE_URL}"
             - name: OCTO_BROWSER_ITERATIONS
               value: "${ITERATIONS:-1}"
             - name: OCTO_BROWSER_ARTIFACTS_DIR

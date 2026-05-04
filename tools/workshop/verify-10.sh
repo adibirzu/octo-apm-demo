@@ -18,7 +18,7 @@ fi
 
 # CRM pod restart in window
 if command -v kubectl >/dev/null 2>&1; then
-    restarts=$(kubectl get pods -n octo-backend-prod \
+    restarts=$(kubectl get pods -n enterprise-crm \
         -o jsonpath='{range .items[*]}{.metadata.name}{":"}{.status.containerStatuses[0].restartCount}{"\n"}{end}' 2>/dev/null \
         | awk -F: '$2 > 0 {count++} END {print count+0}')
     if [[ "${restarts:-0}" -ge 1 ]]; then

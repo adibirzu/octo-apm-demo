@@ -24,7 +24,7 @@ real signal instead of demo noise.
 cd tools/traffic-generator
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-OCTO_TRAFFIC_SHOP_BASE_URL=https://drone.octodemo.cloud \
+OCTO_TRAFFIC_SHOP_BASE_URL=https://shop.cyber-sec.ro \
   OCTO_TRAFFIC_TARGET_RPS=2.0 \
   OCTO_TRAFFIC_RUN_DURATION_SECONDS=60 \
   octo-traffic
@@ -51,8 +51,8 @@ Add to the root `deploy/vm/docker-compose-unified.yml`:
     image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-traffic-generator:${TAG:-latest}
     restart: unless-stopped
     environment:
-      OCTO_TRAFFIC_SHOP_BASE_URL: "https://drone.${DNS_DOMAIN}"
-      OCTO_TRAFFIC_CRM_BASE_URL: "https://backend.${DNS_DOMAIN}"
+      OCTO_TRAFFIC_SHOP_BASE_URL: "https://shop.${DNS_DOMAIN}"
+      OCTO_TRAFFIC_CRM_BASE_URL: "https://crm.${DNS_DOMAIN}"
       OCTO_TRAFFIC_TARGET_RPS: "1.0"
       OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_ENDPOINT: "${OCI_APM_ENDPOINT}"
     depends_on:
@@ -66,8 +66,8 @@ Add to the root `deploy/vm/docker-compose-unified.yml`:
 
 | Var | Default | Purpose |
 |---|---|---|
-| `OCTO_TRAFFIC_SHOP_BASE_URL` | `https://drone.octodemo.cloud` | Shop public URL |
-| `OCTO_TRAFFIC_CRM_BASE_URL` | `https://backend.octodemo.cloud` | CRM public URL |
+| `OCTO_TRAFFIC_SHOP_BASE_URL` | `https://shop.cyber-sec.ro` | Shop public URL |
+| `OCTO_TRAFFIC_CRM_BASE_URL` | `https://crm.cyber-sec.ro` | CRM public URL |
 | `OCTO_TRAFFIC_TARGET_RPS` | `2.0` | New sessions per second |
 | `OCTO_TRAFFIC_CONCURRENT_SESSION_LIMIT` | `50` | Hard cap on in-flight sessions |
 | `OCTO_TRAFFIC_BURST_MULTIPLIER` | `1.0` | Multiplier during flash-sale simulations |
@@ -123,5 +123,5 @@ mean, log-normal tail, poisson inter-arrival).
 
 Phase 1.2 (SSO E2E), 1.3 (trace↔log round-trip), 1.4 (cross-service
 smoke) depend on this running continuously in the target environment —
-with the generator pointed at `drone.octodemo.cloud`, the rest of the
+with the generator pointed at `shop.<your-domain>`, the rest of the
 observability plumbing has inputs to verify against.

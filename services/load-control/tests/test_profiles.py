@@ -59,3 +59,21 @@ def test_expected_signals_populated_for_visible_profiles() -> None:
     for p in list_profiles():
         if p.executor == ExecutorKind.TRAFFIC_GENERATOR:
             assert p.expected_signals, f"{p.name} is missing expected_signals"
+
+
+def test_profile_targets_use_current_shop_crm_contract() -> None:
+    web = get_profile("web-checkout-surge")
+    crm = get_profile("crm-backoffice-surge")
+    cpu = get_profile("container-cpu-pressure")
+    mem = get_profile("container-memory-pressure")
+
+    assert web.target_name == "shop.${DNS_DOMAIN}"
+    assert crm.target_name == "crm.${DNS_DOMAIN}"
+    assert cpu.target_name == "octo-drone-shop/octo-drone-shop"
+    assert mem.target_name == "octo-drone-shop/octo-drone-shop"
+    assert cpu.executor_args["target_namespace"] == "octo-drone-shop"
+    assert mem.executor_args["target_namespace"] == "octo-drone-shop"
+
+    combined = "\n".join(repr(profile) for profile in list_profiles())
+    assert "octodemo.cloud" not in combined
+    assert "octo-shop-prod" not in combined
