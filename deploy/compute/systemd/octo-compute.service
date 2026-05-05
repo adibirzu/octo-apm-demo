@@ -1,0 +1,16 @@
+[Unit]
+Description=OCTO Compute role container
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/octo/deploy/compute
+ExecStart=/usr/bin/bash -lc 'set -a; . /opt/octo/runtime.env; set +a; exec /usr/bin/docker compose -f /opt/octo/deploy/compute/app-compose.yml --env-file /opt/octo/container.env up -d'
+ExecStop=/usr/bin/bash -lc 'set -a; . /opt/octo/runtime.env; set +a; exec /usr/bin/docker compose -f /opt/octo/deploy/compute/app-compose.yml --env-file /opt/octo/container.env down'
+RemainAfterExit=yes
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

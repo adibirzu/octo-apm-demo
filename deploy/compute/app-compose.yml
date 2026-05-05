@@ -1,0 +1,98 @@
+# OCTO two-instance Compute deployment.
+#
+# Each Compute instance runs this same compose file with ROLE-specific env:
+#   shop instance -> APP_IMAGE=.../octo-drone-shop:tag
+#   crm instance  -> APP_IMAGE=.../enterprise-crm-portal:tag
+#
+# Public ingress is terminated by OCI Load Balancer/WAF. The app
+# container listens on the private host port 8080. This compose file is
+# used only when CONTAINER_RUNTIME=docker; Podman is the default path.
+
+services:
+  app:
+    image: ${APP_IMAGE}
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      APP_NAME: ${APP_NAME}
+      APP_RUNTIME: compute
+      APP_ENV: ${ENVIRONMENT:-production}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      PORT: "8080"
+      APP_PORT: "8080"
+      DNS_DOMAIN: ${DNS_DOMAIN}
+      SERVICE_NAMESPACE: octo
+      SERVICE_INSTANCE_ID: ${SERVICE_INSTANCE_ID}
+      DEMO_STACK_NAME: ${DEMO_STACK_NAME:-octo-compute}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME}
+      OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-always_on}
+      OTEL_PYTHON_LOG_CORRELATION: "true"
+
+      # Cross-service URLs. On the shop instance SERVICE_CRM_URL points at
+      # the CRM private IP. On the CRM instance SERVICE_SHOP_URL points at
+      # the Shop private IP.
+      SERVICE_CRM_URL: ${SERVICE_CRM_URL:-}
+      CRM_PUBLIC_URL: ${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}
+      CRM_BASE_URL: ${CRM_BASE_URL:-https://crm.${DNS_DOMAIN}}
+      SERVICE_SHOP_URL: ${SERVICE_SHOP_URL:-}
+
+      # Shared service auth and app secrets. Values are supplied from the
+      # runtime env file or *_FILE mounts, not from Terraform metadata.
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
+      AUTH_TOKEN_SECRET_FILE: ${AUTH_TOKEN_SECRET_FILE:-}
+      APP_SECRET_KEY: ${APP_SECRET_KEY:-}
+      APP_SECRET_KEY_FILE: ${APP_SECRET_KEY_FILE:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      BOOTSTRAP_ADMIN_PASSWORD_FILE: ${BOOTSTRAP_ADMIN_PASSWORD_FILE:-}
+
+      # Oracle ATP via wallet mount.
+      ORACLE_DSN: ${ORACLE_DSN}
+      ORACLE_USER: ${ORACLE_USER:-ADMIN}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      ORACLE_PASSWORD_FILE: ${ORACLE_PASSWORD_FILE:-}
+      ORACLE_WALLET_DIR: /opt/oracle/wallet
+      ORACLE_WALLET_PASSWORD: ${ORACLE_WALLET_PASSWORD}
+      ORACLE_WALLET_PASSWORD_FILE: ${ORACLE_WALLET_PASSWORD_FILE:-}
+      ATP_OCID: ${ATP_OCID:-}
+      DATABASE_OBSERVABILITY_ENABLED: ${DATABASE_OBSERVABILITY_ENABLED:-true}
+
+      # OCI APM / RUM. These apps are Python/FastAPI, so the application
+      # agent is OpenTelemetry instrumentation exporting to OCI APM.
+      OCI_AUTH_MODE: instance_principal
+      OCI_COMPARTMENT_ID: ${OCI_COMPARTMENT_ID}
+      OCI_APM_ENDPOINT: ${OCI_APM_ENDPOINT}
+      OCI_APM_PRIVATE_DATAKEY: ${OCI_APM_PRIVATE_DATAKEY}
+      OCI_APM_PRIVATE_DATAKEY_FILE: ${OCI_APM_PRIVATE_DATAKEY_FILE:-}
+      OCI_APM_PUBLIC_DATAKEY: ${OCI_APM_PUBLIC_DATAKEY:-}
+      OCI_APM_RUM_ENDPOINT: ${OCI_APM_RUM_ENDPOINT:-}
+      OCI_APM_WEB_APPLICATION: ${OCI_APM_WEB_APPLICATION:-octo-drone-shop-web}
+      OCI_APM_RUM_PUBLIC_DATAKEY: ${OCI_APM_PUBLIC_DATAKEY:-}
+      OTLP_LOG_EXPORT_ENABLED: "false"
+
+      # OCI Logging SDK app logs. OS/container stdout logs are collected by
+      # Oracle Cloud Agent Custom Logs Monitoring from the host.
+      OCI_LOG_ID: ${OCI_LOG_ID}
+      OCI_LOG_GROUP_ID: ${OCI_LOG_GROUP_ID}
+      OCI_LOG_CHAOS_AUDIT_ID: ${OCI_LOG_CHAOS_AUDIT_ID:-}
+      OCI_LOG_SECURITY_ID: ${OCI_LOG_SECURITY_ID:-}
+
+      # Optional SSO. Leave all empty unless the IAM domain app is complete.
+      IDCS_DOMAIN_URL: ${IDCS_DOMAIN_URL:-}
+      IDCS_CLIENT_ID: ${IDCS_CLIENT_ID:-}
+      IDCS_CLIENT_SECRET: ${IDCS_CLIENT_SECRET:-}
+      IDCS_CLIENT_SECRET_FILE: ${IDCS_CLIENT_SECRET_FILE:-}
+    volumes:
+      - /opt/octo/wallet:/opt/oracle/wallet:ro
+      - /opt/octo/secrets:/opt/octo/secrets:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "25m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s

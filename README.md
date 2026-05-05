@@ -8,9 +8,11 @@ cross-service contract hardened in the upstream repos.
 
 **Docs site**: https://adibirzu.github.io/octo-apm-demo
 **Target hostnames (`DEFAULT` / `oci4cca`)**: `shop.cyber-sec.ro` (Shop) · `crm.cyber-sec.ro` (CRM)
-**Status (April 25, 2026)**: the tracked `DEFAULT` deployment is currently degraded. Public DNS for `shop.cyber-sec.ro` and `crm.cyber-sec.ro` returns no `A` record, the shared ingress load balancer still exists but the ingress controller is `0/2` because the managed node pool is `NotReady`, both app deployments are `0/2`, and ATP `octo-apm-demo-atp` is `STOPPED`. Use `deploy/bootstrap.sh` for fresh tenancies, and check [`site/operations/current-status.md`](site/operations/current-status.md) before treating the shared `DEFAULT` environment as E2E-ready.
+**Status (May 5, 2026)**: the private Compute Resource Manager stack has been applied in the `cap` profile for `shop.1.octodemo.cloud` and `crm.1.octodemo.cloud` with two private Compute instances, dedicated private ATP, public LB/WAF, APM, OCI Logging, Log Analytics pipelines, DB Management, Operations Insights, and Stack Monitoring Standard host plugin deployment. `deploy/compute/verify-deployment.sh --profile cap --plan` now performs the read-only production-demo gate. Use `deploy/bootstrap.sh` for OKE fresh tenancies, or `deploy/compute/` for the private Compute production demo, and check [`site/operations/current-status.md`](site/operations/current-status.md) before treating any shared environment as E2E-ready.
 
-[![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+[![Deploy Full Private Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+
+[![Deploy Observability Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
 
 ## Repository layout
 
@@ -29,6 +31,7 @@ octo-apm-demo/
 │   ├── deploy-shop.sh                # build + push + rollout for Shop
 │   ├── deploy-crm.sh                 # build + push + rollout for CRM
 │   ├── resource-manager/             # OCI Resource Manager stack (one-click)
+│   ├── compute/                      # private Compute + LB/WAF + ATP Resource Manager stack
 │   ├── vm/                           # Unified single-VM compose + cloud-init
 │   ├── k8s/                          # OKE manifests (envsubst-templated)
 │   │   ├── shop/
@@ -48,13 +51,14 @@ octo-apm-demo/
 └── mkdocs.yml
 ```
 
-## Four deployment paths — same container images
+## Supported deployment paths — same container images
 
 | Path | Entry point | When to use |
 |---|---|---|
 | **OKE** | `deploy/k8s/oke/{shop,crm}/*.yaml` + `deploy/deploy-{shop,crm}.sh` | Production, HA, rolling updates. First-time rollout auto-runs `envsubst` on manifests. |
 | **OKE (Helm, existing cluster)** | `deploy/helm/octo-apm-demo/` | Drop-in for operators who already have OKE + secrets. `helm upgrade --install`, `helm rollback`, one release owns both apps. See [`deploy/helm/octo-apm-demo/README.md`](deploy/helm/octo-apm-demo/README.md). |
 | **Bootstrap (unified)** | `deploy/bootstrap.sh` + `deploy/destroy.sh` | End-to-end lifecycle: compartment picker → OCIR → kubeconfig → ATP terraform → seed secrets → build+push → apply manifests → ingress + DNS + TLS + smoke test. See [`deploy/BOOTSTRAP-README.md`](deploy/BOOTSTRAP-README.md). |
+| **Two-instance Compute** | `deploy/compute/` | Production demo without Kubernetes: public LB/WAF, private Shop and CRM Compute instances, private ATP, Podman by default, OCI APM, Logging, Log Analytics pipelines, and Stack Monitoring Standard. |
 | **OCI Resource Manager stack** | `deploy/resource-manager/` | Console one-click bootstrap of APM + RUM + LA + WAF. Use the Deploy to Oracle Cloud button above. |
 | **Unified single VM** | `deploy/vm/docker-compose-unified.yml` | Demos, workshops, air-gapped — both services on one Compute instance |
 | **local-stack** | `deploy/local-stack/docker-compose.test.yml` | Hermetic regression — Playwright + k6 + CI without OCI credentials. NOT for prod. |

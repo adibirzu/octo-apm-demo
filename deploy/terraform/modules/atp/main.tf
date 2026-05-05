@@ -53,6 +53,16 @@ variable "data_storage_size_in_tbs" {
   default = 1
 }
 
+variable "data_storage_size_in_gbs" {
+  type        = number
+  default     = 20
+  description = "Autonomous Database storage in GB. Set to 0 to use data_storage_size_in_tbs instead."
+  validation {
+    condition     = var.data_storage_size_in_gbs == 0 || var.data_storage_size_in_gbs >= 20
+    error_message = "data_storage_size_in_gbs must be 0 or at least 20."
+  }
+}
+
 variable "is_auto_scaling_enabled" {
   type    = bool
   default = true
@@ -84,6 +94,50 @@ variable "whitelisted_ips" {
   description = "Optional CIDR allowlist for the mTLS endpoint. Empty = any source (OKE workers still need wallet)."
 }
 
+variable "subnet_id" {
+  type        = string
+  default     = ""
+  description = "Optional private endpoint subnet OCID. Empty creates a public Autonomous Database endpoint."
+}
+
+variable "nsg_ids" {
+  type        = list(string)
+  default     = []
+  description = "Optional NSGs for the Autonomous Database private endpoint."
+}
+
+variable "private_endpoint_label" {
+  type        = string
+  default     = ""
+  description = "Optional DNS label for the Autonomous Database private endpoint."
+}
+
+variable "is_mtls_connection_required" {
+  type        = bool
+  default     = true
+  description = "Require mTLS wallet connections to the Autonomous Database."
+}
+
+variable "database_management_status" {
+  type        = string
+  default     = ""
+  description = "Optional DB Management status. Use ENABLED to onboard the database to Database Management."
+  validation {
+    condition     = var.database_management_status == "" || contains(["ENABLED", "DISABLED"], upper(var.database_management_status))
+    error_message = "database_management_status must be empty, ENABLED, or DISABLED."
+  }
+}
+
+variable "operations_insights_status" {
+  type        = string
+  default     = ""
+  description = "Optional Operations Insights status. Use ENABLED to onboard the database to Operations Insights."
+  validation {
+    condition     = var.operations_insights_status == "" || contains(["ENABLED", "DISABLED"], upper(var.operations_insights_status))
+    error_message = "operations_insights_status must be empty, ENABLED, or DISABLED."
+  }
+}
+
 variable "tags" {
   type    = map(string)
   default = {}
@@ -99,13 +153,21 @@ resource "oci_database_autonomous_database" "this" {
   # "Creating new Autonomous AI Databases using the OCPU compute model is not supported".
   compute_model            = "ECPU"
   compute_count            = var.compute_count
-  data_storage_size_in_tbs = var.data_storage_size_in_tbs
+  data_storage_size_in_gb  = var.data_storage_size_in_gbs > 0 ? var.data_storage_size_in_gbs : null
+  data_storage_size_in_tbs = var.data_storage_size_in_gbs > 0 ? null : var.data_storage_size_in_tbs
   is_auto_scaling_enabled  = var.is_auto_scaling_enabled
   admin_password           = var.admin_password
   db_workload              = "OLTP"
   license_model            = "LICENSE_INCLUDED"
 
-  whitelisted_ips = length(var.whitelisted_ips) == 0 ? null : var.whitelisted_ips
+  subnet_id                   = var.subnet_id == "" ? null : var.subnet_id
+  nsg_ids                     = length(var.nsg_ids) == 0 ? null : var.nsg_ids
+  private_endpoint_label      = var.private_endpoint_label == "" ? null : var.private_endpoint_label
+  is_mtls_connection_required = var.is_mtls_connection_required
+  database_management_status  = var.database_management_status == "" ? null : upper(var.database_management_status)
+  operations_insights_status  = var.operations_insights_status == "" ? null : upper(var.operations_insights_status)
+
+  whitelisted_ips = var.subnet_id == "" && length(var.whitelisted_ips) > 0 ? var.whitelisted_ips : null
 
   freeform_tags = merge({
     "project" = "octo-apm-demo"
@@ -142,6 +204,14 @@ output "atp_connection_strings" {
   value       = oci_database_autonomous_database.this.connection_strings
   sensitive   = true
   description = "DSN map — use .high / .medium / .low keys depending on workload profile."
+}
+
+output "atp_private_endpoint" {
+  value = {
+    fqdn = oci_database_autonomous_database.this.private_endpoint
+    ip   = oci_database_autonomous_database.this.private_endpoint_ip
+  }
+  description = "Private endpoint coordinates when subnet_id is supplied."
 }
 
 output "atp_wallet_content_base64" {

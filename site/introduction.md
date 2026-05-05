@@ -1,6 +1,6 @@
 # Introduction
 
-The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). It demonstrates how to integrate OCI's observability, security, database, and AI services with cloud-native applications deployed on Oracle Kubernetes Engine (OKE).
+The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). This unified project lives in [`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo) and brings together the Drone Shop service, Enterprise CRM service, deployment automation, Resource Manager stacks, and documentation.
 
 ## Goals
 
@@ -8,7 +8,7 @@ The **OCTO Cloud-Native Platform** is a reference implementation of enterprise a
 2. **Demonstrate cloud-native patterns** — FastAPI + Go microservices, shared Oracle ATP database, IDCS SSO, distributed tracing, circuit breakers
 3. **Provide a framework architecture** — add new features without breaking existing capabilities; each module is independent
 4. **Enable AI-driven operations** — integration with OCI Coordinator's Remediation Agent v2 for automated detection → diagnosis → remediation
-5. **Serve as a reference implementation** — tenancy-portable OKE manifests, security best practices, comprehensive test coverage, and a clear split between public storefront and internal operations control planes
+5. **Serve as a reference implementation** — tenancy-portable OKE manifests, a private Compute Resource Manager stack, security best practices, comprehensive test coverage, and a clear split between public storefront and internal operations control planes
 
 ## Architecture Summary
 
@@ -28,7 +28,7 @@ Both services integrate with the full OCI observability stack through modular ad
 - **Shared database**: Oracle ATP
 - **Catalog source of truth**: CRM
 - **Browser-visible CRM links**: public URL only
-- **Backend CRM calls from shop**: may use the internal cluster-local CRM service URL
+- **Backend CRM calls from shop**: may use the internal cluster-local CRM service URL on OKE or the private CRM instance IP on the Compute stack
 
 This split matters operationally: the shop renders customer-facing catalog and checkout experiences, while the CRM is where operators edit customers, orders, invoices, storefronts, and product inventory.
 
@@ -41,9 +41,10 @@ The platform integrates with the following OCI services. Each service is an **in
 | Service | Purpose | Docs |
 |---|---|---|
 | **Container Engine for Kubernetes (OKE)** | Managed Kubernetes for application hosting | [OKE Documentation](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm) |
+| **Compute** | Private Shop and CRM hosts for the non-Kubernetes production demo | [Compute Documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Concepts/computeoverview.htm) |
 | **Container Registry (OCIR)** | Private Docker registry for container images | [OCIR Documentation](https://docs.oracle.com/en-us/iaas/Content/Registry/Concepts/registryoverview.htm) |
 | **Load Balancer** | HTTP/HTTPS load balancing with TLS termination | [Load Balancer Documentation](https://docs.oracle.com/en-us/iaas/Content/Balance/Concepts/balanceoverview.htm) |
-| **Virtual Cloud Network (VCN)** | Network infrastructure with subnets and NSGs | [VCN Documentation](https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/overview.htm) |
+| **Virtual Cloud Network (VCN)** | Network infrastructure with public LB, private app, and private DB subnets plus NAT and Service Gateway routes | [VCN Documentation](https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/overview.htm) |
 
 ### Database
 
@@ -107,6 +108,7 @@ flowchart TD
 
     subgraph Compute ["Compute & Networking"]
         OKE["OKE"]
+        ComputeVM["Private Compute"]
         OCIR["OCIR"]
         LB["Load Balancer"]
     end
@@ -143,6 +145,8 @@ flowchart TD
     LB --> CRM
     Shop --> OKE
     CRM --> OKE
+    Shop --> ComputeVM
+    CRM --> ComputeVM
     Shop --> ATP
     CRM --> ATP
     ATP --> DBMgmt
@@ -178,6 +182,8 @@ flowchart TD
 |---|---|---|
 | [Local Docker](getting-started/quickstart.md) | 5 min | Development and testing |
 | [OKE Deployment](getting-started/oke-deployment.md) | 30 min | Production with full OCI observability |
+| [Private Compute Deployment](getting-started/compute-deployment.md) | 60-90 min | Production demo without Kubernetes, with LB/WAF, private instances, private ATP, APM, Logging, Log Analytics option, and Stack Monitoring |
+| [Deployment Options](getting-started/deployment-options.md) | varies | Choosing between OKE, private Compute, Resource Manager, and single-VM paths |
 
 ## Next Steps
 
@@ -190,5 +196,6 @@ flowchart TD
 
 | Repository | Component |
 |---|---|
-| [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) | Drone Shop + Workflow Gateway + Documentation source |
+| [octo-apm-demo](https://github.com/adibirzu/octo-apm-demo) | Unified deployment, Resource Manager stacks, and documentation source |
+| [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) | Drone Shop + Workflow Gateway service source |
 | [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) | Enterprise CRM Portal |

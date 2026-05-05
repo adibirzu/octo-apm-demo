@@ -1,11 +1,87 @@
 # Current Status
 
-Snapshot date: **April 28, 2026**
+Snapshot date: **April 28, 2026** for the shared `DEFAULT` runtime.
+Private Compute stack validation updated on **May 5, 2026**.
 
 This page records the latest observed state of the shared `DEFAULT`
 deployment surface tracked by this repo. It is a runtime snapshot, not a
 guarantee that the shared environment will remain healthy without checking
 the validation commands below.
+
+May 4, 2026 update: the private two-instance Compute Resource Manager
+stack has been applied in the `cap` profile as a new deployment for
+`shop.1.octodemo.cloud` and `crm.1.octodemo.cloud`. It is separate from
+the shared `DEFAULT` OKE runtime described below.
+
+## Private Compute cap deployment
+
+Validated on May 5, 2026:
+
+- Public endpoints:
+  - `http://shop.1.octodemo.cloud/ready` -> HTTP 200, ATP connected,
+    APM/RUM configured.
+  - `http://crm.1.octodemo.cloud/ready` -> HTTP 200, ATP connected,
+    APM/RUM/logging configured.
+- Load Balancer public IP is available from `terraform output load_balancer`.
+- Private app IPs are available from `terraform output instance_ips`.
+- Dedicated ATP private endpoint is available from `terraform output atp`.
+- APM endpoint is available from `terraform output apm`.
+- Shop and CRM were placed in separate availability domains for the cap
+  capacity profile.
+- Both LB backend sets report `OK`.
+- The cap limits check passed for split AD compute capacity, ATP ECPU,
+  LB count/bandwidth, and VCN count.
+- Terraform reports `No changes` after the final DB egress tightening
+  apply.
+- APM domain `octo-shop1-apm` is `ACTIVE`.
+- WAF attachment `octo-shop1-lb-waf` is `ACTIVE`.
+- Management Agents for both private Compute hosts are `ACTIVE`.
+- Stack Monitoring Management Agent plugin `appmgmt` is deployed and
+  `RUNNING` on both private Compute hosts.
+- OCI Logging agent configurations `octo-shop1-os-logs` and
+  `octo-shop1-container-stdout` are enabled.
+- Log Analytics is onboarded in the cap tenancy. The cap stack now owns
+  an OCTO LA log group plus active Service Connector Hub routes for app,
+  OS, container, and WAF logs.
+- `deploy/compute/verify-deployment.sh --profile cap --plan` passes and
+  checks Terraform drift, DNS, public `/ready` endpoints, Load Balancer
+  lifecycle/backend health, WAF, APM, ATP, DB Management, Operations
+  Insights, Log Analytics connectors, Management Agents, and Stack
+  Monitoring HOST auto-promote state.
+- A Log Analytics query over the last 30 minutes returned 212 records in
+  `OCI Unified Schema Logs` after the connectors were created.
+- ATP reports `database-management-status=ENABLED` and
+  `operations-insights-status=ENABLED`.
+
+The stack creates a public LB/WAF and keeps Shop, CRM, and ATP in
+private subnets. DB ingress is limited to the app NSG plus the optional
+DB Management/Operations Insights private endpoint NSG, and DB-tier
+egress is limited to the regional OCI Services Network through the
+Service Gateway.
+
+Temporary Bastion debug access was removed after validation: the app NSG
+SSH rule was deleted, both Bastion sessions are `DELETED`, and the
+Bastion resource is `DELETED`. Direct Stack Monitoring host and ATP
+monitored-resource creation remain disabled in cap because OCI returns
+`Tenant is not permitted to perform this operation`; Standard license
+auto-assignment, HOST auto-promote, and the host Stack Monitoring
+Management Agent plugin remain enabled.
+
+SSO is not configured for this Compute stack. CRM local auth uses
+username `admin`; the password is the sensitive
+`bootstrap_admin_password` supplied in the deployment variables. Login
+to `POST /api/auth/login` with the cap value was validated with HTTP
+200.
+
+Focused validation:
+
+- `./deploy/compute/validate.sh` passed.
+- `./deploy/compute/verify-deployment.sh --profile cap --plan` passed
+  with expected warnings for HTTPS not yet enabled and explicit ATP Stack
+  Monitoring resource registration disabled.
+- `terraform -chdir=deploy/compute/terraform validate -no-color` passed.
+- `python3 -m pytest -q tests/test_unified_deploy_surface.py` passed:
+  `20 passed`.
 
 ## Scope confirmed
 
@@ -13,7 +89,8 @@ the validation commands below.
 - The cached compartment is `Adrian_Birzu` via `deploy/.last-tenancy.env`.
 - Current kube context for this deployment is `octo-Adrian_Birzu`.
 - Bootstrap reused the existing OKE control plane `cluster1`.
-- Bootstrap used `OCIR_NAMESPACE=fr4zqfimuxtr` for image build and push because that is the namespace authorized on the remote build host.
+- Bootstrap used the OCIR namespace authorized on the remote build host
+  for image build and push.
 
 ## Public DNS status
 
@@ -41,9 +118,8 @@ Until Cloudflare is updated, use the ingress IP with `Host` headers for smoke an
 
 - `octo-drone-shop` is `2/2` ready in namespace `octo-drone-shop`.
 - `enterprise-crm-portal` is `2/2` ready in namespace `enterprise-crm`.
-- Current deployed images:
-  - `eu-frankfurt-1.ocir.io/fr4zqfimuxtr/octo-drone-shop:20260428173721`
-  - `eu-frankfurt-1.ocir.io/fr4zqfimuxtr/enterprise-crm-portal:20260428173726`
+- Current deployed images are in OCIR with the timestamped Shop and CRM
+  tags recorded in the deployment logs.
 - Host-header readiness checks against the ingress IP return `ready=true` for both services.
 
 ## Database and secrets

@@ -1,0 +1,138 @@
+#cloud-config
+# Bootstrap one OCTO Compute application host.
+#
+# Terraform creates the host, enables Oracle Cloud Agent plugins, installs
+# Podman/git, and places the repo plus templates on disk. When first-boot
+# deployment is enabled the ATP wallet is generated on the instance with
+# instance principals so the wallet zip is not embedded in OCI metadata.
+#
+#   sudo /opt/octo/deploy/compute/install.sh --check
+#   sudo /opt/octo/deploy/compute/install.sh
+
+package_update: true
+packages:
+  - curl
+  - git
+  - jq
+  - unzip
+  - podman
+  - oracle-cloud-agent
+
+bootcmd:
+  - mkdir -p /opt/octo/deploy/compute/nginx /opt/octo/deploy/compute/systemd /opt/octo/wallet /opt/octo/secrets /var/log/octo
+
+write_files:
+  - path: /etc/octo/compute-role
+    permissions: "0644"
+    content: "${role}"
+  - path: /etc/octo/public-hostname
+    permissions: "0644"
+    content: "${public_hostname}"
+  - path: /etc/octo/dns-domain
+    permissions: "0644"
+    content: "${dns_domain}"
+  - path: /usr/local/sbin/octo-download-atp-wallet.sh
+    owner: root:root
+    permissions: "0750"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      ENV_FILE="$${ENV_FILE:-/opt/octo/runtime.env}"
+      WALLET_DIR="$${WALLET_DIR:-/opt/octo/wallet}"
+      WALLET_ZIP="$${WALLET_ZIP:-/opt/octo/wallet.zip}"
+      APP_CONTAINER_UID="$${APP_CONTAINER_UID:-1000}"
+      APP_CONTAINER_GID="$${APP_CONTAINER_GID:-1000}"
+
+      if [[ ! -f "$ENV_FILE" ]]; then
+        echo "Missing $ENV_FILE" >&2
+        exit 1
+      fi
+
+      # shellcheck disable=SC1090
+      set -a; . "$ENV_FILE"; set +a
+
+      if [[ -z "$${ATP_OCID:-}" || -z "$${ORACLE_WALLET_PASSWORD:-}" ]]; then
+        echo "ATP_OCID and ORACLE_WALLET_PASSWORD are required to generate the ATP wallet" >&2
+        exit 1
+      fi
+
+      if [[ -d "$WALLET_DIR" ]] && ls "$WALLET_DIR"/*.sso >/dev/null 2>&1; then
+        exit 0
+      fi
+
+      install_oci_cli() {
+        if command -v oci >/dev/null 2>&1; then
+          return 0
+        fi
+
+        if command -v dnf >/dev/null 2>&1; then
+          dnf install -y python3 python3-pip unzip || true
+          dnf install -y python39-oci-cli || dnf install -y python3-oci-cli || true
+        elif command -v apt-get >/dev/null 2>&1; then
+          apt-get update
+          apt-get install -y python3 python3-pip unzip
+        fi
+
+        if ! command -v oci >/dev/null 2>&1; then
+          python3 -m pip install --upgrade oci-cli
+        fi
+      }
+
+      install_oci_cli
+      install -d -m 0700 "$WALLET_DIR"
+
+      for attempt in $(seq 1 40); do
+        if oci --auth instance_principal db autonomous-database generate-wallet \
+          --autonomous-database-id "$ATP_OCID" \
+          --password "$ORACLE_WALLET_PASSWORD" \
+          --file "$WALLET_ZIP"; then
+          chmod 0600 "$WALLET_ZIP"
+          unzip -oq "$WALLET_ZIP" -d "$WALLET_DIR"
+          chown -R "$APP_CONTAINER_UID:$APP_CONTAINER_GID" "$WALLET_DIR"
+          find "$WALLET_DIR" -type d -exec chmod 0750 {} \;
+          find "$WALLET_DIR" -type f -exec chmod 0640 {} \;
+          exit 0
+        fi
+        echo "ATP wallet generation attempt $attempt failed; waiting for IAM policy propagation" >&2
+        sleep 30
+      done
+
+      echo "Unable to generate ATP wallet with instance principals" >&2
+      exit 1
+%{ for _, bootstrap_file in compute_bootstrap_files ~}
+  - path: ${bootstrap_file.path}
+    owner: root:root
+    permissions: "${bootstrap_file.permissions}"
+    encoding: b64
+    content: ${bootstrap_file.content}
+%{ endfor ~}
+%{ if enable_first_boot_deploy ~}
+  - path: /opt/octo/runtime.env
+    owner: root:root
+    permissions: "0600"
+    content: |
+${runtime_env}
+%{ endif ~}
+
+runcmd:
+  - mkdir -p /opt/octo /opt/octo/wallet /opt/octo/secrets /var/log/octo
+  - chmod 0700 /opt/octo/secrets
+  - if ! command -v podman >/dev/null 2>&1; then dnf install -y podman || true; fi
+  - systemctl enable --now oracle-cloud-agent || true
+  - systemctl enable --now podman-restart || true
+  - if [ ! -d /opt/octo/repo ]; then git clone --depth 1 --branch "${repo_ref}" "${repo_url}" /opt/octo/repo; fi
+  - if [ -d /opt/octo/repo/deploy/compute ]; then cp -a /opt/octo/repo/deploy/. /opt/octo/deploy/; fi
+  - chmod 0755 /opt/octo/deploy/compute/install.sh
+  - cp /opt/octo/deploy/compute/runtime.env.template /opt/octo/runtime.env.example
+  - chown -R opc:opc /opt/octo || true
+  - chown -R ubuntu:ubuntu /opt/octo || true
+%{ if enable_first_boot_deploy ~}
+  - bash -lc 'set -euo pipefail; chown root:root /opt/octo/runtime.env; chmod 0600 /opt/octo/runtime.env; /usr/local/sbin/octo-download-atp-wallet.sh; /opt/octo/deploy/compute/install.sh --check; /opt/octo/deploy/compute/install.sh' 2>&1 | tee -a /var/log/octo/install.log
+%{ endif ~}
+
+%{ if enable_first_boot_deploy ~}
+final_message: "OCTO ${role} private Compute bootstrap and app deployment finished after $UPTIME seconds."
+%{ else ~}
+final_message: "OCTO ${role} private Compute bootstrap finished after $UPTIME seconds. Fill /opt/octo/runtime.env, install wallet, then run deploy/compute/install.sh."
+%{ endif ~}

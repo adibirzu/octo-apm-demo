@@ -2,16 +2,17 @@
 
 **Two-service cloud-native platform with shared Oracle ATP, full OCI observability (MELTS: Metrics, Events, Logs, Traces, SQL), IDCS SSO, cross-service distributed tracing, and automated remediation.**
 
-[:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-drone-shop){ .md-button .md-button--primary }
+[:octicons-mark-github-16: Unified Project](https://github.com/adibirzu/octo-apm-demo){ .md-button .md-button--primary }
+[:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-drone-shop){ .md-button }
 [:octicons-mark-github-16: CRM Portal](https://github.com/adibirzu/enterprise-crm-portal){ .md-button .md-button--primary }
-[:material-rocket-launch: Shop URL Template](https://shop.example.cloud){ .md-button }
-[:material-rocket-launch: CRM URL Template](https://crm.example.cloud){ .md-button }
+[:material-cloud-upload: Deploy Compute Stack to OCI](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip){ .md-button .md-button--primary }
+[:material-cloud-upload: Deployment Options](https://adibirzu.github.io/octo-apm-demo/getting-started/deployment-options/){ .md-button }
 
 ---
 
 ## What is OCTO?
 
-The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.
+The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services. New deployments should start from the unified [`octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo) repository, which owns the private Compute stack, OKE bootstrap, Resource Manager packages, and current docs.
 
 | Service | Purpose | Routes |
 |---|---|---|
@@ -27,6 +28,7 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 - **Public and private CRM URLs are split** — browser-visible links use `https://crm.example.cloud`, while backend service-to-service calls may continue to use a private service endpoint.
 - **Frontend hardening is live** — CRM page rendering, observability beacon ingestion, CSP-safe scripts, and favicon handling were updated to remove recent runtime errors.
 - **Enhancement roadmap is published** — the docs now define the rollout path for complex flows, OCI APM, OCI Logging, Log Analytics, drilldowns, and DB tooling.
+- **Private Compute stack is available** — the unified project can deploy public LB/WAF, two private Podman Compute instances, private ATP, APM, Logging, Log Analytics, DB Management, Operations Insights, and Stack Monitoring Standard.
 
 <div class="grid cards" markdown>
 
@@ -160,7 +162,8 @@ No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.
 
 | ID | Component | Repository |
 |---|---|---|
-| **Shop service** | Drone Shop Portal (OKE) | [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) |
-| **CRM service** | Enterprise CRM Portal (OKE) | [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) |
+| **Unified deploy** | OCTO APM Demo deployment, docs, and Resource Manager stacks | [octo-apm-demo](https://github.com/adibirzu/octo-apm-demo) |
+| **Shop service** | Drone Shop Portal | [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) |
+| **CRM service** | Enterprise CRM Portal | [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) |
 
 Often deployed alongside an ops portal and OCI Coordinator, but this repository remains standalone and tenancy-portable.

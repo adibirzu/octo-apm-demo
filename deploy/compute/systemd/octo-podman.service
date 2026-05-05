@@ -1,0 +1,19 @@
+[Unit]
+Description=OCTO Compute role container (Podman)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/octo/deploy/compute
+ExecStartPre=-/usr/bin/podman rm -f octo-app
+ExecStartPre=/usr/bin/bash -lc 'set -a; . /opt/octo/runtime.env; set +a; case "${APP_IMAGE_PULL_POLICY:-if-not-present}" in never) exit 0 ;; always) exec /usr/bin/podman pull "${APP_IMAGE}" ;; if-not-present) /usr/bin/podman image exists "${APP_IMAGE}" || exec /usr/bin/podman pull "${APP_IMAGE}" ;; *) echo "invalid APP_IMAGE_PULL_POLICY=${APP_IMAGE_PULL_POLICY}" >&2; exit 1 ;; esac'
+ExecStart=/usr/bin/bash -lc 'set -a; . /opt/octo/runtime.env; set +a; exec /usr/bin/podman run --name octo-app --rm --network host --env-file /opt/octo/container.env --volume /opt/octo/wallet:/opt/oracle/wallet:ro,z --volume /opt/octo/secrets:/opt/octo/secrets:ro,z "${APP_IMAGE}"'
+ExecStop=/usr/bin/podman stop -t 30 octo-app
+Restart=always
+RestartSec=10
+TimeoutStartSec=0
+KillMode=none
+
+[Install]
+WantedBy=multi-user.target

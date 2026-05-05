@@ -1,6 +1,6 @@
 # Introduction
 
-The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). It demonstrates how to integrate OCI's observability, security, database, and AI services with cloud-native applications deployed on Oracle Kubernetes Engine (OKE).
+The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). The current unified deployment, Resource Manager stacks, and documentation live in [`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo), which combines the Drone Shop service, Enterprise CRM service, OCI deployment automation, and the production-demo Compute stack.
 
 ## Goals
 
@@ -8,7 +8,7 @@ The **OCTO Cloud-Native Platform** is a reference implementation of enterprise a
 2. **Demonstrate cloud-native patterns** — FastAPI + Go microservices, shared Oracle ATP database, IDCS SSO, distributed tracing, circuit breakers
 3. **Provide a framework architecture** — add new features without breaking existing capabilities; each module is independent
 4. **Enable AI-driven operations** — integration with OCI Coordinator's Remediation Agent v2 for automated detection → diagnosis → remediation
-5. **Serve as a reference implementation** — tenancy-portable OKE manifests, security best practices, comprehensive test coverage, and a clear split between public storefront and internal operations control planes
+5. **Serve as a reference implementation** — tenancy-portable OKE manifests, a private two-instance Compute stack, security best practices, comprehensive test coverage, and a clear split between public storefront and internal operations control planes
 
 ## Architecture Summary
 
@@ -23,14 +23,47 @@ Both services integrate with the full OCI observability stack through modular ad
 
 ## Current Runtime Model
 
+- **Canonical deployment repo**: [`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo)
+- **Canonical docs site**: <https://adibirzu.github.io/octo-apm-demo>
+- **Default shared deployment hostnames**: `https://shop.cyber-sec.ro` and `https://crm.cyber-sec.ro`
+- **Validated private Compute hostnames**: `http://shop.1.octodemo.cloud` and `http://crm.1.octodemo.cloud`
 - **Shop frontend**: `https://shop.example.cloud`
 - **CRM frontend**: `https://crm.example.cloud`
 - **Shared database**: Oracle ATP
 - **Catalog source of truth**: CRM
 - **Browser-visible CRM links**: public URL only
-- **Backend CRM calls from shop**: may use the internal cluster-local CRM service URL
+- **Backend CRM calls from shop**: may use the internal cluster-local CRM service URL on OKE or the private CRM instance IP on the Compute stack
 
 This split matters operationally: the shop renders customer-facing catalog and checkout experiences, while the CRM is where operators edit customers, orders, invoices, storefronts, and product inventory.
+
+## Provisioning a New Tenancy
+
+Use the unified `octo-apm-demo` repo for new tenancy work. It contains
+the current `deploy/bootstrap.sh` flow, private Compute Resource Manager
+package, Helm chart, cross-service E2E tests, and deployment runbooks.
+
+```bash
+git clone https://github.com/adibirzu/octo-apm-demo.git
+cd octo-apm-demo
+./deploy/verify.sh
+```
+
+Recommended production-demo path:
+
+[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+
+That stack can create the VCN, public LB subnet, private app subnet,
+private DB subnet, NAT Gateway, Service Gateway, NSGs/security lists,
+two private Podman Compute instances, dedicated private ATP, OCI
+LB/WAF, APM, OCI Logging, Log Analytics pipelines, DB Management,
+Operations Insights, and Stack Monitoring Standard.
+
+If you prefer OKE, start with the unified
+[new tenancy guide](https://adibirzu.github.io/octo-apm-demo/getting-started/new-tenancy/).
+For the shared `DEFAULT` / `oci4cca` profile, the baked-in domain is
+`cyber-sec.ro`; check the unified
+[current status page](https://adibirzu.github.io/octo-apm-demo/operations/current-status/)
+before treating that shared environment as E2E-ready.
 
 ## OCI Services
 
@@ -41,9 +74,10 @@ The platform integrates with the following OCI services. Each service is an **in
 | Service | Purpose | Docs |
 |---|---|---|
 | **Container Engine for Kubernetes (OKE)** | Managed Kubernetes for application hosting | [OKE Documentation](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm) |
+| **Compute** | Private Shop and CRM hosts for the non-Kubernetes production demo | [Compute Documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Concepts/computeoverview.htm) |
 | **Container Registry (OCIR)** | Private Docker registry for container images | [OCIR Documentation](https://docs.oracle.com/en-us/iaas/Content/Registry/Concepts/registryoverview.htm) |
 | **Load Balancer** | HTTP/HTTPS load balancing with TLS termination | [Load Balancer Documentation](https://docs.oracle.com/en-us/iaas/Content/Balance/Concepts/balanceoverview.htm) |
-| **Virtual Cloud Network (VCN)** | Network infrastructure with subnets and NSGs | [VCN Documentation](https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/overview.htm) |
+| **Virtual Cloud Network (VCN)** | Network infrastructure with public LB, private app, and private DB subnets plus NAT and Service Gateway routes | [VCN Documentation](https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/overview.htm) |
 
 ### Database
 
@@ -107,6 +141,7 @@ flowchart TD
 
     subgraph Compute ["Compute & Networking"]
         OKE["OKE"]
+        ComputeVM["Private Compute"]
         OCIR["OCIR"]
         LB["Load Balancer"]
     end
@@ -143,6 +178,8 @@ flowchart TD
     LB --> CRM
     Shop --> OKE
     CRM --> OKE
+    Shop --> ComputeVM
+    CRM --> ComputeVM
     Shop --> ATP
     CRM --> ATP
     ATP --> DBMgmt
@@ -178,6 +215,8 @@ flowchart TD
 |---|---|---|
 | [Local Docker](getting-started/quickstart.md) | 5 min | Development and testing |
 | [OKE Deployment](getting-started/oke-deployment.md) | 30 min | Production with full OCI observability |
+| [Private Compute Deployment](https://adibirzu.github.io/octo-apm-demo/getting-started/compute-deployment/) | 60-90 min | Production demo without Kubernetes, with LB/WAF, private instances, private ATP, APM, Logging, Log Analytics, and Stack Monitoring |
+| [Unified Deployment Options](https://adibirzu.github.io/octo-apm-demo/getting-started/deployment-options/) | varies | Choosing between OKE, private Compute, Resource Manager, and single-VM paths |
 
 ## Next Steps
 
@@ -190,5 +229,6 @@ flowchart TD
 
 | Repository | Component |
 |---|---|
-| [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) | Drone Shop + Workflow Gateway + Documentation source |
+| [octo-apm-demo](https://github.com/adibirzu/octo-apm-demo) | Unified deployment, Resource Manager stacks, and current documentation source |
+| [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) | Drone Shop + Workflow Gateway service source |
 | [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) | Enterprise CRM Portal |

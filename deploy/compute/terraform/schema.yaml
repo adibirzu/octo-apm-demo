@@ -1,0 +1,967 @@
+title: "OCTO APM Demo — Private Compute + ATP + LB/WAF"
+description: |
+  Production-demo Resource Manager stack for OCTO Drone Shop and
+  Enterprise CRM Portal: two private Compute instances, public OCI Load
+  Balancer with WAF, optional new VCN with public LB/private app/private
+  DB subnets, NAT Gateway, Service Gateway, security lists, NSGs, private
+  ATP, APM, OCI Logging, optional Log Analytics pipelines, and Stack
+  Monitoring Standard onboarding.
+
+schemaVersion: 1.1.0
+version: "20260504"
+locale: "en"
+
+variableGroups:
+  - title: "Tenancy"
+    variables:
+      - tenancy_ocid
+      - compartment_id
+      - name_prefix
+
+  - title: "Network"
+    variables:
+      - create_network
+      - existing_vcn_id
+      - existing_lb_subnet_id
+      - existing_app_private_subnet_id
+      - existing_db_private_subnet_id
+      - vcn_cidr
+      - public_lb_subnet_cidr
+      - app_private_subnet_cidr
+      - db_private_subnet_cidr
+      - app_private_cidr
+      - existing_db_private_cidr
+      - create_service_gateway
+      - public_web_cidrs
+      - admin_ssh_cidrs
+
+  - title: "Load Balancer and WAF"
+    variables:
+      - create_load_balancer
+      - enable_lb_http
+      - enable_lb_https
+      - lb_shape
+      - lb_min_bandwidth_mbps
+      - lb_max_bandwidth_mbps
+      - lb_certificate_public_certificate
+      - lb_certificate_private_key
+      - lb_certificate_ca_certificate
+      - lb_certificate_passphrase
+      - enable_waf
+      - waf_mode
+      - enable_waf_logging
+      - admin_web_cidrs
+
+  - title: "Compute"
+    variables:
+      - availability_domain_name
+      - shop_availability_domain_name
+      - crm_availability_domain_name
+      - instance_image_ocid
+      - instance_operating_system
+      - instance_operating_system_version
+      - instance_shape
+      - instance_ocpus
+      - instance_memory_gbs
+      - boot_volume_size_gbs
+      - ssh_public_key
+
+  - title: "Application"
+    variables:
+      - dns_domain
+      - create_dns_records
+      - dns_zone_name_or_id
+      - dns_record_ttl
+      - repo_url
+      - repo_ref
+      - enable_first_boot_deploy
+      - container_runtime
+      - app_image_build_enabled
+      - image_tag
+      - shop_app_image
+      - crm_app_image
+      - app_image_pull_policy
+      - shop_container_uid
+      - shop_container_gid
+      - crm_container_uid
+      - crm_container_gid
+      - ocir_registry
+      - ocir_username
+      - ocir_auth_token
+      - internal_service_key
+      - auth_token_secret
+      - app_secret_key
+      - bootstrap_admin_password
+      - oracle_dsn
+      - shop_private_service_url
+      - crm_private_service_url
+
+  - title: "Database"
+    variables:
+      - atp_admin_password
+      - atp_wallet_password
+      - atp_compute_count
+      - atp_storage_size_gbs
+      - atp_auto_scaling_enabled
+      - atp_private_endpoint_label
+      - enable_database_management
+      - enable_operations_insights
+      - enable_database_management_private_endpoint
+      - enable_operations_insights_private_endpoint
+
+  - title: "Observability"
+    variables:
+      - create_apm_domain
+      - logging_retention_days
+      - enable_log_analytics
+      - create_log_analytics_namespace
+      - log_analytics_namespace
+      - existing_log_analytics_log_group_id
+      - enable_stack_monitoring_standard
+      - enable_stack_monitoring_agent_plugin
+      - enable_stack_monitoring_host_registration
+      - enable_stack_monitoring_atp_registration
+      - stack_monitoring_atp_management_agent_id
+      - management_agent_wait_seconds
+      - management_agent_initial_wait_seconds
+      - create_stack_monitoring_secrets
+      - stack_monitoring_atp_ssl_secret_id
+      - stack_monitoring_atp_db_user_secret_id
+      - stack_monitoring_atp_db_password_secret_id
+      - stack_monitoring_vault_dns_wait_seconds
+
+  - title: "Advanced"
+    variables:
+      - tags
+      - existing_public_subnet_id
+      - public_subnet_cidr
+      - atp_whitelisted_ips
+      - lb_delete_protection_enabled
+      - oci_profile
+    visible: false
+
+variables:
+  tenancy_ocid:
+    type: oci:identity:tenancy:id
+    title: "Tenancy OCID"
+    required: true
+
+  compartment_id:
+    type: oci:identity:compartment:id
+    title: "Compartment"
+    required: true
+    default: compartment_ocid
+
+  name_prefix:
+    type: string
+    title: "Resource name prefix"
+    default: "octo-compute"
+
+  create_network:
+    type: boolean
+    title: "Create VCN, subnets, gateways, routes, security lists, and NSGs"
+    default: true
+
+  existing_vcn_id:
+    type: oci:core:vcn:id
+    title: "Existing VCN"
+    required: false
+    dependsOn:
+      compartmentId: compartment_id
+    visible:
+      eq:
+        - create_network
+        - false
+
+  existing_lb_subnet_id:
+    type: oci:core:subnet:id
+    title: "Existing public LB subnet"
+    required: false
+    dependsOn:
+      compartmentId: compartment_id
+      vcnId: existing_vcn_id
+    visible:
+      eq:
+        - create_network
+        - false
+
+  existing_app_private_subnet_id:
+    type: oci:core:subnet:id
+    title: "Existing private app subnet"
+    required: false
+    dependsOn:
+      compartmentId: compartment_id
+      vcnId: existing_vcn_id
+    visible:
+      eq:
+        - create_network
+        - false
+
+  existing_db_private_subnet_id:
+    type: oci:core:subnet:id
+    title: "Existing private DB subnet"
+    required: false
+    dependsOn:
+      compartmentId: compartment_id
+      vcnId: existing_vcn_id
+    visible:
+      eq:
+        - create_network
+        - false
+
+  vcn_cidr:
+    type: string
+    title: "New VCN CIDR"
+    default: "10.42.0.0/16"
+    visible:
+      eq:
+        - create_network
+        - true
+
+  public_lb_subnet_cidr:
+    type: string
+    title: "New public LB subnet CIDR"
+    default: "10.42.10.0/24"
+    visible:
+      eq:
+        - create_network
+        - true
+
+  app_private_subnet_cidr:
+    type: string
+    title: "New private app subnet CIDR"
+    default: "10.42.20.0/24"
+    visible:
+      eq:
+        - create_network
+        - true
+
+  db_private_subnet_cidr:
+    type: string
+    title: "New private DB subnet CIDR"
+    default: "10.42.30.0/24"
+    visible:
+      eq:
+        - create_network
+        - true
+
+  app_private_cidr:
+    type: string
+    title: "Existing app private subnet CIDR"
+    description: "Used for security-list rules when attaching to an existing VCN."
+    default: "10.42.20.0/24"
+    visible:
+      eq:
+        - create_network
+        - false
+
+  existing_db_private_cidr:
+    type: string
+    title: "Existing DB private subnet CIDR"
+    description: "Optional. Empty falls back to the app private subnet CIDR."
+    default: ""
+    visible:
+      eq:
+        - create_network
+        - false
+
+  create_service_gateway:
+    type: boolean
+    title: "Create OCI Service Gateway"
+    description: "Private route to OCI Services Network for agents, Stack Monitoring, OPSI, DB Management, OCIR, and Logging."
+    default: true
+    visible:
+      eq:
+        - create_network
+        - true
+
+  public_web_cidrs:
+    type: array
+    title: "Public HTTP/HTTPS allow-list CIDRs"
+    items:
+      type: string
+    default:
+      - "0.0.0.0/0"
+
+  admin_ssh_cidrs:
+    type: array
+    title: "Private SSH allow-list CIDRs"
+    description: "Optional. Requires a private path such as OCI Bastion, VPN, FastConnect, or DRG."
+    items:
+      type: string
+    default: []
+
+  create_load_balancer:
+    type: boolean
+    title: "Create public OCI Load Balancer"
+    default: true
+
+  enable_lb_http:
+    type: boolean
+    title: "Enable HTTP listener"
+    default: true
+
+  enable_lb_https:
+    type: boolean
+    title: "Enable HTTPS listener"
+    default: false
+
+  lb_shape:
+    type: string
+    title: "Load Balancer shape"
+    default: "flexible"
+
+  lb_min_bandwidth_mbps:
+    type: number
+    title: "LB min Mbps"
+    default: 10
+
+  lb_max_bandwidth_mbps:
+    type: number
+    title: "LB max Mbps"
+    default: 100
+
+  lb_certificate_public_certificate:
+    type: string
+    title: "LB public certificate PEM"
+    required: false
+    visible:
+      eq:
+        - enable_lb_https
+        - true
+
+  lb_certificate_private_key:
+    type: password
+    title: "LB private key PEM"
+    required: false
+    visible:
+      eq:
+        - enable_lb_https
+        - true
+
+  lb_certificate_ca_certificate:
+    type: string
+    title: "LB CA certificate PEM"
+    required: false
+    visible:
+      eq:
+        - enable_lb_https
+        - true
+
+  lb_certificate_passphrase:
+    type: password
+    title: "LB key passphrase"
+    required: false
+    visible:
+      eq:
+        - enable_lb_https
+        - true
+
+  enable_waf:
+    type: boolean
+    title: "Attach OCI WAF to the Load Balancer"
+    default: true
+
+  waf_mode:
+    type: enum
+    title: "WAF mode"
+    default: "DETECTION"
+    enum:
+      - "DETECTION"
+      - "BLOCK"
+    visible:
+      eq:
+        - enable_waf
+        - true
+
+  enable_waf_logging:
+    type: boolean
+    title: "Create OCI WAF service log"
+    default: true
+    visible:
+      eq:
+        - enable_waf
+        - true
+
+  admin_web_cidrs:
+    type: array
+    title: "Admin web allow-list CIDRs"
+    items:
+      type: string
+    default: []
+    visible:
+      eq:
+        - enable_waf
+        - true
+
+  availability_domain_name:
+    type: string
+    title: "Availability Domain"
+    description: "Default AD for both instances. Leave empty to use the first AD."
+    required: false
+
+  shop_availability_domain_name:
+    type: string
+    title: "Shop Availability Domain override"
+    description: "Optional. Use this when one AD reports host-capacity errors for the Shop instance."
+    required: false
+
+  crm_availability_domain_name:
+    type: string
+    title: "CRM Availability Domain override"
+    description: "Optional. Use this when one AD reports host-capacity errors for the CRM instance."
+    required: false
+
+  instance_image_ocid:
+    type: oci:core:image:id
+    title: "Oracle Linux image"
+    required: false
+    dependsOn:
+      compartmentId: compartment_id
+
+  instance_operating_system:
+    type: string
+    title: "Auto image operating system"
+    default: "Oracle Linux"
+
+  instance_operating_system_version:
+    type: string
+    title: "Auto image OS version"
+    default: "9"
+
+  instance_shape:
+    type: oci:core:instanceshape:name
+    title: "Compute shape"
+    default: "VM.Standard.E5.Flex"
+    dependsOn:
+      compartmentId: compartment_id
+
+  instance_ocpus:
+    type: number
+    title: "OCPUs per instance"
+    default: 2
+
+  instance_memory_gbs:
+    type: number
+    title: "Memory GB per instance"
+    default: 16
+
+  boot_volume_size_gbs:
+    type: number
+    title: "Boot volume size GB"
+    default: 100
+
+  ssh_public_key:
+    type: string
+    title: "SSH public key"
+    required: true
+
+  dns_domain:
+    type: string
+    title: "Base DNS domain"
+    description: "Stack expects shop.<domain> and crm.<domain>."
+    required: true
+
+  create_dns_records:
+    type: boolean
+    title: "Create DNS A records"
+    description: "Creates shop.<domain> and crm.<domain> records pointing at the Load Balancer public IP."
+    default: false
+
+  dns_zone_name_or_id:
+    type: oci:dns:zone:id
+    title: "OCI DNS public zone"
+    required: false
+    visible:
+      eq:
+        - create_dns_records
+        - true
+
+  dns_record_ttl:
+    type: number
+    title: "DNS record TTL"
+    default: 60
+    visible:
+      eq:
+        - create_dns_records
+        - true
+
+  repo_url:
+    type: string
+    title: "Repository URL"
+    default: "https://github.com/adibirzu/octo-apm-demo.git"
+
+  repo_ref:
+    type: string
+    title: "Repository branch or tag"
+    default: "main"
+
+  enable_first_boot_deploy:
+    type: boolean
+    title: "Deploy apps during first boot"
+    description: "Writes runtime.env and ATP wallet from stack variables/outputs, builds or pulls images, and starts the service with Podman."
+    default: false
+
+  container_runtime:
+    type: enum
+    title: "Container runtime"
+    default: "podman"
+    enum:
+      - "podman"
+      - "docker"
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  app_image_build_enabled:
+    type: boolean
+    title: "Build images on Compute from repo"
+    description: "When enabled, instances build the Shop/CRM images locally from repo_url and do not require OCIR pull credentials."
+    default: true
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  image_tag:
+    type: string
+    title: "Image tag"
+    default: "stack"
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  shop_app_image:
+    type: string
+    title: "Shop image"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  crm_app_image:
+    type: string
+    title: "CRM image"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  app_image_pull_policy:
+    type: enum
+    title: "Image pull policy"
+    default: "if-not-present"
+    enum:
+      - "always"
+      - "if-not-present"
+      - "never"
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  shop_container_uid:
+    type: number
+    title: "Shop container UID"
+    default: 10001
+    description: "UID that must read the ATP wallet mount inside the Shop container."
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  shop_container_gid:
+    type: number
+    title: "Shop container GID"
+    default: 10001
+    description: "GID that must read the ATP wallet mount inside the Shop container."
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  crm_container_uid:
+    type: number
+    title: "CRM container UID"
+    default: 1000
+    description: "UID that must read the ATP wallet mount inside the CRM container."
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  crm_container_gid:
+    type: number
+    title: "CRM container GID"
+    default: 1000
+    description: "GID that must read the ATP wallet mount inside the CRM container."
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  ocir_registry:
+    type: string
+    title: "OCIR registry"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  ocir_username:
+    type: string
+    title: "OCIR username"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  ocir_auth_token:
+    type: password
+    title: "OCIR auth token"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  internal_service_key:
+    type: password
+    title: "Internal service key"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  auth_token_secret:
+    type: password
+    title: "Shop token secret"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  app_secret_key:
+    type: password
+    title: "CRM app secret key"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  bootstrap_admin_password:
+    type: password
+    title: "CRM bootstrap admin password"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  oracle_dsn:
+    type: string
+    title: "ATP wallet TNS alias"
+    default: "octoatp_low"
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  shop_private_service_url:
+    type: string
+    title: "Private Shop URL override"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  crm_private_service_url:
+    type: string
+    title: "Private CRM URL override"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  atp_admin_password:
+    type: password
+    title: "ATP ADMIN password"
+    required: true
+
+  atp_wallet_password:
+    type: password
+    title: "ATP wallet password"
+    required: true
+
+  atp_compute_count:
+    type: number
+    title: "ATP ECPU count"
+    default: 2
+    minimum: 2
+
+  atp_storage_size_gbs:
+    type: number
+    title: "ATP storage GB"
+    default: 20
+    minimum: 20
+
+  atp_auto_scaling_enabled:
+    type: boolean
+    title: "Enable ATP auto scaling"
+    default: true
+
+  atp_private_endpoint_label:
+    type: string
+    title: "ATP private endpoint DNS label"
+    default: "octoatp"
+
+  enable_database_management:
+    type: boolean
+    title: "Enable Database Management for ATP"
+    default: true
+
+  enable_operations_insights:
+    type: boolean
+    title: "Enable Operations Insights for ATP"
+    default: true
+
+  enable_database_management_private_endpoint:
+    type: boolean
+    title: "Create DB Management private endpoint"
+    default: true
+
+  enable_operations_insights_private_endpoint:
+    type: boolean
+    title: "Create Operations Insights private endpoint"
+    default: true
+
+  create_apm_domain:
+    type: boolean
+    title: "Create OCI APM Domain"
+    default: true
+
+  logging_retention_days:
+    type: number
+    title: "OCI Logging retention days"
+    default: 30
+
+  enable_log_analytics:
+    type: boolean
+    title: "Route logs to OCI Log Analytics"
+    default: false
+
+  create_log_analytics_namespace:
+    type: boolean
+    title: "Onboard a new Log Analytics namespace"
+    default: false
+    visible:
+      eq:
+        - enable_log_analytics
+        - true
+
+  log_analytics_namespace:
+    type: string
+    title: "Log Analytics namespace"
+    required: false
+    visible:
+      eq:
+        - enable_log_analytics
+        - true
+
+  existing_log_analytics_log_group_id:
+    type: string
+    title: "Existing Log Analytics log group OCID"
+    required: false
+    visible:
+      eq:
+        - enable_log_analytics
+        - true
+
+  enable_stack_monitoring_standard:
+    type: boolean
+    title: "Enable Stack Monitoring Standard onboarding"
+    default: true
+
+  enable_stack_monitoring_agent_plugin:
+    type: boolean
+    title: "Deploy Stack Monitoring Management Agent plugin"
+    default: true
+    description: "Deploys the Linux Stack Monitoring plugin to both Compute Management Agents so HOST auto-promote can produce host telemetry."
+    visible:
+      eq:
+        - enable_stack_monitoring_standard
+        - true
+
+  enable_stack_monitoring_host_registration:
+    type: boolean
+    title: "Create Stack Monitoring host resources explicitly"
+    default: false
+    description: "Use only in tenancies entitled for host monitored-resource creation. Leave disabled if OCI returns 'Tenant is not permitted'; plugin deployment plus HOST auto-promote remains enabled."
+    visible:
+      eq:
+        - enable_stack_monitoring_standard
+        - true
+
+  enable_stack_monitoring_atp_registration:
+    type: boolean
+    title: "Register ATP in Stack Monitoring"
+    default: false
+    description: "Requires tenant entitlement for Stack Monitoring database resources. Keep disabled when OCI returns 'Tenant is not permitted'."
+    visible:
+      eq:
+        - enable_stack_monitoring_standard
+        - true
+
+  stack_monitoring_atp_management_agent_id:
+    type: string
+    title: "Existing Management Agent OCID for ATP monitoring"
+    required: false
+    description: "Optional. Leave empty for the stack to wait for the private shop Compute Management Agent and use it for ATP Stack Monitoring registration."
+    visible:
+      eq:
+        - enable_stack_monitoring_standard
+        - true
+
+  management_agent_wait_seconds:
+    type: number
+    title: "Management Agent wait timeout"
+    default: 1800
+    minimum: 300
+    maximum: 3600
+    description: "Seconds to wait for the shop Compute Management Agent to register when no existing Management Agent OCID is supplied."
+    visible:
+      eq:
+        - enable_stack_monitoring_standard
+        - true
+
+  management_agent_initial_wait_seconds:
+    type: number
+    title: "Management Agent initial inventory delay"
+    default: 180
+    minimum: 0
+    maximum: 900
+    description: "Initial delay after Compute creation before querying Management Agent inventory."
+    visible:
+      eq:
+        - enable_stack_monitoring_standard
+        - true
+
+  create_stack_monitoring_secrets:
+    type: boolean
+    title: "Create Stack Monitoring DB credential secrets"
+    default: false
+    visible:
+      eq:
+        - enable_stack_monitoring_standard
+        - true
+
+  stack_monitoring_atp_ssl_secret_id:
+    type: string
+    title: "Existing Stack Monitoring ATP SSL secret OCID"
+    required: false
+    description: "Optional. Use only when the tenancy has a compatible SSL secret for TCPS DB registration."
+    visible:
+      eq:
+        - enable_stack_monitoring_atp_registration
+        - true
+
+  stack_monitoring_atp_db_user_secret_id:
+    type: string
+    title: "Existing ATP DB user secret OCID"
+    required: false
+    visible:
+      eq:
+        - enable_stack_monitoring_atp_registration
+        - true
+
+  stack_monitoring_atp_db_password_secret_id:
+    type: string
+    title: "Existing ATP DB password secret OCID"
+    required: false
+    visible:
+      eq:
+        - enable_stack_monitoring_atp_registration
+        - true
+
+  stack_monitoring_vault_dns_wait_seconds:
+    type: number
+    title: "Stack Monitoring Vault DNS wait"
+    default: 600
+    minimum: 0
+    maximum: 600
+    visible:
+      eq:
+        - create_stack_monitoring_secrets
+        - true
+
+  tags:
+    type: map
+    title: "Additional freeform tags"
+    default: {}
+
+  existing_public_subnet_id:
+    type: oci:core:subnet:id
+    title: "Deprecated existing public subnet alias"
+    required: false
+
+  public_subnet_cidr:
+    type: string
+    title: "Deprecated public subnet CIDR alias"
+    default: "10.42.10.0/24"
+
+  atp_whitelisted_ips:
+    type: array
+    title: "Deprecated ATP allow-list CIDRs"
+    items:
+      type: string
+    default: []
+
+  lb_delete_protection_enabled:
+    type: boolean
+    title: "Enable Load Balancer delete protection"
+    default: false
+
+  oci_profile:
+    type: string
+    title: "Local OCI profile"
+    default: "DEFAULT"
+    description: "Ignored by Resource Manager packaging; used only for local Terraform runs."
+
+outputs:
+  network:
+    title: "Network details"
+  load_balancer:
+    title: "Load Balancer and WAF"
+  dns_records:
+    title: "DNS records"
+  instance_ips:
+    title: "Private Compute instance IPs"
+  instance_ids:
+    title: "Private Compute instance OCIDs"
+  deployment_compartment_id:
+    title: "Deployment compartment OCID"
+  instance_image:
+    title: "Resolved Compute image"
+  atp:
+    title: "ATP details"
+  logging:
+    title: "OCI Logging details"
+  log_analytics:
+    title: "Log Analytics details"
+  apm:
+    title: "APM details"
+  stack_monitoring:
+    title: "Stack Monitoring details"
+  runtime_env_hints:
+    title: "Runtime env hints"
