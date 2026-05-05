@@ -1,0 +1,69 @@
+# Copy to terraform.tfvars and fill before `terraform plan`.
+# Do not commit terraform.tfvars; it contains secrets.
+
+tenancy_ocid   = "ocid1.tenancy.oc1..example"
+compartment_id = "ocid1.compartment.oc1..example"
+oci_profile    = "DEFAULT"
+dns_domain     = "example.com"
+
+ssh_public_key      = "ssh-rsa AAAA..."
+instance_image_ocid = "ocid1.image.oc1..oracle-linux-9-image"
+admin_ssh_cidrs     = [] # Private SSH only through OCI Bastion, VPN, FastConnect, or DRG.
+availability_domain_name      = ""
+shop_availability_domain_name = "" # Optional AD-specific capacity override.
+crm_availability_domain_name  = "" # Optional AD-specific capacity override.
+
+create_network          = true
+vcn_cidr                = "10.42.0.0/16"
+public_lb_subnet_cidr   = "10.42.10.0/24"
+app_private_subnet_cidr = "10.42.20.0/24"
+db_private_subnet_cidr  = "10.42.30.0/24"
+create_service_gateway  = true
+
+create_load_balancer = true
+enable_lb_http       = true
+enable_lb_https      = false
+enable_waf           = true
+waf_mode             = "DETECTION"
+
+enable_first_boot_deploy = true
+app_image_build_enabled  = true
+image_tag                = "stack"
+shop_container_uid       = 10001
+shop_container_gid       = 10001
+crm_container_uid        = 1000
+crm_container_gid        = 1000
+
+internal_service_key     = "REPLACE-WITH-SERVICE-KEY"
+auth_token_secret        = "REPLACE-WITH-SHOP-TOKEN-SECRET"
+app_secret_key           = "REPLACE-WITH-CRM-APP-SECRET"
+bootstrap_admin_password = "REPLACE-WITH-CRM-ADMIN-PASSWORD"
+
+atp_admin_password  = "REPLACE-WITH-STRONG-PASSWORD"
+atp_wallet_password = "REPLACE-WITH-STRONG-WALLET-PASSWORD"
+atp_compute_count   = 2
+atp_storage_size_gbs = 20
+atp_auto_scaling_enabled = true
+
+create_apm_domain      = true
+logging_retention_days = 30
+
+enable_stack_monitoring_standard = true
+enable_stack_monitoring_agent_plugin = true
+enable_stack_monitoring_host_registration = false # Set true only when the tenancy permits host monitored-resource creation.
+enable_stack_monitoring_atp_registration = false
+stack_monitoring_atp_management_agent_id = "" # Optional. Empty = wait for shop host Management Agent.
+management_agent_wait_seconds            = 1800
+management_agent_initial_wait_seconds    = 180
+create_stack_monitoring_secrets          = false
+stack_monitoring_vault_dns_wait_seconds  = 600
+stack_monitoring_atp_ssl_secret_id       = ""
+stack_monitoring_atp_db_user_secret_id   = ""
+stack_monitoring_atp_db_password_secret_id = ""
+enable_database_management       = true
+enable_operations_insights       = true
+
+# Set true only after Log Analytics is onboarded in the tenancy, then provide
+# log_analytics_namespace or existing_log_analytics_log_group_id.
+enable_log_analytics    = false
+log_analytics_namespace = ""

@@ -60,3 +60,6 @@ deploy/vm/wallet/
 deploy/terraform/terraform.*.tfvars
 !deploy/terraform/terraform.tfvars.example
 deploy/terraform/.terraform.tfstate.lock.info
+deploy/compute/terraform/*.tfvars
+!deploy/compute/terraform/terraform.tfvars.example
+deploy/compute/build/

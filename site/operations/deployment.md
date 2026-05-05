@@ -2,8 +2,20 @@
 
 For the `DEFAULT` profile, use `cyber-sec.ro` as both the bootstrap base
 domain (`DNS_BASE_DOMAIN`) and the rollout host domain (`DNS_DOMAIN`).
-Check [Current Status](current-status.md) before relying on the shared
-tenancy; it is not E2E-ready as of April 25, 2026.
+Check [Current Status](current-status.md) before relying on any shared
+tenancy. As of May 4, 2026, the separate `cap` private Compute
+deployment is the current production-demo target for
+`shop.1.octodemo.cloud` and `crm.1.octodemo.cloud`; the `DEFAULT` OKE
+runtime remains a shared environment that should be validated before
+hostname-only E2E.
+
+For the non-Kubernetes production demo, use the
+[Compute Deployment](../getting-started/compute-deployment.md) stack
+instead of this OKE rollout page. That path creates or selects the VCN,
+keeps Shop/CRM/ATP private, places OCI LB/WAF in front, deploys Podman
+services on two Compute instances, and wires APM, OCI Logging, Log
+Analytics, DB Management, Operations Insights, and Stack Monitoring
+Standard.
 
 ## First-time tenancy bootstrap
 

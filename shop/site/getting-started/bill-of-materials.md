@@ -2,7 +2,7 @@
 
 The authoritative minimal list of tenancy resources, secrets, CLIs, and
 container images required to redeploy the platform from a blank slate.
-Mirrored from [`deploy/BOM.md`](https://github.com/adibirzu/octo-drone-shop/blob/main/deploy/BOM.md)
+Mirrored from [`deploy/BOM.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/BOM.md)
 in the repo so both `pre-flight-check.sh` and new operators are reading
 the same source of truth.
 
@@ -27,10 +27,10 @@ the same source of truth.
 | WAF | 4 policies + log group | `deploy/terraform/modules/waf` |
 | DNS + TLS | 2–4 A records + certs | Your DNS provider + certbot / OCI Certificates |
 | Secrets | 9 | `init-tenancy.sh` + OCI Vault |
-| Runtime | OKE cluster **OR** 1 Compute VM | Console or Terraform |
+| Runtime | OKE cluster **OR** private two-instance Compute stack **OR** 1 Compute VM | Console, Terraform, or Resource Manager |
 | Container images | 2–3 | `deploy/deploy.sh` |
 
-Full row-by-row detail in [`deploy/BOM.md`](https://github.com/adibirzu/octo-drone-shop/blob/main/deploy/BOM.md).
+Full row-by-row detail in [`deploy/BOM.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/BOM.md).
 
 ## Smallest viable deploy (workshop/demo)
 
@@ -46,6 +46,17 @@ Full row-by-row detail in [`deploy/BOM.md`](https://github.com/adibirzu/octo-dro
 - OCI Vault + Secrets Store CSI driver
 - Resource Manager stack for the observability + WAF surface
 - **45–90 minutes** first time; **~15 minutes** for subsequent tenancies via the RM stack.
+
+## Private Compute production demo
+
+- VCN with public LB subnet, private app subnet, private DB subnet, NAT,
+  Service Gateway, NSGs, and security lists
+- Two private Compute instances running Shop and CRM with Podman
+- Dedicated private ATP, public OCI LB/WAF, APM, OCI Logging, Log
+  Analytics, DB Management, Operations Insights, and Stack Monitoring
+  Standard
+- Resource Manager one-click stack:
+  <https://adibirzu.github.io/octo-apm-demo/getting-started/compute-deployment/>
 
 ## Variable → script map (excerpt)
 

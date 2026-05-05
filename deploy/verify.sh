@@ -9,6 +9,7 @@
 #   pre-flight — required env vars surface as clear errors
 #   yaml      — every plain YAML manifest parses cleanly
 #   helm      — Helm charts lint and render into valid YAML
+#   compute   — two-instance Compute Terraform/Compose/cloud-init validator
 #   terraform — `terraform fmt -check` + root stack validate
 #   compose   — docker-compose config validates without container pulls
 #   docs      — mkdocs build --strict
@@ -295,8 +296,32 @@ if command -v terraform >/dev/null 2>&1; then
     else
         warn "deploy/resource-manager/* fmt drift"
     fi
+    compute_tf_files=()
+    while IFS= read -r tf_file; do
+        compute_tf_files+=("${tf_file}")
+    done < <(find "${REPO_ROOT}/deploy/compute/terraform" -type f -name "*.tf" -print 2>/dev/null)
+    if [[ "${#compute_tf_files[@]}" -gt 0 ]] && terraform fmt -check "${compute_tf_files[@]}" >/dev/null 2>&1; then
+        ok "deploy/compute/terraform/* fmt clean"
+    else
+        warn "deploy/compute/terraform/* fmt drift"
+    fi
 else
     warn "terraform not installed — skipped"
+fi
+
+# ── Compute deployment validator ──────────────────────────────────────
+section "Two-instance Compute deployment"
+if [[ -x "${REPO_ROOT}/deploy/compute/validate.sh" ]]; then
+    compute_validate_log="$(mktemp)"
+    if bash "${REPO_ROOT}/deploy/compute/validate.sh" >"${compute_validate_log}" 2>&1; then
+        ok "deploy/compute/validate.sh"
+    else
+        fail "deploy/compute/validate.sh"
+        sed 's/^/         /' "${compute_validate_log}" | tail -30
+    fi
+    rm -f "${compute_validate_log}"
+else
+    fail "deploy/compute/validate.sh is missing or not executable"
 fi
 
 # ── Compose config ────────────────────────────────────────────────────

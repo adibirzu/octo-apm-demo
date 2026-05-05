@@ -10,6 +10,14 @@ RESOURCE_MANAGER_BUTTON_URL = (
     "https://cloud.oracle.com/resourcemanager/stacks/create"
     f"?zipUrl={RESOURCE_MANAGER_ZIP_URL}"
 )
+COMPUTE_RESOURCE_MANAGER_ZIP_URL = (
+    "https://github.com/adibirzu/octo-apm-demo/releases/download/"
+    "compute-resource-manager-stack-20260504/octo-compute-stack.zip"
+)
+COMPUTE_RESOURCE_MANAGER_BUTTON_URL = (
+    "https://cloud.oracle.com/resourcemanager/stacks/create"
+    f"?zipUrl={COMPUTE_RESOURCE_MANAGER_ZIP_URL}"
+)
 
 
 def read_text(relative_path: str) -> str:
@@ -197,6 +205,8 @@ def test_resource_manager_deploy_button_and_docs_publish_zip_url() -> None:
     readme = read_text("README.md")
     resource_manager_readme = read_text("deploy/resource-manager/README.md")
     deployment_options = read_text("site/getting-started/deployment-options.md")
+    compute_readme = read_text("deploy/compute/README.md")
+    compute_doc = read_text("site/getting-started/compute-deployment.md")
 
     parsed = urlparse(RESOURCE_MANAGER_BUTTON_URL)
     assert parsed.scheme == "https"
@@ -207,6 +217,10 @@ def test_resource_manager_deploy_button_and_docs_publish_zip_url() -> None:
     for text in (readme, resource_manager_readme, deployment_options):
         assert "Deploy to Oracle Cloud" in text
         assert RESOURCE_MANAGER_BUTTON_URL in text
+
+    for text in (readme, compute_readme, compute_doc, deployment_options):
+        assert "Deploy Full Compute Stack to Oracle Cloud" in text or "Deploy Full Private Compute Stack to Oracle Cloud" in text
+        assert COMPUTE_RESOURCE_MANAGER_BUTTON_URL in text
 
     workflow_path = ROOT / ".github/workflows/resource-manager-stack.yml"
     if workflow_path.exists():
@@ -241,6 +255,43 @@ def test_resource_manager_package_is_self_contained() -> None:
     assert "modules-shared/backend.tf" not in names
     assert 'source = "./modules-shared"' in main_tf
     assert 'source = "../terraform"' not in main_tf
+
+
+def test_compute_resource_manager_package_is_self_contained() -> None:
+    subprocess.run(
+        ["bash", "deploy/compute/stack-package.sh"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=20,
+        check=True,
+    )
+
+    stack_zip = ROOT / "deploy/compute/build/octo-compute-stack.zip"
+    with zipfile.ZipFile(stack_zip) as package:
+        names = set(package.namelist())
+        main_tf = package.read("main.tf").decode("utf-8")
+        provider_tf = package.read("provider.tf").decode("utf-8")
+        schema = package.read("schema.yaml").decode("utf-8")
+
+    assert {"main.tf", "variables.tf", "outputs.tf", "schema.yaml", "cloud-init/compute.yaml.tftpl"} <= names
+    assert {
+        "bootstrap/install.sh",
+        "bootstrap/app-compose.yml",
+        "bootstrap/runtime.env.template",
+        "bootstrap/nginx/app.conf.template",
+        "bootstrap/systemd/octo-compute.service",
+        "bootstrap/systemd/octo-podman.service",
+    } <= names
+    for module in ("atp", "apm_domain", "logging", "stack_monitoring", "waf"):
+        assert any(name.startswith(f"modules-shared/modules/{module}/") for name in names)
+    assert 'provider "oci" {}' in provider_tf
+    assert 'source = "./modules-shared/modules/' in main_tf
+    assert 'source = "../../terraform/modules/' not in main_tf
+    assert "existing_app_private_subnet_id" in schema
+    assert "enable_waf" in schema
+    assert "enable_log_analytics" in schema
 
 
 def test_helm_chart_avoids_partial_sso_and_validates_managed_secrets() -> None:
@@ -369,3 +420,162 @@ def test_platform_service_defaults_and_manifests_follow_shop_crm_contract() -> N
     assert "api.drone.octodemo.cloud" not in combined
     assert "octo-shop-prod" not in combined
     assert "octo-backend-prod" not in combined
+
+
+def test_two_instance_compute_surface_is_offline_validated_and_observable() -> None:
+    compute_readme = read_text("deploy/compute/README.md")
+    compute_doc = read_text("site/getting-started/compute-deployment.md")
+    deployment_options = read_text("site/getting-started/deployment-options.md")
+    compute_tf = read_text("deploy/compute/terraform/main.tf")
+    compute_outputs = read_text("deploy/compute/terraform/outputs.tf")
+    compute_schema = read_text("deploy/compute/terraform/schema.yaml")
+    compose = read_text("deploy/compute/app-compose.yml")
+    deploy_apps = read_text("deploy/compute/deploy-apps.sh")
+    install = read_text("deploy/compute/install.sh")
+    runtime_template = read_text("deploy/compute/runtime.env.template")
+    podman_unit = read_text("deploy/compute/systemd/octo-podman.service")
+    docker_unit = read_text("deploy/compute/systemd/octo-compute.service")
+    cloud_init = read_text("deploy/compute/terraform/cloud-init/compute.yaml.tftpl")
+    stack_package = read_text("deploy/compute/stack-package.sh")
+    validate = read_text("deploy/compute/validate.sh")
+    deployment_verify = read_text("deploy/compute/verify-deployment.sh")
+    verify = read_text("deploy/verify.sh")
+    mkdocs = read_text("mkdocs.yml")
+
+    assert "Two-instance Compute" in deployment_options
+    assert "getting-started/compute-deployment.md" in mkdocs
+    assert "public LB/WAF, private Shop and CRM Compute instances, private ATP" in read_text("README.md")
+
+    assert "oci_core_instance" in compute_tf
+    assert "for_each       = local.instances" in compute_tf
+    assert "assign_public_ip = false" in compute_tf
+    assert "oci_core_subnet\" \"lb_public" in compute_tf
+    assert "oci_core_subnet\" \"app_private" in compute_tf
+    assert "oci_core_subnet\" \"db_private" in compute_tf
+    assert "oci_core_internet_gateway" in compute_tf
+    assert "oci_core_nat_gateway" in compute_tf
+    assert "oci_core_service_gateway" in compute_tf
+    assert "oci_core_route_table\" \"app_private" in compute_tf
+    assert "oci_core_security_list\" \"db_private" in compute_tf
+    assert "oci_core_network_security_group\" \"lb" in compute_tf
+    assert "oci_core_network_security_group\" \"app" in compute_tf
+    assert "oci_core_network_security_group\" \"db" in compute_tf
+    assert "oci_load_balancer_load_balancer" in compute_tf
+    assert "oci_load_balancer_load_balancer_routing_policy" in compute_tf
+    assert "oci_waf_web_app_firewall" in compute_tf
+    assert "module \"atp\"" in compute_tf
+    assert "private_endpoint_label" in compute_tf
+    assert "database_management_status" in compute_tf
+    assert "operations_insights_status" in compute_tf
+    assert "oci_database_management_db_management_private_endpoint" in compute_tf
+    assert "oci_opsi_operations_insights_private_endpoint" in compute_tf
+    assert "module \"apm_domain\"" in compute_tf
+    assert "module \"logging\"" in compute_tf
+    assert "oci_log_analytics_log_analytics_log_group" in compute_tf
+    assert "oci_sch_service_connector" in compute_tf
+    assert "oci_logging_unified_agent_configuration" in compute_tf
+    assert "Custom Logs Monitoring" in compute_tf
+    assert "Compute Instance Monitoring" in compute_tf
+    assert "Management Agent" in compute_tf
+    assert 'oci_management_agent_management_agent" "stack_monitoring_plugin' in compute_tf
+    assert "enable_stack_monitoring_agent_plugin" in compute_tf
+    assert "enable_stack_monitoring_host_registration" in compute_tf
+    assert "LICENSE_AUTO_ASSIGN" in compute_tf
+    assert "AUTO_PROMOTE" in compute_tf
+    assert "crm_admin_username" in compute_outputs
+    assert 'output "instance_ids"' in compute_outputs
+    assert 'output "deployment_compartment_id"' in compute_outputs
+    assert "octo-compute-os" in compute_readme
+    assert "octo-compute-app-stdout" in compute_readme
+    assert "private app subnet" in compute_readme
+    assert "private DB subnet" in compute_readme
+    assert "Service Gateway" in compute_readme
+    assert "Log Analytics" in compute_readme
+    assert "configure-lb-certificate.sh" in compute_readme
+    assert "verify-deployment.sh" in compute_readme
+    assert "CRM Local Admin Login" in compute_readme
+
+    assert "compute-resource-manager-stack" in stack_package + compute_readme
+    assert "octo-compute-stack.zip" in stack_package
+    assert "bootstrap/install.sh" in stack_package
+    assert "modules/waf" in stack_package
+    for key in (
+        "create_network",
+        "existing_vcn_id",
+        "existing_lb_subnet_id",
+        "existing_app_private_subnet_id",
+        "existing_db_private_subnet_id",
+        "shop_availability_domain_name",
+        "crm_availability_domain_name",
+        "public_lb_subnet_cidr",
+        "app_private_subnet_cidr",
+        "db_private_subnet_cidr",
+        "enable_log_analytics",
+        "enable_stack_monitoring_agent_plugin",
+        "enable_stack_monitoring_host_registration",
+    ):
+        assert key in compute_schema
+
+    assert "APP_RUNTIME: compute" in compose
+    assert "OTEL_TRACES_SAMPLER" in compose
+    assert "OCI_APM_PRIVATE_DATAKEY" in compose
+    assert "OCI_LOG_ID" in compose
+    assert "CONTAINER_RUNTIME=podman" in runtime_template
+    assert "CONTAINER_ENV_FILE=/opt/octo/container.env" in runtime_template
+    assert "render_container_env_file" in install
+    assert "--env-file /opt/octo/container.env" in podman_unit
+    assert "--env-file /opt/octo/container.env" in docker_unit
+    assert "--env-file /opt/octo/runtime.env" not in podman_unit + docker_unit
+    assert "systemd units use container-runtime env file" in validate
+    assert "podman" in cloud_init
+    assert "compute_bootstrap_files" in compute_tf
+    assert "bootstrap/install.sh" in compute_tf
+    assert 'ignore_changes = [metadata["user_data"]]' in compute_tf
+    assert "atp_compute_count" in compute_schema
+    assert "SHOP_AVAILABILITY_DOMAIN" in read_text("deploy/compute/check-oci-limits.sh")
+    assert "/opt/octo/deploy/compute/install.sh" in cloud_init
+    assert "oracleApmTraceId" in compute_doc
+    assert "OpenTelemetry as the APM application agent" in compute_doc
+
+    assert "--check" in install
+    assert "CONTAINER_RUNTIME" in install
+    assert "podman login" in install
+    assert "octo-podman.service" in install
+    assert "docker compose -f" in install
+    assert "ENABLE_HOST_NGINX" in install
+    assert "oracle-cloud-agent.service" in install
+    assert "configure-lb-certificate.sh" in validate
+    assert "verify-deployment.sh" in validate
+    assert "deploy-apps.sh" in validate
+    assert "terraform -chdir=\"${SCRIPT_DIR}/terraform\" validate" in validate
+    assert "Resource Manager package terraform validates" in validate
+    assert "deploy/compute/validate.sh" in verify
+    assert "Load Balancer backend set" in deployment_verify
+    assert "Load Balancer is ACTIVE" in deployment_verify
+    assert "resolves to Load Balancer IP" in deployment_verify
+    assert "APM domain is ACTIVE" in deployment_verify
+    assert "ATP database is AVAILABLE" in deployment_verify
+    assert "Database Management private endpoint is ACTIVE" in deployment_verify
+    assert "Operations Insights private endpoint is ACTIVE" in deployment_verify
+    assert "Log Analytics Service Connector" in deployment_verify
+    assert "Management Agent for" in deployment_verify
+    assert "Stack Monitoring HOST auto-promote" in deployment_verify
+    assert "--require-https" in deployment_verify
+    assert "--skip-dns" in deployment_verify
+    assert "--outputs-json" in deployment_verify
+    assert "verify-deployment.sh" in compute_doc
+    assert "deploy-apps.sh" in compute_doc
+
+    assert "instance-agent command create" in deploy_apps
+    assert "command-execution get" in deploy_apps
+    assert "--outputs-json" in deploy_apps
+    assert "--apply" in deploy_apps
+    assert "--role" in deploy_apps
+    assert "--shop-instance-id" in deploy_apps
+    assert "--crm-instance-id" in deploy_apps
+    assert "APP_IMAGE_PULL_POLICY" in deploy_apps
+    assert "APP_IMAGE_BUILD_ENABLED" in deploy_apps
+    assert "/opt/octo/deploy/compute/install.sh --check" in deploy_apps
+    assert "systemctl restart octo-compute.service" in deploy_apps
+    assert "bootstrap_admin_password" not in deploy_apps.lower()
+    assert "OCI_APM_PRIVATE_DATAKEY" not in deploy_apps

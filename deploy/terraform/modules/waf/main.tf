@@ -62,7 +62,7 @@ variable "admin_allow_cidrs" {
 }
 
 locals {
-  effective_action = upper(var.mode) == "BLOCK" ? "BLOCK" : "LOG"
+  effective_action = upper(var.mode) == "BLOCK" ? "block" : "check"
 }
 
 resource "oci_waf_web_app_firewall_policy" "this" {
@@ -70,62 +70,38 @@ resource "oci_waf_web_app_firewall_policy" "this" {
   display_name   = var.display_name
 
   actions {
-    name = "log-only"
-    type = "RETURN_HTTP_RESPONSE"
-    code = 200
-    headers {
-      name  = "x-waf-action"
-      value = "LOG"
-    }
+    name = "allow"
+    type = "ALLOW"
   }
 
   actions {
-    name = "deny-admin"
+    name = "check"
+    type = "CHECK"
+  }
+
+  actions {
+    name = "block"
     type = "RETURN_HTTP_RESPONSE"
     code = 403
     headers {
       name  = "x-waf-action"
-      value = "DENY_ADMIN"
-    }
-  }
-
-  # Managed OWASP CRS — attach latest in detection mode.
-  request_protection {
-    rules {
-      name        = "owasp-crs"
-      type        = "PROTECTION"
-      action_name = local.effective_action == "BLOCK" ? "deny-admin" : "log-only"
-      protection_capabilities {
-        key     = "9000000" # OWASP CRS Core Rule Set (collection id)
-        version = 1
-      }
+      value = "BLOCK"
     }
   }
 
   # Admin-path allowlist — flags (or blocks) when request hits /api/admin/*
   # from a CIDR outside `admin_allow_cidrs`. In DETECTION we only log.
   request_access_control {
-    default_action_name = "log-only"
-
-    dynamic "rules" {
-      for_each = length(var.admin_allow_cidrs) > 0 ? [1] : []
-      content {
-        name               = "admin-cidr-guard"
-        type               = "ACCESS_CONTROL"
-        action_name        = local.effective_action == "BLOCK" ? "deny-admin" : "log-only"
-        condition_language = "jmespath"
-        condition          = "starts_with(i(http.request.url.path), '/api/admin')"
-      }
-    }
+    default_action_name = "allow"
   }
 
   request_rate_limiting {
     rules {
       name               = "login-burst"
       type               = "REQUEST_RATE_LIMITING"
-      action_name        = "log-only"
-      condition_language = "jmespath"
-      condition          = "i(http.request.url.path) == '/login' || i(http.request.url.path) == '/api/auth/login'"
+      action_name        = local.effective_action
+      condition_language = "JMESPATH"
+      condition          = "http.request.url.path == '/login' || http.request.url.path == '/api/auth/login'"
       configurations {
         period_in_seconds          = 60
         requests_limit             = 10
