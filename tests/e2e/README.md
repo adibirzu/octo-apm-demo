@@ -18,7 +18,7 @@ when no live environment is available.
 - ATP must be `AVAILABLE`.
 - `INTERNAL_SERVICE_KEY` is required for cross-service and full-platform smoke.
 - `octo-sso` plus a real test user are required for the SSO spec.
-- The baked-in defaults point at `https://shop.cyber-sec.ro` and `https://crm.cyber-sec.ro`, but only use those defaults when the shared `DEFAULT` tenancy is healthy.
+- The baked-in defaults point at `https://shop.example.test` and `https://crm.example.test`, but only use those defaults when the shared `DEFAULT` tenancy is healthy.
 
 ## Install Playwright once
 

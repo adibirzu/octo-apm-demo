@@ -10,16 +10,16 @@
  *      `source_system` + `source_order_id`; a retry with the same token
  *      does NOT create a duplicate record on the CRM side.
  *
- * Designed for a nightly CI run against shop.cyber-sec.ro /
- * crm.cyber-sec.ro in DEFAULT/oci4cca; override via env for other
+ * Designed for a nightly CI run against shop.example.test /
+ * crm.example.test in DEFAULT/<OCI_PROFILE>; override via env for other
  * tenancies. Opt in with CROSS_SERVICE_E2E_ENABLED=1.
  */
 
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
 const ENABLED = process.env.CROSS_SERVICE_E2E_ENABLED === '1';
-const SHOP = process.env.SHOP_BASE_URL || 'https://shop.cyber-sec.ro';
-const CRM = process.env.CRM_BASE_URL || 'https://crm.cyber-sec.ro';
+const SHOP = process.env.SHOP_BASE_URL || 'https://shop.example.test';
+const CRM = process.env.CRM_BASE_URL || 'https://crm.example.test';
 const INTERNAL_KEY = process.env.INTERNAL_SERVICE_KEY || '';
 const SHOP_HOST_HEADER = process.env.SHOP_HOST_HEADER || '';
 const CRM_HOST_HEADER = process.env.CRM_HOST_HEADER || '';

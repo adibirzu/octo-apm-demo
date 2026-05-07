@@ -22,7 +22,7 @@
 import { expect, test } from '@playwright/test';
 
 const SSO_ENABLED = process.env.SSO_E2E_ENABLED === '1';
-const SHOP_BASE = process.env.SHOP_BASE_URL || 'https://shop.cyber-sec.ro';
+const SHOP_BASE = process.env.SHOP_BASE_URL || 'https://shop.example.test';
 const TEST_EMAIL = process.env.OCTO_E2E_TEST_USER_EMAIL || '';
 const TEST_PASSWORD = process.env.OCTO_E2E_TEST_USER_PASSWORD || '';
 

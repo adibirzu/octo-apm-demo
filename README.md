@@ -7,8 +7,8 @@ as independent containers under `shop/` and `crm/` so they keep the
 cross-service contract hardened in the upstream repos.
 
 **Docs site**: https://adibirzu.github.io/octo-apm-demo
-**Target hostnames (`DEFAULT` / `oci4cca`)**: `shop.cyber-sec.ro` (Shop) · `crm.cyber-sec.ro` (CRM)
-**Status (April 25, 2026)**: the tracked `DEFAULT` deployment is currently degraded. Public DNS for `shop.cyber-sec.ro` and `crm.cyber-sec.ro` returns no `A` record, the shared ingress load balancer still exists but the ingress controller is `0/2` because the managed node pool is `NotReady`, both app deployments are `0/2`, and ATP `octo-apm-demo-atp` is `STOPPED`. Use `deploy/bootstrap.sh` for fresh tenancies, and check [`site/operations/current-status.md`](site/operations/current-status.md) before treating the shared `DEFAULT` environment as E2E-ready.
+**Target hostnames (`DEFAULT` / `<OCI_PROFILE>`)**: `shop.example.test` (Shop) · `crm.example.test` (CRM)
+**Status (April 25, 2026)**: the tracked `DEFAULT` deployment is currently degraded. Public DNS for `shop.example.test` and `crm.example.test` returns no `A` record, the shared ingress load balancer still exists but the ingress controller is `0/2` because the managed node pool is `NotReady`, both app deployments are `0/2`, and ATP `octo-apm-demo-atp` is `STOPPED`. Use `deploy/bootstrap.sh` for fresh tenancies, and check [`site/operations/current-status.md`](site/operations/current-status.md) before treating the shared `DEFAULT` environment as E2E-ready.
 
 [![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
 

@@ -53,7 +53,7 @@ done
 # has historically caused CRM/shop URLs to publish placeholder hostnames in
 # production, so we refuse to guess.
 if $ROLLOUT; then
-    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/oci4cca use cyber-sec.ro) for SHOP/CRM URL derivation, or pass --build-only.}"
+    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/<OCI_PROFILE> use example.test) for SHOP/CRM URL derivation, or pass --build-only.}"
     SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}"
     CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}"
     VERIFY_URL="${VERIFY_URL:-${SHOP_PUBLIC_URL}/ready}"

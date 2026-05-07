@@ -22,12 +22,12 @@ and the core Python test suites without touching a tenancy.
 ```bash
 OCI_PROFILE=DEFAULT \
 OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
-DNS_BASE_DOMAIN=cyber-sec.ro \
+DNS_BASE_DOMAIN=example.test \
 REMOTE_BUILD_HOST=control-plane-oci \
 ./deploy/bootstrap.sh
 ```
 
-For a non-`DEFAULT` tenancy, replace `cyber-sec.ro` with your own base
+For a non-`DEFAULT` tenancy, replace `example.test` with your own base
 domain and point `OCI_PROFILE` at the correct OCI config profile.
 
 ## Roll Forward After Bootstrap

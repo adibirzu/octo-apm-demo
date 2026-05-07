@@ -1,6 +1,6 @@
 # Deployment
 
-For the `DEFAULT` profile, use `cyber-sec.ro` as both the bootstrap base
+For the `DEFAULT` profile, use `example.test` as both the bootstrap base
 domain (`DNS_BASE_DOMAIN`) and the rollout host domain (`DNS_DOMAIN`).
 Check [Current Status](current-status.md) before relying on the shared
 tenancy; it is not E2E-ready as of April 25, 2026.
@@ -13,7 +13,7 @@ compartment:
 ```bash
 OCI_PROFILE=DEFAULT \
 OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
-DNS_BASE_DOMAIN=cyber-sec.ro \
+DNS_BASE_DOMAIN=example.test \
 REMOTE_BUILD_HOST=control-plane-oci \
 ./deploy/bootstrap.sh
 ```
@@ -27,7 +27,7 @@ Shop+CRM rollout.
 ```bash
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
-DNS_DOMAIN=cyber-sec.ro \
+DNS_DOMAIN=example.test \
 ./deploy/deploy.sh                  # Build + push + rollout
 
 ./deploy/deploy.sh --build-only     # Build + push, no rollout

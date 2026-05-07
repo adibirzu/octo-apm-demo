@@ -98,8 +98,8 @@ def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
     wizard_cli = read_text("deploy/wizard/src/octo_wizard/cli.py")
     current_status = read_text("site/operations/current-status.md")
 
-    assert "DNS_DOMAIN=cyber-sec.ro" in deploy_wrapper
-    assert "DNS_BASE_DOMAIN=cyber-sec.ro" in bootstrap
+    assert "DNS_DOMAIN=example.test" in deploy_wrapper
+    assert "DNS_BASE_DOMAIN=example.test" in bootstrap
     assert "CERTIFICATE_CONTENT_WITH_PRIVATE_KEY" in bootstrap
     assert "TLS_SECRET_NAME" in bootstrap
     assert "HTTPS" in bootstrap
@@ -112,24 +112,24 @@ def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
     assert "MANAGEMENT_AGENT_ID" in ensure_stack_monitoring
     assert 'CONTAINER="${K8S_CONTAINER:-app}"' in deploy_crm
     assert 'SERVICE_SHOP_URL="${SERVICE_SHOP_URL:-http://octo-drone-shop.' in deploy_crm
-    assert "DNS_DOMAIN=cyber-sec.ro" in deploy_oke
-    assert "DNS_DOMAIN=cyber-sec.ro" in deployment_doc
+    assert "DNS_DOMAIN=example.test" in deploy_oke
+    assert "DNS_DOMAIN=example.test" in deployment_doc
     assert "deploy/bootstrap.sh" in new_tenancy
     assert "deploy/init-tenancy.sh" in new_tenancy
     assert "CROSS_SERVICE_E2E_ENABLED=1" in e2e_doc
     assert "SSO_E2E_ENABLED=1" in e2e_doc
     assert "FULL_PLATFORM_E2E_ENABLED=1" in e2e_doc
-    assert "shop.cyber-sec.ro" in e2e_doc
-    assert "crm.cyber-sec.ro" in e2e_doc
+    assert "shop.example.test" in e2e_doc
+    assert "crm.example.test" in e2e_doc
     assert "helm template" in deploy_readiness
     assert "helm lint" in deploy_readiness
-    assert "cyber-sec.ro" in wizard_cli
-    assert "shop.cyber-sec.ro" in readme
-    assert "crm.cyber-sec.ro" in readme
-    assert "shop.cyber-sec.ro" in site_index
-    assert "crm.cyber-sec.ro" in site_index
-    assert "shop.cyber-sec.ro" in current_status
-    assert "crm.cyber-sec.ro" in current_status
+    assert "example.test" in wizard_cli
+    assert "shop.example.test" in readme
+    assert "crm.example.test" in readme
+    assert "shop.example.test" in site_index
+    assert "crm.example.test" in site_index
+    assert "shop.example.test" in current_status
+    assert "crm.example.test" in current_status
     assert "octo-apm-demo-atp" in current_status
     assert "deploy.sh" in current_status
 
@@ -352,8 +352,8 @@ def test_platform_service_defaults_and_manifests_follow_shop_crm_contract() -> N
         ]
     )
 
-    assert "https://shop.cyber-sec.ro" in traffic_config
-    assert "https://crm.cyber-sec.ro" in traffic_config
+    assert "https://shop.example.test" in traffic_config
+    assert "https://crm.example.test" in traffic_config
     assert "shop.${DNS_DOMAIN}" in load_control_profiles
     assert "crm.${DNS_DOMAIN}" in load_control_profiles
     assert "enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080" in load_control_api
@@ -364,8 +364,8 @@ def test_platform_service_defaults_and_manifests_follow_shop_crm_contract() -> N
     assert "octo-drone-shop" in remediator_scale
     assert "octo-drone-shop" in remediator_restart
 
-    assert "drone.octodemo.cloud" not in combined
-    assert "backend.octodemo.cloud" not in combined
-    assert "api.drone.octodemo.cloud" not in combined
+    assert "drone.example.test" not in combined
+    assert "backend.example.test" not in combined
+    assert "api.drone.example.test" not in combined
     assert "octo-shop-prod" not in combined
     assert "octo-backend-prod" not in combined

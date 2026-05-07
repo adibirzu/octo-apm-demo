@@ -11,7 +11,7 @@
 
 ## What is OCTO?
 
-Current `DEFAULT` target hostnames remain `shop.cyber-sec.ro` and `crm.cyber-sec.ro`, but treat them as an operational snapshot, not a permanently live demo endpoint. As of **April 25, 2026**, public DNS for both hosts returns no `A` record, the shared ingress controller has no live endpoints because the managed node pool is `NotReady`, both app deployments are `0/2`, and ATP `octo-apm-demo-atp` is `STOPPED`. See [Current Status](operations/current-status.md) for the exact runtime evidence, blocker order, and fresh-tenancy guidance.
+Current `DEFAULT` target hostnames remain `shop.example.test` and `crm.example.test`, but treat them as an operational snapshot, not a permanently live demo endpoint. As of **April 25, 2026**, public DNS for both hosts returns no `A` record, the shared ingress controller has no live endpoints because the managed node pool is `NotReady`, both app deployments are `0/2`, and ATP `octo-apm-demo-atp` is `STOPPED`. See [Current Status](operations/current-status.md) for the exact runtime evidence, blocker order, and fresh-tenancy guidance.
 
 The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.
 
@@ -29,7 +29,7 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 - **Public and private CRM URLs are split** — browser-visible links use `https://crm.example.cloud`, while backend service-to-service calls may continue to use a private service endpoint.
 - **Frontend hardening is live** — CRM page rendering, observability beacon ingestion, CSP-safe scripts, and favicon handling were updated to remove recent runtime errors.
 - **Enhancement roadmap is published** — the docs now define the rollout path for complex flows, OCI APM, OCI Logging, Log Analytics, drilldowns, and DB tooling.
-- **Deployment status is now published** — the docs include a dated OCI + runtime snapshot for the validated `oci4cca` / `DEFAULT` environment.
+- **Deployment status is now published** — the docs include a dated OCI + runtime snapshot for the validated `<OCI_PROFILE>` / `DEFAULT` environment.
 
 <div class="grid cards" markdown>
 

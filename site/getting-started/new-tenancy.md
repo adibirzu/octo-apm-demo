@@ -14,7 +14,7 @@ bootstrap.
 - Local tools: `oci`, `kubectl`, `terraform`, `docker`, `envsubst`, `ssh`, `helm`.
 - Planned public hostnames for `shop.<domain>` and `crm.<domain>`.
 
-For the shared `DEFAULT` profile, the baked-in domain is `cyber-sec.ro`.
+For the shared `DEFAULT` profile, the baked-in domain is `example.test`.
 
 ## 2. Optional pre-flight
 
@@ -35,7 +35,7 @@ placeholder values before you start touching the tenancy.
 ```bash
 OCI_PROFILE=DEFAULT \
 OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
-DNS_BASE_DOMAIN=cyber-sec.ro \
+DNS_BASE_DOMAIN=example.test \
 REMOTE_BUILD_HOST=control-plane-oci \
 ./deploy/bootstrap.sh
 ```
