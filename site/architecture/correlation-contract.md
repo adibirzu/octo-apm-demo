@@ -57,6 +57,25 @@ below is what makes those pivots clickable.
   Logging rows, ATP `llmetry_events`, and Langfuse observations without
   logging raw prompts or responses.
 
+## Payment field dictionary
+
+Checkout, payment gateway, processor, CRM order, and payment log records
+MUST include the following fields when a payment attempt exists:
+
+| Field | Purpose |
+|---|---|
+| `payment.gateway.request_id` | Stable join key across Shop, gateway events, CRM, logs, and spans |
+| `payment.method` | `card`, `apple_pay`, `google_pay`, or simulator-specific method |
+| `payment.provider` | Gateway or wallet provider label, for example `visa`, `mastercard`, `apple_pay`, `google_pay` |
+| `payment.network` | Simulated network route, for example `visa`, `mastercard`, `wallet_token_network` |
+| `payment.status` | `pending`, `paid`, `declined`, `failed`, or `requires_payment` |
+| `payment.verification.decision` | Antifraud decision such as `approved`, `review`, or `declined` |
+| `payment.risk_score` | Synthetic normalized risk score used for demo filtering |
+
+Payment metadata MUST be tokenized or synthetic. Raw PAN, CVV, wallet
+tokens, cryptograms, or customer secrets must not be stored in spans, logs,
+CRM rows, or `payment_gateway_events`.
+
 ## Field semantics
 
 ### `trace_id`

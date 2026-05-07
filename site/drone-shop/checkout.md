@@ -73,6 +73,32 @@ total    = max(subtotal - discount, 0) + shipping
 Payment gateway events are persisted in `payment_gateway_events` with
 `trace_id`, `span_id`, `gateway_request_id`, method, network, step name, and
 safe metadata. Raw PAN, CVV, and wallet tokens are not logged or persisted.
+Operators can inspect the stored gateway timeline through:
+
+```text
+GET /api/observability/payment-gateway/events?gateway_request_id=<PGW_REQUEST_ID>
+GET /api/observability/payment-gateway/events?trace_id=<TRACE_ID>
+GET /api/observability/payment-gateway/events?order_id=<ORDER_ID>
+```
+
+The endpoint accepts the same authenticated browser session used by the
+admin observability pages, or `X-Internal-Service-Key` for trusted internal
+automation. Responses include the persisted step sequence so the payment
+view can be correlated with APM spans, application logs, CRM order state, and
+Oracle rows.
+
+Orders carry the payment state needed for CRM and support workflows:
+
+| Field | Purpose |
+|---|---|
+| `payment_gateway_request_id` | Join key for gateway events and processor logs |
+| `payment_status` | `pending`, `paid`, `declined`, `failed`, or `requires_payment` |
+| `payment_required` | Whether the order still requires customer action |
+| `payment_paid_at` | UTC timestamp for approved payments |
+
+The CRM Orders page displays payment status and gateway correlation so a
+support operator can start from the order and pivot to the same trace and
+gateway event sequence without reading raw payment details.
 
 ## Security Checks
 
