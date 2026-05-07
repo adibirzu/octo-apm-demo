@@ -61,7 +61,7 @@ starting services. For later image promotions, use
 `deploy/compute/deploy-apps.sh`; it targets the private instances with
 OCI Run Command, updates only non-secret deployment values, runs the
 host pre-flight, restarts `octo-compute.service`, and checks local
-`/ready`. The `<REFERENCE_PROFILE>` profile deployment for
+`/ready`. The `<OCI_PROFILE>` profile deployment for
 `shop.example.test` and `crm.example.test` was validated on May
 5, 2026. Full walkthrough:
 [compute-deployment.md](compute-deployment.md).

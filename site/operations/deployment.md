@@ -3,7 +3,7 @@
 For the `DEFAULT` profile, use `example.test` as both the bootstrap base
 domain (`DNS_BASE_DOMAIN`) and the rollout host domain (`DNS_DOMAIN`).
 Check [Current Status](current-status.md) before relying on any shared
-tenancy. As of May 4, 2026, the separate `<REFERENCE_PROFILE>` private Compute
+tenancy. As of May 4, 2026, the separate `<OCI_PROFILE>` private Compute
 deployment is the current production-demo target for
 `shop.example.test` and `crm.example.test`; the `DEFAULT` OKE
 runtime remains a shared environment that should be validated before
