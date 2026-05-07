@@ -379,8 +379,8 @@ async def _payment_gateway_events(
         FROM payment_gateway_events e
         LEFT JOIN orders o ON o.id = e.order_id
         WHERE (:order_id = 0 OR e.order_id = :order_id)
-          AND (:trace_id = '' OR e.trace_id = :trace_id)
-          AND (:gateway_request_id = '' OR e.gateway_request_id = :gateway_request_id)
+          AND (:trace_id IS NULL OR e.trace_id = :trace_id)
+          AND (:gateway_request_id IS NULL OR e.gateway_request_id = :gateway_request_id)
         ORDER BY e.created_at DESC, e.gateway_request_id, e.step_index ASC
         FETCH FIRST {row_limit} ROWS ONLY
         """
@@ -390,8 +390,8 @@ async def _payment_gateway_events(
             query,
             {
                 "order_id": int(order_id or 0),
-                "trace_id": trace_id,
-                "gateway_request_id": gateway_request_id,
+                "trace_id": trace_id or None,
+                "gateway_request_id": gateway_request_id or None,
             },
         )
         return [_serialize_payment_gateway_event(dict(row)) for row in result.mappings().all()]
