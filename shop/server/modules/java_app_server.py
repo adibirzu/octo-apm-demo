@@ -118,6 +118,37 @@ class JavaAppServerClient:
             },
         )
 
+    async def verify_payment(
+        self,
+        *,
+        order_id: int,
+        amount_minor_units: int,
+        currency: str,
+        customer_email: str,
+        idempotency_key_hash: str = "",
+        payment_method: str = "credit_card",
+        payment_network: str = "",
+        context_risk_score: int = 0,
+        risk_reasons: str = "",
+        simulation_mode: str = "",
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST",
+            "/api/java-apm/payment/verify",
+            {
+                "order_id": int(order_id),
+                "amount_minor_units": int(amount_minor_units),
+                "currency": (currency or "usd").lower(),
+                "customer_email_domain": _email_domain(customer_email),
+                "idempotency_key_hash": idempotency_key_hash[:64],
+                "payment_method": payment_method,
+                "payment_network": payment_network,
+                "context_risk_score": int(context_risk_score or 0),
+                "risk_reasons": risk_reasons[:500],
+                "simulation_mode": simulation_mode,
+            },
+        )
+
     async def simulate(self, name: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         allowed = {"slow", "gc", "cpu", "error", "external-error", "sql-error", "attack"}
         if name not in allowed:

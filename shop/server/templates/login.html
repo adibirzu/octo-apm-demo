@@ -33,12 +33,12 @@
 <div class="login-shell">
     <section class="card login-card">
         <div class="eyebrow">Operator Access</div>
-        <h2>Sign in to governed administrative views.</h2>
+        <h2>Sign in to Drone Shop.</h2>
         <p>
-            Successful sign-in stores a signed bearer token in local storage so the portal can call protected admin APIs.
+            Successful sign-in stores a signed bearer token in local storage so storefront orders, payments, and company records can be linked to the buyer.
             Use an administrator account for the Admin surface.
         </p>
-        <p>Seeded demo access: <code>admin / OctoAdmin!2026</code> for admin views, <code>shopper / OctoUser!2026</code> for standard-user checks.</p>
+        <p>Use the provisioned demo account credentials from the operator secret store for admin and shopper checks.</p>
         {% if idcs_configured %}
         <a class="btn" href="/api/auth/sso/login" id="ssoLoginBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#c74634;color:#fff;">
             <span aria-hidden="true">⇄</span>
@@ -47,13 +47,14 @@
         <div style="text-align:center;color:var(--muted);font-size:0.85em;">— or use a local account —</div>
         {% endif %}
         <form id="loginForm" class="login-form">
-            <input type="text" id="username" placeholder="Username" autocomplete="username" required>
-            <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
-            <button type="submit" class="btn">Sign In</button>
+            <input type="text" id="username" placeholder="Username" autocomplete="username" data-testid="login-username" required>
+            <input type="password" id="password" placeholder="Password" autocomplete="current-password" data-testid="login-password" required>
+            <button type="submit" class="btn" data-testid="login-submit">Sign In</button>
         </form>
         <div class="login-result" id="result">No active sign-in yet.</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
             <a class="btn btn-outline" href="/admin-page">Open Admin</a>
+            <a class="btn btn-outline" href="/shop" data-testid="open-shop-after-login">Open Shop</a>
             <button type="button" class="btn btn-outline" id="clearTokenBtn">Clear Stored Token</button>
             {% if idcs_configured %}
             <a class="btn btn-outline" href="/api/auth/sso/logout">SSO Sign Out</a>
@@ -96,7 +97,7 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
 
         localStorage.setItem('octo-auth-token', payload.token);
         localStorage.setItem('octo-auth-user', JSON.stringify(payload.user));
-        setMessage(`Signed in as ${payload.user.username} (${payload.user.role}). Admin views can now call protected APIs.`);
+        setMessage(`Signed in as ${payload.user.username} (${payload.user.role}). Shop orders and protected views can now call backend APIs.`);
     } catch (error) {
         setMessage(`Login failed: ${error.message}`);
     }

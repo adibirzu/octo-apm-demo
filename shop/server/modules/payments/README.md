@@ -17,6 +17,39 @@ existing demos keep working.
 | `registry.py` | Env-driven singleton picker with `*_FILE` secret support |
 | `webhooks.py` | `POST /api/payments/webhooks/{provider}` — verifies, classifies, transitions state, emits OCI Event |
 | `events.py` | Fire-and-forget POST to OCI Events on every state change |
+| `gateway_emulator.py` | Dedicated payment gateway emulator between checkout and processor; emits per-step spans/logs and stores token-safe gateway events |
+| `checkout_workflow.py` | Normalizes card/wallet payloads into PCI-safe metadata, risk reasons, and persistence fields |
+
+## Demo Gateway Trace
+
+The shop checkout path runs a dedicated gateway emulator for
+`credit_card`, `apple_pay`, and `google_pay`. Each payment creates a
+gateway request id, spans, structured logs, and `payment_gateway_events`
+rows for these phases:
+
+1. Gateway ingress and card/wallet token handling.
+2. Internal gateway antifraud screening.
+3. Antifraud verification app request/response through the Java APM
+   sidecar (`/api/java-apm/payment/verify`).
+4. Simulated processor authorization through the Java APM sidecar
+   (`/api/java-apm/payment/authorize`).
+5. Simulated card/network routing.
+6. Normalized merchant authorization result returned to Drone Shop.
+
+Orders start as `payment_pending` with `payment_required=1`. Authorized
+payments move the order to `status=paid`, `payment_status=paid`,
+`payment_required=0`, and set `payment_paid_at`. Declines, timeouts, and
+failures leave the order in `payment_pending` with
+`payment_status=failed` and `payment_required=1`.
+
+Known decline test cards:
+
+- Visa: `4000000000000002`
+- Mastercard: `5105105105105100`
+
+Only token hashes, card brand/last4, expiry, risk reasons, gateway step
+names, trace ids, and provider references are stored. PAN, CVV, and raw
+wallet tokens must not be persisted or logged.
 
 ## Wire up to the FastAPI app
 
@@ -31,8 +64,8 @@ app.include_router(payments_webhooks_router)
 
 ```bash
 export PAYMENT_PROVIDER=stripe
-export STRIPE_API_KEY=sk_test_...
-export STRIPE_WEBHOOK_SECRET=whsec_...
+export STRIPE_API_KEY=<stripe-api-key>
+export STRIPE_WEBHOOK_SECRET=<stripe-webhook-secret>
 # Optional — emit OCI Events on state changes
 export OCI_EVENTS_TOPIC_URL=https://events.<region>.oci.oraclecloud.com/20191108/events/<topic>
 ```
@@ -89,7 +122,8 @@ the failure rate exceeds the SLO).
 ```bash
 cd shop
 python -m pytest tests/payments/ -q
-# 15 passed in ~0.03s — no network
+python -m pytest tests/test_checkout_payment_widget.py tests/payments/ -q
+npm run test:e2e:payments -- --project=chromium
 ```
 
 Covered:

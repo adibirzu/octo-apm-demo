@@ -41,10 +41,13 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER REFERENCES customers(id),
+    user_id INTEGER REFERENCES users(id),
     total FLOAT NOT NULL,
     status VARCHAR(50) DEFAULT 'pending',
     payment_method VARCHAR(50) DEFAULT 'credit_card',
     payment_status VARCHAR(50) DEFAULT 'pending',
+    payment_required INTEGER DEFAULT 1,
+    payment_paid_at TIMESTAMP,
     payment_provider VARCHAR(50),
     payment_provider_reference VARCHAR(128),
     checkout_idempotency_key VARCHAR(128),

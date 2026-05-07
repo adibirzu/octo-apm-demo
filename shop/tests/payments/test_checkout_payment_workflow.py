@@ -96,6 +96,9 @@ def test_high_risk_card_declines_and_persists_only_safe_metadata(monkeypatch) ->
         return {"status": "disabled"}
 
     class _Client:
+        async def verify_payment(self, **kwargs):
+            return await _java_disabled(**kwargs)
+
         async def authorize_payment(self, **kwargs):
             return await _java_disabled(**kwargs)
 
@@ -133,8 +136,13 @@ def test_high_risk_card_declines_and_persists_only_safe_metadata(monkeypatch) ->
     assert result["provider"] == "simulated-visa"
     assert result["payment_gateway"]["gateway"] == "octo-payment-gateway-emulator"
     assert result["payment_gateway"]["final_step"]["name"] == "merchant_authorization_result"
+    assert result["payment_gateway"]["verification"]["status"] == "disabled"
     assert any(
         step["name"] == "gateway_card_tokenization"
+        for step in result["payment_gateway"]["steps"]
+    )
+    assert any(
+        step["name"] == "verification_antifraud_request"
         for step in result["payment_gateway"]["steps"]
     )
     assert {"invalid_luhn", "expired_card", "invalid_cvv"}.issubset(set(result["risk_reasons"]))
@@ -149,3 +157,70 @@ def test_high_risk_card_declines_and_persists_only_safe_metadata(monkeypatch) ->
     assert "4111111111111112" not in persisted_text
     assert "4111 1111 1111 1112" not in persisted_text
     assert "'12'" not in persisted_text
+
+
+def test_decline_test_card_is_rejected_by_antifraud_verification(monkeypatch) -> None:
+    db = _FakeDb()
+
+    class _Client:
+        async def verify_payment(self, **kwargs):
+            return {
+                "status": "ok",
+                "data": {
+                    "verification_provider": "octo-antifraud-verification-app",
+                    "decision": "declined",
+                    "risk_score": 95,
+                    "error_code": "ANTIFRAUD_DECLINED",
+                    "latency_ms": 44,
+                },
+                "latency_ms": 44,
+            }
+
+        async def authorize_payment(self, **kwargs):
+            return {
+                "status": "ok",
+                "data": {
+                    "decision": "approved",
+                    "risk_score": 12,
+                    "latency_ms": 37,
+                    "authorization_code": "SIM-OK",
+                },
+                "latency_ms": 37,
+            }
+
+    monkeypatch.setattr("server.modules.payment_gateway_simulation.JavaAppServerClient", _Client)
+    monkeypatch.setattr(
+        "server.modules.payment_gateway_simulation.business_metrics.record_payment_authorization",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "server.modules.payment_gateway_simulation.cfg.payment_gateway_simulation_enabled",
+        True,
+    )
+
+    result = asyncio.run(
+        authorize_simulated_payment(
+            order_id=88,
+            total=250.0,
+            currency="usd",
+            customer_email="buyer@example.invalid",
+            checkout_idempotency_key="550e8400-e29b-41d4-a716-446655440088",
+            payment_method="credit_card",
+            payment_details={
+                "card": {
+                    "number": "4000000000000002",
+                    "expiry": "12/30",
+                    "cvv": "123",
+                    "cardholder_name": "Alex Buyer",
+                }
+            },
+            db=db,
+        )
+    )
+
+    assert result["status"] == "declined"
+    assert result["decision_source"] == "java-antifraud-verification-app"
+    assert result["error_code"] == "ANTIFRAUD_DECLINED"
+    assert "issuer_decline_test_card" in result["risk_reasons"]
+    assert result["payment_gateway"]["verification"]["decision"] == "declined"
+    assert result["payment_gateway"]["final_step"]["status"] == "declined"

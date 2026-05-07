@@ -31,6 +31,13 @@ def _serialize_order(order: Order) -> dict:
         "customer_email": order.source_customer_email or (order.customer.email if order.customer else ""),
         "total": float(order.total or 0),
         "status": order.status,
+        "payment_status": order.payment_status or "pending",
+        "payment_required": bool(order.payment_required),
+        "payment_method": order.payment_method or "",
+        "payment_provider": order.payment_provider or "",
+        "payment_provider_reference": order.payment_provider_reference or "",
+        "payment_gateway_request_id": order.payment_gateway_request_id or "",
+        "payment_paid_at": order.payment_paid_at,
         "source_system": order.source_system or "enterprise-crm",
         "source_order_id": order.source_order_id,
         "sync_status": order.sync_status or "local",
@@ -39,6 +46,24 @@ def _serialize_order(order: Order) -> dict:
         "last_synced_at": order.last_synced_at.isoformat() if order.last_synced_at else None,
         "created_at": order.created_at.isoformat() if order.created_at else None,
     }
+
+
+def _apply_payment_metadata(order: Order, body: dict) -> None:
+    existing_required_value = getattr(order, "payment_required", None)
+    existing_required = True if existing_required_value is None else bool(existing_required_value)
+    raw_required = body.get("payment_required", existing_required)
+    payment_required = 1 if raw_required else 0
+    order.payment_status = str(body.get("payment_status") or getattr(order, "payment_status", "pending") or "pending")[:50]
+    order.payment_required = payment_required
+    order.payment_method = str(body.get("payment_method") or getattr(order, "payment_method", "") or "")[:50]
+    order.payment_provider = str(body.get("payment_provider") or getattr(order, "payment_provider", "") or "")[:80]
+    order.payment_provider_reference = str(
+        body.get("payment_provider_reference") or getattr(order, "payment_provider_reference", "") or ""
+    )[:128]
+    order.payment_gateway_request_id = str(
+        body.get("payment_gateway_request_id") or getattr(order, "payment_gateway_request_id", "") or ""
+    )[:128]
+    order.status = "payment_pending" if payment_required else "paid"
 
 
 @router.get("")
@@ -290,6 +315,8 @@ async def create_order(request: Request):
                 )
                 existing_order = existing_result.scalars().first()
                 if existing_order:
+                    _apply_payment_metadata(existing_order, body)
+                    await db.flush()
                     return {
                         "status": "created",
                         "order_id": existing_order.id,
@@ -300,7 +327,6 @@ async def create_order(request: Request):
             order = Order(
                 customer_id=customer.id,
                 total=computed_total,
-                status="pending",
                 notes=body.get("notes", ""),
                 shipping_address=body.get("shipping_address", ""),
                 source_system=source_system,
@@ -310,6 +336,7 @@ async def create_order(request: Request):
                 backlog_status="backlog",
                 correlation_id=correlation_id,
             )
+            _apply_payment_metadata(order, body)
             db.add(order)
             try:
                 await db.flush()
@@ -323,6 +350,8 @@ async def create_order(request: Request):
                 )
                 existing_order = existing_result.scalars().first()
                 if existing_order:
+                    _apply_payment_metadata(existing_order, body)
+                    await db.flush()
                     return {
                         "status": "created",
                         "order_id": existing_order.id,
@@ -352,6 +381,10 @@ async def create_order(request: Request):
                 "orders.total": computed_total,
                 "orders.items_count": len(order_items),
                 "orders.source_system": "enterprise-crm",
+                "orders.payment_status": order.payment_status,
+                "orders.payment_required": bool(order.payment_required),
+                "payment.provider": order.payment_provider,
+                "payment.gateway.request_id": order.payment_gateway_request_id,
                 "correlation.id": correlation_id,
             },
         )

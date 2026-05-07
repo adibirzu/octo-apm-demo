@@ -114,6 +114,7 @@ public class App {
             "endpoints", List.of(
                 "/", "/ready", "/healthz",
                 "/api/java-apm/quote",
+                "/api/java-apm/payment/verify",
                 "/api/java-apm/payment/authorize",
                 "/api/java-apm/simulate/slow",
                 "/api/java-apm/simulate/gc",
@@ -209,6 +210,60 @@ public class App {
         payload.put("latency_ms", latency);
         payload.put("currency", request.currency());
         payload.put("amount_minor_units", request.amount_minor_units());
+        payload.put("error_code", errorCode);
+        payload.put("customer_email_domain", safeDomain(request.customer_email_domain()));
+        payload.put("idempotency_key_hash", nullToEmpty(request.idempotency_key_hash()));
+        payload.put("simulation_mode", mode);
+        return payload;
+    }
+
+    @PostMapping("/api/java-apm/payment/verify")
+    public Map<String, Object> verifyPayment(@RequestBody PaymentVerifyRequest request)
+        throws InterruptedException {
+        long latency = simulateLatency(35, 180);
+        int riskScore = verificationRiskScore(request);
+        String mode = request.simulation_mode() == null || request.simulation_mode().isBlank()
+            ? env("PAYMENT_SIMULATION_MODE", "approve").toLowerCase()
+            : request.simulation_mode().toLowerCase();
+        String reasons = nullToEmpty(request.risk_reasons()).toLowerCase();
+        boolean forcedDecline = mode.equals("decline")
+            || mode.equals("deny")
+            || reasons.contains("issuer_decline_test_card")
+            || reasons.contains("missing_wallet_token")
+            || reasons.contains("invalid_luhn")
+            || reasons.contains("expired_card");
+        boolean periodicReview = deterministicIssue(request.idempotency_key_hash(), request.order_id(), 17);
+        String decision;
+        if (forcedDecline || riskScore >= 90) {
+            decision = "declined";
+        } else if (periodicReview || riskScore >= 70) {
+            decision = "review";
+        } else {
+            decision = "approved";
+        }
+        String errorCode = switch (decision) {
+            case "declined" -> forcedDecline ? "ANTIFRAUD_DECLINED" : "ANTIFRAUD_HIGH_RISK";
+            case "review" -> "ANTIFRAUD_REVIEW";
+            default -> "";
+        };
+        LOG.info(
+            "payment_verify order_id={} amount_minor={} currency={} method={} network={} decision={} risk_score={} latency_ms={} email_domain={} periodic_review={}",
+            request.order_id(), request.amount_minor_units(), request.currency(), nullToEmpty(request.payment_method()),
+            nullToEmpty(request.payment_network()), decision, riskScore, latency,
+            safeDomain(request.customer_email_domain()), periodicReview
+        );
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("verification_provider", "octo-antifraud-verification-app");
+        payload.put("order_id", request.order_id());
+        payload.put("decision", decision);
+        payload.put("risk_score", riskScore);
+        payload.put("risk_reasons", nullToEmpty(request.risk_reasons()));
+        payload.put("periodic_review", periodicReview);
+        payload.put("latency_ms", latency);
+        payload.put("currency", request.currency());
+        payload.put("amount_minor_units", request.amount_minor_units());
+        payload.put("payment_method", nullToEmpty(request.payment_method()));
+        payload.put("payment_network", nullToEmpty(request.payment_network()));
         payload.put("error_code", errorCode);
         payload.put("customer_email_domain", safeDomain(request.customer_email_domain()));
         payload.put("idempotency_key_hash", nullToEmpty(request.idempotency_key_hash()));
@@ -472,6 +527,30 @@ public class App {
         return Math.max(0, Math.min(99, amountScore + idempotencyScore + domainScore));
     }
 
+    private int verificationRiskScore(PaymentVerifyRequest request) {
+        int amountScore = (int) Math.min(45L, request.amount_minor_units() / 150_000L);
+        int contextScore = Math.max(0, Math.min(99, request.context_risk_score()));
+        int reasonScore = 0;
+        String reasons = nullToEmpty(request.risk_reasons()).toLowerCase();
+        if (reasons.contains("issuer_decline_test_card")) reasonScore += 90;
+        if (reasons.contains("invalid_luhn")) reasonScore += 80;
+        if (reasons.contains("expired_card")) reasonScore += 70;
+        if (reasons.contains("missing_wallet_token")) reasonScore += 80;
+        if (reasons.contains("invalid_cvv")) reasonScore += 35;
+        if (reasons.contains("unsupported")) reasonScore += 30;
+        int idempotencyScore = Math.abs(nullToEmpty(request.idempotency_key_hash()).hashCode() % 15);
+        int domainScore = safeDomain(request.customer_email_domain()).endsWith(".invalid") ? 2 : 8;
+        return Math.max(0, Math.min(99, Math.max(contextScore, amountScore + reasonScore + idempotencyScore + domainScore)));
+    }
+
+    private boolean deterministicIssue(String idempotencyHash, long orderId, int modulus) {
+        String seed = nullToEmpty(idempotencyHash) + ":" + orderId;
+        if (seed.isBlank() || modulus <= 0) {
+            return false;
+        }
+        return Math.floorMod(seed.hashCode(), modulus) == 0;
+    }
+
     private String env(String name, String fallback) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? fallback : value;
@@ -498,6 +577,19 @@ public class App {
         String currency,
         String customer_email_domain,
         String idempotency_key_hash,
+        String simulation_mode
+    ) {}
+
+    public record PaymentVerifyRequest(
+        long order_id,
+        long amount_minor_units,
+        String currency,
+        String customer_email_domain,
+        String idempotency_key_hash,
+        String payment_method,
+        String payment_network,
+        int context_risk_score,
+        String risk_reasons,
         String simulation_mode
     ) {}
 

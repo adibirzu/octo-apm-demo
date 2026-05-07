@@ -881,6 +881,18 @@
 
         <!-- Right sidebar -->
         <aside class="shop-sidebar">
+            <div class="panel" id="buyerPanel" data-testid="buyer-panel">
+                <div class="section-title">
+                    <h3>Buyer</h3>
+                    <span class="chip" id="buyerAuthChip" data-testid="buyer-auth-chip">Guest</span>
+                </div>
+                <div class="order-note" id="buyerIdentityText">Sign in to link orders, payments, and company records.</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <a class="btn btn-outline" href="/login" data-testid="shop-login-link">Sign In</a>
+                    <button class="btn btn-outline" type="button" id="buyerSignOutBtn" data-testid="shop-signout-button">Sign Out</button>
+                </div>
+            </div>
+
             <!-- Cart & Checkout -->
             <div class="panel" id="cartPanel">
                 <div class="section-title">
@@ -895,13 +907,13 @@
                     <strong id="cartTotal">$0.00</strong>
                 </div>
                 <div class="order-note">Orders are persisted in Oracle ATP, traced through OCI APM, and synchronized with Enterprise CRM.</div>
-                <form class="checkout-form" id="checkoutForm">
-                    <input name="customer_name" placeholder="Contact name" required>
-                    <input name="customer_email" type="email" placeholder="Contact email" required>
-                    <input name="company" placeholder="Company">
-                    <input name="customer_phone" placeholder="Phone">
-                    <textarea name="shipping_address" placeholder="Shipping address" required></textarea>
-                    <select name="payment_method" required>
+                <form class="checkout-form" id="checkoutForm" data-testid="checkout-form">
+                    <input name="customer_name" placeholder="Contact name" data-testid="checkout-name" required>
+                    <input name="customer_email" type="email" placeholder="Contact email" data-testid="checkout-email" required>
+                    <input name="company" placeholder="Company" data-testid="checkout-company">
+                    <input name="customer_phone" placeholder="Phone" data-testid="checkout-phone">
+                    <textarea name="shipping_address" placeholder="Shipping address" data-testid="checkout-address" required></textarea>
+                    <select name="payment_method" data-testid="payment-method" required>
                         <option value="" disabled selected>Payment method</option>
                         <option value="credit_card">Credit Card</option>
                         <option value="apple_pay">Apple Pay (simulated)</option>
@@ -922,18 +934,18 @@
                                     <span id="paymentCardExpiryPreview">MM/YY</span>
                                 </div>
                             </div>
-                            <input name="card_number" inputmode="numeric" autocomplete="cc-number" placeholder="Card number 4111 1111 1111 1111" maxlength="23">
+                            <input name="card_number" inputmode="numeric" autocomplete="cc-number" placeholder="Card number 4111 1111 1111 1111" maxlength="23" data-testid="card-number">
                             <div class="payment-network-row">
-                                <input name="card_expiry" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" maxlength="7">
-                                <input name="card_cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV" maxlength="4">
+                                <input name="card_expiry" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" maxlength="7" data-testid="card-expiry">
+                                <input name="card_cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV" maxlength="4" data-testid="card-cvv">
                             </div>
-                            <input name="cardholder_name" autocomplete="cc-name" placeholder="Cardholder name">
-                            <input name="billing_postal_code" autocomplete="postal-code" placeholder="Billing ZIP/postal code">
+                            <input name="cardholder_name" autocomplete="cc-name" placeholder="Cardholder name" data-testid="cardholder-name">
+                            <input name="billing_postal_code" autocomplete="postal-code" placeholder="Billing ZIP/postal code" data-testid="billing-postal-code">
                         </div>
                         <div class="payment-wallet-panel" id="paymentWalletPanel">
                             <div class="wallet-button-row">
-                                <button class="wallet-sim-button" type="button" data-wallet="apple_pay">Simulate Apple Pay</button>
-                                <button class="wallet-sim-button" type="button" data-wallet="google_pay">Simulate Google Pay</button>
+                                <button class="wallet-sim-button" type="button" data-wallet="apple_pay" data-testid="apple-pay-button">Simulate Apple Pay</button>
+                                <button class="wallet-sim-button" type="button" data-wallet="google_pay" data-testid="google-pay-button">Simulate Google Pay</button>
                             </div>
                             <input type="hidden" name="wallet_provider">
                             <input type="hidden" name="wallet_token">
@@ -941,10 +953,10 @@
                             <div class="wallet-token-chip" id="walletTokenStatus">Choose a wallet to create a tokenized demo payment.</div>
                         </div>
                     </div>
-                    <input name="coupon_code" placeholder="Coupon code (optional)">
-                    <button class="btn" type="submit" id="checkoutSubmitButton">Place Order</button>
+                    <input name="coupon_code" placeholder="Coupon code (optional)" data-testid="coupon-code">
+                    <button class="btn" type="submit" id="checkoutSubmitButton" data-testid="place-order-button">Place Order</button>
                 </form>
-                <div class="helper" id="checkoutStatus" style="margin-top:6px;"></div>
+                <div class="helper" id="checkoutStatus" data-testid="checkout-status" style="margin-top:6px;"></div>
             </div>
 
             <!-- Authorized dealers -->
@@ -1112,12 +1124,27 @@ const state = {
     category: 'All',
     sessionId: localStorage.getItem('octo-session-id') || _uuid(),
     assistantSessionId: localStorage.getItem('octo-assistant-session-id') || _uuid(),
+    browserTraceId: localStorage.getItem('octo-browser-trace-id') || '',
     workflowApiBaseUrl: {{ workflow_api_base_url|tojson }},
     checkoutInFlight: false,
     checkoutIdempotencyKey: '',
 };
+if (!/^[0-9a-f]{32}$/i.test(state.browserTraceId)) {
+    state.browserTraceId = randomHex(32);
+}
 localStorage.setItem('octo-session-id', state.sessionId);
 localStorage.setItem('octo-assistant-session-id', state.assistantSessionId);
+localStorage.setItem('octo-browser-trace-id', state.browserTraceId);
+
+function randomHex(length) {
+    const bytes = new Uint8Array(Math.ceil(length / 2));
+    if (window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(bytes);
+    } else {
+        for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+    }
+    return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('').slice(0, length);
+}
 
 function money(v) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(v || 0);
@@ -1149,6 +1176,73 @@ async function workflowFetch(path, options = {}) {
     if (!state.workflowApiBaseUrl) throw new Error('Workflow gateway is not configured.');
     const headers = options.body ? {'Content-Type': 'application/json', ...(options.headers || {})} : (options.headers || {});
     return _fetch(workflowUrl(path), {...options, headers});
+}
+
+function currentAuthToken() {
+    return localStorage.getItem('octo-auth-token') || '';
+}
+
+function currentAuthUser() {
+    try {
+        const raw = localStorage.getItem('octo-auth-user') || '';
+        return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function browserTraceHeaders(extra = {}) {
+    const headers = {
+        traceparent: `00-${state.browserTraceId}-${randomHex(16)}-01`,
+        'X-Correlation-Id': state.browserTraceId,
+        'X-OCTO-Session-Id': state.sessionId,
+        ...extra,
+    };
+    const token = currentAuthToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+}
+
+function jsonApiHeaders() {
+    return browserTraceHeaders({'Content-Type': 'application/json'});
+}
+
+async function apiFetch(path, options = {}) {
+    return _fetch(path, {
+        ...options,
+        headers: browserTraceHeaders(options.headers || {}),
+    });
+}
+
+function renderBuyerPanel() {
+    const user = currentAuthUser();
+    const token = currentAuthToken();
+    const signedIn = Boolean(token && user);
+    const chip = document.getElementById('buyerAuthChip');
+    const identity = document.getElementById('buyerIdentityText');
+    const signOut = document.getElementById('buyerSignOutBtn');
+    chip.textContent = signedIn ? 'Signed in' : 'Guest';
+    identity.textContent = signedIn
+        ? `${user.username || user.email || 'Buyer'} orders will be linked to ${user.email || 'the signed-in account'}.`
+        : 'Sign in to link orders, payments, and company records.';
+    signOut.hidden = !signedIn;
+}
+
+function applyBuyerDefaults() {
+    const user = currentAuthUser();
+    if (!user) return;
+    const formEl = document.getElementById('checkoutForm');
+    if (!formEl) return;
+    if (!formEl.elements.customer_name.value) formEl.elements.customer_name.value = user.username || '';
+    if (!formEl.elements.customer_email.value) formEl.elements.customer_email.value = user.email || '';
+    if (!formEl.elements.company.value) formEl.elements.company.value = user.company || 'OCTO Demo';
+}
+
+function signOutBuyer() {
+    localStorage.removeItem('octo-auth-token');
+    localStorage.removeItem('octo-auth-user');
+    renderBuyerPanel();
+    document.getElementById('checkoutStatus').textContent = 'Signed out. New orders will be placed as guest checkout.';
 }
 
 /* ── Categories ──────────────────────────────────────────────── */
@@ -1206,7 +1300,7 @@ function renderProducts() {
                         <div class="product-stock">${esc(p.inventory_badge)}</div>
                     </div>
                     <div class="product-actions">
-                        <button class="btn add-btn" type="button" data-id="${p.id}">Add</button>
+                        <button class="btn add-btn" type="button" data-id="${p.id}" data-testid="add-to-cart-button">Add</button>
                         <button class="btn btn-outline details-btn" type="button" data-id="${p.id}">Details</button>
                     </div>
                 </div>
@@ -1248,7 +1342,7 @@ function openQuickView(productId) {
                 <div class="product-price">${money(product.price)}</div>
                 <div class="helper">Adds to the same ATP-backed cart session.</div>
             </div>
-            <button class="btn btn-primary quick-add-btn" type="button" data-id="${product.id}">Add to Cart</button>
+            <button class="btn btn-primary quick-add-btn" type="button" data-id="${product.id}" data-testid="quick-add-to-cart-button">Add to Cart</button>
         </div>
     `;
     backdrop.hidden = false;
@@ -1292,7 +1386,7 @@ function applyFilters() {
 
 /* ── Storefront load ─────────────────────────────────────────── */
 async function loadStorefront() {
-    const res = await _fetch('/api/shop/storefront');
+    const res = await apiFetch('/api/shop/storefront');
     if (!res.ok) throw new Error(`Storefront ${res.status}`);
     const data = await res.json();
     state.products = data.products || [];
@@ -1307,7 +1401,7 @@ async function loadStorefront() {
 
 /* ── Cart ────────────────────────────────────────────────────── */
 async function loadCart() {
-    const res = await _fetch(`/api/cart?session_id=${encodeURIComponent(state.sessionId)}`);
+    const res = await apiFetch(`/api/cart?session_id=${encodeURIComponent(state.sessionId)}`);
     if (!res.ok) return;
     const data = await res.json();
     state.cart = data.items || [];
@@ -1345,9 +1439,9 @@ async function addToCart(productId) {
         category: product?.category || '',
         cart_size: state.cart.length,
     });
-    const res = await _fetch('/api/cart/add', {
+    const res = await apiFetch('/api/cart/add', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: jsonApiHeaders(),
         body: JSON.stringify({session_id: state.sessionId, product_id: productId, quantity: 1}),
     });
     const data = await res.json();
@@ -1361,7 +1455,7 @@ async function addToCart(productId) {
 }
 
 async function removeCartItem(itemId) {
-    await _fetch(`/api/cart/${itemId}`, {method: 'DELETE'});
+    await apiFetch(`/api/cart/${itemId}`, {method: 'DELETE'});
     state.checkoutIdempotencyKey = '';
     await loadCart();
 }
@@ -1468,6 +1562,7 @@ async function submitCheckout(e) {
     const payload = {
         ...Object.fromEntries(form.entries()),
         session_id: state.sessionId,
+        browser_trace_id: state.browserTraceId,
         checkout_idempotency_key: state.checkoutIdempotencyKey,
         items: state.cart.map(i => ({product_id: i.product_id, quantity: i.quantity})),
         payment_details: buildPaymentDetails(formEl, form),
@@ -1485,9 +1580,9 @@ async function submitCheckout(e) {
     });
     status.textContent = 'Authorizing payment and placing order…';
     try {
-        const res = await _fetch('/api/shop/checkout', {
+        const res = await apiFetch('/api/shop/checkout', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: jsonApiHeaders(),
             body: JSON.stringify(payload),
         });
         const result = await res.json();
@@ -1507,7 +1602,13 @@ async function submitCheckout(e) {
             'payment.wallet_type': result.payment?.wallet_type || '',
             'payment.gateway.name': result.payment?.gateway?.gateway || '',
             'payment.gateway.request_id': result.payment?.gateway?.request_id || '',
+            'payment.gateway.verification.decision': result.payment?.gateway?.verification?.decision || '',
+            'payment.gateway.verification.provider': result.payment?.gateway?.verification?.provider || '',
             'payment.gateway.step_count': (result.payment?.gateway?.steps || []).length + (result.payment?.gateway?.final_step ? 1 : 0),
+            trace_id: result.trace_id || '',
+            browser_trace_id: state.browserTraceId,
+            order_status: result.order_status || '',
+            payment_required: Boolean(result.payment_required),
         });
         const payment = result.payment || {};
         const paymentLabel = payment.wallet_type
@@ -1516,7 +1617,10 @@ async function submitCheckout(e) {
         const gateway = payment.gateway || {};
         const gatewayStepCount = (gateway.steps || []).length + (gateway.final_step ? 1 : 0);
         const gatewayText = gatewayStepCount ? ` Gateway ${gatewayStepCount} steps.` : '';
-        status.textContent = `Order #${result.order_id} placed. Payment ${payment.status || 'processed'} via ${payment.provider || paymentLabel}.${gatewayText} Tracking: ${result.tracking_number} — Total: $${result.total.toLocaleString()}`;
+        const verification = gateway.verification || {};
+        const verificationText = verification.decision ? ` Verification ${verification.decision}.` : '';
+        const paymentRequiredText = result.payment_required ? ' Payment still required.' : ' Order paid.';
+        status.textContent = `Order #${result.order_id} placed. Payment ${payment.status || 'processed'} via ${payment.provider || paymentLabel}.${gatewayText}${verificationText}${paymentRequiredText} Tracking: ${result.tracking_number} — Total: $${result.total.toLocaleString()}`;
         state.checkoutIdempotencyKey = '';
         formEl.reset();
         updatePaymentPanels();
@@ -1537,7 +1641,7 @@ async function submitCheckout(e) {
 /* ── Dealers ─────────────────────────────────────────────────── */
 async function loadShops() {
     try {
-        const res = await _fetch('/api/shop/locations');
+        const res = await apiFetch('/api/shop/locations');
         const data = await res.json();
         const shops = data.shops || [];
         document.getElementById('shopCount').textContent = `${shops.length} locations`;
@@ -1569,9 +1673,9 @@ async function submitAssistant(e) {
     if (!message) return;
     appendMsg('You', message);
     e.currentTarget.reset();
-    const res = await _fetch('/api/shop/assistant/query', {
+    const res = await apiFetch('/api/shop/assistant/query', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: jsonApiHeaders(),
         body: JSON.stringify({
             message,
             session_id: state.assistantSessionId,
@@ -1586,9 +1690,9 @@ async function submitAssistant(e) {
 
 /* ── Analytics ───────────────────────────────────────────────── */
 async function trackPageView() {
-    await _fetch('/api/analytics/track', {
+    await apiFetch('/api/analytics/track', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: jsonApiHeaders(),
         body: JSON.stringify({
             page: window.location.pathname,
             session_id: state.sessionId,
@@ -1755,6 +1859,7 @@ document.querySelectorAll('#paymentCardPanel input').forEach(input => input.addE
 document.querySelectorAll('.wallet-sim-button').forEach(btn => {
     btn.addEventListener('click', () => simulateWallet(btn.dataset.wallet));
 });
+document.getElementById('buyerSignOutBtn').addEventListener('click', signOutBuyer);
 document.getElementById('assistantForm').addEventListener('submit', submitAssistant);
 document.querySelectorAll('.advisor-prompt').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1780,6 +1885,8 @@ document.addEventListener('keydown', (event) => {
 (async function init() {
     const _bootStart = Date.now();
     try {
+        renderBuyerPanel();
+        applyBuyerDefaults();
         updatePaymentPanels();
         updateCardPreview();
         await Promise.all([

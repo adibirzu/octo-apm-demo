@@ -144,8 +144,9 @@ async def _existing_order_for_checkout_key(db, checkout_idempotency_key: str) ->
 
     order_lookup = await db.execute(
         text(
-            "SELECT id, customer_id, total, status, created_at FROM orders "
-            "WHERE checkout_idempotency_key = :key FETCH FIRST 1 ROWS ONLY"
+            "SELECT id, customer_id, user_id, total, status, payment_method, payment_status, "
+            "payment_required, payment_provider, payment_provider_reference, payment_paid_at, created_at "
+            "FROM orders WHERE checkout_idempotency_key = :key FETCH FIRST 1 ROWS ONLY"
         ),
         {"key": checkout_idempotency_key},
     )
@@ -202,6 +203,7 @@ async def place_order(
     source: str = "shop",
     trace_id: str = "",
     checkout_idempotency_key: str = "",
+    user_id: int | None = None,
 ) -> dict[str, Any]:
     normalized_checkout_key = normalize_checkout_idempotency_key(checkout_idempotency_key)
     if normalized_checkout_key:
@@ -218,17 +220,19 @@ async def place_order(
     try:
         await db.execute(
             text(
-                "INSERT INTO orders (customer_id, total, status, payment_method, payment_status, "
-                "notes, shipping_address, checkout_idempotency_key) "
-                "VALUES (:customer_id, :total, :status, :payment_method, :payment_status, "
-                ":notes, :shipping_address, :checkout_idempotency_key)"
+                "INSERT INTO orders (customer_id, user_id, total, status, payment_method, payment_status, "
+                "payment_required, notes, shipping_address, checkout_idempotency_key) "
+                "VALUES (:customer_id, :user_id, :total, :status, :payment_method, :payment_status, "
+                ":payment_required, :notes, :shipping_address, :checkout_idempotency_key)"
             ),
             {
                 "customer_id": customer["id"],
+                "user_id": user_id,
                 "total": total,
-                "status": "processing",
+                "status": "payment_pending",
                 "payment_method": payment_method,
-                "payment_status": "completed" if payment_method in ["credit_card", "crypto"] else "pending",
+                "payment_status": "pending",
+                "payment_required": 1,
                 "notes": notes or f"Source={source}; Coupon={coupon_code or 'none'}",
                 "shipping_address": shipping_address,
                 "checkout_idempotency_key": order_lookup_key,
@@ -244,7 +248,9 @@ async def place_order(
         raise
     order_lookup = await db.execute(
         text(
-            "SELECT id, total, status, created_at FROM orders "
+            "SELECT id, customer_id, user_id, total, status, payment_method, payment_status, "
+            "payment_required, payment_provider, payment_provider_reference, payment_paid_at, created_at "
+            "FROM orders "
             "WHERE checkout_idempotency_key = :checkout_idempotency_key FETCH FIRST 1 ROWS ONLY"
         ),
         {"checkout_idempotency_key": order_lookup_key},
@@ -328,20 +334,27 @@ async def update_order_payment_state(
     """Persist payment simulation/provider details on an order."""
     normalized_payment_status = (payment_status or "pending").lower()
     if normalized_payment_status == "authorized":
-        order_status = "processing"
-        stored_payment_status = "completed"
+        order_status = "paid"
+        stored_payment_status = "paid"
+        payment_required = 0
+        payment_paid_at_expr = "CURRENT_TIMESTAMP"
     elif normalized_payment_status in {"declined", "failed", "timeout"}:
-        order_status = "failed"
+        order_status = "payment_pending"
         stored_payment_status = "failed"
+        payment_required = 1
+        payment_paid_at_expr = "NULL"
     else:
         order_status = "payment_pending"
         stored_payment_status = "pending"
+        payment_required = 1
+        payment_paid_at_expr = "NULL"
 
     await db.execute(
         text(
             "UPDATE orders SET payment_provider = :payment_provider, "
             "payment_provider_reference = :payment_provider_reference, "
-            "payment_status = :payment_status, status = :status "
+            "payment_status = :payment_status, payment_required = :payment_required, "
+            f"payment_paid_at = {payment_paid_at_expr}, status = :status "
             "WHERE id = :order_id"
         ),
         {
@@ -349,7 +362,12 @@ async def update_order_payment_state(
             "payment_provider": payment_provider,
             "payment_provider_reference": payment_provider_reference,
             "payment_status": stored_payment_status,
+            "payment_required": payment_required,
             "status": order_status,
         },
     )
-    return {"payment_status": stored_payment_status, "order_status": order_status}
+    return {
+        "payment_status": stored_payment_status,
+        "order_status": order_status,
+        "payment_required": str(payment_required),
+    }

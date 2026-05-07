@@ -281,12 +281,19 @@ def _ensure_order_columns(sync_conn) -> None:
     if "orders" not in inspector.get_table_names():
         return
 
-    existing = {column["name"] for column in inspector.get_columns("orders")}
+    existing = {column["name"].lower() for column in inspector.get_columns("orders")}
     dialect = sync_conn.dialect.name
     type_map = {
         "source_system": "VARCHAR2(100 CHAR)" if dialect == "oracle" else "VARCHAR(100)",
         "source_order_id": "VARCHAR2(120 CHAR)" if dialect == "oracle" else "VARCHAR(120)",
         "source_customer_email": "VARCHAR2(200 CHAR)" if dialect == "oracle" else "VARCHAR(200)",
+        "payment_status": "VARCHAR2(50 CHAR) DEFAULT 'pending'" if dialect == "oracle" else "VARCHAR(50) DEFAULT 'pending'",
+        "payment_required": "NUMBER(1) DEFAULT 1" if dialect == "oracle" else "INTEGER DEFAULT 1",
+        "payment_method": "VARCHAR2(50 CHAR)" if dialect == "oracle" else "VARCHAR(50)",
+        "payment_provider": "VARCHAR2(80 CHAR)" if dialect == "oracle" else "VARCHAR(80)",
+        "payment_provider_reference": "VARCHAR2(128 CHAR)" if dialect == "oracle" else "VARCHAR(128)",
+        "payment_gateway_request_id": "VARCHAR2(128 CHAR)" if dialect == "oracle" else "VARCHAR(128)",
+        "payment_paid_at": "TIMESTAMP",
         "sync_status": "VARCHAR2(50 CHAR)" if dialect == "oracle" else "VARCHAR(50)",
         "backlog_status": "VARCHAR2(50 CHAR)" if dialect == "oracle" else "VARCHAR(50)",
         "sync_error": "CLOB" if dialect == "oracle" else "TEXT",

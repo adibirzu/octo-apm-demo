@@ -441,10 +441,13 @@ class Order(Base):
     __table_args__ = (UniqueConstraint("checkout_idempotency_key", name="uq_orders_checkout_key"),)
     id = Column(Integer, Identity(always=False), primary_key=True)
     customer_id = Column(Integer, ForeignKey("customers.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     total = Column(Float, nullable=False)
     status = Column(String(50), default="pending")
     payment_method = Column(String(50), default="credit_card")
     payment_status = Column(String(50), default="pending")
+    payment_required = Column(Integer, default=1)
+    payment_paid_at = Column(DateTime, nullable=True)
     payment_provider = Column(String(50), nullable=True)
     payment_provider_reference = Column(String(128), nullable=True, index=True)
     checkout_idempotency_key = Column(String(128), nullable=True)
@@ -452,6 +455,7 @@ class Order(Base):
     shipping_address = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
     customer = relationship("Customer")
+    user = relationship("User")
 
 
 class OrderItem(Base):
@@ -873,10 +877,13 @@ def _ensure_missing_columns(engine) -> None:
 
     # Orders table migrations
     if "orders" in insp.get_table_names():
-        order_cols = {col["name"] for col in insp.get_columns("orders")}
+        order_cols = {col["name"].lower() for col in insp.get_columns("orders")}
         order_migrations = {
+            "user_id": "NUMBER" if dialect == "oracle" else "INTEGER",
             "payment_method": "VARCHAR2(50 CHAR)" if dialect == "oracle" else "VARCHAR(50)",
             "payment_status": "VARCHAR2(50 CHAR)" if dialect == "oracle" else "VARCHAR(50)",
+            "payment_required": "NUMBER(1) DEFAULT 1" if dialect == "oracle" else "INTEGER DEFAULT 1",
+            "payment_paid_at": "TIMESTAMP",
             "checkout_idempotency_key": "VARCHAR2(128 CHAR)" if dialect == "oracle" else "VARCHAR(128)",
         }
         for col_name, col_type in order_migrations.items():
@@ -893,7 +900,7 @@ def _ensure_missing_columns(engine) -> None:
                 except Exception:
                     logger.debug("Column orders.%s may already exist (concurrent DDL)", col_name)
 
-        refreshed_order_cols = {col["name"] for col in inspect(engine).get_columns("orders")}
+        refreshed_order_cols = {col["name"].lower() for col in inspect(engine).get_columns("orders")}
         if "checkout_idempotency_key" in refreshed_order_cols:
             existing_indexes = {idx["name"].lower() for idx in inspect(engine).get_indexes("orders") if idx.get("name")}
             existing_constraints = {

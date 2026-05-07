@@ -349,7 +349,19 @@ async def list_synced_customers(limit: int = 100) -> list[dict]:
         return [dict(row) for row in result.mappings().all()][: max(1, min(limit, 500))]
 
 
-async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float, source: str = "shop") -> dict:
+async def sync_order_to_crm(
+    *,
+    order_id: int,
+    customer_email: str,
+    total: float,
+    source: str = "shop",
+    payment_status: str = "pending",
+    payment_required: bool = True,
+    payment_method: str = "",
+    payment_provider: str = "",
+    payment_provider_reference: str = "",
+    payment_gateway_request_id: str = "",
+) -> dict:
     tracer = get_tracer()
     crm = _crm_url()
     if not crm:
@@ -372,6 +384,9 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
         span.set_attribute("integration.order_id", order_id)
         span.set_attribute("integration.order_total", total)
         span.set_attribute("integration.order_source", source)
+        span.set_attribute("integration.payment_status", payment_status)
+        span.set_attribute("integration.payment_required", bool(payment_required))
+        span.set_attribute("integration.payment_provider", payment_provider or "unknown")
         span.set_attribute("integration.circuit_breaker.state", crm_breaker.state.value)
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -410,6 +425,12 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
                         "idempotency_token": idempotency_token,
                         "source_system": "octo-drone-shop",
                         "source_order_id": str(order_id),
+                        "payment_status": payment_status,
+                        "payment_required": bool(payment_required),
+                        "payment_method": payment_method,
+                        "payment_provider": payment_provider,
+                        "payment_provider_reference": payment_provider_reference,
+                        "payment_gateway_request_id": payment_gateway_request_id,
                     },
                     headers=headers or None,
                 )
@@ -425,6 +446,9 @@ async def sync_order_to_crm(*, order_id: int, customer_email: str, total: float,
                     "integration.type": "sync_order",
                     "integration.order_id": order_id,
                     "integration.crm_status": resp.status_code,
+                    "integration.payment_status": payment_status,
+                    "integration.payment_required": bool(payment_required),
+                    "payment.provider": payment_provider,
                 },
             )
             return {

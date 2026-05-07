@@ -177,16 +177,23 @@ async def list_orders(request: Request, limit: int = Query(default=100, ge=1, le
         async with get_db() as db:
             result = await db.execute(
                 text(
-                    "SELECT o.id, o.customer_id, c.name AS customer_name, c.email AS customer_email, "
-                    "o.total, o.status, o.shipping_address, o.created_at, "
+                    "SELECT o.id, o.customer_id, o.user_id, c.name AS customer_name, c.email AS customer_email, "
+                    "o.total, o.status, o.payment_method, o.payment_status, o.payment_required, "
+                    "o.payment_provider, o.payment_provider_reference, o.payment_paid_at, "
+                    "o.shipping_address, o.created_at, "
                     "COALESCE((SELECT SUM(oi.quantity * oi.unit_price) FROM order_items oi "
                     "WHERE oi.order_id = o.id), 0) AS subtotal, "
                     "COALESCE((SELECT s.shipping_cost FROM shipments s WHERE s.order_id = o.id "
                     "ORDER BY s.created_at DESC FETCH FIRST 1 ROWS ONLY), 0) AS shipping_cost "
                     "FROM orders o LEFT JOIN customers c ON c.id = o.customer_id "
+                    "WHERE (:can_view_all = 1 OR o.user_id = :user_id) "
                     "ORDER BY o.created_at DESC "
                     f"FETCH FIRST {limit} ROWS ONLY"
-                )
+                ),
+                {
+                    "can_view_all": 1 if user.get("role") in {"admin", "manager", "service"} else 0,
+                    "user_id": int(user["sub"]),
+                },
             )
             orders = [dict(row) for row in result.mappings().all()]
 
@@ -226,14 +233,18 @@ async def get_order(order_id: int, request: Request):
         async with get_db() as db:
             result = await db.execute(
                 text(
-                    "SELECT o.id, o.customer_id, c.name AS customer_name, c.email AS customer_email, "
-                    "o.total, o.status, o.shipping_address, o.notes, o.created_at "
+                    "SELECT o.id, o.customer_id, o.user_id, c.name AS customer_name, c.email AS customer_email, "
+                    "o.total, o.status, o.payment_method, o.payment_status, o.payment_required, "
+                    "o.payment_provider, o.payment_provider_reference, o.payment_paid_at, "
+                    "o.shipping_address, o.notes, o.created_at "
                     "FROM orders o LEFT JOIN customers c ON c.id = o.customer_id WHERE o.id = :id"
                 ),
                 {"id": order_id},
             )
             order = result.mappings().first()
             if not order:
+                return {"error": "Order not found", "order_id": order_id}
+            if user.get("role") not in {"admin", "manager", "service"} and int(order.get("user_id") or 0) not in {0, int(user["sub"])}:
                 return {"error": "Order not found", "order_id": order_id}
 
             items = await db.execute(
@@ -300,6 +311,7 @@ async def create_order(payload: dict, request: Request):
                 session_id=session_id,
                 source="orders_api",
                 trace_id=_trace_id(),
+                user_id=int(user["sub"]),
             )
 
         crm_sync = await sync_order_to_crm(
