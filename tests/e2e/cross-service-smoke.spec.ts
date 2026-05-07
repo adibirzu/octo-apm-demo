@@ -11,7 +11,7 @@
  *      does NOT create a duplicate record on the CRM side.
  *
  * Designed for a nightly CI run against shop.example.test /
- * crm.example.test in reference profile; override via env for other
+ * crm.example.test in DEFAULT/<OCI_PROFILE>; override via env for other
  * tenancies. Opt in with CROSS_SERVICE_E2E_ENABLED=1.
  */
 

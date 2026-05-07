@@ -1,7 +1,7 @@
 # Enterprise CRM Portal — production Deployment on OKE.
 #
 # Namespace:        enterprise-crm
-# Public hostname:  crm.${DNS_DOMAIN}  (for reference profile: crm.example.test)
+# Public hostname:  crm.${DNS_DOMAIN}  (for DEFAULT/<OCI_PROFILE>: crm.example.test)
 # Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG}
 
 apiVersion: apps/v1

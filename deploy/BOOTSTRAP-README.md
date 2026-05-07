@@ -104,7 +104,7 @@ Subsequent runs reuse it unless you delete the cache.
 
 ### Safety tests run
 
-Verified against reference profile / <COMPARTMENT_NAME> compartment:
+Verified against <OCI_PROFILE> / <COMPARTMENT_NAME>:
 
 | Test | Outcome |
 |---|---|

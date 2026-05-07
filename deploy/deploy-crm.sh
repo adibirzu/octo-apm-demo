@@ -46,7 +46,7 @@ for arg in "$@"; do
 done
 
 if $ROLLOUT; then
-    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (for reference profile use example.test) for backend URL derivation, or pass --build-only.}"
+    DNS_DOMAIN="${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/<OCI_PROFILE> use example.test) for backend URL derivation, or pass --build-only.}"
     CRM_PUBLIC_URL="${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}"
     SHOP_PUBLIC_URL="${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}"
     SERVICE_SHOP_URL="${SERVICE_SHOP_URL:-http://octo-drone-shop.${K8S_NAMESPACE_SHOP}.svc.cluster.local:8080}"

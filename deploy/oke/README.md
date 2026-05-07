@@ -14,8 +14,8 @@ into APM + RUM + OCI Logging → Log Analytics + Stack Monitoring.
 | CRM Deployment | `enterprise-crm-portal` |
 | Shop in-cluster URL | `http://octo-drone-shop.octo-drone-shop.svc.cluster.local:8080` |
 | CRM in-cluster URL | `http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080` |
-| Shop public hostname | `shop.${DNS_DOMAIN}` (for reference profile, use `shop.example.test`) |
-| CRM public hostname | `crm.${DNS_DOMAIN}` (for reference profile, use `crm.example.test`) |
+| Shop public hostname | `shop.${DNS_DOMAIN}` (for `DEFAULT` / `<OCI_PROFILE>`, use `shop.example.test`) |
+| CRM public hostname | `crm.${DNS_DOMAIN}` (for `DEFAULT` / `<OCI_PROFILE>`, use `crm.example.test`) |
 
 Deliberately different from the unified-VM names so both deployments
 can co-exist on the same tenancy (different compartments / clusters)

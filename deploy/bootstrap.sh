@@ -79,7 +79,7 @@ PROJECT_TAG_VAL="octo-apm-demo"
 #   auto   — PATCH the OCI DNS zone. Requires `DNS_BASE_DOMAIN` to exist
 #            as an OCI DNS zone the profile can write.
 #   manual — print the A records + exit. Operator adds them to whatever
-#            DNS provider they actually use (Route 53, Cloudflare, etc.).
+#            DNS provider they actually use (Route 53, external DNS provider, etc.).
 #   skip   — don't touch DNS. Smoke test uses `-H "Host: ..."`.
 : "${DNS_MODE:=auto}"
 
@@ -1286,7 +1286,7 @@ if [[ "${DNS_MODE}" == "manual" ]]; then
     cat <<EOF
 
 ${YELLOW:-}────────────────────────────────────────────────────────────────
-  MANUAL DNS — add these records at your DNS provider (Cloudflare,
+  MANUAL DNS — add these records at your DNS provider (external DNS provider,
   Route 53, NS1, Namecheap, in-house BIND, …):
 
     ${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}.   A   ${INGRESS_IP}   TTL 60
