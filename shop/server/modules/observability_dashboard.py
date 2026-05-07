@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import time
 import logging
+import json
 from datetime import datetime, timedelta
+from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from sqlalchemy import func, select, text, cast, Float
 
+from server.auth_security import require_authenticated_or_internal_service
 from server.config import cfg
 from server.database import (
     Customer, Order, OrderItem, Product, CartItem,
@@ -30,6 +33,16 @@ from server.observability.otel_setup import get_tracer
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/observability", tags=["observability-dashboard"])
+
+_SENSITIVE_METADATA_KEY_FRAGMENTS = (
+    "authorization",
+    "card_number",
+    "card.cvv",
+    "cvv",
+    "pan",
+    "raw_token",
+    "token.raw",
+)
 
 
 @router.get("/360")
@@ -124,6 +137,65 @@ async def db_health_detail():
 @router.get("/360/security")
 async def security_detail():
     return await _security_summary()
+
+
+@router.get("/payment-gateway/events")
+async def payment_gateway_event_drilldown(
+    request: Request,
+    order_id: int = Query(default=0, ge=0, description="Filter by Drone Shop order id"),
+    trace_id: str = Query(default="", max_length=64, description="Filter by OCI APM trace id"),
+    gateway_request_id: str = Query(default="", max_length=128, description="Filter by payment gateway request id"),
+    limit: int = Query(default=50, ge=1, le=200, description="Maximum events to return"),
+):
+    """Token-safe payment gateway event drilldown for APM/log correlation."""
+    user = require_authenticated_or_internal_service(request)
+    safe_trace_id = _safe_filter_value(trace_id, 64)
+    safe_gateway_request_id = _safe_filter_value(gateway_request_id, 128)
+    tracer = get_tracer(cfg.otel_service_name)
+    trace_ctx = current_trace_context()
+
+    with tracer.start_as_current_span("observability.payment_gateway.events") as span:
+        span.set_attribute("payment.gateway.filter.order_id", int(order_id or 0))
+        span.set_attribute("payment.gateway.filter.trace_id", safe_trace_id or "all")
+        span.set_attribute("payment.gateway.filter.request_id", safe_gateway_request_id or "all")
+        span.set_attribute("auth.role", str(user.get("role", "unknown")))
+
+        events = await _payment_gateway_events(
+            order_id=int(order_id or 0),
+            trace_id=safe_trace_id,
+            gateway_request_id=safe_gateway_request_id,
+            limit=int(limit),
+        )
+        summary = _payment_gateway_event_summary(events)
+        span.set_attribute("payment.gateway.event_count", len(events))
+        span.set_attribute("payment.gateway.order_count", len(summary["order_ids"]))
+        push_log(
+            "INFO",
+            "Payment gateway observability events queried",
+            **{
+                "payment.gateway.event_count": len(events),
+                "payment.gateway.filter.order_id": int(order_id or 0),
+                "payment.gateway.filter.trace_id": safe_trace_id or "all",
+                "payment.gateway.filter.request_id": safe_gateway_request_id or "all",
+                "auth.role": str(user.get("role", "unknown")),
+            },
+        )
+        return {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "correlation": {
+                "trace_id": trace_ctx["trace_id"],
+                "span_id": trace_ctx["span_id"],
+                "traceparent": trace_ctx["traceparent"],
+            },
+            "filters": {
+                "order_id": int(order_id or 0) or None,
+                "trace_id": safe_trace_id or None,
+                "gateway_request_id": safe_gateway_request_id or None,
+                "limit": int(limit),
+            },
+            "summary": summary,
+            "events": events,
+        }
 
 
 @router.get("/capabilities")
@@ -247,6 +319,7 @@ def _observability_capabilities() -> dict:
             },
             "payment_gateway": {
                 "enabled": cfg.payment_gateway_simulation_enabled,
+                "event_drilldown_endpoint": "/api/observability/payment-gateway/events",
                 "java_app_server_enabled": cfg.java_apm_enabled,
                 **payment_gateway_capabilities(),
             },
@@ -266,6 +339,7 @@ def _observability_capabilities() -> dict:
         "endpoints": {
             "dashboard": "/api/observability/360",
             "capabilities": "/api/observability/capabilities",
+            "payment_gateway_events": "/api/observability/payment-gateway/events",
             "metrics": "/metrics",
             "readiness": "/ready",
             "integration_status": "/api/integrations/status",
@@ -282,6 +356,140 @@ def _observability_capabilities() -> dict:
             "raw_synthetic_user_email_in_http_headers": False,
         },
     }
+
+
+async def _payment_gateway_events(
+    *,
+    order_id: int,
+    trace_id: str,
+    gateway_request_id: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    row_limit = max(1, min(int(limit or 50), 200))
+    query = text(
+        f"""
+        SELECT e.id, e.order_id, e.gateway_name, e.gateway_provider, e.gateway_request_id,
+               e.payment_method, e.wallet_type, e.card_brand, e.card_last4, e.payment_network,
+               e.step_name, e.step_phase, e.step_status, e.step_index, e.latency_ms,
+               e.trace_id, e.span_id, e.metadata_json, e.created_at,
+               o.status AS order_status, o.payment_status AS order_payment_status,
+               o.payment_required AS order_payment_required,
+               o.payment_provider_reference AS order_payment_provider_reference,
+               o.payment_paid_at AS order_payment_paid_at
+        FROM payment_gateway_events e
+        LEFT JOIN orders o ON o.id = e.order_id
+        WHERE (:order_id = 0 OR e.order_id = :order_id)
+          AND (:trace_id = '' OR e.trace_id = :trace_id)
+          AND (:gateway_request_id = '' OR e.gateway_request_id = :gateway_request_id)
+        ORDER BY e.created_at DESC, e.gateway_request_id, e.step_index ASC
+        FETCH FIRST {row_limit} ROWS ONLY
+        """
+    )
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            query,
+            {
+                "order_id": int(order_id or 0),
+                "trace_id": trace_id,
+                "gateway_request_id": gateway_request_id,
+            },
+        )
+        return [_serialize_payment_gateway_event(dict(row)) for row in result.mappings().all()]
+
+
+def _serialize_payment_gateway_event(row: dict[str, Any]) -> dict[str, Any]:
+    created_at = row.get("created_at")
+    paid_at = row.get("order_payment_paid_at")
+    return {
+        "id": row.get("id"),
+        "order_id": row.get("order_id"),
+        "gateway": {
+            "name": row.get("gateway_name") or "",
+            "provider": row.get("gateway_provider") or "",
+            "request_id": row.get("gateway_request_id") or "",
+        },
+        "payment": {
+            "method": row.get("payment_method") or "",
+            "wallet_type": row.get("wallet_type") or "",
+            "card_brand": row.get("card_brand") or "",
+            "card_last4": row.get("card_last4") or "",
+            "network": row.get("payment_network") or "",
+        },
+        "step": {
+            "name": row.get("step_name") or "",
+            "phase": row.get("step_phase") or "",
+            "status": row.get("step_status") or "",
+            "index": int(row.get("step_index") or 0),
+            "latency_ms": round(float(row.get("latency_ms") or 0), 2),
+        },
+        "trace": {
+            "trace_id": row.get("trace_id") or "",
+            "span_id": row.get("span_id") or "",
+        },
+        "order": {
+            "status": row.get("order_status") or "",
+            "payment_status": row.get("order_payment_status") or "",
+            "payment_required": _boolish(row.get("order_payment_required")),
+            "payment_provider_reference": row.get("order_payment_provider_reference") or "",
+            "payment_paid_at": paid_at.isoformat() if hasattr(paid_at, "isoformat") else paid_at,
+        },
+        "metadata": _scrub_gateway_metadata(row.get("metadata_json") or ""),
+        "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
+    }
+
+
+def _payment_gateway_event_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
+    sorted_events = sorted(events, key=lambda item: int(item["step"]["index"] or 0))
+    return {
+        "event_count": len(events),
+        "order_ids": sorted({int(event["order_id"]) for event in events if event.get("order_id")}),
+        "gateway_request_ids": sorted(
+            {event["gateway"]["request_id"] for event in events if event["gateway"].get("request_id")}
+        ),
+        "trace_ids": sorted({event["trace"]["trace_id"] for event in events if event["trace"].get("trace_id")}),
+        "methods": sorted({event["payment"]["method"] for event in events if event["payment"].get("method")}),
+        "step_names": [event["step"]["name"] for event in sorted_events],
+        "statuses": sorted({event["step"]["status"] for event in events if event["step"].get("status")}),
+    }
+
+
+def _safe_filter_value(value: str, limit: int) -> str:
+    return "".join(
+        ch for ch in str(value or "").strip()[:limit] if ch.isalnum() or ch in "._:-"
+    )
+
+
+def _boolish(value: Any) -> bool:
+    return str(value if value is not None else "0").strip().lower() not in {"", "0", "false", "no"}
+
+
+def _scrub_gateway_metadata(raw_metadata: str) -> dict[str, Any]:
+    if not raw_metadata:
+        return {}
+    try:
+        decoded = json.loads(raw_metadata)
+    except json.JSONDecodeError:
+        return {"metadata_parse_error": "invalid_json"}
+    if not isinstance(decoded, dict):
+        return {}
+    return _scrub_metadata_value(decoded)
+
+
+def _scrub_metadata_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _scrub_metadata_value(item)
+            for key, item in value.items()
+            if not _is_sensitive_metadata_key(str(key))
+        }
+    if isinstance(value, list):
+        return [_scrub_metadata_value(item) for item in value[:50]]
+    return value
+
+
+def _is_sensitive_metadata_key(key: str) -> bool:
+    normalized = key.lower()
+    return any(fragment in normalized for fragment in _SENSITIVE_METADATA_KEY_FRAGMENTS)
 
 
 async def _app_health_summary() -> dict:

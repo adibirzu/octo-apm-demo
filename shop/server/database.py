@@ -450,6 +450,7 @@ class Order(Base):
     payment_paid_at = Column(DateTime, nullable=True)
     payment_provider = Column(String(50), nullable=True)
     payment_provider_reference = Column(String(128), nullable=True, index=True)
+    payment_gateway_request_id = Column(String(128), nullable=True, index=True)
     checkout_idempotency_key = Column(String(128), nullable=True)
     notes = Column(Text)
     shipping_address = Column(Text)
@@ -885,6 +886,7 @@ def _ensure_missing_columns(engine) -> None:
             "payment_required": "NUMBER(1) DEFAULT 1" if dialect == "oracle" else "INTEGER DEFAULT 1",
             "payment_paid_at": "TIMESTAMP",
             "checkout_idempotency_key": "VARCHAR2(128 CHAR)" if dialect == "oracle" else "VARCHAR(128)",
+            "payment_gateway_request_id": "VARCHAR2(128 CHAR)" if dialect == "oracle" else "VARCHAR(128)",
         }
         for col_name, col_type in order_migrations.items():
             if col_name not in order_cols:
@@ -920,6 +922,18 @@ def _ensure_missing_columns(engine) -> None:
                         logger.info("Added unique index orders.checkout_idempotency_key")
                 except Exception:
                     logger.debug("Unique index orders.checkout_idempotency_key may already exist", exc_info=True)
+            if "payment_gateway_request_id" in refreshed_order_cols and "ix_orders_payment_gateway_request_id" not in existing_indexes:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(
+                            text(
+                                "CREATE INDEX ix_orders_payment_gateway_request_id "
+                                "ON orders (payment_gateway_request_id)"
+                            )
+                        )
+                        logger.info("Added index orders.payment_gateway_request_id")
+                except Exception:
+                    logger.debug("Index orders.payment_gateway_request_id may already exist", exc_info=True)
 
     if "invoices" in table_names:
         invoice_cols = {col["name"] for col in insp.get_columns("invoices")}

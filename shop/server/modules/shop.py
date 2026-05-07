@@ -338,6 +338,7 @@ async def checkout(payload: dict, request: Request):
                 "payment_status": order_result["order"].get("payment_status", "pending"),
                 "order_status": order_result["order"].get("status", "payment_pending"),
                 "payment_required": str(order_result["order"].get("payment_required", 1)),
+                "payment_gateway_request_id": str(order_result["order"].get("payment_gateway_request_id") or ""),
             }
             if not order_result.get("idempotent_replay"):
                 payment_result = await authorize_simulated_payment(
@@ -351,14 +352,22 @@ async def checkout(payload: dict, request: Request):
                     db=db,
                 )
                 if payment_result.get("status") not in {"skipped", "unreachable"}:
+                    payment_gateway_request_id = str((payment_result.get("payment_gateway") or {}).get("request_id") or "")
                     order_payment_state = await update_order_payment_state(
                         db,
                         order_id=order_result["order"]["id"],
                         payment_provider=str(payment_result.get("provider") or "simulated"),
                         payment_provider_reference=str(payment_result.get("provider_reference") or ""),
                         payment_status=str(payment_result.get("status") or "pending"),
+                        payment_gateway_request_id=payment_gateway_request_id,
                     )
 
+        payment_gateway_request_id = str(
+            (payment_result.get("payment_gateway") or {}).get("request_id")
+            or order_payment_state.get("payment_gateway_request_id")
+            or order_result["order"].get("payment_gateway_request_id")
+            or ""
+        )
         crm_order_sync = await sync_order_to_crm(
             order_id=order_result["order"]["id"],
             customer_email=customer["email"],
@@ -369,7 +378,7 @@ async def checkout(payload: dict, request: Request):
             payment_method=str(payment_result.get("method") or payload.get("payment_method", "unknown")),
             payment_provider=str(payment_result.get("provider") or ""),
             payment_provider_reference=str(payment_result.get("provider_reference") or ""),
-            payment_gateway_request_id=str((payment_result.get("payment_gateway") or {}).get("request_id") or ""),
+            payment_gateway_request_id=payment_gateway_request_id,
         )
         span.set_attribute("orders.order_id", order_result["order"]["id"])
         span.set_attribute("orders.total", order_result["total"])
@@ -385,6 +394,7 @@ async def checkout(payload: dict, request: Request):
         span.set_attribute("browser.trace_id", str(payload.get("browser_trace_id") or ""))
         span.set_attribute("payment.simulation.status", payment_result.get("status", "unknown"))
         span.set_attribute("payment.provider", payment_result.get("provider", "unknown"))
+        span.set_attribute("payment.gateway.request_id", payment_gateway_request_id)
         span.set_attribute("payment.card_brand", payment_result.get("card_brand", ""))
         span.set_attribute("payment.card_last4", payment_result.get("card_last4", ""))
         span.set_attribute("payment.wallet_type", payment_result.get("wallet_type", ""))
@@ -412,6 +422,7 @@ async def checkout(payload: dict, request: Request):
                 "auth.user_id": int(checkout_user["id"]) if checkout_user else 0,
                 "payment.simulation.status": payment_result.get("status", "unknown"),
                 "payment.provider": payment_result.get("provider", "unknown"),
+                "payment.gateway.request_id": payment_gateway_request_id,
                 "payment.method": payment_result.get("method", payload.get("payment_method", "unknown")),
                 "payment.card_brand": payment_result.get("card_brand", ""),
                 "payment.card_last4": payment_result.get("card_last4", ""),

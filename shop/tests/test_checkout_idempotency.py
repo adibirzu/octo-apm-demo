@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from server.store_service import normalize_checkout_idempotency_key, place_order
+from server.store_service import normalize_checkout_idempotency_key, place_order, update_order_payment_state
 
 
 class _Mappings:
@@ -70,7 +70,9 @@ class _FakeDb:
                         {
                             "payment_provider": params["payment_provider"],
                             "payment_provider_reference": params["payment_provider_reference"],
+                            "payment_gateway_request_id": params["payment_gateway_request_id"],
                             "payment_status": params["payment_status"],
+                            "payment_required": params["payment_required"],
                             "status": params["status"],
                         }
                     )
@@ -144,3 +146,34 @@ def test_place_order_reuses_existing_order_for_same_checkout_key() -> None:
     assert db.order_insert_count == 1
     assert first["order"]["id"] == replay["order"]["id"]
     assert replay["idempotent_replay"] is True
+
+
+def test_update_order_payment_state_persists_gateway_request_id() -> None:
+    db = _FakeDb()
+    db.orders.append(
+        {
+            "id": 9,
+            "customer_id": 7,
+            "total": 100.0,
+            "status": "payment_pending",
+            "payment_status": "pending",
+            "payment_required": 1,
+            "checkout_idempotency_key": "550e8400-e29b-41d4-a716-446655440009",
+        }
+    )
+
+    state = asyncio.run(
+        update_order_payment_state(
+            db,
+            order_id=9,
+            payment_provider="simulated-google-pay",
+            payment_provider_reference="pi_9",
+            payment_status="authorized",
+            payment_gateway_request_id="pgw-9-abc123",
+        )
+    )
+
+    assert state["payment_status"] == "paid"
+    assert state["payment_required"] == "0"
+    assert state["payment_gateway_request_id"] == "pgw-9-abc123"
+    assert db.orders[0]["payment_gateway_request_id"] == "pgw-9-abc123"

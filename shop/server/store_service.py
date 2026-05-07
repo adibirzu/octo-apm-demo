@@ -145,7 +145,8 @@ async def _existing_order_for_checkout_key(db, checkout_idempotency_key: str) ->
     order_lookup = await db.execute(
         text(
             "SELECT id, customer_id, user_id, total, status, payment_method, payment_status, "
-            "payment_required, payment_provider, payment_provider_reference, payment_paid_at, created_at "
+            "payment_required, payment_provider, payment_provider_reference, payment_gateway_request_id, "
+            "payment_paid_at, created_at "
             "FROM orders WHERE checkout_idempotency_key = :key FETCH FIRST 1 ROWS ONLY"
         ),
         {"key": checkout_idempotency_key},
@@ -249,7 +250,8 @@ async def place_order(
     order_lookup = await db.execute(
         text(
             "SELECT id, customer_id, user_id, total, status, payment_method, payment_status, "
-            "payment_required, payment_provider, payment_provider_reference, payment_paid_at, created_at "
+            "payment_required, payment_provider, payment_provider_reference, payment_gateway_request_id, "
+            "payment_paid_at, created_at "
             "FROM orders "
             "WHERE checkout_idempotency_key = :checkout_idempotency_key FETCH FIRST 1 ROWS ONLY"
         ),
@@ -330,6 +332,7 @@ async def update_order_payment_state(
     payment_provider: str,
     payment_provider_reference: str,
     payment_status: str,
+    payment_gateway_request_id: str = "",
 ) -> dict[str, str]:
     """Persist payment simulation/provider details on an order."""
     normalized_payment_status = (payment_status or "pending").lower()
@@ -353,6 +356,7 @@ async def update_order_payment_state(
         text(
             "UPDATE orders SET payment_provider = :payment_provider, "
             "payment_provider_reference = :payment_provider_reference, "
+            "payment_gateway_request_id = COALESCE(NULLIF(:payment_gateway_request_id, ''), payment_gateway_request_id), "
             "payment_status = :payment_status, payment_required = :payment_required, "
             f"payment_paid_at = {payment_paid_at_expr}, status = :status "
             "WHERE id = :order_id"
@@ -361,6 +365,7 @@ async def update_order_payment_state(
             "order_id": order_id,
             "payment_provider": payment_provider,
             "payment_provider_reference": payment_provider_reference,
+            "payment_gateway_request_id": payment_gateway_request_id,
             "payment_status": stored_payment_status,
             "payment_required": payment_required,
             "status": order_status,
@@ -370,4 +375,5 @@ async def update_order_payment_state(
         "payment_status": stored_payment_status,
         "order_status": order_status,
         "payment_required": str(payment_required),
+        "payment_gateway_request_id": payment_gateway_request_id,
     }

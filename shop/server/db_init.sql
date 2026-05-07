@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_paid_at TIMESTAMP,
     payment_provider VARCHAR(50),
     payment_provider_reference VARCHAR(128),
+    payment_gateway_request_id VARCHAR(128),
     checkout_idempotency_key VARCHAR(128),
     notes TEXT,
     shipping_address TEXT,
@@ -57,6 +58,8 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX IF NOT EXISTS ix_orders_payment_provider_reference
     ON orders (payment_provider_reference);
+CREATE INDEX IF NOT EXISTS ix_orders_payment_gateway_request_id
+    ON orders (payment_gateway_request_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_orders_checkout_key
     ON orders (checkout_idempotency_key);
 
