@@ -12,6 +12,7 @@ from opentelemetry import trace
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
+from server.auth_security import SESSION_COOKIE_NAME, require_authenticated_user
 from server.config import cfg
 from server.database import get_db
 from server.genai_service import chat_with_documents, genai_configured
@@ -65,6 +66,29 @@ def _trace_id() -> str:
     if span and span.get_span_context().trace_id:
         return format(span.get_span_context().trace_id, "032x")
     return ""
+
+
+def _request_has_auth_token(request: Request) -> bool:
+    auth_header = request.headers.get("Authorization", "").strip()
+    return auth_header.startswith("Bearer ") or bool(request.cookies.get(SESSION_COOKIE_NAME, "").strip())
+
+
+def _payment_required_flag(value: Any) -> bool:
+    return str(value if value is not None else 1).strip().lower() not in {"0", "false", "no"}
+
+
+async def _optional_checkout_user(db, request: Request) -> dict[str, Any] | None:
+    if not _request_has_auth_token(request):
+        return None
+    token_payload = require_authenticated_user(request)
+    result = await db.execute(
+        text("SELECT id, username, email, role FROM users WHERE id = :id AND is_active = 1"),
+        {"id": int(token_payload["sub"])},
+    )
+    row = result.mappings().first()
+    if not row:
+        raise HTTPException(status_code=401, detail="Authenticated checkout user was not found")
+    return dict(row)
 
 
 def _safe_card_summary(card: dict | None) -> dict[str, str]:
@@ -278,10 +302,19 @@ async def checkout(payload: dict, request: Request):
                 business_metrics.record_checkout(success=False)
                 return {"error": "Cart is empty", "session_id": session_id}
 
+            checkout_user = await _optional_checkout_user(db, request)
+            if checkout_user:
+                span.set_attribute("auth.user_id", int(checkout_user["id"]))
+                span.set_attribute("auth.username", str(checkout_user["username"]))
+                span.set_attribute("auth.role", str(checkout_user["role"]))
+            default_email = str(checkout_user["email"]) if checkout_user else "buyer@octo.local"
+            default_name = str(checkout_user["username"]) if checkout_user else "OCTO Buyer"
+            customer_email = str(payload.get("customer_email") or default_email)
+            customer_name = str(payload.get("customer_name") or default_name)
             customer = await ensure_customer(
                 db,
-                name=payload.get("customer_name", "OCTO Buyer"),
-                email=payload.get("customer_email", "buyer@octo.local"),
+                name=customer_name,
+                email=customer_email,
                 phone=payload.get("customer_phone", ""),
                 company=payload.get("company", ""),
                 industry=payload.get("industry", "Drone Operations"),
@@ -298,8 +331,14 @@ async def checkout(payload: dict, request: Request):
                 source="shop_checkout",
                 trace_id=_trace_id(),
                 checkout_idempotency_key=checkout_idempotency_key,
+                user_id=int(checkout_user["id"]) if checkout_user else None,
             )
             payment_result = {"status": "skipped", "reason": "idempotent replay"}
+            order_payment_state = {
+                "payment_status": order_result["order"].get("payment_status", "pending"),
+                "order_status": order_result["order"].get("status", "payment_pending"),
+                "payment_required": str(order_result["order"].get("payment_required", 1)),
+            }
             if not order_result.get("idempotent_replay"):
                 payment_result = await authorize_simulated_payment(
                     order_id=order_result["order"]["id"],
@@ -312,7 +351,7 @@ async def checkout(payload: dict, request: Request):
                     db=db,
                 )
                 if payment_result.get("status") not in {"skipped", "unreachable"}:
-                    await update_order_payment_state(
+                    order_payment_state = await update_order_payment_state(
                         db,
                         order_id=order_result["order"]["id"],
                         payment_provider=str(payment_result.get("provider") or "simulated"),
@@ -325,6 +364,12 @@ async def checkout(payload: dict, request: Request):
             customer_email=customer["email"],
             total=order_result["total"],
             source="shop_checkout",
+            payment_status=str(order_payment_state.get("payment_status") or payment_result.get("status") or "pending"),
+            payment_required=_payment_required_flag(order_payment_state.get("payment_required")),
+            payment_method=str(payment_result.get("method") or payload.get("payment_method", "unknown")),
+            payment_provider=str(payment_result.get("provider") or ""),
+            payment_provider_reference=str(payment_result.get("provider_reference") or ""),
+            payment_gateway_request_id=str((payment_result.get("payment_gateway") or {}).get("request_id") or ""),
         )
         span.set_attribute("orders.order_id", order_result["order"]["id"])
         span.set_attribute("orders.total", order_result["total"])
@@ -333,7 +378,11 @@ async def checkout(payload: dict, request: Request):
         span.set_attribute("orders.discount", float(order_result.get("coupon", {}).get("discount") or 0))
         span.set_attribute("orders.shipping_cost", float(order_result.get("shipping_cost") or 0))
         span.set_attribute("orders.idempotent_replay", bool(order_result.get("idempotent_replay")))
+        span.set_attribute("orders.payment_required", _payment_required_flag(order_payment_state.get("payment_required")))
+        span.set_attribute("orders.payment_status", str(order_payment_state.get("payment_status") or "pending"))
+        span.set_attribute("orders.status", str(order_payment_state.get("order_status") or order_result["order"].get("status", "unknown")))
         span.set_attribute("shop.payment_method", payload.get("payment_method", "unknown"))
+        span.set_attribute("browser.trace_id", str(payload.get("browser_trace_id") or ""))
         span.set_attribute("payment.simulation.status", payment_result.get("status", "unknown"))
         span.set_attribute("payment.provider", payment_result.get("provider", "unknown"))
         span.set_attribute("payment.card_brand", payment_result.get("card_brand", ""))
@@ -344,7 +393,7 @@ async def checkout(payload: dict, request: Request):
         span.set_attribute("shop.coupon_code", payload.get("coupon_code", "") or "none")
         span.set_attribute("shop.session_id", session_id)
         span.set_attribute("customer.company", payload.get("company", "") or "")
-        span.set_attribute("customer.email_domain", (payload.get("customer_email") or "").split("@")[-1] or "unknown")
+        span.set_attribute("customer.email_domain", customer_email.split("@")[-1] if "@" in customer_email else "unknown")
         span.set_attribute("integration.crm_order_synced", bool(crm_order_sync.get("synced")))
         business_metrics.record_checkout(success=True)
         if not order_result.get("idempotent_replay"):
@@ -357,6 +406,10 @@ async def checkout(payload: dict, request: Request):
                 "orders.total": order_result["total"],
                 "orders.source": "shop_checkout",
                 "orders.idempotent_replay": bool(order_result.get("idempotent_replay")),
+                "orders.payment_required": _payment_required_flag(order_payment_state.get("payment_required")),
+                "orders.payment_status": str(order_payment_state.get("payment_status") or "pending"),
+                "orders.status": str(order_payment_state.get("order_status") or order_result["order"].get("status", "unknown")),
+                "auth.user_id": int(checkout_user["id"]) if checkout_user else 0,
                 "payment.simulation.status": payment_result.get("status", "unknown"),
                 "payment.provider": payment_result.get("provider", "unknown"),
                 "payment.method": payment_result.get("method", payload.get("payment_method", "unknown")),
@@ -367,6 +420,7 @@ async def checkout(payload: dict, request: Request):
                 "payment.decision_source": payment_result.get("decision_source", "none"),
                 "payment.antifraud_reasons": ",".join(payment_result.get("risk_reasons") or []),
                 "shop.session_id": session_id,
+                "browser.trace_id": str(payload.get("browser_trace_id") or ""),
                 "integration.crm_order_synced": bool(crm_order_sync.get("synced")),
             },
         )
@@ -380,6 +434,15 @@ async def checkout(payload: dict, request: Request):
             "total": order_result["total"],
             "session_id": session_id,
             "idempotent_replay": bool(order_result.get("idempotent_replay")),
+            "trace_id": _trace_id(),
+            "order_status": str(order_payment_state.get("order_status") or order_result["order"].get("status", "")),
+            "payment_status": str(order_payment_state.get("payment_status") or "pending"),
+            "payment_required": _payment_required_flag(order_payment_state.get("payment_required")),
+            "authenticated_user": {
+                "id": checkout_user["id"],
+                "username": checkout_user["username"],
+                "email": checkout_user["email"],
+            } if checkout_user else None,
             "payment": {
                 "status": payment_result.get("status", "skipped"),
                 "provider": payment_result.get("provider", ""),

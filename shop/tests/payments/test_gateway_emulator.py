@@ -77,3 +77,6 @@ def test_payment_gateway_capabilities_are_token_safe() -> None:
     assert capabilities["safe_storage"] == "tokenized_metadata_only"
     assert "payment_gateway_events" in capabilities["stores"]
     assert "google_pay" in capabilities["steps_by_method"]
+    assert "verification_antifraud_request" in capabilities["steps_by_method"]["google_pay"]
+    assert "verification_antifraud_response" in capabilities["steps_by_method"]["apple_pay"]
+    assert "processor_authorization_request" in capabilities["steps_by_method"]["credit_card"]

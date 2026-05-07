@@ -48,6 +48,8 @@ def _merge_java_decision(
 ) -> SimulatedPaymentDecision:
     if java_result.get("status") != "ok":
         return local
+    if local.status in {"declined", "timeout"}:
+        return local
     data = java_result.get("data") or {}
     decision = str(data.get("decision") or "").lower()
     if decision not in {"approved", "declined", "timeout"}:
@@ -83,6 +85,11 @@ def _apply_antifraud_decision(
         )
 
     if context.should_decline:
+        decision_source = (
+            decision.decision_source
+            if str(decision.decision_source).startswith("java-antifraud")
+            else "internal-antifraud"
+        )
         return SimulatedPaymentDecision(
             provider_reference=decision.provider_reference,
             status="declined",
@@ -90,8 +97,53 @@ def _apply_antifraud_decision(
             latency_ms=decision.latency_ms,
             amount_minor_units=decision.amount_minor_units,
             currency=decision.currency,
-            error_code="ANTIFRAUD_DECLINED",
-            decision_source="internal-antifraud",
+            error_code=decision.error_code or "ANTIFRAUD_DECLINED",
+            decision_source=decision_source,
+        )
+    return SimulatedPaymentDecision(
+        provider_reference=decision.provider_reference,
+        status=decision.status,
+        risk_score=risk_score,
+        latency_ms=decision.latency_ms,
+        amount_minor_units=decision.amount_minor_units,
+        currency=decision.currency,
+        error_code=decision.error_code,
+        decision_source=decision.decision_source,
+    )
+
+
+def _merge_verification_decision(
+    decision: SimulatedPaymentDecision,
+    verification_result: dict[str, Any],
+) -> SimulatedPaymentDecision:
+    if verification_result.get("status") != "ok":
+        return decision
+
+    data = verification_result.get("data") or {}
+    verification_decision = str(data.get("decision") or "").lower()
+    verification_risk_score = int(data.get("risk_score") or decision.risk_score)
+    risk_score = max(int(decision.risk_score), verification_risk_score)
+    if verification_decision == "declined":
+        return SimulatedPaymentDecision(
+            provider_reference=decision.provider_reference,
+            status="declined",
+            risk_score=risk_score,
+            latency_ms=int(data.get("latency_ms") or decision.latency_ms),
+            amount_minor_units=decision.amount_minor_units,
+            currency=decision.currency,
+            error_code=str(data.get("error_code") or "ANTIFRAUD_DECLINED"),
+            decision_source="java-antifraud-verification-app",
+        )
+    if verification_decision == "review":
+        return SimulatedPaymentDecision(
+            provider_reference=decision.provider_reference,
+            status=decision.status,
+            risk_score=risk_score,
+            latency_ms=max(int(data.get("latency_ms") or 0), int(decision.latency_ms)),
+            amount_minor_units=decision.amount_minor_units,
+            currency=decision.currency,
+            error_code=decision.error_code,
+            decision_source="java-antifraud-review",
         )
     return SimulatedPaymentDecision(
         provider_reference=decision.provider_reference,
@@ -177,6 +229,8 @@ async def authorize_simulated_payment(
             java_client=JavaAppServerClient(),
         )
         java_result = gateway_result.java_result
+        verification_result = gateway_result.verification_result
+        decision = _merge_verification_decision(decision, verification_result)
         decision = _merge_java_decision(decision, java_result)
         decision = _apply_antifraud_decision(decision, payment_context)
         final_gateway_step = await emit_final_gateway_decision(
@@ -201,6 +255,10 @@ async def authorize_simulated_payment(
             },
         )
         span.set_attribute("payment.java_app_server.status", java_result.get("status", "unknown"))
+        span.set_attribute("payment.verification.status", verification_result.get("status", "unknown"))
+        verification_data = verification_result.get("data") or {}
+        span.set_attribute("payment.verification.decision", verification_data.get("decision", "unknown"))
+        span.set_attribute("payment.verification.provider", verification_data.get("verification_provider", "octo-antifraud-verification-app"))
         if decision.status != "authorized":
             span.set_attribute("otel.status_code", "ERROR")
         business_metrics.record_payment_authorization(
@@ -242,6 +300,9 @@ async def authorize_simulated_payment(
                 **payment_context.safe_fields(),
                 "payment.amount_bucket": _amount_bucket(amount_minor_units),
                 "payment.java_app_server.status": java_result.get("status", "unknown"),
+                "payment.verification.status": verification_result.get("status", "unknown"),
+                "payment.verification.decision": verification_data.get("decision", "unknown"),
+                "payment.verification.provider": verification_data.get("verification_provider", "octo-antifraud-verification-app"),
                 "payment.gateway.name": gateway_result.response_fields()["gateway"],
                 "payment.gateway.provider": gateway_result.gateway_provider,
                 "payment.gateway.request_id": gateway_result.gateway_request_id,

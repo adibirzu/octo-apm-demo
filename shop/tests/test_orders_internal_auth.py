@@ -49,7 +49,7 @@ class _FakeResult:
 
 
 class _FakeDb:
-    async def execute(self, query):
+    async def execute(self, query, params=None):
         return _FakeResult()
 
 

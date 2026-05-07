@@ -46,6 +46,7 @@ class PaymentContext:
             "invalid_cvv",
             "missing_wallet_token",
             "unsupported_card_network",
+            "issuer_decline_test_card",
         }
         return self.risk_score >= 85 or bool(blocking.intersection(self.risk_reasons))
 
@@ -172,6 +173,8 @@ def _card_context(details: dict[str, Any], *, amount_minor_units: int, customer_
             reasons.append("invalid_luhn")
         if brand not in {"visa", "mastercard"}:
             reasons.append("unsupported_card_network")
+        if number in {"4000000000000002", "5105105105105100"}:
+            reasons.append("issuer_decline_test_card")
     else:
         reasons.append("legacy_no_card_details")
 
@@ -247,6 +250,7 @@ def _score_risk(*, amount_minor_units: int, customer_email: str, reasons: list[s
         "unsupported_wallet_network": 20,
         "missing_expiry": 20,
         "legacy_no_card_details": 0,
+        "issuer_decline_test_card": 90,
     }
     score += sum(reason_weights.get(reason, 5) for reason in reasons)
     if postal_code and not re.fullmatch(r"[a-zA-Z0-9 -]{3,12}", postal_code):

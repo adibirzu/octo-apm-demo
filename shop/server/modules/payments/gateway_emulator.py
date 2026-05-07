@@ -56,15 +56,24 @@ class PaymentGatewayResult:
     gateway_request_id: str
     gateway_provider: str
     payment_network: str
+    verification_result: dict[str, Any]
     java_result: dict[str, Any]
     steps: tuple[PaymentGatewayStep, ...]
 
     def response_fields(self) -> dict[str, Any]:
+        verification_data = self.verification_result.get("data") or {}
         return {
             "gateway": GATEWAY_NAME,
             "provider": self.gateway_provider,
             "request_id": self.gateway_request_id,
             "payment_network": self.payment_network,
+            "verification": {
+                "provider": verification_data.get("verification_provider", "octo-antifraud-verification-app"),
+                "status": self.verification_result.get("status", "unknown"),
+                "decision": verification_data.get("decision", ""),
+                "risk_score": verification_data.get("risk_score", 0),
+                "error_code": verification_data.get("error_code", ""),
+            },
             "steps": [step.response_fields() for step in self.steps],
         }
 
@@ -78,9 +87,9 @@ def payment_gateway_capabilities() -> dict[str, Any]:
         "card_networks": ["visa", "mastercard"],
         "wallets": ["apple_pay", "google_pay"],
         "steps_by_method": {
-            "google_pay": [step.name for step in _google_pay_steps()],
-            "apple_pay": [step.name for step in _apple_pay_steps()],
-            "credit_card": [step.name for step in _card_steps("visa")],
+            "google_pay": _capability_step_names(_google_pay_steps()),
+            "apple_pay": _capability_step_names(_apple_pay_steps()),
+            "credit_card": _capability_step_names(_card_steps("visa")),
         },
         "stores": ["payment_transactions", "payment_gateway_events"],
         "safe_storage": "tokenized_metadata_only",
@@ -93,6 +102,19 @@ def build_gateway_steps(context: PaymentContext) -> tuple[PaymentGatewayStep, ..
     if context.method == "apple_pay":
         return tuple(_apple_pay_steps())
     return tuple(_card_steps(context.card_brand or "card"))
+
+
+def _capability_step_names(method_steps: list[PaymentGatewayStep]) -> list[str]:
+    return [
+        step.name
+        for step in [
+            *method_steps,
+            *_verification_steps(),
+            *_processor_steps(),
+            *_network_steps(),
+            *_final_steps(),
+        ]
+    ]
 
 
 async def emulate_payment_gateway_authorization(
@@ -148,13 +170,13 @@ async def emulate_payment_gateway_authorization(
         emitted.append(
             _emit_step(
                 PaymentGatewayStep(
-                    name="processor_authorization_request",
-                    phase="processor",
-                    message="Payment gateway forwarded the authorization request to the simulated processor",
+                    name="verification_antifraud_request",
+                    phase="verification",
+                    message="Payment gateway sent transaction metadata to the antifraud verification app",
                     attributes={
-                        "payment.processor.name": "octo-java-app-server",
-                        "payment.gateway.authorization_type": "authorization",
+                        "payment.verification.provider": "octo-antifraud-verification-app",
                         "payment.idempotency_key_hash": idempotency_key_hash,
+                        "payment.antifraud.input_score": context.risk_score,
                     },
                 ),
                 order_id=order_id,
@@ -166,6 +188,72 @@ async def emulate_payment_gateway_authorization(
                 step_index=len(emitted) + 1,
             )
         )
+        verification_result = await java.verify_payment(
+            order_id=order_id,
+            amount_minor_units=amount_minor_units,
+            currency=currency,
+            customer_email=customer_email,
+            idempotency_key_hash=idempotency_key_hash,
+            payment_method=context.method,
+            payment_network=network,
+            context_risk_score=context.risk_score,
+            risk_reasons=",".join(context.risk_reasons),
+        )
+        verification_data = verification_result.get("data") or {}
+        verification_decision = str(verification_data.get("decision") or "")
+        verification_status = "completed" if verification_result.get("status") == "ok" else str(verification_result.get("status") or "error")
+        if verification_decision == "declined":
+            verification_status = "declined"
+        elif verification_decision == "review":
+            verification_status = "review"
+        emitted.append(
+            _emit_step(
+                PaymentGatewayStep(
+                    name="verification_antifraud_response",
+                    phase="verification",
+                    message="Payment gateway received antifraud verification decision",
+                    status=verification_status,
+                    attributes={
+                        "payment.verification.provider": verification_data.get("verification_provider", "octo-antifraud-verification-app"),
+                        "payment.verification.status": verification_result.get("status", "unknown"),
+                        "payment.verification.decision": verification_decision,
+                        "payment.verification.risk_score": int(verification_data.get("risk_score") or 0),
+                        "payment.verification.error_code": verification_data.get("error_code", ""),
+                        "payment.verification.periodic_review": bool(verification_data.get("periodic_review") or False),
+                        "payment.verification.latency_ms": verification_result.get("latency_ms", 0),
+                    },
+                ),
+                order_id=order_id,
+                amount_minor_units=amount_minor_units,
+                currency=currency,
+                context=context,
+                gateway_request_id=gateway_request_id,
+                network=network,
+                step_index=len(emitted) + 1,
+            )
+        )
+
+        for processor_step in _processor_steps()[:1]:
+            emitted.append(
+                _emit_step(
+                    replace(
+                        processor_step,
+                        attributes={
+                            "payment.processor.name": "octo-java-app-server",
+                            "payment.gateway.authorization_type": "authorization",
+                            "payment.idempotency_key_hash": idempotency_key_hash,
+                            "payment.verification.decision": verification_decision,
+                        },
+                    ),
+                    order_id=order_id,
+                    amount_minor_units=amount_minor_units,
+                    currency=currency,
+                    context=context,
+                    gateway_request_id=gateway_request_id,
+                    network=network,
+                    step_index=len(emitted) + 1,
+                )
+            )
         java_result = await java.authorize_payment(
             order_id=order_id,
             amount_minor_units=amount_minor_units,
@@ -177,10 +265,8 @@ async def emulate_payment_gateway_authorization(
         processor_status = "completed" if java_result.get("status") == "ok" else str(java_result.get("status") or "error")
         emitted.append(
             _emit_step(
-                PaymentGatewayStep(
-                    name="processor_authorization_response",
-                    phase="processor",
-                    message="Payment gateway received the simulated processor authorization response",
+                replace(
+                    _processor_steps()[1],
                     status=processor_status,
                     attributes={
                         "payment.processor.name": "octo-java-app-server",
@@ -226,6 +312,7 @@ async def emulate_payment_gateway_authorization(
         gateway_request_id=gateway_request_id,
         gateway_provider=GATEWAY_PROVIDER,
         payment_network=network,
+        verification_result=verification_result,
         java_result=java_result,
         steps=tuple(emitted),
     )
@@ -496,6 +583,32 @@ def _card_steps(network: str) -> list[PaymentGatewayStep]:
         PaymentGatewayStep("gateway_card_tokenization", "card_token", f"Payment gateway tokenized {label} card metadata"),
         PaymentGatewayStep("internal_antifraud_screening", "risk", f"Payment gateway ran internal antifraud screening for {label} card"),
         PaymentGatewayStep("card_network_routing", "network", f"Payment gateway selected the simulated {label} authorization rail"),
+    ]
+
+
+def _verification_steps() -> list[PaymentGatewayStep]:
+    return [
+        PaymentGatewayStep("verification_antifraud_request", "verification", "Payment gateway sent transaction metadata to the antifraud verification app"),
+        PaymentGatewayStep("verification_antifraud_response", "verification", "Payment gateway received antifraud verification decision"),
+    ]
+
+
+def _processor_steps() -> list[PaymentGatewayStep]:
+    return [
+        PaymentGatewayStep("processor_authorization_request", "processor", "Payment gateway forwarded the authorization request to the simulated processor"),
+        PaymentGatewayStep("processor_authorization_response", "processor", "Payment gateway received the simulated processor authorization response"),
+    ]
+
+
+def _network_steps() -> list[PaymentGatewayStep]:
+    return [
+        PaymentGatewayStep("network_authorization_routing", "network", "Payment gateway routed the authorization through the simulated card network"),
+    ]
+
+
+def _final_steps() -> list[PaymentGatewayStep]:
+    return [
+        PaymentGatewayStep("merchant_authorization_result", "merchant_response", "Payment gateway returned the normalized authorization result to Drone Shop"),
     ]
 
 
