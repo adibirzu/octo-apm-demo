@@ -24,7 +24,7 @@ real signal instead of demo noise.
 cd tools/traffic-generator
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-OCTO_TRAFFIC_SHOP_BASE_URL=https://shop.cyber-sec.ro \
+OCTO_TRAFFIC_SHOP_BASE_URL=https://shop.example.test \
   OCTO_TRAFFIC_TARGET_RPS=2.0 \
   OCTO_TRAFFIC_RUN_DURATION_SECONDS=60 \
   octo-traffic
@@ -66,8 +66,8 @@ Add to the root `deploy/vm/docker-compose-unified.yml`:
 
 | Var | Default | Purpose |
 |---|---|---|
-| `OCTO_TRAFFIC_SHOP_BASE_URL` | `https://shop.cyber-sec.ro` | Shop public URL |
-| `OCTO_TRAFFIC_CRM_BASE_URL` | `https://crm.cyber-sec.ro` | CRM public URL |
+| `OCTO_TRAFFIC_SHOP_BASE_URL` | `https://shop.example.test` | Shop public URL |
+| `OCTO_TRAFFIC_CRM_BASE_URL` | `https://crm.example.test` | CRM public URL |
 | `OCTO_TRAFFIC_TARGET_RPS` | `2.0` | New sessions per second |
 | `OCTO_TRAFFIC_CONCURRENT_SESSION_LIMIT` | `50` | Hard cap on in-flight sessions |
 | `OCTO_TRAFFIC_BURST_MULTIPLIER` | `1.0` | Multiplier during flash-sale simulations |

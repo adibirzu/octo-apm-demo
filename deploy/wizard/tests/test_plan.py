@@ -12,7 +12,7 @@ def _plan(**overrides) -> DeploymentPlan:
         compartment_id="ocid1.compartment.oc1..x",
         compartment_name="octo",
         region="eu-frankfurt-1",
-        dns_domain="cyber-sec.ro",
+        dns_domain="example.test",
         ocir_namespace="acmecorp",
         existing_cluster_id="ocid1.cluster..y",
         existing_atp_id="ocid1.autonomousdatabase..z",

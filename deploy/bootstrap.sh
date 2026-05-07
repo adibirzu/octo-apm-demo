@@ -8,7 +8,7 @@
 # Usage:
 #   # fully non-interactive
 #   OCI_PROFILE=DEFAULT OCI_COMPARTMENT_ID=ocid1.compartment... \
-#   DNS_BASE_DOMAIN=cyber-sec.ro \
+#   DNS_BASE_DOMAIN=example.test \
 #   OCIR_NAMESPACE=<ns> \
 #   ./deploy/bootstrap.sh
 #
@@ -51,7 +51,7 @@ PROJECT_TAG_VAL="octo-apm-demo"
 
 # ── Defaults (every one overridable via env) ──────────────────────────
 : "${OCI_PROFILE:=DEFAULT}"
-: "${DNS_BASE_DOMAIN:=cyber-sec.ro}"
+: "${DNS_BASE_DOMAIN:=example.test}"
 : "${SHOP_SUBDOMAIN:=shop}"
 : "${CRM_SUBDOMAIN:=crm}"
 : "${K8S_NAMESPACE_SHOP:=octo-drone-shop}"
@@ -79,7 +79,7 @@ PROJECT_TAG_VAL="octo-apm-demo"
 #   auto   — PATCH the OCI DNS zone. Requires `DNS_BASE_DOMAIN` to exist
 #            as an OCI DNS zone the profile can write.
 #   manual — print the A records + exit. Operator adds them to whatever
-#            DNS provider they actually use (Route 53, Cloudflare, etc.).
+#            DNS provider they actually use (Route 53, external DNS provider, etc.).
 #   skip   — don't touch DNS. Smoke test uses `-H "Host: ..."`.
 : "${DNS_MODE:=auto}"
 
@@ -1286,7 +1286,7 @@ if [[ "${DNS_MODE}" == "manual" ]]; then
     cat <<EOF
 
 ${YELLOW:-}────────────────────────────────────────────────────────────────
-  MANUAL DNS — add these records at your DNS provider (Cloudflare,
+  MANUAL DNS — add these records at your DNS provider (external DNS provider,
   Route 53, NS1, Namecheap, in-house BIND, …):
 
     ${SHOP_SUBDOMAIN}.${DNS_BASE_DOMAIN}.   A   ${INGRESS_IP}   TTL 60

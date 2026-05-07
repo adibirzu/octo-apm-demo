@@ -73,7 +73,7 @@ kubectl create configmap otel-collector-config \
     --dry-run=client -o yaml | kubectl apply -f -
 
 # 2. Apply the namespace + deployment
-DNS_DOMAIN=octodemo.cloud \
+DNS_DOMAIN=example.test \
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
 IMAGE_TAG=latest \

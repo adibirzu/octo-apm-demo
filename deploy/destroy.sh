@@ -50,7 +50,7 @@ fi
 source "${CACHE}"
 : "${OCI_PROFILE:?}"
 : "${OCI_COMPARTMENT_ID:?}"
-: "${DNS_BASE_DOMAIN:=cyber-sec.ro}"
+: "${DNS_BASE_DOMAIN:=example.test}"
 
 K8S_NAMESPACE_SHOP="${K8S_NAMESPACE_SHOP:-octo-drone-shop}"
 K8S_NAMESPACE_CRM="${K8S_NAMESPACE_CRM:-enterprise-crm}"

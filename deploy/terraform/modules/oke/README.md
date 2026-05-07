@@ -57,7 +57,7 @@ oci ce cluster create-kubeconfig \
     --kube-endpoint PUBLIC_ENDPOINT \
     --profile DEFAULT
 
-kubectl config rename-context $(kubectl config current-context) oci4cca-oke
+kubectl config rename-context $(kubectl config current-context) <OCI_PROFILE>-oke
 
 # 2. Namespaces + imagePullSecret (if not using instance-principal OCIR pull)
 kubectl create namespace octo-drone-shop

@@ -10,31 +10,38 @@ the validation commands below.
 ## Scope confirmed
 
 - Local `~/.oci/config` resolves the `DEFAULT` profile in `eu-frankfurt-1`.
-- The cached compartment is `Adrian_Birzu` via `deploy/.last-tenancy.env`.
-- Current kube context for this deployment is `octo-Adrian_Birzu`.
-- Bootstrap reused the existing OKE control plane `cluster1`.
-- Bootstrap used `OCIR_NAMESPACE=${OCIR_TENANCY}` for image build and push because that is the namespace authorized on the remote build host.
+- The cached compartment is represented by `<COMPARTMENT_NAME>` via
+  `deploy/.last-tenancy.env`.
+- Current kube context for this deployment is represented by
+  `<KUBE_CONTEXT>`.
+- Bootstrap reused the existing OKE control plane represented by
+  `<OKE_CLUSTER_NAME>`.
+- Bootstrap used `<OCIR_NAMESPACE>` for image build and push because that is
+  the namespace authorized on the remote build host.
 
 ## Public DNS status
 
-- `cyber-sec.ro` is currently delegated to Cloudflare nameservers: `alfred.ns.cloudflare.com` and `rayne.ns.cloudflare.com`.
+- `example.test` is currently delegated to external DNS provider nameservers: `ns1.example.test` and `ns2.example.test`.
 - The OCI DNS zone is not authoritative for public traffic, so bootstrap switches to `DNS_MODE=manual`.
-- Public resolvers such as `1.1.1.1` currently return **no `A` record** for `shop.cyber-sec.ro` or `crm.cyber-sec.ro`.
-- Add or update these records in Cloudflare before browser or Playwright tests can use the hostnames directly:
+- Public resolvers such as `1.1.1.1` currently return **no `A` record** for `shop.example.test` or `crm.example.test`.
+- Add or update these records in external DNS provider before browser or Playwright tests can use the hostnames directly:
 
 ```text
-shop.cyber-sec.ro.   A   144.24.173.224   TTL 60
-crm.cyber-sec.ro.    A   144.24.173.224   TTL 60
+shop.example.test.   A   203.0.113.30   TTL 60
+crm.example.test.    A   203.0.113.30   TTL 60
 ```
 
-Until Cloudflare is updated, use the ingress IP with `Host` headers for smoke and E2E checks.
+Until external DNS provider is updated, use the ingress IP with `Host` headers for smoke and E2E checks.
 
 ## Runtime status
 
-- Shared ingress `LoadBalancer` advertises `144.24.173.224`.
+- Shared ingress `LoadBalancer` advertises `203.0.113.30`.
 - `ingress-nginx/nginx-ingress-ingress-nginx-controller` is `2/2` available.
 - The nginx admission service has live endpoints, so ingress creation succeeds.
-- The managed worker instances backing ingress were found `STOPPED` again after the first successful run; they were restarted and Kubernetes nodes `10.0.10.20` and `10.0.10.36` returned to `Ready`.
+- The managed worker instances backing ingress were found `STOPPED` again
+  after the first successful run; they were restarted and the Kubernetes nodes
+  represented by `<NODE_PRIVATE_IP_1>` and `<NODE_PRIVATE_IP_2>` returned to
+  `Ready`.
 - `deploy/bootstrap.sh` now checks existing nginx ingress readiness, starts stopped OCI worker instances referenced by NotReady real nodes, waits for node readiness, and refuses to continue if the ingress service still has no endpoints.
 
 ## Workload status
@@ -42,8 +49,8 @@ Until Cloudflare is updated, use the ingress IP with `Host` headers for smoke an
 - `octo-drone-shop` is `2/2` ready in namespace `octo-drone-shop`.
 - `enterprise-crm-portal` is `2/2` ready in namespace `enterprise-crm`.
 - Current deployed images:
-  - `eu-frankfurt-1.ocir.io/${OCIR_TENANCY}/octo-drone-shop:20260428173721`
-  - `eu-frankfurt-1.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:20260428173726`
+  - `<OCIR_REGION>.ocir.io/<OCIR_NAMESPACE>/octo-drone-shop:<IMAGE_TAG>`
+  - `<OCIR_REGION>.ocir.io/<OCIR_NAMESPACE>/enterprise-crm-portal:<IMAGE_TAG>`
 - Host-header readiness checks against the ingress IP return `ready=true` for both services.
 
 ## Database and secrets
@@ -63,7 +70,7 @@ Validated on April 28, 2026:
 - `python3 -m pytest tests/test_unified_deploy_surface.py crm/tests/test_orders_auth_and_idempotency.py -q` passed: `18 passed`.
 - `tests/e2e/cross-service-smoke.spec.ts` passed: `5 passed`.
 
-Do not run hostname-only E2E until Cloudflare has the two `A` records listed above. Use `SHOP_HOST_HEADER` and `CRM_HOST_HEADER` with `SHOP_BASE_URL=http://144.24.173.224` and `CRM_BASE_URL=http://144.24.173.224` while DNS is pending.
+Do not run hostname-only E2E until external DNS provider has the two `A` records listed above. Use `SHOP_HOST_HEADER` and `CRM_HOST_HEADER` with `SHOP_BASE_URL=http://203.0.113.30` and `CRM_BASE_URL=http://203.0.113.30` while DNS is pending.
 
 ## Validation notes
 
@@ -71,7 +78,7 @@ Do not run hostname-only E2E until Cloudflare has the two `A` records listed abo
 - Incremental rollout wrapper after base infra is healthy: `deploy/deploy.sh`
 - Focused deploy/docs regression: `python3 -m pytest -q tests/test_unified_deploy_surface.py`
 - CRM idempotency regression: `PYTHONPATH=crm pytest crm/tests/test_orders_auth_and_idempotency.py -q`
-- Public DNS authority check: `dig +short NS cyber-sec.ro @1.1.1.1`
-- Public hostname check: `dig +short A shop.cyber-sec.ro @1.1.1.1`
+- Public DNS authority check: `dig +short NS example.test @1.1.1.1`
+- Public hostname check: `dig +short A shop.example.test @1.1.1.1`
 - Ingress health check: `kubectl -n ingress-nginx get deploy,svc,pods,endpoints -o wide`
 - Workload health check: `kubectl get deploy -n octo-drone-shop octo-drone-shop -o wide` and `kubectl get deploy -n enterprise-crm enterprise-crm-portal -o wide`
