@@ -297,6 +297,21 @@ check RUM sessions for `UserName` and custom dimensions
 `apex.example.test`; private domains belong only in ignored credential/env
 files.
 
+Default fictional user pool:
+
+- `alex.chen@apex.example.test`
+- `maya.ionescu@apex.example.test`
+- `nora.patel@apex.example.test`
+- `daniel.rossi@apex.example.test`
+- `irina.marin@apex.example.test`
+- `samuel.wright@apex.example.test`
+- `elena.garcia@apex.example.test`
+- `noah.kim@apex.example.test`
+- `sofia.andersen@apex.example.test`
+- `matei.popa@apex.example.test`
+- `lina.hoffman@apex.example.test`
+- `omar.saleh@apex.example.test`
+
 ## Attack Lab
 
 Use the admin page **Generate Attack** button, or call:
@@ -398,6 +413,50 @@ OVERRIDE_DNS_IP=203.0.113.10 \
 ```
 
 Apply only after the dry run shows the expected monitor names and targets.
+
+For a stateful Scripted Browser monitor, upload the sanitized frontend-only
+Playwright script:
+
+```text
+tools/demo-guide/octo-availability-monitor.playwright.ts
+```
+
+Configure live URLs, optional admin credentials, and payment-matrix behavior as
+script parameters, Vault values, or monitor environment variables. Never hardcode
+real domains, credentials, private IPs, or OCIDs in the script. The script drives:
+
+- shop open and catalog load
+- add-to-cart
+- checkout with dummy payment data
+- optional card, Apple Pay, Google Pay, and bank-transfer matrix
+- support ticket creation
+- optional admin Java Health and Demo Storyboard checks
+
+## Stack Monitoring Discovery
+
+Use Stack Monitoring discovery only after the Management Agent is active on the
+host. The UI path is:
+
+```text
+OCI Console -> Observability & Management -> Stack Monitoring -> Resource Discovery -> Discover New Resource
+```
+
+For each app server host:
+
+1. Set **Resource Type** to **Host**.
+2. Set **Resource Name** to the host FQDN, using placeholders in docs such as
+   `<shop-host-fqdn>` and `<admin-host-fqdn>`.
+3. Select the Management Agent installed on that same host.
+4. Select **Stack Monitoring and Log Analytics (recommended)**.
+5. Select **Enterprise Edition** unless the deployment explicitly requires
+   Standard Edition.
+6. Submit and wait for the discovery job to succeed.
+7. Open the host resource and confirm CPU, memory, filesystem, process, and
+   availability metrics.
+
+If the UI discovery job fails, capture the job error, agent OCID, compartment
+OCID, selected resource type, and IAM policy gap in private notes only. Do not
+paste live hostnames, OCIDs, or private IPs into tracked docs.
 
 ## Verification Loop
 

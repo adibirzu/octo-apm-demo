@@ -345,8 +345,11 @@ def build_pdf(screenshots: dict[str, Path]) -> None:
             "Open the shop and confirm the RUM pill is enabled.",
             "Run the browser journey or use the admin Synthetic Users card so APM Users receives distinct fictional users.",
             "Add drones to the cart, enter dummy payment data, and place an order.",
+            "Use the fictional users alex.chen, maya.ionescu, nora.patel, irina.marin, and samuel.wright at apex.example.test for RUM sessions.",
+            "Exercise VISA, Mastercard, issuer-decline, Apple Pay, Google Pay, and bank-transfer payment paths without logging raw PAN or CVV.",
             "Use the support/service flow so logs, payment spans, Java spans, and SQL spans share one trace.",
             "Generate the attack lab and pivot from alert to APM trace, Log Analytics, OSQuery findings, and host/JVM metrics.",
+            "Discover app hosts in Stack Monitoring as Host resources with Stack Monitoring and Log Analytics selected.",
         ], body),
         Paragraph("Frontend Step 1 - Shop Checkout", styles["GuideHeading"]),
     ]
@@ -363,6 +366,8 @@ def build_pdf(screenshots: dict[str, Path]) -> None:
         Preformatted("set -a; . credentials/<profile>/app-secrets.env; set +a\ncurl -k -fsS --resolve shop.example.test:443:203.0.113.10 \\\n  -H 'Content-Type: application/json' \\\n  -H \"X-Internal-Service-Key: ${INTERNAL_SERVICE_KEY}\" \\\n  -X POST https://shop.example.test/api/synthetic/users/run \\\n  -d '{\"domain\":\"apex.example.test\",\"count\":12,\"order_count\":6,\"delete_after_days\":7}'", code),
         Paragraph("Attack Alert Use Case", styles["GuideHeading"]),
         paragraph("The user receives a critical alert for possible compromise. The demoer opens the returned trace id in APM, then uses the attack id in Log Analytics saved searches. OSQuery results are exported to OCI Logging and routed to Log Analytics when the connector is available.", body),
+        Paragraph("Availability Script", styles["GuideHeading"]),
+        paragraph("Upload tools/demo-guide/octo-availability-monitor.playwright.ts as a Playwright Scripted Browser monitor when you need a repeatable frontend path without OCI Console steps.", body),
     ])
     add_screenshot(story, screenshots["attack-investigation"])
     story.extend([
@@ -467,6 +472,7 @@ def build_live_pdf(screenshots: dict[str, Path]) -> None:
             f"Open {shop_url}/shop and confirm the live catalog renders with ATP, APM, and CRM sync indicators.",
             "Add two drone products to the cart. Use fictional buyer details only.",
             "Submit checkout once with dummy payment data. Capture the returned order id for the investigation story.",
+            "Repeat with VISA, Mastercard, Apple Pay, Google Pay, and bank-transfer paths if the demo needs payment diversity.",
             f"Open {shop_url}/services and submit a support ticket for the same fictional buyer.",
             "Keep the browser tab active so RUM records the page views, user actions, and session attributes.",
         ], body),
@@ -487,6 +493,7 @@ def build_live_pdf(screenshots: dict[str, Path]) -> None:
             "Run Synthetic Users when the card is visible, or use the configured VM timer, so APM Users receives multiple fictional corporate identities.",
             "Run Attack Lab and copy the returned attack id and trace id.",
             "Use the Availability Monitoring card to explain the global monitor plan for both live domains.",
+            "Discover the app hosts in Stack Monitoring as Host resources with Stack Monitoring and Log Analytics selected when Management Agents are active.",
         ], body),
     ])
     add_screenshot(story, screenshots["admin-simulation"], width=6.6 * inch, max_height=7.3 * inch)
@@ -510,6 +517,7 @@ def build_live_pdf(screenshots: dict[str, Path]) -> None:
             "Cloud Guard and Instance Security: review Problems, detector recipes, and OSQuery results, then export completed query results into OCI Logging for the same attack id.",
             "Stack Monitoring, Database Management, and Operations Insights: pivot from the application trace to host, ATP, and SQL performance signals for the same time range.",
             "Availability Monitoring: check global readiness monitors for both domains and compare vantage point failures with LB/app logs.",
+            "Availability script creation: upload tools/demo-guide/octo-availability-monitor.playwright.ts as a Playwright Scripted Browser script and create a monitor from selected global vantage points.",
         ], body),
         Paragraph("In-App Console Map", styles["GuideHeading"]),
     ])
