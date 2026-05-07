@@ -131,6 +131,12 @@ def test_high_risk_card_declines_and_persists_only_safe_metadata(monkeypatch) ->
 
     assert result["status"] == "declined"
     assert result["provider"] == "simulated-visa"
+    assert result["payment_gateway"]["gateway"] == "octo-payment-gateway-emulator"
+    assert result["payment_gateway"]["final_step"]["name"] == "merchant_authorization_result"
+    assert any(
+        step["name"] == "gateway_card_tokenization"
+        for step in result["payment_gateway"]["steps"]
+    )
     assert {"invalid_luhn", "expired_card", "invalid_cvv"}.issubset(set(result["risk_reasons"]))
     assert db.inserts
     persisted = db.inserts[-1]

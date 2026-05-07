@@ -20,6 +20,11 @@ from server.modules.payments.checkout_workflow import (
     build_payment_context,
     persist_payment_transaction,
 )
+from server.modules.payments.gateway_emulator import (
+    emit_final_gateway_decision,
+    emulate_payment_gateway_authorization,
+    persist_payment_gateway_events,
+)
 from server.modules.payments.simulated_provider import SimulatedPaymentDecision, SimulatedPaymentProvider
 from server.observability import business_metrics
 from server.observability.correlation import apply_span_attributes
@@ -161,17 +166,40 @@ async def authorize_simulated_payment(
                 **payment_context.safe_fields(),
             },
         )
-        java_result = await JavaAppServerClient().authorize_payment(
+        gateway_result = await emulate_payment_gateway_authorization(
             order_id=order_id,
             amount_minor_units=amount_minor_units,
             currency=currency,
             customer_email=customer_email,
             idempotency_key_hash=idempotency_key_hash,
+            context=payment_context,
+            intent_provider_reference=intent.provider_reference,
+            java_client=JavaAppServerClient(),
         )
+        java_result = gateway_result.java_result
         decision = _merge_java_decision(decision, java_result)
         decision = _apply_antifraud_decision(decision, payment_context)
+        final_gateway_step = await emit_final_gateway_decision(
+            order_id=order_id,
+            amount_minor_units=amount_minor_units,
+            currency=currency,
+            context=payment_context,
+            gateway_result=gateway_result,
+            decision=decision,
+        )
         fields = decision.observability_fields()
-        apply_span_attributes(span, {**fields, **payment_context.safe_fields()})
+        apply_span_attributes(
+            span,
+            {
+                **fields,
+                **payment_context.safe_fields(),
+                "payment.gateway.name": gateway_result.response_fields()["gateway"],
+                "payment.gateway.provider": gateway_result.gateway_provider,
+                "payment.gateway.request_id": gateway_result.gateway_request_id,
+                "payment.gateway.step_count": len(gateway_result.steps) + 1,
+                "payment.network": gateway_result.payment_network,
+            },
+        )
         span.set_attribute("payment.java_app_server.status", java_result.get("status", "unknown"))
         if decision.status != "authorized":
             span.set_attribute("otel.status_code", "ERROR")
@@ -199,6 +227,13 @@ async def authorize_simulated_payment(
             error_code=decision.error_code,
             trace_id=trace_id,
         )
+        await persist_payment_gateway_events(
+            db,
+            order_id=order_id,
+            context=payment_context,
+            gateway_result=gateway_result,
+            final_step=final_gateway_step,
+        )
         push_log(
             "INFO" if decision.status == "authorized" else "WARNING",
             "Simulated payment gateway decision",
@@ -207,6 +242,11 @@ async def authorize_simulated_payment(
                 **payment_context.safe_fields(),
                 "payment.amount_bucket": _amount_bucket(amount_minor_units),
                 "payment.java_app_server.status": java_result.get("status", "unknown"),
+                "payment.gateway.name": gateway_result.response_fields()["gateway"],
+                "payment.gateway.provider": gateway_result.gateway_provider,
+                "payment.gateway.request_id": gateway_result.gateway_request_id,
+                "payment.gateway.step_count": len(gateway_result.steps) + 1,
+                "payment.network": gateway_result.payment_network,
                 "orders.order_id": order_id,
             },
         )
@@ -224,5 +264,7 @@ async def authorize_simulated_payment(
             "error_code": decision.error_code,
             "decision_source": decision.decision_source,
             "java_app_server": java_result,
+            "payment_gateway": gateway_result.response_fields()
+            | {"final_step": final_gateway_step.response_fields()},
             "trace_id": trace_id,
         }

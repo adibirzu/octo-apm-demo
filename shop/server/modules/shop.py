@@ -391,6 +391,7 @@ async def checkout(payload: dict, request: Request):
                 "risk_reasons": payment_result.get("risk_reasons", []),
                 "decision_source": payment_result.get("decision_source", ""),
                 "error_code": payment_result.get("error_code", ""),
+                "gateway": payment_result.get("payment_gateway", {}),
             },
             "customer_sync": crm_customer_sync,
             "crm_sync": crm_order_sync,

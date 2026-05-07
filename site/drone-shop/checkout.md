@@ -8,6 +8,8 @@ End-to-end order lifecycle from cart to shipment, with full observability at eve
 sequenceDiagram
     participant Browser
     participant Shop as Drone Shop
+    participant PGW as Payment Gateway Emulator
+    participant Java as Java Processor Simulator
     participant CRM as Enterprise CRM
     participant ATP as Oracle ATP
     participant APM as OCI APM
@@ -26,6 +28,11 @@ sequenceDiagram
     Shop->>ATP: UPDATE products SET stock -= quantity
     Shop->>ATP: INSERT shipment
     Shop->>ATP: INSERT audit_log
+    Shop->>PGW: authorize Visa/Mastercard/Apple Pay/Google Pay
+    PGW->>APM: spans: wallet/card token, antifraud, routing
+    PGW->>Java: simulated processor/network authorization
+    PGW->>ATP: INSERT payment_gateway_events
+    Shop->>ATP: INSERT payment_transactions
     Shop->>ATP: DELETE cart_items (session cleanup)
     Shop->>CRM: POST /api/orders (sync via traceparent)
     Shop-->>Browser: {order_id, tracking_number, total}
@@ -56,9 +63,16 @@ total    = max(subtotal - discount, 0) + shipping
 |---|---|---|---|
 | Add to cart | `orders.cart.add` | `shop.business.cart.additions` | "Cart updated" |
 | Checkout | `shop.checkout` | `shop.business.orders.created` | "Store checkout persisted" |
+| Payment gateway | `payment_gateway.emulator.authorize` | `shop.business.payment.authorizations` | "Payment gateway ... request" |
+| Wallet/card token | `payment_gateway.<method>.*` | - | Wallet/card tokenization and cryptogram logs |
+| Processor hop | `java_app_server.post.api.java-apm.payment.authorize` | `java_app_server` | "Java app-server sidecar call completed" |
 | Stock update | (SQLAlchemy auto) | - | - |
 | Shipment | (SQLAlchemy auto) | `shop.business.shipments.created` | - |
 | CRM sync | `integration.crm.sync_order` | `shop.business.crm.sync` | "Order synced to CRM" |
+
+Payment gateway events are persisted in `payment_gateway_events` with
+`trace_id`, `span_id`, `gateway_request_id`, method, network, step name, and
+safe metadata. Raw PAN, CVV, and wallet tokens are not logged or persisted.
 
 ## Security Checks
 

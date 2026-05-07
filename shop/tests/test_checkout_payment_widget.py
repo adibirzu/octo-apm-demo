@@ -26,6 +26,7 @@ def test_shop_checkout_posts_structured_payment_details() -> None:
     assert "payment_details: buildPaymentDetails(formEl, form)" in template
     assert "payment.card_brand" in template
     assert "payment.wallet_type" in template
+    assert "payment.gateway.step_count" in template
     rum_start = template.split("rumEvent('shop.checkout_start'", 1)[1].split("});", 1)[0]
     assert "card_number" not in rum_start
     assert "card_cvv" not in rum_start

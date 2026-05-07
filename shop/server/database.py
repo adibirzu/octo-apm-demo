@@ -503,6 +503,30 @@ class PaymentTransaction(Base):
     order = relationship("Order")
 
 
+class PaymentGatewayEvent(Base):
+    __tablename__ = "payment_gateway_events"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    gateway_name = Column(String(80), nullable=False)
+    gateway_provider = Column(String(100), nullable=False)
+    gateway_request_id = Column(String(128), nullable=False, index=True)
+    payment_method = Column(String(50), nullable=False)
+    wallet_type = Column(String(40))
+    card_brand = Column(String(40))
+    card_last4 = Column(String(4))
+    payment_network = Column(String(40))
+    step_name = Column(String(100), nullable=False)
+    step_phase = Column(String(80), nullable=False)
+    step_status = Column(String(40), nullable=False)
+    step_index = Column(Integer, default=0)
+    latency_ms = Column(Float, default=0.0)
+    trace_id = Column(String(64), index=True)
+    span_id = Column(String(32))
+    metadata_json = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
+    order = relationship("Order")
+
+
 class Review(Base):
     __tablename__ = "reviews"
     id = Column(Integer, Identity(always=False), primary_key=True)
