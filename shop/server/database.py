@@ -4,7 +4,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Identity, create_engine, text, inspect
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Identity, UniqueConstraint, create_engine, text, inspect
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from sqlalchemy.sql import func
@@ -438,6 +438,7 @@ class Customer(Base):
 
 class Order(Base):
     __tablename__ = "orders"
+    __table_args__ = (UniqueConstraint("checkout_idempotency_key", name="uq_orders_checkout_key"),)
     id = Column(Integer, Identity(always=False), primary_key=True)
     customer_id = Column(Integer, ForeignKey("customers.id"))
     total = Column(Float, nullable=False)
@@ -446,6 +447,7 @@ class Order(Base):
     payment_status = Column(String(50), default="pending")
     payment_provider = Column(String(50), nullable=True)
     payment_provider_reference = Column(String(128), nullable=True, index=True)
+    checkout_idempotency_key = Column(String(128), nullable=True)
     notes = Column(Text)
     shipping_address = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
@@ -471,6 +473,34 @@ class CartItem(Base):
     quantity = Column(Integer, default=1)
     created_at = Column(DateTime, server_default=func.now())
     product = relationship("Product")
+
+
+class PaymentTransaction(Base):
+    __tablename__ = "payment_transactions"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    provider = Column(String(60), nullable=False)
+    provider_reference = Column(String(128), nullable=False, index=True)
+    payment_method = Column(String(50), nullable=False)
+    wallet_type = Column(String(40))
+    status = Column(String(50), nullable=False)
+    amount_minor_units = Column(Integer, nullable=False)
+    currency = Column(String(10), default="usd")
+    card_brand = Column(String(40))
+    card_last4 = Column(String(4))
+    card_exp_month = Column(Integer)
+    card_exp_year = Column(Integer)
+    card_fingerprint = Column(String(64))
+    wallet_token_hash = Column(String(64))
+    billing_postal_code = Column(String(24))
+    antifraud_score = Column(Integer, default=0)
+    antifraud_reasons = Column(Text)
+    gateway_latency_ms = Column(Integer, default=0)
+    decision_source = Column(String(80))
+    error_code = Column(String(80))
+    trace_id = Column(String(64))
+    created_at = Column(DateTime, server_default=func.now())
+    order = relationship("Order")
 
 
 class Review(Base):
@@ -633,6 +663,7 @@ class AuditLog(Base):
     resource = Column(String(200))
     details = Column(Text)
     ip_address = Column(String(50))
+    user_agent = Column(String(500))
     trace_id = Column(String(64))
     created_at = Column(DateTime, server_default=func.now())
 
@@ -672,6 +703,31 @@ class AssistantMessage(Base):
     provider = Column(String(100), default="local")
     model_id = Column(String(255))
     trace_id = Column(String(64))
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class LlmetryEvent(Base):
+    __tablename__ = "llmetry_events"
+    id = Column(Integer, Identity(always=False), primary_key=True)
+    session_id = Column(String(64), nullable=False, index=True)
+    provider = Column(String(100), nullable=False)
+    model_id = Column(String(255))
+    operation = Column(String(40), default="chat")
+    outcome = Column(String(40), default="success")
+    prompt_hash = Column(String(64), nullable=False)
+    response_hash = Column(String(64))
+    prompt_length = Column(Integer, default=0)
+    response_length = Column(Integer, default=0)
+    input_tokens = Column(Integer, default=0)
+    output_tokens = Column(Integer, default=0)
+    documents_grounded = Column(Integer, default=0)
+    guardrail_allowed = Column(Integer, default=1)
+    guardrail_reason = Column(String(80))
+    content_captured = Column(Integer, default=0)
+    latency_ms = Column(Float, default=0.0)
+    trace_id = Column(String(64))
+    span_id = Column(String(32))
+    metadata_json = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -757,23 +813,39 @@ def _ensure_missing_columns(engine) -> None:
     """Add columns that were introduced after initial table creation."""
     insp = inspect(engine)
     table_names = set(insp.get_table_names())
-    if "products" not in table_names:
-        return
-    existing = {col["name"] for col in insp.get_columns("products")}
     dialect = engine.dialect.name
-    migrations = {
-        "image_url": "VARCHAR2(500 CHAR)" if dialect == "oracle" else "VARCHAR(500)",
-    }
-    with engine.begin() as conn:
-        for col_name, col_type in migrations.items():
-            if col_name not in existing:
-                stmt = (
-                    f"ALTER TABLE products ADD ({col_name} {col_type})"
-                    if dialect == "oracle"
-                    else f"ALTER TABLE products ADD COLUMN {col_name} {col_type}"
-                )
-                conn.execute(text(stmt))
-                logger.info("Added missing column products.%s", col_name)
+
+    if "audit_logs" in table_names:
+        audit_cols = {col["name"].lower() for col in insp.get_columns("audit_logs")}
+        audit_migrations = {
+            "user_agent": "VARCHAR2(500 CHAR)" if dialect == "oracle" else "VARCHAR(500)",
+        }
+        for col_name, col_type in audit_migrations.items():
+            if col_name not in audit_cols:
+                with engine.begin() as conn:
+                    stmt = (
+                        f"ALTER TABLE audit_logs ADD ({col_name} {col_type})"
+                        if dialect == "oracle"
+                        else f"ALTER TABLE audit_logs ADD COLUMN {col_name} {col_type}"
+                    )
+                    conn.execute(text(stmt))
+                    logger.info("Added missing column audit_logs.%s", col_name)
+
+    if "products" in table_names:
+        existing = {col["name"] for col in insp.get_columns("products")}
+        migrations = {
+            "image_url": "VARCHAR2(500 CHAR)" if dialect == "oracle" else "VARCHAR(500)",
+        }
+        with engine.begin() as conn:
+            for col_name, col_type in migrations.items():
+                if col_name not in existing:
+                    stmt = (
+                        f"ALTER TABLE products ADD ({col_name} {col_type})"
+                        if dialect == "oracle"
+                        else f"ALTER TABLE products ADD COLUMN {col_name} {col_type}"
+                    )
+                    conn.execute(text(stmt))
+                    logger.info("Added missing column products.%s", col_name)
 
     # Orders table migrations
     if "orders" in insp.get_table_names():
@@ -781,6 +853,7 @@ def _ensure_missing_columns(engine) -> None:
         order_migrations = {
             "payment_method": "VARCHAR2(50 CHAR)" if dialect == "oracle" else "VARCHAR(50)",
             "payment_status": "VARCHAR2(50 CHAR)" if dialect == "oracle" else "VARCHAR(50)",
+            "checkout_idempotency_key": "VARCHAR2(128 CHAR)" if dialect == "oracle" else "VARCHAR(128)",
         }
         for col_name, col_type in order_migrations.items():
             if col_name not in order_cols:
@@ -795,6 +868,27 @@ def _ensure_missing_columns(engine) -> None:
                         logger.info("Added missing column orders.%s", col_name)
                 except Exception:
                     logger.debug("Column orders.%s may already exist (concurrent DDL)", col_name)
+
+        refreshed_order_cols = {col["name"] for col in inspect(engine).get_columns("orders")}
+        if "checkout_idempotency_key" in refreshed_order_cols:
+            existing_indexes = {idx["name"].lower() for idx in inspect(engine).get_indexes("orders") if idx.get("name")}
+            existing_constraints = {
+                constraint["name"].lower()
+                for constraint in inspect(engine).get_unique_constraints("orders")
+                if constraint.get("name")
+            }
+            if "uq_orders_checkout_key" not in existing_indexes | existing_constraints:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(
+                            text(
+                                "CREATE UNIQUE INDEX uq_orders_checkout_key "
+                                "ON orders (checkout_idempotency_key)"
+                            )
+                        )
+                        logger.info("Added unique index orders.checkout_idempotency_key")
+                except Exception:
+                    logger.debug("Unique index orders.checkout_idempotency_key may already exist", exc_info=True)
 
     if "invoices" in table_names:
         invoice_cols = {col["name"] for col in insp.get_columns("invoices")}

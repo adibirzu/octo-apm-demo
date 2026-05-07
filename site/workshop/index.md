@@ -73,7 +73,7 @@ Before lab 01:
       namespace, Monitoring metrics, Stack Monitoring resources, WAF
       policies in the demo's compartment.
 - [ ] Optional but recommended: `octo-traffic-generator` running so APM
-      and RUM have signal. ([deploy guide](https://github.com/adibirzu/octo-apm-demo/tree/main/tools/traffic-generator))
+      and RUM have signal. ([deploy guide](https://github.com/example-org/octo-apm-demo/tree/main/tools/traffic-generator))
 - [ ] Verified the platform is reachable:
     ```bash
     curl -s https://shop.example.tld/ready   | jq

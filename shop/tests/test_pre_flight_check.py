@@ -68,17 +68,17 @@ def test_fails_when_namespace_missing() -> None:
 
 @pytest.mark.portability
 def test_fails_on_example_cloud_leak() -> None:
-    """Catch the most common copy-paste mistake: keeping example.cloud."""
+    """Catch the most common copy-paste mistake: keeping example.test."""
     result = _run(
         {
-            "DNS_DOMAIN": "shop.example.cloud",
+            "DNS_DOMAIN": "shop.example.test",
             "OCIR_REPO": "r.ocir.io/t/shop",
             "K8S_NAMESPACE": "ns",
         }
     )
     assert result.returncode != 0
     combined = result.stderr + result.stdout
-    assert "example.cloud" in combined or "placeholder" in combined
+    assert "example.test" in combined or "placeholder" in combined
 
 
 @pytest.mark.portability

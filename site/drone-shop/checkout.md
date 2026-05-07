@@ -32,6 +32,15 @@ sequenceDiagram
     Browser->>APM: RUM: shop.checkout_complete
 ```
 
+## Idempotency
+
+Browser checkout sends a `checkout_idempotency_key` with each
+`POST /api/shop/checkout` attempt. The button is disabled while the request
+is in flight, and the backend stores the key on `orders` with a unique
+constraint. If a browser retry or duplicate submit repeats the same key,
+the API returns the original order with `idempotent_replay=true` instead
+of inserting another order.
+
 ## Pricing Logic
 
 ```

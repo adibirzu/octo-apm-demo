@@ -24,6 +24,9 @@ services:
       SERVICE_NAMESPACE: octo
       SERVICE_INSTANCE_ID: ${SERVICE_INSTANCE_ID}
       DEMO_STACK_NAME: ${DEMO_STACK_NAME:-octo-compute}
+      APP_TOPOLOGY_PROFILE: ${APP_TOPOLOGY_PROFILE:-}
+      SHOP_PUBLIC_URL: ${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
       OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME}
       OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-always_on}
       OTEL_PYTHON_LOG_CORRELATION: "true"
@@ -32,6 +35,7 @@ services:
       # the CRM private IP. On the CRM instance SERVICE_SHOP_URL points at
       # the Shop private IP.
       SERVICE_CRM_URL: ${SERVICE_CRM_URL:-}
+      ENTERPRISE_CRM_URL: ${SERVICE_CRM_URL:-}
       CRM_PUBLIC_URL: ${CRM_PUBLIC_URL:-https://crm.${DNS_DOMAIN}}
       CRM_BASE_URL: ${CRM_BASE_URL:-https://crm.${DNS_DOMAIN}}
       SERVICE_SHOP_URL: ${SERVICE_SHOP_URL:-}
@@ -82,6 +86,42 @@ services:
       IDCS_CLIENT_ID: ${IDCS_CLIENT_ID:-}
       IDCS_CLIENT_SECRET: ${IDCS_CLIENT_SECRET:-}
       IDCS_CLIENT_SECRET_FILE: ${IDCS_CLIENT_SECRET_FILE:-}
+
+      # Java app-server sidecar and payment simulator controls.
+      JAVA_APM_ENABLED: ${JAVA_APM_ENABLED:-false}
+      JAVA_APM_SERVICE_URL: ${JAVA_APM_SERVICE_URL:-}
+      JAVA_APM_TIMEOUT_SECONDS: ${JAVA_APM_TIMEOUT_SECONDS:-3.0}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-simulated}
+      PAYMENT_GATEWAY_SIMULATION_ENABLED: ${PAYMENT_GATEWAY_SIMULATION_ENABLED:-true}
+      PAYMENT_SIMULATION_MODE: ${PAYMENT_SIMULATION_MODE:-approve}
+      PAYMENT_SIMULATION_CURRENCY: ${PAYMENT_SIMULATION_CURRENCY:-usd}
+      WORKFLOW_API_BASE_URL: ${WORKFLOW_API_BASE_URL:-}
+      WORKFLOW_PUBLIC_API_BASE_URL: ${WORKFLOW_PUBLIC_API_BASE_URL:-}
+      WORKFLOW_SERVICE_NAME: ${WORKFLOW_SERVICE_NAME:-octo-workflow-gateway}
+      WORKFLOW_POLL_SECONDS: ${WORKFLOW_POLL_SECONDS:-90}
+      WORKFLOW_FAULTY_QUERY_ENABLED: ${WORKFLOW_FAULTY_QUERY_ENABLED:-false}
+      SELECTAI_PROFILE_NAME: ${SELECTAI_PROFILE_NAME:-}
+      OCI_GENAI_ENDPOINT: ${OCI_GENAI_ENDPOINT:-}
+      OCI_GENAI_MODEL_ID: ${OCI_GENAI_MODEL_ID:-}
+      LLMETRY_ENABLED: ${LLMETRY_ENABLED:-true}
+      LLMETRY_STORE_ENABLED: ${LLMETRY_STORE_ENABLED:-true}
+      LLMETRY_CAPTURE_CONTENT: ${LLMETRY_CAPTURE_CONTENT:-false}
+      LANGFUSE_ENABLED: ${LANGFUSE_ENABLED:-false}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_PUBLIC_KEY_FILE: ${LANGFUSE_PUBLIC_KEY_FILE:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_SECRET_KEY_FILE: ${LANGFUSE_SECRET_KEY_FILE:-}
+      LANGFUSE_OTEL_EXPORT_ENABLED: ${LANGFUSE_OTEL_EXPORT_ENABLED:-true}
+      LANGFUSE_TIMEOUT_SECONDS: ${LANGFUSE_TIMEOUT_SECONDS:-2.0}
+      LANGFUSE_INGESTION_VERSION: ${LANGFUSE_INGESTION_VERSION:-4}
+
+      # Synthetic corporate users/orders for APM Users and demo traffic.
+      SYNTHETIC_USERS_ENABLED: ${SYNTHETIC_USERS_ENABLED:-true}
+      SYNTHETIC_USER_EMAIL_DOMAIN: ${SYNTHETIC_USER_EMAIL_DOMAIN:-apex.example.test}
+      SYNTHETIC_USER_COUNT: ${SYNTHETIC_USER_COUNT:-12}
+      SYNTHETIC_USER_ORDER_COUNT: ${SYNTHETIC_USER_ORDER_COUNT:-6}
+      SYNTHETIC_USER_DELETE_AFTER_DAYS: ${SYNTHETIC_USER_DELETE_AFTER_DAYS:-7}
     volumes:
       - /opt/octo/wallet:/opt/oracle/wallet:ro
       - /opt/octo/secrets:/opt/octo/secrets:ro
@@ -96,3 +136,66 @@ services:
       timeout: 5s
       retries: 5
       start_period: 45s
+
+  java-apm:
+    profiles: ["java-apm"]
+    image: ${JAVA_APM_IMAGE:-octo-apm-java-demo:disabled}
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      PORT: ${JAVA_APM_PORT:-18080}
+      OCI_APM_SERVICE_NAME: ${JAVA_APM_SERVICE_NAME:-octo-java-app-server}
+      OCI_APM_ENDPOINT: ${OCI_APM_ENDPOINT}
+      OCI_APM_PRIVATE_DATAKEY: ${OCI_APM_PRIVATE_DATAKEY}
+      ORACLE_DSN: ${ORACLE_DSN}
+      ORACLE_USER: ${ORACLE_USER:-ADMIN}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      ORACLE_WALLET_DIR: ${ORACLE_WALLET_DIR:-/opt/oracle/wallet}
+      PAYMENT_SIMULATION_MODE: ${PAYMENT_SIMULATION_MODE:-approve}
+    volumes:
+      - /opt/octo/apm-agent:/opt/apm-agent:ro
+      - /opt/octo/wallet:/opt/oracle/wallet:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "25m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:${JAVA_APM_PORT:-18080}/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+
+  workflow-gateway:
+    profiles: ["workflow-gateway"]
+    image: ${WORKFLOW_GATEWAY_IMAGE:-octo-workflow-gateway:disabled}
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      WORKFLOW_APP_NAME: ${WORKFLOW_APP_NAME:-octo-workflow-gateway}
+      WORKFLOW_SERVICE_NAME: ${WORKFLOW_SERVICE_NAME:-octo-workflow-gateway}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      WORKFLOW_PORT: ${WORKFLOW_PORT:-8090}
+      ORACLE_DSN: ${ORACLE_DSN}
+      ORACLE_USER: ${ORACLE_USER:-ADMIN}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      ORACLE_WALLET_DIR: ${ORACLE_WALLET_DIR:-/opt/oracle/wallet}
+      ORACLE_WALLET_PASSWORD: ${ORACLE_WALLET_PASSWORD}
+      ENTERPRISE_CRM_URL: ${SERVICE_CRM_URL:-}
+      OCI_APM_ENDPOINT: ${OCI_APM_ENDPOINT}
+      OCI_APM_PRIVATE_DATAKEY: ${OCI_APM_PRIVATE_DATAKEY}
+      WORKFLOW_LOG_LEVEL: ${WORKFLOW_LOG_LEVEL:-info}
+      WORKFLOW_POLL_SECONDS: ${WORKFLOW_POLL_SECONDS:-90}
+      WORKFLOW_ALLOWED_ORIGINS: ${WORKFLOW_ALLOWED_ORIGINS:-}
+      WORKFLOW_FAULTY_QUERY_ENABLED: ${WORKFLOW_FAULTY_QUERY_ENABLED:-false}
+      SELECTAI_PROFILE_NAME: ${SELECTAI_PROFILE_NAME:-}
+      SELECTAI_TIMEOUT_SECONDS: ${SELECTAI_TIMEOUT_SECONDS:-30}
+    volumes:
+      - /opt/octo/wallet:/opt/oracle/wallet:ro
+      - /opt/octo/secrets:/opt/octo/secrets:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "25m"
+        max-file: "5"

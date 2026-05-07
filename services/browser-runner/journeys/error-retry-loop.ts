@@ -7,7 +7,7 @@
  */
 
 import type { BrowserContext } from "playwright";
-import type { BrowserRunnerConfig } from "../src/config.js";
+import { syntheticIdentityHeaders, type BrowserRunnerConfig } from "../src/config.js";
 
 export async function runJourney(
   context: BrowserContext,
@@ -19,6 +19,7 @@ export async function runJourney(
     "X-Run-Id": config.runId,
     "X-Operator": config.operator,
     "X-Workflow-Id": `browser.${config.journey}`,
+    ...syntheticIdentityHeaders(config.selectedSyntheticUser),
   });
 
   // 4xx — malformed payloads
@@ -26,7 +27,7 @@ export async function runJourney(
     await page.request
       .post(`${config.shopBaseUrl}/api/orders`, {
         data: { customer_id: 0, items: [] },
-        headers: { "X-Run-Id": config.runId },
+        headers: { "X-Run-Id": config.runId, ...syntheticIdentityHeaders(config.selectedSyntheticUser) },
       })
       .catch(() => undefined);
   }
@@ -35,7 +36,7 @@ export async function runJourney(
   for (let i = 0; i < 3; i++) {
     await page.request
       .get(`${config.shopBaseUrl}/api/intentionally-missing-${i}`, {
-        headers: { "X-Run-Id": config.runId },
+        headers: { "X-Run-Id": config.runId, ...syntheticIdentityHeaders(config.selectedSyntheticUser) },
       })
       .catch(() => undefined);
   }

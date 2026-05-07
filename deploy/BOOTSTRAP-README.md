@@ -11,7 +11,7 @@ sequence. Safe to rerun; safe on shared compartments.
 # Fully non-interactive (every env pre-set):
 OCI_PROFILE=DEFAULT \
 OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
-DNS_BASE_DOMAIN=cyber-sec.ro \
+DNS_BASE_DOMAIN=example.test \
 REMOTE_BUILD_HOST=control-plane-oci \
 ./deploy/bootstrap.sh
 
@@ -35,7 +35,7 @@ Subsequent runs reuse it unless you delete the cache.
 | 6 | `deploy-{shop,crm}.sh --build-only` on remote builder | yes | `REMOTE_BUILD_HOST` |
 | 7 | Apply shop + crm manifests via `envsubst` | yes | — |
 | 8 | Reuse an existing shared ingress controller or install nginx-ingress if needed | yes | `INSTALL_NGINX_INGRESS=false` |
-| 9 | Create Ingress objects and, when available, load `*.cyber-sec.ro` TLS from OCI Certificates | yes | `TLS_MODE=skip` |
+| 9 | Create Ingress objects and, when available, load `*.example.test` TLS from OCI Certificates | yes | `TLS_MODE=skip` |
 | 10 | Wait for nginx LB IP, PATCH `<DNS_BASE_DOMAIN>` zone with A records | yes | — |
 | 11 | Smoke-test `/` + `/ready` over HTTP and HTTPS (when TLS is enabled) | yes | — |
 
@@ -45,7 +45,7 @@ Subsequent runs reuse it unless you delete the cache.
 |---|---|---|
 | `OCI_PROFILE` | `DEFAULT` | OCI CLI profile under `~/.oci/config`. |
 | `OCI_COMPARTMENT_ID` | *(prompt)* | Target compartment. Interactive picker if unset + TTY. |
-| `DNS_BASE_DOMAIN` | `cyber-sec.ro` | Zone under which `shop` + `crm` subdomains are created. Must already exist as a DNS zone OCI can PATCH. |
+| `DNS_BASE_DOMAIN` | `example.test` | Zone under which `shop` + `crm` subdomains are created. Must already exist as a DNS zone OCI can PATCH. |
 | `SHOP_SUBDOMAIN` / `CRM_SUBDOMAIN` | `shop` / `crm` | Subdomain leaves. |
 | `K8S_NAMESPACE_SHOP` / `K8S_NAMESPACE_CRM` | `octo-drone-shop` / `enterprise-crm` | K8s namespaces. |
 | `REMOTE_BUILD_HOST` | `control-plane-oci` | SSH host for x86_64 Docker builds. |
@@ -54,7 +54,7 @@ Subsequent runs reuse it unless you delete the cache.
 | `PUBLISH_VIA_INGRESS` | `true` | Filters per-app `LoadBalancer` services out of first-time applies so the shared ingress controller fronts both apps. |
 | `TLS_MODE` | `auto` | `auto` loads a certificate from OCI Certificates when one matches `*.${DNS_BASE_DOMAIN}`; `skip` leaves ingress HTTP-only. |
 | `TLS_REQUIRED` | `false` | Fail the bootstrap if no usable OCI certificate can be loaded. |
-| `TLS_SECRET_NAME` | `cyber-sec-ro-tls` | TLS secret name created in both app namespaces. |
+| `TLS_SECRET_NAME` | `example-test-tls` | TLS secret name created in both app namespaces. |
 | `OCI_CERTIFICATE_OCID` | *(auto-discover)* | Explicit OCI Certificates OCID if auto-discovery should not be used. |
 | `SKIP_APM_JAVA_DEMO` | `true` | Reserved. |
 | `ATP_ADMIN_PW` / `ATP_WALLET_PW` | *(generated)* | Override if you want specific creds. |
@@ -104,7 +104,7 @@ Subsequent runs reuse it unless you delete the cache.
 
 ### Safety tests run
 
-Verified against oci4cca / Adrian_Birzu compartment:
+Verified against reference profile / <COMPARTMENT_NAME> compartment:
 
 | Test | Outcome |
 |---|---|
@@ -127,7 +127,7 @@ helm upgrade --install octo-apm-demo deploy/helm/octo-apm-demo \
   --set global.dnsDomain=${DNS_BASE_DOMAIN} \
   --set global.image.tenancy=${OCIR_NAMESPACE} \
   --set global.image.tag=${IMAGE_TAG} \
-  --set ingress.tls.secretName=cyber-sec-ro-tls
+  --set ingress.tls.secretName=example-test-tls
 ```
 
 The chart consumes the same Secrets (`octo-atp`, `octo-auth`,

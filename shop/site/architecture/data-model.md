@@ -17,7 +17,7 @@ The Drone Shop and Enterprise CRM Portal share the same Oracle ATP instance. Tab
 `page_views`, `audit_logs`, `security_events`, `services`, `tickets`, `ticket_messages`
 
 ### AI Assistant
-`assistant_sessions`, `assistant_messages`
+`assistant_sessions`, `assistant_messages`, `llmetry_events`
 
 ### Workflow Gateway
 `workflow_runs`, `query_executions`, `component_snapshots`
@@ -39,6 +39,8 @@ erDiagram
     products ||--o{ tickets : "related to"
     services ||--o{ tickets : "related to"
     tickets ||--|{ ticket_messages : "contains"
+    assistant_sessions ||--o{ assistant_messages : "records"
+    assistant_sessions ||--o{ llmetry_events : "correlates"
 
     customers {
         int id PK
@@ -73,6 +75,19 @@ erDiagram
         string endpoint
         string source_ip
         string trace_id
+    }
+
+    llmetry_events {
+        int id PK
+        string session_id
+        string provider
+        string model_id
+        string prompt_hash
+        string response_hash
+        int input_tokens
+        int output_tokens
+        string trace_id
+        string span_id
     }
 ```
 

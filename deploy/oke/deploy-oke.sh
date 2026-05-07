@@ -9,7 +9,7 @@
 #   5. NetworkPolicies (last — otherwise they race with Service creation)
 #
 # Usage:
-#   DNS_DOMAIN=cyber-sec.ro \
+#   DNS_DOMAIN=example.test \
 #   OCIR_REGION=eu-frankfurt-1 \
 #   OCIR_TENANCY=<namespace> \
 #   OCI_LB_SUBNET_OCID=ocid1.subnet.oc1..xxx \
@@ -35,7 +35,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OKE_DIR="${REPO_ROOT}/k8s/oke"
 
-: "${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/oci4cca use cyber-sec.ro)}"
+: "${DNS_DOMAIN:?Set DNS_DOMAIN (for reference profile use example.test)}"
 : "${OCIR_REGION:?Set OCIR_REGION}"
 : "${OCIR_TENANCY:?Set OCIR_TENANCY}"
 : "${OCI_LB_SUBNET_OCID:?Set OCI_LB_SUBNET_OCID}"

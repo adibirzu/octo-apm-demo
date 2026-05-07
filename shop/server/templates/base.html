@@ -339,6 +339,17 @@
       window.apmrum.ociDataUploadEndpoint = "{{ rum_endpoint }}";
       window.apmrum.OracleAPMPublicDataKey = "{{ rum_public_key }}";
       window.apmrum.route = window.location.pathname;
+      const octoSyntheticUser = (
+        new URLSearchParams(window.location.search).get("synthetic_user") ||
+        window.localStorage.getItem("octoSyntheticUserEmail") ||
+        ""
+      ).trim().toLowerCase();
+      const octoSyntheticUserIsValid = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(octoSyntheticUser);
+      if (octoSyntheticUserIsValid) {
+        window.localStorage.setItem("octoSyntheticUserEmail", octoSyntheticUser);
+        window.apmrum.username = octoSyntheticUser;
+        window.apmrum.syntheticUserDomain = octoSyntheticUser.split("@").pop();
+      }
       /* Observability v2: surface workflow_id + request_id as RUM custom dimensions
          so RUM sessions can be joined to backend traces by workflow. */
       window.apmrum.customDimensions = Object.assign(
@@ -348,8 +359,13 @@
           request_id: "{{ (request.state.request_id if request and request.state and request.state.request_id else '') }}",
         }
       );
-      /* Prevent RUM from adding tracing headers to app API calls (avoids CORS preflight issues) */
+      window.apmrum.udfAttributes = (window.apmrum.udfAttributes || []).concat([
+        { name: "synthetic_user_domain", value: () => window.apmrum.syntheticUserDomain || undefined },
+        { name: "synthetic_user_enabled", value: () => window.apmrum.username ? "true" : "false" }
+      ]);
+      /* Link same-origin browser calls to backend traces without adding headers cross-origin. */
       window.apmrum.traceSupportingEndpoints = [
+        { hostPattern: window.location.host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), headers: ["traceparent"] },
         { hostPattern: '.*', headers: [] }
       ];
     </script>
@@ -359,6 +375,15 @@
       crossorigin="anonymous"
       src="{{ rum_endpoint }}/static/jslib/apmrum.min.js"
     ></script>
-    {% endif %} {% block scripts %}{% endblock %}
+    {% endif %}
+    <script nonce="{{ csp_nonce }}">
+      window.OCTO_RUM_CONTEXT = {
+        appName: {{ app_name | tojson }},
+        javaAppServerEnabled: {{ java_apm_enabled | tojson }},
+        paymentSimulationEnabled: {{ payment_gateway_simulation_enabled | tojson }}
+      };
+    </script>
+    <script nonce="{{ csp_nonce }}" src="/static/js/rum-advanced.js" defer></script>
+    {% block scripts %}{% endblock %}
   </body>
 </html>

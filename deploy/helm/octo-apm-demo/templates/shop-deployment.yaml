@@ -89,6 +89,22 @@ spec:
               valueFrom: {secretKeyRef: {name: octo-oci-config, key: genai-endpoint, optional: true}}
             - name: OCI_GENAI_MODEL_ID
               valueFrom: {secretKeyRef: {name: octo-oci-config, key: genai-model-id, optional: true}}
+            - name: LLMETRY_ENABLED
+              value: {{ default "true" $shop.env.llmetryEnabled | quote }}
+            - name: LLMETRY_STORE_ENABLED
+              value: {{ default "true" $shop.env.llmetryStoreEnabled | quote }}
+            - name: LLMETRY_CAPTURE_CONTENT
+              value: {{ default "false" $shop.env.llmetryCaptureContent | quote }}
+            - name: LANGFUSE_ENABLED
+              valueFrom: {secretKeyRef: {name: octo-llmetry, key: langfuse-enabled, optional: true}}
+            - name: LANGFUSE_HOST
+              valueFrom: {secretKeyRef: {name: octo-llmetry, key: langfuse-host, optional: true}}
+            - name: LANGFUSE_PUBLIC_KEY
+              valueFrom: {secretKeyRef: {name: octo-llmetry, key: langfuse-public-key, optional: true}}
+            - name: LANGFUSE_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: octo-llmetry, key: langfuse-secret-key, optional: true}}
+            - name: LANGFUSE_OTEL_EXPORT_ENABLED
+              valueFrom: {secretKeyRef: {name: octo-llmetry, key: langfuse-otel-export-enabled, optional: true}}
             - name: IDCS_DOMAIN_URL
               valueFrom: {secretKeyRef: {name: octo-sso, key: idcs-domain-url, optional: true}}
             - name: IDCS_CLIENT_ID

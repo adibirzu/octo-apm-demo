@@ -7,8 +7,9 @@ wrapping spans — so latency budgets still reflect reality.
 ## Provisioning the APM Domain + RUM Web Application
 
 A new tenancy needs both an APM Domain and a RUM Web Application before
-traces/RUM events can be ingested. The terraform module
-`deploy/terraform/modules/apm_domain` creates both:
+traces/RUM events can be fully demonstrated. The terraform module
+`deploy/terraform/modules/apm_domain` creates the APM Domain and reads
+the generated public/private data keys:
 
 ```hcl
 module "apm_domain" {
@@ -19,10 +20,55 @@ module "apm_domain" {
 }
 ```
 
-Outputs include `apm_data_upload_endpoint`, `rum_web_application_id`,
-`apm_public_datakey`, and `apm_private_datakey` (sensitive). The helper
-script `deploy/oci/ensure_apm.sh` wraps `terraform plan/apply/print` and
-emits the matching `export OCI_APM_*` lines for secret population.
+Outputs include `apm_data_upload_endpoint`, `rum_endpoint`,
+`apm_public_datakey`, and `apm_private_datakey` (sensitive). The
+`rum_web_application_id` output remains empty until the operator
+registers the RUM web application in the OCI Console. The helper script
+`deploy/oci/ensure_apm.sh` wraps `terraform plan/apply/print` and emits
+the matching `export OCI_APM_*` lines for secret population.
+
+RUM web application registration is still a Console step in this repo.
+The app can emit browser beacons with the RUM endpoint and public data
+key, but the web application object should be registered after apply so
+RUM dashboards and naming are operator-friendly.
+
+## Compute Stack Collection
+
+The private Compute stack sets the APM endpoint and data keys on both
+apps. Current coverage:
+
+- FastAPI server spans with route, status, request, workflow, and runtime
+  attributes.
+- HTTPX client spans with W3C `traceparent` propagation for Shop to CRM
+  calls.
+- SQLAlchemy spans for database calls.
+- Shop and CRM SQL spans include `DbStatement` and `DbOracleSqlId` to
+  bridge into DB Management and Operations Insights.
+- Process/runtime metrics are exported through OTLP metrics when APM is
+  configured.
+- RUM JavaScript is injected in Shop and CRM HTML when the public RUM
+  settings are present.
+- The private demo shop host can run `octo-java-app-server`, a Spring Boot
+  sidecar instrumented with the OCI APM Java agent. Checkout and admin
+  simulations call it so traces include Python -> Java app-server spans
+  and the App Servers view receives JVM/app-server metrics.
+- Java simulations include external HTTP errors, Oracle JDBC SQL errors,
+  and attack-lab spans so the APM trace contains downstream app-server,
+  external-service, and ATP evidence from one admin action.
+- Payment simulation spans include `payment.provider`, `payment.status`,
+  `payment.risk_score`, `payment.amount_bucket`,
+  `payment.decision_source`, and `payment.java_app_server.status`.
+- Assistant spans include `gen_ai.*`, `llm.*`, `assistant.*`, and
+  `langfuse.*` attributes so OCI APM traces, OCI Logging rows, ATP
+  `llmetry_events`, and optional Langfuse observations can be compared by
+  the same trace/session/hash keys.
+- The admin Demo Storyboard emits a shop-to-payment-to-support path; the
+  Attack Lab emits `security.attack.kill_chain` plus MITRE stage spans
+  and Log Analytics correlation fields.
+
+Recommended next enhancement: add a post-deploy synthetic journey that
+asserts checkout and CRM sync traces contain browser, app, and ATP spans
+before demo handoff.
 
 ## Operator goals
 
@@ -62,6 +108,11 @@ Use repeatable filters for the main demo flows:
 - `workflow.id = "checkout"` for cart-to-order flow
 - `workflow.id = "crm-sync"` for order and catalog sync
 - `has(attribute.DbOracleSqlId)` for database drilldown candidates
+- `security.attack.id exists` for attack-lab kill-chain traces
+- `serviceName = "octo-java-app-server"` for JVM/app-server and Java SQL
+  simulation traces
+- `spanName = "shop.assistant.genai"` for OCI GenAI calls
+- `llm.prompt.hash exists` for assistant LLMetry correlation pivots
 
 ## Linking from a log row
 
@@ -69,6 +120,44 @@ Log Analytics renders every record with a `Trace ID` column; click it to
 open the APM trace viewer. Conversely, the Coordinator's
 `drilldown_pivot` node returns both the APM URL and a saved-search URL
 as `evidence_links` on the incident.
+
+## Linking from an APM span to logs
+
+Use `oracleApmTraceId` as the stable join key between APM, OCI Logging,
+and Log Analytics. Every app log row should carry these fields:
+
+| field | source | purpose |
+| --- | --- | --- |
+| `oracleApmTraceId` | current OTel trace id | APM trace to Log Analytics search |
+| `oracleApmSpanId` | current OTel span id | narrows to the emitting span when available |
+| `traceparent` | W3C propagation header | preserves browser, Python, Java, and CRM continuity |
+| `service.name` / `app.service` | OTel resource and app config | filters Shop, CRM, and Java app-server logs |
+| `workflow_id` / `workflow_step` | workflow middleware | groups checkout, storyboard, and attack-lab paths |
+| `request_id` / `correlation.id` | middleware | fallback pivot when a trace is sampled out |
+| `payment.*` | checkout simulator | payment gateway demo pivots |
+| `oci.api_gateway.*` | OCI API Gateway / attack-lab simulator | edge route-policy pivots |
+| `java_apm.*` | Java sidecar client | app-server call status and latency |
+| `assistant.*` / `llm.*` / `gen_ai.*` | Drone assistant | GenAI, guardrail, token, and prompt/response hash pivots |
+| `langfuse.*` | Optional Langfuse OTLP export | compare Langfuse observation view with OCI APM spans |
+| `security.attack.*` / `mitre.*` | Attack Lab | full kill-chain timeline pivots |
+| `osquery.*` | Cloud Guard export helper | host-side detection evidence |
+
+When building app or dashboard links, generate both directions:
+
+```text
+APM trace:
+https://cloud.oracle.com/apm-traces/trace-explorer?region=${OCI_REGION}&apmDomainId=${OCI_APM_DOMAIN_OCID}&traceId=${TRACE_ID}
+
+Log Analytics search:
+Log Explorer query where oracleApmTraceId = '${TRACE_ID}' over the OCTO Log Analytics log group
+```
+
+In private demo, APM span details can show `app.log` span events even before
+the durable Logging -> Service Connector -> Log Analytics route is active.
+If the span **Logs** count is zero, verify the app image no longer emits
+`OCI Logging put_logs failed: Unrecognized keyword arguments:
+defaultloglevel`, then pivot by `oracleApmTraceId` in OCI Logging or Log
+Analytics.
 
 ## Linking from a SQL span
 
@@ -86,10 +175,22 @@ This is the fastest way to move from application latency to database evidence.
 - `/api/observability/360` exposes the console URLs needed for the pivots
 - the same workflow can be followed across APM, logs, and DB tooling without
   manual guesswork
+- A Java sidecar trace produces App Server metrics for
+  `octo-java-app-server`, not only generic JVM metrics with
+  `Appserver=false`
 
 ## RUM
 
-RUM sessions now carry `workflow_id` as a custom dimension (added by
-`server/observability/rum_dimensions.py` — wave 2 follow-up). Pair the
-RUM session id with the backend trace id to see user-visible timing
-alongside backend spans.
+RUM sessions carry workflow/request context where available and the shop
+loads `static/js/rum-advanced.js` for sanitized custom browser actions.
+Same-origin API calls can receive RUM trace headers so checkout, cart,
+and simulation clicks can be paired with backend traces; cross-origin
+header injection remains disabled.
+
+Synthetic browser runs set OCI RUM `apmrum.username` before the browser
+agent is loaded. This populates the APM **Users** page with fictional
+corporate-style users from the configured synthetic domain. The tracked
+default is `apex.example.test`; private deployments may override the
+domain from ignored deployment files. The custom RUM dimensions emitted
+by the app are `synthetic_user_enabled` and `synthetic_user_domain`; raw
+e-mail addresses are not copied into custom action payloads or app logs.

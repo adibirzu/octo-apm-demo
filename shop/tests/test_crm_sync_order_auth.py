@@ -81,6 +81,16 @@ def capture_client(monkeypatch: pytest.MonkeyPatch) -> _CaptureClient:
 
 
 @pytest.mark.portability
+def test_crm_url_uses_canonical_service_crm_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(integrations.cfg, "enterprise_crm_url", "https://crm.service.example.invalid")
+    monkeypatch.setattr(integrations, "CRM_BASE_URL", "")
+    monkeypatch.delenv("SERVICE_CRM_URL", raising=False)
+    monkeypatch.delenv("CRM_SERVICE_URL", raising=False)
+
+    assert integrations._crm_url() == "https://crm.service.example.invalid"
+
+
+@pytest.mark.portability
 @pytest.mark.security
 def test_sync_order_sends_internal_service_key_header(
     capture_client: _CaptureClient, monkeypatch: pytest.MonkeyPatch

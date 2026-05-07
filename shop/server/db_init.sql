@@ -47,12 +47,45 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_status VARCHAR(50) DEFAULT 'pending',
     payment_provider VARCHAR(50),
     payment_provider_reference VARCHAR(128),
+    checkout_idempotency_key VARCHAR(128),
     notes TEXT,
     shipping_address TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS ix_orders_payment_provider_reference
     ON orders (payment_provider_reference);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_orders_checkout_key
+    ON orders (checkout_idempotency_key);
+
+CREATE TABLE IF NOT EXISTS payment_transactions (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER REFERENCES orders(id) NOT NULL,
+    provider VARCHAR(60) NOT NULL,
+    provider_reference VARCHAR(128) NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    wallet_type VARCHAR(40),
+    status VARCHAR(50) NOT NULL,
+    amount_minor_units INTEGER NOT NULL,
+    currency VARCHAR(10) DEFAULT 'usd',
+    card_brand VARCHAR(40),
+    card_last4 VARCHAR(4),
+    card_exp_month INTEGER,
+    card_exp_year INTEGER,
+    card_fingerprint VARCHAR(64),
+    wallet_token_hash VARCHAR(64),
+    billing_postal_code VARCHAR(24),
+    antifraud_score INTEGER DEFAULT 0,
+    antifraud_reasons TEXT,
+    gateway_latency_ms INTEGER DEFAULT 0,
+    decision_source VARCHAR(80),
+    error_code VARCHAR(80),
+    trace_id VARCHAR(64),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_payment_transactions_order_id
+    ON payment_transactions (order_id);
+CREATE INDEX IF NOT EXISTS ix_payment_transactions_provider_reference
+    ON payment_transactions (provider_reference);
 
 CREATE TABLE IF NOT EXISTS shops (
     id SERIAL PRIMARY KEY,
@@ -219,6 +252,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     resource VARCHAR(200),
     details TEXT,
     ip_address VARCHAR(50),
+    user_agent VARCHAR(500),
     trace_id VARCHAR(64),
     created_at TIMESTAMP DEFAULT NOW()
 );

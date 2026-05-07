@@ -5,9 +5,13 @@ tenancy_ocid   = "ocid1.tenancy.oc1..example"
 compartment_id = "ocid1.compartment.oc1..example"
 oci_profile    = "DEFAULT"
 dns_domain     = "example.com"
+shop_hostname  = "" # Optional. Empty = shop.<dns_domain>.
+crm_hostname   = "" # Optional. Empty = crm.<dns_domain>.
+create_compute_instance_principal_policies = true
 
 ssh_public_key      = "ssh-rsa AAAA..."
 instance_image_ocid = "ocid1.image.oc1..oracle-linux-9-image"
+boot_volume_size_gbs = 500
 admin_ssh_cidrs     = [] # Private SSH only through OCI Bastion, VPN, FastConnect, or DRG.
 availability_domain_name      = ""
 shop_availability_domain_name = "" # Optional AD-specific capacity override.
@@ -34,6 +38,14 @@ shop_container_gid       = 10001
 crm_container_uid        = 1000
 crm_container_gid        = 1000
 
+oci_genai_endpoint       = ""
+oci_genai_model_id       = ""
+llmetry_capture_content  = false
+langfuse_enabled         = false
+langfuse_host            = "https://langfuse.example.test"
+langfuse_public_key      = ""
+langfuse_secret_key      = ""
+
 internal_service_key     = "REPLACE-WITH-SERVICE-KEY"
 auth_token_secret        = "REPLACE-WITH-SHOP-TOKEN-SECRET"
 app_secret_key           = "REPLACE-WITH-CRM-APP-SECRET"
@@ -49,7 +61,9 @@ create_apm_domain      = true
 logging_retention_days = 30
 
 enable_stack_monitoring_standard = true
+enable_stack_monitoring_configs = true
 enable_stack_monitoring_agent_plugin = true
+enable_unified_agent_log_collection = true
 enable_stack_monitoring_host_registration = false # Set true only when the tenancy permits host monitored-resource creation.
 enable_stack_monitoring_atp_registration = false
 stack_monitoring_atp_management_agent_id = "" # Optional. Empty = wait for shop host Management Agent.
@@ -66,4 +80,5 @@ enable_operations_insights       = true
 # Set true only after Log Analytics is onboarded in the tenancy, then provide
 # log_analytics_namespace or existing_log_analytics_log_group_id.
 enable_log_analytics    = false
+enable_log_analytics_connectors = true
 log_analytics_namespace = ""

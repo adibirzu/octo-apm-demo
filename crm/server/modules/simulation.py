@@ -559,7 +559,96 @@ async def sync_customers(request: Request):
 
 # ── Drone Shop Proxy ──────────────────────────────────────────────
 
-_ALLOWED_PROXY_ACTIONS = {"configure", "reset", "db-latency", "error-burst", "status"}
+_DRONE_SHOP_ACTION_PATHS = {
+    "configure": "/api/simulate/configure",
+    "reset": "/api/simulate/reset",
+    "db-latency": "/api/simulate/db-latency",
+    "error-burst": "/api/simulate/error-burst",
+    "status": "/api/simulate/status",
+    "java-health": "/api/shop/app-server/health",
+    "java-slow": "/api/shop/app-server/simulate/slow",
+    "java-gc": "/api/shop/app-server/simulate/gc",
+    "java-cpu": "/api/shop/app-server/simulate/cpu",
+    "java-error": "/api/shop/app-server/simulate/error",
+    "external-status-500": "/api/shop/app-server/simulate/external-error",
+    "external-status-503": "/api/shop/app-server/simulate/external-error",
+    "sql-error-942": "/api/shop/app-server/simulate/sql-error",
+    "sql-error-1722": "/api/shop/app-server/simulate/sql-error",
+    "payment-decline": "/api/shop/payment/simulate/decline",
+    "payment-timeout": "/api/shop/payment/simulate/timeout",
+    "demo-storyboard": "/api/shop/demo/storyboard",
+    "attack-lab": "/api/shop/attack/simulate",
+    "synthetic-users": "/api/synthetic/users/run",
+}
+
+_DRONE_SHOP_ACTION_PAYLOAD_DEFAULTS = {
+    "payment-decline": {"duration_ms": 250},
+    "payment-timeout": {"duration_ms": 1500},
+    "external-status-500": {"status_code": 500, "scenario": "admin-widget-external-error"},
+    "external-status-503": {"status_code": 503, "scenario": "admin-widget-external-error"},
+    "sql-error-942": {"error_code": "ora-00942"},
+    "sql-error-1722": {"error_code": "ora-01722"},
+    "demo-storyboard": {
+        "persona": "Field operations buyer",
+        "quantity": 2,
+        "card": {"brand": "visa", "number": "4242424242424242"},
+    },
+    "attack-lab": {
+        "source_ip": "203.0.113.77",
+        "user_agent": "curl/8.4.0 octo-attack-lab",
+        "external_status_code": 503,
+        "payment_redirect_url": "https://pay-update.example.test/checkout/session",
+        "card": {"brand": "visa", "number": "4242424242424242"},
+    },
+    "synthetic-users": {
+        "domain": "apex.example.test",
+        "count": 12,
+        "order_count": 6,
+        "delete_after_days": 7,
+    },
+}
+
+_ALLOWED_PROXY_ACTIONS = set(_DRONE_SHOP_ACTION_PATHS)
+
+
+def _drone_shop_proxy_correlation_fields(action: str, data: dict) -> dict:
+    """Promote upstream demo identifiers onto the CRM proxy span/log."""
+    if not isinstance(data, dict):
+        return {}
+
+    api_gateway = data.get("api_gateway")
+    if not isinstance(api_gateway, dict):
+        api_gateway = {}
+
+    fields = {
+        "workflow.id": "crm-drone-shop-proxy",
+        "workflow.step": action,
+        "workflow_id": "crm-drone-shop-proxy",
+        "workflow_step": action,
+    }
+    scalar_mappings = {
+        "security.attack.id": data.get("attack_id"),
+        "run_id": data.get("run_id"),
+        "request_id": data.get("request_id"),
+        "upstream.trace_id": data.get("trace_id"),
+        "client.address": data.get("source_ip"),
+        "source.ip": data.get("source_ip"),
+        "oci.api_gateway.request_id": api_gateway.get("request_id"),
+        "oci.api_gateway.name": api_gateway.get("name"),
+        "oci.api_gateway.deployment_id": api_gateway.get("deployment_id"),
+        "oci.api_gateway.scope": api_gateway.get("scope"),
+        "oci.api_gateway.route": api_gateway.get("route"),
+        "oci.api_gateway.route_id": api_gateway.get("route_id"),
+        "oci.api_gateway.route_family": api_gateway.get("route_family"),
+        "oci.api_gateway.action": api_gateway.get("action"),
+        "oci.api_gateway.policy.decision": api_gateway.get("policy_decision"),
+        "oci.api_gateway.latency_ms": api_gateway.get("latency_ms"),
+        "oci.api_gateway.rate_limit.limit": api_gateway.get("rate_limit"),
+        "oci.api_gateway.rate_limit.remaining": api_gateway.get("rate_remaining"),
+        "oci.api_gateway.threat_signal": api_gateway.get("threat_signal"),
+    }
+    fields.update({key: value for key, value in scalar_mappings.items() if value not in (None, "")})
+    return fields
 
 
 @router.api_route("/drone-shop/{action}", methods=["GET", "POST"])
@@ -574,7 +663,7 @@ async def drone_shop_proxy(action: str, request: Request):
     if not base_url:
         return {"status": "skipped", "reason": "drone shop URL not configured"}
 
-    target = f"{base_url}/api/simulate/{action}"
+    target = f"{base_url}{_DRONE_SHOP_ACTION_PATHS[action]}"
     method = request.method.upper()
 
     with tracer.start_as_current_span("simulation.drone_shop_proxy") as span:
@@ -587,6 +676,9 @@ async def drone_shop_proxy(action: str, request: Request):
 
         try:
             body = await request.body()
+            if action in _DRONE_SHOP_ACTION_PAYLOAD_DEFAULTS and not body:
+                import json
+                body = json.dumps(_DRONE_SHOP_ACTION_PAYLOAD_DEFAULTS[action]).encode("utf-8")
             async with httpx.AsyncClient(timeout=10.0) as client:
                 if method == "POST":
                     resp = await client.post(target, content=body,
@@ -594,11 +686,24 @@ async def drone_shop_proxy(action: str, request: Request):
                 else:
                     resp = await client.get(target, headers=headers)
 
-            push_log("INFO", f"Drone shop proxy: {action} -> {resp.status_code}")
             try:
                 data = resp.json()
             except Exception:
                 data = {"raw": resp.text[:500]}
+            correlation_fields = _drone_shop_proxy_correlation_fields(action, data)
+            for key, value in correlation_fields.items():
+                if isinstance(value, (bool, int, float, str)):
+                    span.set_attribute(key, value)
+            span.set_attribute("http.status_code", resp.status_code)
+            span.set_attribute("peer.service", "octo-drone-shop")
+            push_log("INFO", f"Drone shop proxy: {action} -> {resp.status_code}")
+            if correlation_fields:
+                push_log(
+                    "INFO",
+                    f"Drone shop proxy correlation: {action}",
+                    **correlation_fields,
+                    **{"http.status_code": resp.status_code},
+                )
             return {"status": "proxied", "upstream_status": resp.status_code, "data": data}
 
         except (httpx.ConnectError, httpx.TimeoutException) as e:

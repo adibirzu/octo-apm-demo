@@ -10,8 +10,9 @@
 
 import { chromium } from "playwright";
 import pino from "pino";
+import { mkdirSync } from "node:fs";
 
-import { loadConfig } from "./config.js";
+import { loadConfig, selectSyntheticUser, syntheticIdentityHeaders } from "./config.js";
 
 import { runJourney as catalogToCheckout } from "../journeys/catalog-to-checkout.js";
 import { runJourney as crmAdminStroll } from "../journeys/crm-admin-stroll.js";
@@ -50,11 +51,14 @@ async function main(): Promise<number> {
     "browser runner starting",
   );
 
+  mkdirSync(cfg.artifactsDir, { recursive: true });
   const browser = await chromium.launch({ headless: cfg.headless });
   let failures = 0;
 
   try {
     for (let i = 1; i <= cfg.iterations; i++) {
+      const selectedSyntheticUser = selectSyntheticUser(cfg, i);
+      const iterationConfig = { ...cfg, selectedSyntheticUser };
       const context = await browser.newContext({
         viewport: { width: 1280, height: 720 },
         userAgent: `octo-browser-runner/1.0 (run_id=${cfg.runId}; iter=${i})`,
@@ -62,10 +66,30 @@ async function main(): Promise<number> {
           ? { path: `${cfg.artifactsDir}/${journeyName}-${cfg.runId}-${i}.har` }
           : undefined,
       });
+      await context.setExtraHTTPHeaders({
+        "X-Run-Id": cfg.runId,
+        "X-Operator": cfg.operator,
+        "X-Workflow-Id": `browser.${journeyName}`,
+        ...syntheticIdentityHeaders(selectedSyntheticUser),
+      });
+      await context.addInitScript((user) => {
+        try {
+          window.localStorage.setItem("octoSyntheticUserEmail", user.email);
+          (window as any).__OCTO_SYNTHETIC_USER__ = user;
+        } catch (_) {
+          // Synthetic identity should never break the user journey.
+        }
+      }, selectedSyntheticUser);
       try {
-        await journey(context, cfg);
+        await journey(context, iterationConfig);
         log.info(
-          { iteration: i, run_id: cfg.runId, journey: journeyName },
+          {
+            iteration: i,
+            run_id: cfg.runId,
+            journey: journeyName,
+            synthetic_user: selectedSyntheticUser.username,
+            synthetic_user_domain: selectedSyntheticUser.domain,
+          },
           "iteration ok",
         );
       } catch (err) {

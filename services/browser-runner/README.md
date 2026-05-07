@@ -36,12 +36,20 @@ cd services/browser-runner
 npm install
 npx playwright install chromium
 
-OCTO_BROWSER_SHOP_URL=https://shop.cyber-sec.ro \
-OCTO_BROWSER_CRM_URL=https://crm.cyber-sec.ro \
+OCTO_BROWSER_SHOP_URL=https://shop.example.test \
+OCTO_BROWSER_CRM_URL=https://crm.example.test \
+OCTO_BROWSER_SYNTHETIC_USER_DOMAIN=apex.example.test \
 OCTO_BROWSER_ITERATIONS=3 \
 OCTO_BROWSER_HEADLESS=false \
 npx tsx src/run-journey.ts catalog-to-checkout
 ```
+
+Synthetic user identity is set before the OCI RUM browser agent loads. The
+runner stores `octoSyntheticUserEmail` in browser local storage for RUM and sends
+domain plus hash-based `X-Synthetic-User-*` headers on backend calls. Tracked defaults use
+`apex.example.test`; private deployments can set either
+`OCTO_BROWSER_SYNTHETIC_USER_DOMAIN` or a comma-separated
+`OCTO_BROWSER_SYNTHETIC_USERS` list from ignored deployment files.
 
 ## Run on OKE (K8s Job)
 
@@ -54,6 +62,7 @@ OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
 IMAGE_TAG=latest \
 ITERATIONS=5 \
+SYNTHETIC_USER_DOMAIN=apex.example.test \
 envsubst < services/browser-runner/k8s/job.yaml | kubectl apply -f -
 
 kubectl logs -f -n octo-browser -l run-id=$RUN_ID
@@ -71,6 +80,9 @@ X-Run-Id:       <uuid>
 X-Operator:     browser-runner | <operator>
 X-Workflow-Id:  browser.<journey-name>
 User-Agent:     octo-browser-runner/1.0 (run_id=<uuid>; iter=<n>)
+X-Synthetic-User:        <username>
+X-Synthetic-User-Domain: <domain>
+X-Synthetic-User-Hash:   <sha256(email)[0:16]>
 ```
 
 In OCI APM, filter:
@@ -81,6 +93,8 @@ http.request.header.x-run-id = '<uuid>'
 
 In OCI RUM Sessions Explorer, filter User-Agent for
 `octo-browser-runner/` — every iteration is one session.
+In OCI APM Users, the user name comes from `window.apmrum.username`, which
+the app sets from the synthetic browser identity.
 
 HAR + screenshots are written to `/tmp/octo-browser-runner/` (or
 `/artifacts` in the K8s Job). Load them into Playwright's trace viewer
@@ -100,7 +114,7 @@ the wire-up is the follow-up KG-027.
 
 ```bash
 npm test
-# 6 tests — config loader invariants, no real browser launched
+# 10 tests — config loader invariants, no real browser launched
 ```
 
 Full journey execution is validated by running the binary against

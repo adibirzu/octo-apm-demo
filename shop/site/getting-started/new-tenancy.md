@@ -10,7 +10,7 @@ From the repo root:
 ```bash
 OCI_PROFILE=DEFAULT \
 OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
-DNS_BASE_DOMAIN=cyber-sec.ro \
+DNS_BASE_DOMAIN=example.test \
 REMOTE_BUILD_HOST=control-plane-oci \
 ./deploy/bootstrap.sh
 ```

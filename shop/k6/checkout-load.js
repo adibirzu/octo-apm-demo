@@ -3,12 +3,12 @@
 // Checkout load scenario — drives the `checkout` workflow_id hard enough to
 // produce a p95 signal in Log Analytics when chaos is active.
 //
-// Usage: k6 run -e SHOP_DOMAIN=shop.example.cloud k6/checkout-load.js
+// Usage: k6 run -e SHOP_DOMAIN=shop.example.test k6/checkout-load.js
 // ----------------------------------------------------------------------------
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 
-const SHOP = __ENV.SHOP_DOMAIN || 'shop.example.cloud';
+const SHOP = __ENV.SHOP_DOMAIN || 'shop.example.test';
 const BASE = `https://${SHOP}`;
 
 export const options = {

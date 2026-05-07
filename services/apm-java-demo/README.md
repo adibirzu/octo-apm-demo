@@ -1,21 +1,33 @@
 # octo-apm-java-demo
 
-Minimal Spring Boot 3 service that exists purely to populate the OCI
-APM **App Servers** dashboard (Apdex, Active Servers, Young/Old GC time,
-Process CPU load, request-thread resource consumption, VM name +
-version).
+Minimal Spring Boot 3 service that participates in Drone Shop checkout
+and simulation flows while populating the OCI APM **App Servers**
+dashboard (Apdex, Active Servers, Young/Old GC time, Process CPU load,
+request-thread resource consumption, VM name + version).
 
 The Python services (`shop`, `crm`) can't populate App Servers because
 the OCI APM Python SDK does not emit server-info. The OCI APM Java
 agent does — this service attaches the agent via `-javaagent:` and
-reports to the same APM domain.
+reports to the same APM domain. In `private-demo`, the shop app calls this
+service on `127.0.0.1:18080` during simulated payment authorization.
 
 ## Endpoints
 
 | Path | Purpose |
 |---|---|
 | `GET /` | Service metadata + JVM version |
+| `GET /ready` | Readiness plus Java app-server role |
 | `GET /healthz` | Trivial 200 |
+| `GET /api/java-apm/health` | Sidecar health for Drone Shop |
+| `POST /api/java-apm/quote` | Pricing/quote simulation |
+| `POST /api/java-apm/payment/authorize` | Payment gateway simulation |
+| `POST /api/java-apm/simulate/slow` | Slow Java request |
+| `POST /api/java-apm/simulate/gc` | Heap allocation and Young GC pressure |
+| `POST /api/java-apm/simulate/cpu` | CPU burn on request thread |
+| `POST /api/java-apm/simulate/error` | Controlled Java exception |
+| `POST /api/java-apm/simulate/external-error` | Controlled downstream HTTP 4xx/5xx path |
+| `POST /api/java-apm/simulate/sql-error` | Oracle JDBC SQL error path for ATP SQL visibility |
+| `POST /api/java-apm/simulate/attack` | MITRE-tagged Java segment for the Attack Lab |
 | `GET /slow` | Random 200–1000 ms sleep (thread-resource consumption) |
 | `GET /allocate` | Allocates 16–64 MiB (drives Young GC) |
 | `GET /error` | Controlled 500 (Apdex "frustrated" + server errors) |
@@ -39,7 +51,7 @@ that fires `/`, `/slow`, `/allocate`, `/error` every 5 min.
 
 1. OCI Console → Observability & Management → APM → Service Monitoring → **App servers**.
 2. Compartment: `demo-applications`. APM domain: `oci-octo-demo-apm`.
-3. Filter Service = `octo-apm-java-demo`.
+3. Filter Service = `octo-java-app-server`.
 4. Within 2–5 min you should see:
    - Apdex gauge (0.8–1.0 in normal operation, dips when `/error` hits)
    - Active Servers = 1
@@ -51,19 +63,24 @@ that fires `/`, `/slow`, `/allocate`, `/error` every 5 min.
 
 ## How the agent gets wired
 
-`Dockerfile` downloads the OCI APM Java agent zip at build time from
-the public object-storage URL documented by Oracle. `entrypoint.sh`
-attaches it via `-javaagent:<path>` and passes the three required
-system properties:
+`Dockerfile` can bundle a pre-downloaded OCI APM Java agent from
+`services/apm-java-demo/agent-bundle/`. `entrypoint.sh` attaches it via
+`-javaagent:<path>` and passes the three required system properties:
 
 ```
 -Dcom.oracle.apm.agent.data.upload.endpoint=${OCI_APM_ENDPOINT}
 -Dcom.oracle.apm.agent.private.data.key=${OCI_APM_PRIVATE_DATAKEY}
--Dcom.oracle.apm.agent.service.name=octo-apm-java-demo
+-Dcom.oracle.apm.agent.service.name=octo-java-app-server
 ```
 
 Both env vars come from the existing `octo-apm` K8s secret
 (populated by `deploy/init-tenancy.sh`). No new secrets, no new IAM.
+
+For the compute deployment, the service also receives `ORACLE_DSN`,
+`ORACLE_USER`, `ORACLE_PASSWORD`, and `ORACLE_WALLET_DIR` so
+`/api/java-apm/simulate/sql-error` creates real JDBC spans and database
+errors against the Autonomous Database. The endpoint intentionally uses
+fixed demo statements only; it does not accept arbitrary SQL.
 
 ## Automated agent download
 

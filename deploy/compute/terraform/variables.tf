@@ -22,7 +22,7 @@ variable "name_prefix" {
 
 variable "repo_url" {
   type    = string
-  default = "https://github.com/adibirzu/octo-apm-demo.git"
+  default = "https://github.com/example-org/octo-apm-demo.git"
 }
 
 variable "repo_ref" {
@@ -171,15 +171,77 @@ variable "crm_private_service_url" {
   description = "Optional private URL Shop uses to reach CRM. Empty uses the created VCN DNS name."
 }
 
+variable "oci_genai_endpoint" {
+  type        = string
+  default     = ""
+  description = "Optional OCI GenAI inference endpoint used by the Drone Shop assistant."
+}
+
+variable "oci_genai_model_id" {
+  type        = string
+  default     = ""
+  description = "Optional OCI GenAI model ID used by the Drone Shop assistant."
+}
+
+variable "llmetry_capture_content" {
+  type        = bool
+  default     = false
+  description = "When true, export redacted assistant prompt/response previews. Default false stores only hashes, lengths, and token counts."
+}
+
+variable "langfuse_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable optional Langfuse OTLP export for assistant LLMetry when project keys are supplied."
+}
+
+variable "langfuse_host" {
+  type        = string
+  default     = ""
+  description = "Optional Langfuse base URL for OTLP export, for example https://langfuse.example.test."
+}
+
+variable "langfuse_public_key" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "Optional Langfuse project public key for OTLP export."
+}
+
+variable "langfuse_secret_key" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "Optional Langfuse project secret key for OTLP export."
+}
+
 variable "dns_domain" {
   type        = string
   description = "Base DNS domain. Public hosts are shop.<domain> and crm.<domain>."
 }
 
+variable "shop_hostname" {
+  type        = string
+  default     = ""
+  description = "Optional full public hostname for Drone Shop. Empty uses shop.<dns_domain>."
+}
+
+variable "crm_hostname" {
+  type        = string
+  default     = ""
+  description = "Optional full public hostname for Enterprise CRM. Empty uses crm.<dns_domain>."
+}
+
 variable "create_dns_records" {
   type        = bool
   default     = false
-  description = "Create A records for shop.<dns_domain> and crm.<dns_domain> pointing at the Load Balancer public IP."
+  description = "Create A records for the resolved Shop and CRM hostnames pointing at the Load Balancer public IP."
+}
+
+variable "create_compute_instance_principal_policies" {
+  type        = bool
+  default     = true
+  description = "Create the tenancy-level dynamic group and compartment policy used by Compute instance principals. Disable when the operator lacks tenancy IAM privileges and install wallets/secrets manually."
 }
 
 variable "dns_zone_name_or_id" {
@@ -251,8 +313,14 @@ variable "instance_memory_gbs" {
 }
 
 variable "boot_volume_size_gbs" {
-  type    = number
-  default = 100
+  type        = number
+  default     = 500
+  description = "Boot volume size for each application VM. Keep at least 500 GB for local image builds, APM agents, logs, and demo data."
+
+  validation {
+    condition     = var.boot_volume_size_gbs >= 500
+    error_message = "boot_volume_size_gbs must be at least 500."
+  }
 }
 
 variable "vcn_cidr" {
@@ -547,6 +615,12 @@ variable "enable_log_analytics" {
   description = "Create Service Connector Hub pipelines from OCI Logging into Log Analytics. Requires an onboarded Log Analytics namespace or existing LA log group."
 }
 
+variable "enable_log_analytics_connectors" {
+  type        = bool
+  default     = true
+  description = "Create Service Connector Hub routes into Log Analytics when enable_log_analytics=true. Disable when service-connector-count quota is exhausted but the LA log group should still be created."
+}
+
 variable "create_log_analytics_namespace" {
   type        = bool
   default     = false
@@ -571,10 +645,22 @@ variable "enable_stack_monitoring_standard" {
   description = "Enable Stack Monitoring Standard license auto-assignment and HOST auto-promotion for the Compute instances."
 }
 
+variable "enable_stack_monitoring_configs" {
+  type        = bool
+  default     = true
+  description = "Create Stack Monitoring Standard license auto-assign and HOST auto-promote configs. Disable when the tenancy already has these configs or the operator lacks config privileges."
+}
+
 variable "enable_stack_monitoring_agent_plugin" {
   type        = bool
   default     = true
   description = "Deploy the OCI Management Agent Stack Monitoring plugin to both Compute hosts. Required for host auto-promote to produce Stack Monitoring host telemetry."
+}
+
+variable "enable_unified_agent_log_collection" {
+  type        = bool
+  default     = true
+  description = "Create OCI Logging unified-agent configs for host and container logs. Requires create_compute_instance_principal_policies=true because the configs target the dynamic group."
 }
 
 variable "enable_stack_monitoring_host_registration" {

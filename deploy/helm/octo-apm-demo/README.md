@@ -127,7 +127,7 @@ be upgraded to Helm with:
 helm upgrade --install octo-apm-demo deploy/helm/octo-apm-demo \
   --namespace octo-drone-shop \
   --set namespaces.create=false \
-  --set global.dnsDomain=cyber-sec.ro \
+  --set global.dnsDomain=example.test \
   --set global.image.tenancy=$OCIR_NAMESPACE \
   --set global.image.tag=$IMAGE_TAG
 ```

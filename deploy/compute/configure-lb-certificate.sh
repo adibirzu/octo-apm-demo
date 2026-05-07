@@ -10,7 +10,7 @@
 #     --private-key /path/to/privkey.pem \
 #     [--ca-certificate /path/to/chain.pem] \
 #     [--passphrase-file /path/to/passphrase.txt] \
-#     [--profile cap] \
+#     [--profile <OCI_PROFILE>] \
 #     [--disable-http] \
 #     [--apply]
 

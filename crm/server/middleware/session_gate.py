@@ -6,6 +6,7 @@ Bypasses:
 """
 
 import asyncio
+import hmac
 from concurrent.futures import ThreadPoolExecutor
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -46,12 +47,21 @@ _PUBLIC_PREFIXES = (
 )
 
 
+def _is_internal_drone_shop_simulation(request: Request) -> bool:
+    """Allow automation to trigger Drone Shop lab scenarios with the shared key."""
+    if not request.url.path.startswith("/api/simulate/drone-shop/"):
+        return False
+    expected = (cfg.drone_shop_internal_key or "").strip()
+    supplied = (request.headers.get("X-Internal-Service-Key") or "").strip()
+    return bool(expected and supplied and hmac.compare_digest(supplied, expected))
+
+
 class SessionGateMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
         # Always allow public paths
-        if any(path.startswith(p) for p in _PUBLIC_PREFIXES):
+        if any(path.startswith(p) for p in _PUBLIC_PREFIXES) or _is_internal_drone_shop_simulation(request):
             return await call_next(request)
 
         # Check session cookie. `get_current_user` raises

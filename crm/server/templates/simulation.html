@@ -103,7 +103,95 @@
             <button class="btn btn-secondary" onclick="droneShop('reset',{})">Reset</button>
             <button class="btn" onclick="droneShopStatus()">Status</button>
         </div>
+        <h4 style="margin:1rem 0 0.5rem;font-weight:600;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.08em;color:var(--text-secondary);">Java App Server + Payment Gateway</h4>
+        <div class="simulation-controls" style="margin-bottom:0.75rem;">
+            <button class="btn" onclick="droneShop('java-health',{})">Java Health</button>
+            <button class="btn btn-warning" onclick="droneShop('java-slow',{duration_ms:900})">Java Slow Call</button>
+            <button class="btn btn-warning" onclick="droneShop('java-gc',{megabytes:96})">Java GC Pressure</button>
+            <button class="btn btn-warning" onclick="droneShop('java-cpu',{duration_ms:750})">Java CPU Spike</button>
+            <button class="btn btn-danger" onclick="droneShop('java-error',{})">Java Exception</button>
+            <button class="btn btn-danger" onclick="droneShop('external-status-500',{status_code:500})">External 500</button>
+            <button class="btn btn-danger" onclick="droneShop('external-status-503',{status_code:503})">External 503</button>
+            <button class="btn btn-danger" onclick="droneShop('sql-error-942',{error_code:'ora-00942'})">SQL ORA-00942</button>
+            <button class="btn btn-danger" onclick="droneShop('sql-error-1722',{error_code:'ora-01722'})">SQL ORA-01722</button>
+            <button class="btn btn-danger" onclick="droneShop('payment-decline',{duration_ms:250})">Payment Decline Path</button>
+            <button class="btn btn-danger" onclick="droneShop('payment-timeout',{duration_ms:1500})">Payment Timeout Path</button>
+        </div>
         <pre id="drone-output" class="code-output" style="min-height:40px;max-height:150px;overflow:auto;font-size:0.75rem;">Drone shop proxy ready.</pre>
+    </div>
+</div>
+
+<!-- Guided Demo Storyboard -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-storyboard">
+        <h3>Demo Storyboard <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:400;">Shop -> Payment -> Support -> Java APM</span></h3>
+        <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr auto;gap:0.5rem;align-items:end;margin-bottom:0.75rem;">
+            <input class="form-input" id="story-persona" value="Field operations buyer" title="Persona">
+            <input class="form-input" id="story-card" value="4242424242424242" title="Dummy card number">
+            <input class="form-input" id="story-ip" value="198.51.100.42" title="Client IP">
+            <input class="form-input" id="story-qty" type="number" value="2" min="1" max="5" title="Drone quantity">
+            <button class="btn btn-success" onclick="runStoryboard()">Run Story</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;margin-bottom:0.75rem;">
+            <div class="status-value-pill is-healthy">1. Open Shop</div>
+            <div class="status-value-pill is-degraded">2. Add Drones</div>
+            <div class="status-value-pill is-degraded">3. Dummy Payment</div>
+            <div class="status-value-pill is-healthy">4. Support Ticket</div>
+        </div>
+        <pre id="story-output" class="code-output" style="min-height:60px;max-height:180px;overflow:auto;font-size:0.75rem;">Storyboard ready.</pre>
+    </div>
+</div>
+
+<!-- Synthetic Users -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-synthetic-users">
+        <h3>Synthetic Users <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:400;">APM Users, RUM sessions, orders</span></h3>
+        <div style="display:grid;grid-template-columns:1.2fr 0.6fr 0.6fr 0.6fr auto;gap:0.5rem;align-items:end;margin-bottom:0.75rem;">
+            <input class="form-input" id="synthetic-domain" value="apex.example.test" title="Synthetic e-mail domain">
+            <input class="form-input" id="synthetic-count" type="number" value="12" min="1" max="100" title="Users">
+            <input class="form-input" id="synthetic-orders" type="number" value="6" min="0" max="50" title="Orders">
+            <input class="form-input" id="synthetic-retention" type="number" value="7" min="0" max="365" title="Delete users older than days">
+            <button class="btn btn-primary" onclick="runSyntheticUsers()">Generate Users</button>
+        </div>
+        <pre id="synthetic-output" class="code-output" style="min-height:60px;max-height:180px;overflow:auto;font-size:0.75rem;">Synthetic user generator ready.</pre>
+    </div>
+</div>
+
+<!-- Security Attack Lab -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-attack-lab">
+        <h3>Attack Lab <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:400;">MITRE, OSQuery, logs, spans</span></h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.4fr auto;gap:0.5rem;align-items:end;margin-bottom:0.75rem;">
+            <input class="form-input" id="attack-ip" value="203.0.113.77" title="Source IP">
+            <select class="form-input" id="attack-status" title="External status">
+                <option value="503">C2 Callback 503</option>
+                <option value="500">C2 Callback 500</option>
+                <option value="404">Discovery 404</option>
+            </select>
+            <input class="form-input" id="attack-agent" value="curl/8.4.0 octo-attack-lab" title="User agent">
+            <input class="form-input" id="attack-card" value="4242424242424242" title="Dummy card number">
+            <input class="form-input" id="attack-redirect" value="https://pay-update.example.test/checkout/session" title="Payment redirect URL">
+            <button class="btn btn-danger" onclick="runAttackLab()">Generate Attack</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;margin-bottom:0.75rem;">
+            <button class="btn btn-warning" onclick="droneShop('attack-lab',{source_ip:'203.0.113.77',external_status_code:503})">Full Kill Chain</button>
+            <button class="btn btn-warning" onclick="droneShop('external-status-503',{status_code:503})">External Error Widget</button>
+            <button class="btn btn-warning" onclick="droneShop('sql-error-942',{error_code:'ora-00942'})">SQL Error Widget</button>
+            <button class="btn btn-secondary" onclick="showOsqueryHint()">OSQuery Runbook</button>
+        </div>
+        <pre id="attack-output" class="code-output" style="min-height:70px;max-height:200px;overflow:auto;font-size:0.75rem;">Attack lab ready.</pre>
+    </div>
+</div>
+
+<!-- Availability Monitoring -->
+<div class="dashboard-row dashboard-row-wide">
+    <div class="card" id="card-availability">
+        <h3>Availability Monitoring <span style="font-size:0.65rem;color:var(--text-secondary);font-weight:400;">global synthetic checks</span></h3>
+        <div class="simulation-controls" style="margin-bottom:0.75rem;">
+            <button class="btn btn-primary" onclick="showAvailabilityPlan()">Show Global Monitor Plan</button>
+            <button class="btn btn-secondary" onclick="copyAvailabilityCommand()">Render CLI Command</button>
+        </div>
+        <pre id="availability-output" class="code-output" style="min-height:60px;max-height:190px;overflow:auto;font-size:0.75rem;">Use the generated CLI helper after DNS resolves to the Load Balancer IP.</pre>
     </div>
 </div>
 {% endblock %}
@@ -324,6 +412,96 @@ async function droneShopStatus() {
     } catch (e) {
         appendOutput('drone-output', 'status', {error: e.message});
     }
+}
+
+async function runStoryboard() {
+    const body = {
+        persona: document.getElementById('story-persona').value,
+        quantity: parseInt(document.getElementById('story-qty').value) || 2,
+        source_ip: document.getElementById('story-ip').value,
+        card: {brand: 'visa', number: document.getElementById('story-card').value},
+    };
+    appendOutput('story-output', 'storyboard', 'running...');
+    try {
+        const r = await _fetch('/api/simulate/drone-shop/demo-storyboard', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('story-output', 'storyboard', d);
+    } catch (e) {
+        appendOutput('story-output', 'storyboard', {error: e.message});
+    }
+}
+
+async function runAttackLab() {
+    const body = {
+        source_ip: document.getElementById('attack-ip').value,
+        external_status_code: parseInt(document.getElementById('attack-status').value) || 503,
+        user_agent: document.getElementById('attack-agent').value,
+        payment_redirect_url: document.getElementById('attack-redirect').value,
+        card: {brand: 'visa', number: document.getElementById('attack-card').value},
+    };
+    appendOutput('attack-output', 'attack-lab', 'running...');
+    try {
+        const r = await _fetch('/api/simulate/drone-shop/attack-lab', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('attack-output', 'attack-lab', d);
+    } catch (e) {
+        appendOutput('attack-output', 'attack-lab', {error: e.message});
+    }
+}
+
+async function runSyntheticUsers() {
+    const body = {
+        domain: document.getElementById('synthetic-domain').value,
+        count: parseInt(document.getElementById('synthetic-count').value) || 12,
+        order_count: parseInt(document.getElementById('synthetic-orders').value) || 0,
+        delete_after_days: parseInt(document.getElementById('synthetic-retention').value) || 0,
+    };
+    appendOutput('synthetic-output', 'synthetic-users', 'running...');
+    try {
+        const r = await _fetch('/api/simulate/drone-shop/synthetic-users', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const d = await r.json();
+        appendOutput('synthetic-output', 'synthetic-users', d);
+    } catch (e) {
+        appendOutput('synthetic-output', 'synthetic-users', {error: e.message});
+    }
+}
+
+function showOsqueryHint() {
+    appendOutput('attack-output', 'osquery-runbook', {
+        script: 'deploy/oci/ensure_cloud_guard_advanced.sh',
+        export_script: 'deploy/oci/export_osquery_results_to_logging.sh',
+        env: 'DRY_RUN=false RUN_ADHOC=true OSQUERY_INSTANCE_IDS=<shop>,<crm>',
+        export_env: 'DRY_RUN=false ATTACK_ID=<attack-id> ADHOC_QUERY_ID=<query-ocid> OCI_LOG_ID=<custom-log-ocid>',
+        saved_queries: ['unexpected-listeners', 'lotl-processes', 'suspicious-shell-history', 'persistence-systemd', 'recent-processes'],
+        log_analytics_fields: ['security.attack.id', 'mitre.technique_id', 'osquery.query', 'osquery.finding', 'oracleApmTraceId']
+    });
+}
+
+function showAvailabilityPlan() {
+    appendOutput('availability-output', 'availability-plan', {
+        monitors: ['drones-ready-global', 'admin-ready-global'],
+        vantage_points: ['US West Phoenix', 'US East Ashburn', 'Germany Frankfurt', 'UK London', 'Japan Tokyo', 'Australia Sydney'],
+        interval_seconds: 300,
+        targets: ['https://shop.example.test/ready', 'https://admin.example.test/ready']
+    });
+}
+
+function copyAvailabilityCommand() {
+    appendOutput('availability-output', 'availability-cli', {
+        command: 'OCI_CLI_PROFILE=<OCI_PROFILE> APM_DOMAIN_ID=<apm_domain_ocid> ./deploy/oci/ensure_availability_monitors.sh --apply'
+    });
 }
 
 // ── Dropdown population ──────────────────────────────────────────

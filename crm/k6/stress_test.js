@@ -12,13 +12,13 @@
  *
  * Usage:
  *   # Smoke test (1 VU, 30s)
- *   k6 run --env BASE_URL=https://crm.example.cloud --env LOGIN_PASS='<password>' --env PROFILE=smoke k6/stress_test.js
+ *   k6 run --env BASE_URL=https://crm.example.test --env LOGIN_PASS='<password>' --env PROFILE=smoke k6/stress_test.js
  *
  *   # Against any domain
- *   k6 run --env DNS_DOMAIN=example.cloud --env LOGIN_PASS='<password>' k6/stress_test.js
+ *   k6 run --env DNS_DOMAIN=example.test --env LOGIN_PASS='<password>' k6/stress_test.js
  *
  *   # Heavy load
- *   k6 run --env DNS_DOMAIN=example.cloud --env LOGIN_PASS='<password>' --env PROFILE=heavy k6/stress_test.js
+ *   k6 run --env DNS_DOMAIN=example.test --env LOGIN_PASS='<password>' --env PROFILE=heavy k6/stress_test.js
  *
  * After the run, verify in OCI Console:
  *   1. APM → Trace Explorer → filter serviceName=enterprise-crm-portal

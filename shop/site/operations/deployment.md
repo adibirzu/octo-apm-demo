@@ -1,13 +1,13 @@
 # Deployment
 
 The current unified deployment surface lives in
-[`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo).
+[`example-org/octo-apm-demo`](https://github.com/example-org/octo-apm-demo).
 Use that repository for new OKE, private Compute, Resource Manager, or
 single-VM deployments. This page remains as the service-level OKE
 rollout reference for Drone Shop.
 
 For the production-demo path without Kubernetes, use the
-[Private Compute Deployment](https://adibirzu.github.io/octo-apm-demo/getting-started/compute-deployment/)
+[Private Compute Deployment](https://example-org.github.io/octo-apm-demo/getting-started/compute-deployment/)
 stack. It deploys Shop and CRM on private Podman Compute instances with
 public OCI LB/WAF, private ATP, APM, OCI Logging, Log Analytics, DB
 Management, Operations Insights, and Stack Monitoring Standard.

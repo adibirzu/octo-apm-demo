@@ -98,7 +98,79 @@ def _dns_url(subdomain: str, scheme: str = "https") -> str:
     return ""
 
 
+def _hostname_from_url(url: str) -> str:
+    if not url:
+        return ""
+    parsed = urlparse(url if "://" in url else f"https://{url}")
+    return (parsed.hostname or "").strip()
+
+
+def _public_app_url(raw_url: str, fallback_hostname: str = "") -> str:
+    """Return a browser-safe public app URL, preferring HTTPS for named hosts."""
+    candidate = (raw_url or "").strip().rstrip("/")
+    hostname = _hostname_from_url(candidate) or fallback_hostname.strip()
+    if not hostname:
+        return candidate
+    if hostname in {"localhost", "127.0.0.1"} or hostname.startswith("127."):
+        return candidate or f"http://{hostname}"
+    return f"https://{hostname}"
+
+
+def _is_private_demo_topology() -> bool:
+    profile = (cfg.app_topology_profile or "").strip().lower()
+    if profile:
+        return profile == "private-demo"
+    markers = [
+        cfg.demo_stack_name,
+        cfg.service_instance_id,
+        cfg.crm_base_url,
+        cfg.shop_public_url,
+        cfg.octo_drone_shop_url,
+        cfg.octo_public_hostname,
+    ]
+    normalized = " ".join(str(marker or "").lower() for marker in markers)
+    return (
+        "private-demo" in normalized
+        or "shop.example.test" in normalized
+        or "admin.example.test" in normalized
+    )
+
+
 def _configured_dependencies() -> list[dict]:
+    if _is_private_demo_topology():
+        shop_public_url = _public_app_url(cfg.shop_public_url or cfg.octo_drone_shop_url)
+        crm_public_url = _public_app_url(cfg.crm_base_url, cfg.octo_public_hostname)
+        return [
+            {
+                "name": "drone-shop-portal",
+                "display_name": "Drone Shop App Server",
+                "type": "application",
+                "url": shop_public_url,
+                "probe_url": cfg.octo_drone_shop_url or shop_public_url,
+                "health_paths": ["/health", "/ready"],
+                "drilldown_product": "APM",
+            },
+            {
+                "name": "crm-admin-portal",
+                "display_name": "Admin App Server",
+                "type": "application",
+                "url": crm_public_url,
+                "probe_url": f"http://127.0.0.1:{cfg.app_port}",
+                "health_paths": ["/health", "/ready"],
+                "drilldown_product": "APM",
+            },
+            {
+                "name": "octo-apm-atp",
+                "display_name": "Autonomous Database",
+                "type": "database",
+                "url": "",
+                "health_paths": [],
+                "configured": bool(cfg.atp_ocid or cfg.atp_connection_name),
+                "drilldown_product": "DB Management / OPSI",
+                "connection_name": cfg.atp_connection_name or None,
+            },
+        ]
+
     return [
         {
             "name": "drone-shop-portal",

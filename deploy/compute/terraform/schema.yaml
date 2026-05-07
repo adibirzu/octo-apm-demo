@@ -69,9 +69,12 @@ variableGroups:
   - title: "Application"
     variables:
       - dns_domain
+      - shop_hostname
+      - crm_hostname
       - create_dns_records
       - dns_zone_name_or_id
       - dns_record_ttl
+      - create_compute_instance_principal_policies
       - repo_url
       - repo_ref
       - enable_first_boot_deploy
@@ -95,6 +98,13 @@ variableGroups:
       - oracle_dsn
       - shop_private_service_url
       - crm_private_service_url
+      - oci_genai_endpoint
+      - oci_genai_model_id
+      - llmetry_capture_content
+      - langfuse_enabled
+      - langfuse_host
+      - langfuse_public_key
+      - langfuse_secret_key
 
   - title: "Database"
     variables:
@@ -114,11 +124,14 @@ variableGroups:
       - create_apm_domain
       - logging_retention_days
       - enable_log_analytics
+      - enable_log_analytics_connectors
       - create_log_analytics_namespace
       - log_analytics_namespace
       - existing_log_analytics_log_group_id
       - enable_stack_monitoring_standard
+      - enable_stack_monitoring_configs
       - enable_stack_monitoring_agent_plugin
+      - enable_unified_agent_log_collection
       - enable_stack_monitoring_host_registration
       - enable_stack_monitoring_atp_registration
       - stack_monitoring_atp_management_agent_id
@@ -449,7 +462,9 @@ variables:
   boot_volume_size_gbs:
     type: number
     title: "Boot volume size GB"
-    default: 100
+    description: "Boot volume size for each application VM. Keep at least 500 GB for local image builds, APM agents, logs, and demo data."
+    default: 500
+    minimum: 500
 
   ssh_public_key:
     type: string
@@ -459,14 +474,32 @@ variables:
   dns_domain:
     type: string
     title: "Base DNS domain"
-    description: "Stack expects shop.<domain> and crm.<domain>."
+    description: "Base domain used when explicit Shop/CRM hostnames are empty."
     required: true
+
+  shop_hostname:
+    type: string
+    title: "Drone Shop public hostname"
+    description: "Optional full hostname. Empty uses shop.<base DNS domain>."
+    required: false
+
+  crm_hostname:
+    type: string
+    title: "Enterprise CRM public hostname"
+    description: "Optional full hostname. Empty uses crm.<base DNS domain>."
+    required: false
 
   create_dns_records:
     type: boolean
     title: "Create DNS A records"
-    description: "Creates shop.<domain> and crm.<domain> records pointing at the Load Balancer public IP."
+    description: "Creates records for the resolved Shop and CRM hostnames pointing at the Load Balancer public IP."
     default: false
+
+  create_compute_instance_principal_policies:
+    type: boolean
+    title: "Create Compute instance-principal IAM"
+    description: "Creates the tenancy-level dynamic group and compartment policy used by instances. Disable when the operator lacks tenancy IAM privileges and wallet/secrets will be installed manually."
+    default: true
 
   dns_zone_name_or_id:
     type: oci:dns:zone:id
@@ -489,7 +522,7 @@ variables:
   repo_url:
     type: string
     title: "Repository URL"
-    default: "https://github.com/adibirzu/octo-apm-demo.git"
+    default: "https://github.com/example-org/octo-apm-demo.git"
 
   repo_ref:
     type: string
@@ -694,6 +727,70 @@ variables:
         - enable_first_boot_deploy
         - true
 
+  oci_genai_endpoint:
+    type: string
+    title: "OCI GenAI endpoint"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  oci_genai_model_id:
+    type: string
+    title: "OCI GenAI model ID"
+    required: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  llmetry_capture_content:
+    type: boolean
+    title: "Capture redacted LLM content previews"
+    description: "Default false stores hashes, lengths, token counts, and correlation IDs only."
+    default: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  langfuse_enabled:
+    type: boolean
+    title: "Enable Langfuse OTLP export"
+    default: false
+    visible:
+      eq:
+        - enable_first_boot_deploy
+        - true
+
+  langfuse_host:
+    type: string
+    title: "Langfuse URL"
+    required: false
+    visible:
+      eq:
+        - langfuse_enabled
+        - true
+
+  langfuse_public_key:
+    type: password
+    title: "Langfuse project public key"
+    required: false
+    visible:
+      eq:
+        - langfuse_enabled
+        - true
+
+  langfuse_secret_key:
+    type: password
+    title: "Langfuse project secret key"
+    required: false
+    visible:
+      eq:
+        - langfuse_enabled
+        - true
+
   atp_admin_password:
     type: password
     title: "ATP ADMIN password"
@@ -761,6 +858,16 @@ variables:
     title: "Route logs to OCI Log Analytics"
     default: false
 
+  enable_log_analytics_connectors:
+    type: boolean
+    title: "Create Log Analytics Service Connectors"
+    default: true
+    description: "Disable when service-connector-count quota is exhausted but the LA log group should still be created."
+    visible:
+      eq:
+        - enable_log_analytics
+        - true
+
   create_log_analytics_namespace:
     type: boolean
     title: "Onboard a new Log Analytics namespace"
@@ -793,6 +900,16 @@ variables:
     title: "Enable Stack Monitoring Standard onboarding"
     default: true
 
+  enable_stack_monitoring_configs:
+    type: boolean
+    title: "Create Stack Monitoring auto configs"
+    default: true
+    description: "Disable when Standard license or HOST auto-promote configs already exist, or when the operator lacks Stack Monitoring config privileges."
+    visible:
+      eq:
+        - enable_stack_monitoring_standard
+        - true
+
   enable_stack_monitoring_agent_plugin:
     type: boolean
     title: "Deploy Stack Monitoring Management Agent plugin"
@@ -802,6 +919,12 @@ variables:
       eq:
         - enable_stack_monitoring_standard
         - true
+
+  enable_unified_agent_log_collection:
+    type: boolean
+    title: "Create unified-agent log collection configs"
+    default: true
+    description: "Requires Compute instance-principal IAM because the agent configs target the dynamic group."
 
   enable_stack_monitoring_host_registration:
     type: boolean

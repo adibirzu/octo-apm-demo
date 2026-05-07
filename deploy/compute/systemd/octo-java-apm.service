@@ -1,0 +1,19 @@
+[Unit]
+Description=OCTO Java APM app-server sidecar (Podman)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/octo/deploy/compute
+ExecStartPre=-/usr/bin/podman rm -f octo-java-apm
+ExecStartPre=/usr/bin/bash -lc 'set -a; . /opt/octo/runtime.env; set +a; case "$${JAVA_APM_IMAGE_PULL_POLICY:-if-not-present}" in never) exit 0 ;; always) exec /usr/bin/podman pull "$${JAVA_APM_IMAGE}" ;; if-not-present) /usr/bin/podman image exists "$${JAVA_APM_IMAGE}" || exec /usr/bin/podman pull "$${JAVA_APM_IMAGE}" ;; *) echo "invalid JAVA_APM_IMAGE_PULL_POLICY=$${JAVA_APM_IMAGE_PULL_POLICY}" >&2; exit 1 ;; esac'
+ExecStart=/usr/bin/bash -lc 'set -a; . /opt/octo/runtime.env; set +a; exec /usr/bin/podman run --name octo-java-apm --rm --network host --env-file /opt/octo/container.env -e PORT=$${JAVA_APM_PORT:-18080} -e OCI_APM_SERVICE_NAME=$${JAVA_APM_SERVICE_NAME:-octo-java-app-server} -e PAYMENT_SIMULATION_MODE=$${PAYMENT_SIMULATION_MODE:-approve} --volume /opt/octo/apm-agent:/opt/apm-agent:ro,z --volume /opt/octo/wallet:/opt/oracle/wallet:ro,z "$${JAVA_APM_IMAGE}"'
+ExecStop=/usr/bin/podman stop -t 30 octo-java-apm
+Restart=always
+RestartSec=10
+TimeoutStartSec=0
+KillMode=none
+
+[Install]
+WantedBy=multi-user.target

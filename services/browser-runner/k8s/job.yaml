@@ -46,6 +46,10 @@ spec:
               value: "${CRM_BASE_URL}"
             - name: OCTO_BROWSER_ITERATIONS
               value: "${ITERATIONS:-1}"
+            - name: OCTO_BROWSER_SYNTHETIC_USER_DOMAIN
+              value: "${SYNTHETIC_USER_DOMAIN:-apex.example.test}"
+            - name: OCTO_BROWSER_SYNTHETIC_USERS
+              value: "${SYNTHETIC_USERS:-}"
             - name: OCTO_BROWSER_ARTIFACTS_DIR
               value: "/artifacts"
           volumeMounts:

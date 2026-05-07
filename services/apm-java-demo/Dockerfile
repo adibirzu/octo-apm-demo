@@ -14,7 +14,7 @@
 ###############################################################################
 
 # ── Builder ─────────────────────────────────────────────────────────────────
-FROM maven:3.9-eclipse-temurin-21 AS builder
+FROM docker.io/library/maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /build
 COPY services/apm-java-demo/pom.xml /build/pom.xml
 # Pre-fetch deps (cache layer)
@@ -32,7 +32,7 @@ RUN mvn -B -q package -DskipTests
 # one-time side-load command. The entrypoint gracefully skips the agent
 # if the jar is missing, so the app still serves traffic even before the
 # agent is attached.
-FROM eclipse-temurin:21-jre
+FROM docker.io/library/eclipse-temurin:21-jre
 ENV LANG=C.UTF-8 \
     JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxRAMPercentage=75" \
     APP_HOME=/app \

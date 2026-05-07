@@ -1,6 +1,6 @@
 # Introduction
 
-The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). The current unified deployment, Resource Manager stacks, and documentation live in [`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo), which combines the Drone Shop service, Enterprise CRM service, OCI deployment automation, and the production-demo Compute stack.
+The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). The current unified deployment, Resource Manager stacks, and documentation live in [`example-org/octo-apm-demo`](https://github.com/example-org/octo-apm-demo), which combines the Drone Shop service, Enterprise CRM service, OCI deployment automation, and the production-demo Compute stack.
 
 ## Goals
 
@@ -23,12 +23,12 @@ Both services integrate with the full OCI observability stack through modular ad
 
 ## Current Runtime Model
 
-- **Canonical deployment repo**: [`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo)
-- **Canonical docs site**: <https://adibirzu.github.io/octo-apm-demo>
-- **Default shared deployment hostnames**: `https://shop.cyber-sec.ro` and `https://crm.cyber-sec.ro`
-- **Validated private Compute hostnames**: `http://shop.1.octodemo.cloud` and `http://crm.1.octodemo.cloud`
-- **Shop frontend**: `https://shop.example.cloud`
-- **CRM frontend**: `https://crm.example.cloud`
+- **Canonical deployment repo**: [`example-org/octo-apm-demo`](https://github.com/example-org/octo-apm-demo)
+- **Canonical docs site**: <https://example-org.github.io/octo-apm-demo>
+- **Default shared deployment hostnames**: `https://shop.example.test` and `https://crm.example.test`
+- **Validated private Compute hostnames**: `http://shop.example.test` and `http://crm.example.test`
+- **Shop frontend**: `https://shop.example.test`
+- **CRM frontend**: `https://crm.example.test`
 - **Shared database**: Oracle ATP
 - **Catalog source of truth**: CRM
 - **Browser-visible CRM links**: public URL only
@@ -43,14 +43,14 @@ the current `deploy/bootstrap.sh` flow, private Compute Resource Manager
 package, Helm chart, cross-service E2E tests, and deployment runbooks.
 
 ```bash
-git clone https://github.com/adibirzu/octo-apm-demo.git
+git clone https://github.com/example-org/octo-apm-demo.git
 cd octo-apm-demo
 ./deploy/verify.sh
 ```
 
 Recommended production-demo path:
 
-[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
 
 That stack can create the VCN, public LB subnet, private app subnet,
 private DB subnet, NAT Gateway, Service Gateway, NSGs/security lists,
@@ -59,10 +59,10 @@ LB/WAF, APM, OCI Logging, Log Analytics pipelines, DB Management,
 Operations Insights, and Stack Monitoring Standard.
 
 If you prefer OKE, start with the unified
-[new tenancy guide](https://adibirzu.github.io/octo-apm-demo/getting-started/new-tenancy/).
-For the shared `DEFAULT` / `oci4cca` profile, the baked-in domain is
-`cyber-sec.ro`; check the unified
-[current status page](https://adibirzu.github.io/octo-apm-demo/operations/current-status/)
+[new tenancy guide](https://example-org.github.io/octo-apm-demo/getting-started/new-tenancy/).
+For the shared reference profile profile, the baked-in domain is
+`example.test`; check the unified
+[current status page](https://example-org.github.io/octo-apm-demo/operations/current-status/)
 before treating that shared environment as E2E-ready.
 
 ## OCI Services
@@ -215,8 +215,8 @@ flowchart TD
 |---|---|---|
 | [Local Docker](getting-started/quickstart.md) | 5 min | Development and testing |
 | [OKE Deployment](getting-started/oke-deployment.md) | 30 min | Production with full OCI observability |
-| [Private Compute Deployment](https://adibirzu.github.io/octo-apm-demo/getting-started/compute-deployment/) | 60-90 min | Production demo without Kubernetes, with LB/WAF, private instances, private ATP, APM, Logging, Log Analytics, and Stack Monitoring |
-| [Unified Deployment Options](https://adibirzu.github.io/octo-apm-demo/getting-started/deployment-options/) | varies | Choosing between OKE, private Compute, Resource Manager, and single-VM paths |
+| [Private Compute Deployment](https://example-org.github.io/octo-apm-demo/getting-started/compute-deployment/) | 60-90 min | Production demo without Kubernetes, with LB/WAF, private instances, private ATP, APM, Logging, Log Analytics, and Stack Monitoring |
+| [Unified Deployment Options](https://example-org.github.io/octo-apm-demo/getting-started/deployment-options/) | varies | Choosing between OKE, private Compute, Resource Manager, and single-VM paths |
 
 ## Next Steps
 
@@ -229,6 +229,6 @@ flowchart TD
 
 | Repository | Component |
 |---|---|
-| [octo-apm-demo](https://github.com/adibirzu/octo-apm-demo) | Unified deployment, Resource Manager stacks, and current documentation source |
-| [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) | Drone Shop + Workflow Gateway service source |
-| [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) | Enterprise CRM Portal |
+| [octo-apm-demo](https://github.com/example-org/octo-apm-demo) | Unified deployment, Resource Manager stacks, and current documentation source |
+| [octo-drone-shop](https://github.com/example-org/octo-drone-shop) | Drone Shop + Workflow Gateway service source |
+| [enterprise-crm-portal](https://github.com/example-org/enterprise-crm-portal) | Enterprise CRM Portal |

@@ -17,6 +17,17 @@
         window.apmrum.webApplication = '{{ app_name }}-frontend';
         window.apmrum.ociDataUploadEndpoint = '{{ rum_endpoint }}';
         window.apmrum.OracleAPMPublicDataKey = '{{ rum_public_key }}';
+        const octoSyntheticUser = (
+            new URLSearchParams(window.location.search).get("synthetic_user") ||
+            window.localStorage.getItem("octoSyntheticUserEmail") ||
+            ""
+        ).trim().toLowerCase();
+        const octoSyntheticUserIsValid = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(octoSyntheticUser);
+        if (octoSyntheticUserIsValid) {
+            window.localStorage.setItem("octoSyntheticUserEmail", octoSyntheticUser);
+            window.apmrum.username = octoSyntheticUser;
+            window.apmrum.syntheticUserDomain = octoSyntheticUser.split("@").pop();
+        }
         /* Observability v2 — surface workflow_id + request_id as RUM custom
            dimensions so RUM sessions join backend traces by workflow. */
         window.apmrum.customDimensions = Object.assign(
@@ -26,6 +37,10 @@
                 request_id: '{{ (request.state.request_id if request and request.state and request.state.request_id else "") }}',
             }
         );
+        window.apmrum.udfAttributes = (window.apmrum.udfAttributes || []).concat([
+            { name: "synthetic_user_domain", value: () => window.apmrum.syntheticUserDomain || undefined },
+            { name: "synthetic_user_enabled", value: () => window.apmrum.username ? "true" : "false" }
+        ]);
         /* Prevent RUM from adding tracing headers to app API calls */
         window.apmrum.traceSupportingEndpoints = [
             { hostPattern: '.*', headers: [] }
@@ -106,9 +121,15 @@
             dbManagementConsoleUrl: {{ db_management_console_url | tojson }},
             logAnalyticsConsoleUrl: {{ log_analytics_console_url | tojson }}
         };
+        window.OCTO_RUM_CONTEXT = {
+            appName: {{ app_name | tojson }},
+            adminLabEnabled: true,
+            atpConnectionName: {{ atp_connection_name | tojson }}
+        };
     </script>
     <script src="/static/js/app.js"></script>
     <script src="/static/js/observability.js" defer></script>
+    <script src="/static/js/rum-advanced.js" defer></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

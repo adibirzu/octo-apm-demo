@@ -5,8 +5,10 @@ locals {
     managed-by = "terraform"
   }, var.tags)
 
-  shop_hostname   = "shop.${var.dns_domain}"
-  crm_hostname    = "crm.${var.dns_domain}"
+  shop_hostname   = var.shop_hostname != "" ? var.shop_hostname : "shop.${var.dns_domain}"
+  crm_hostname    = var.crm_hostname != "" ? var.crm_hostname : "crm.${var.dns_domain}"
+  shop_public_url = var.enable_lb_https ? "https://${local.shop_hostname}" : "http://${local.shop_hostname}"
+  crm_public_url  = var.enable_lb_https ? "https://${local.crm_hostname}" : "http://${local.crm_hostname}"
   name_prefix_api = replace(var.name_prefix, "-", "_")
   shop_app_image = var.shop_app_image != "" ? var.shop_app_image : (
     var.app_image_build_enabled ? "localhost/octo-drone-shop:${var.image_tag}" : "octo-drone-shop:${var.image_tag}"
@@ -39,9 +41,14 @@ locals {
     "install.sh",
     "app-compose.yml",
     "runtime.env.template",
+    "synthetic-users-job.sh",
     "nginx/app.conf.template",
     "systemd/octo-compute.service",
+    "systemd/octo-java-apm.service",
     "systemd/octo-podman.service",
+    "systemd/octo-synthetic-users.service",
+    "systemd/octo-synthetic-users.timer",
+    "systemd/octo-workflow-gateway.service",
   ]
   compute_bootstrap_files = {
     for rel_path in local.compute_bootstrap_file_names :
@@ -107,17 +114,33 @@ locals {
       OTEL_SERVICE_NAME              = "octo-drone-shop"
       SERVICE_INSTANCE_ID            = "${var.name_prefix}-shop"
       DNS_DOMAIN                     = var.dns_domain
+      SHOP_PUBLIC_URL                = local.shop_public_url
+      OCTO_PUBLIC_HOSTNAME           = local.shop_hostname
+      CORS_ALLOWED_ORIGINS           = "${local.shop_public_url},${local.crm_public_url}"
       ENVIRONMENT                    = "production"
       DEMO_STACK_NAME                = var.name_prefix
+      APP_TOPOLOGY_PROFILE           = can(regex("private-demo", var.name_prefix)) ? "private-demo" : ""
       SERVICE_NAMESPACE              = "octo"
       PORT                           = "8080"
       APP_PORT                       = "8080"
       APP_CONTAINER_UID              = tostring(var.shop_container_uid)
       APP_CONTAINER_GID              = tostring(var.shop_container_gid)
       OCI_COMPARTMENT_ID             = var.compartment_id
+      OCI_GENAI_ENDPOINT             = var.oci_genai_endpoint
+      OCI_GENAI_MODEL_ID             = var.oci_genai_model_id
+      LLMETRY_ENABLED                = "true"
+      LLMETRY_STORE_ENABLED          = "true"
+      LLMETRY_CAPTURE_CONTENT        = tostring(var.llmetry_capture_content)
+      LANGFUSE_ENABLED               = tostring(var.langfuse_enabled)
+      LANGFUSE_HOST                  = var.langfuse_host
+      LANGFUSE_PUBLIC_KEY            = var.langfuse_public_key
+      LANGFUSE_SECRET_KEY            = var.langfuse_secret_key
+      LANGFUSE_OTEL_EXPORT_ENABLED   = "true"
+      LANGFUSE_TIMEOUT_SECONDS       = "2.0"
+      LANGFUSE_INGESTION_VERSION     = "4"
       SERVICE_CRM_URL                = local.crm_private_service_url
-      CRM_PUBLIC_URL                 = var.enable_lb_https ? "https://${local.crm_hostname}" : "http://${local.crm_hostname}"
-      CRM_BASE_URL                   = var.enable_lb_https ? "https://${local.crm_hostname}" : "http://${local.crm_hostname}"
+      CRM_PUBLIC_URL                 = local.crm_public_url
+      CRM_BASE_URL                   = local.crm_public_url
       SERVICE_SHOP_URL               = ""
       INTERNAL_SERVICE_KEY           = var.internal_service_key
       AUTH_TOKEN_SECRET              = var.auth_token_secret
@@ -164,17 +187,33 @@ locals {
       OTEL_SERVICE_NAME              = "enterprise-crm-portal"
       SERVICE_INSTANCE_ID            = "${var.name_prefix}-crm"
       DNS_DOMAIN                     = var.dns_domain
+      SHOP_PUBLIC_URL                = local.shop_public_url
+      OCTO_PUBLIC_HOSTNAME           = local.crm_hostname
+      CORS_ALLOWED_ORIGINS           = "${local.shop_public_url},${local.crm_public_url}"
       ENVIRONMENT                    = "production"
       DEMO_STACK_NAME                = var.name_prefix
+      APP_TOPOLOGY_PROFILE           = can(regex("private-demo", var.name_prefix)) ? "private-demo" : ""
       SERVICE_NAMESPACE              = "octo"
       PORT                           = "8080"
       APP_PORT                       = "8080"
       APP_CONTAINER_UID              = tostring(var.crm_container_uid)
       APP_CONTAINER_GID              = tostring(var.crm_container_gid)
       OCI_COMPARTMENT_ID             = var.compartment_id
+      OCI_GENAI_ENDPOINT             = ""
+      OCI_GENAI_MODEL_ID             = ""
+      LLMETRY_ENABLED                = "false"
+      LLMETRY_STORE_ENABLED          = "false"
+      LLMETRY_CAPTURE_CONTENT        = "false"
+      LANGFUSE_ENABLED               = "false"
+      LANGFUSE_HOST                  = ""
+      LANGFUSE_PUBLIC_KEY            = ""
+      LANGFUSE_SECRET_KEY            = ""
+      LANGFUSE_OTEL_EXPORT_ENABLED   = "false"
+      LANGFUSE_TIMEOUT_SECONDS       = "2.0"
+      LANGFUSE_INGESTION_VERSION     = "4"
       SERVICE_CRM_URL                = ""
       CRM_PUBLIC_URL                 = ""
-      CRM_BASE_URL                   = var.enable_lb_https ? "https://${local.crm_hostname}" : "http://${local.crm_hostname}"
+      CRM_BASE_URL                   = local.crm_public_url
       SERVICE_SHOP_URL               = local.shop_private_service_url
       INTERNAL_SERVICE_KEY           = var.internal_service_key
       AUTH_TOKEN_SECRET              = ""
@@ -1124,7 +1163,7 @@ resource "oci_identity_policy" "service_connector_log_analytics" {
 }
 
 resource "oci_sch_service_connector" "log_analytics_app" {
-  count          = var.enable_log_analytics ? 1 : 0
+  count          = var.enable_log_analytics && var.enable_log_analytics_connectors ? 1 : 0
   compartment_id = var.compartment_id
   display_name   = "${var.name_prefix}-la-app"
   description    = "Route OCTO application SDK logs into Log Analytics."
@@ -1148,7 +1187,7 @@ resource "oci_sch_service_connector" "log_analytics_app" {
 }
 
 resource "oci_sch_service_connector" "log_analytics_os" {
-  count          = var.enable_log_analytics ? 1 : 0
+  count          = var.enable_log_analytics && var.enable_log_analytics_connectors ? 1 : 0
   compartment_id = var.compartment_id
   display_name   = "${var.name_prefix}-la-os"
   description    = "Route OCTO OS and Oracle Cloud Agent custom logs into Log Analytics."
@@ -1172,7 +1211,7 @@ resource "oci_sch_service_connector" "log_analytics_os" {
 }
 
 resource "oci_sch_service_connector" "log_analytics_container" {
-  count          = var.enable_log_analytics ? 1 : 0
+  count          = var.enable_log_analytics && var.enable_log_analytics_connectors ? 1 : 0
   compartment_id = var.compartment_id
   display_name   = "${var.name_prefix}-la-container"
   description    = "Route OCTO Podman/Docker stdout logs into Log Analytics."
@@ -1196,7 +1235,7 @@ resource "oci_sch_service_connector" "log_analytics_container" {
 }
 
 resource "oci_sch_service_connector" "log_analytics_waf" {
-  count          = var.enable_log_analytics && var.create_load_balancer && var.enable_waf && var.enable_waf_logging ? 1 : 0
+  count          = var.enable_log_analytics && var.enable_log_analytics_connectors && var.create_load_balancer && var.enable_waf && var.enable_waf_logging ? 1 : 0
   compartment_id = var.compartment_id
   display_name   = "${var.name_prefix}-la-waf"
   description    = "Route OCTO WAF logs into Log Analytics."
@@ -1249,7 +1288,7 @@ resource "oci_waf_web_app_firewall" "lb" {
 }
 
 resource "oci_stack_monitoring_config" "standard_license_auto_assign" {
-  count          = var.enable_stack_monitoring_standard ? 1 : 0
+  count          = var.enable_stack_monitoring_standard && var.enable_stack_monitoring_configs ? 1 : 0
   compartment_id = var.compartment_id
   config_type    = "LICENSE_AUTO_ASSIGN"
   display_name   = "${var.name_prefix}-stack-monitoring-standard-license"
@@ -1259,7 +1298,7 @@ resource "oci_stack_monitoring_config" "standard_license_auto_assign" {
 }
 
 resource "oci_stack_monitoring_config" "host_auto_promote" {
-  count          = var.enable_stack_monitoring_standard ? 1 : 0
+  count          = var.enable_stack_monitoring_standard && var.enable_stack_monitoring_configs ? 1 : 0
   compartment_id = var.compartment_id
   config_type    = "AUTO_PROMOTE"
   display_name   = "${var.name_prefix}-stack-monitoring-host-auto-promote"
@@ -1445,6 +1484,7 @@ resource "time_sleep" "management_agent_registration" {
 }
 
 resource "oci_identity_dynamic_group" "compute" {
+  count          = var.create_compute_instance_principal_policies ? 1 : 0
   compartment_id = var.tenancy_ocid
   name           = "${var.name_prefix}-instances"
   description    = "OCTO private Compute demo hosts"
@@ -1452,28 +1492,30 @@ resource "oci_identity_dynamic_group" "compute" {
 }
 
 resource "oci_identity_policy" "compute" {
+  count          = var.create_compute_instance_principal_policies ? 1 : 0
   compartment_id = var.compartment_id
   name           = "${var.name_prefix}-instances"
   description    = "Least-privilege access for OCTO Compute app instances"
   statements = [
-    "Allow dynamic-group ${oci_identity_dynamic_group.compute.name} to read repos in compartment id ${var.compartment_id}",
-    "Allow dynamic-group ${oci_identity_dynamic_group.compute.name} to use log-content in compartment id ${var.compartment_id}",
-    "Allow dynamic-group ${oci_identity_dynamic_group.compute.name} to use apm-domains in compartment id ${var.compartment_id}",
-    "Allow dynamic-group ${oci_identity_dynamic_group.compute.name} to use metrics in compartment id ${var.compartment_id}",
-    "Allow dynamic-group ${oci_identity_dynamic_group.compute.name} to use management-agents in compartment id ${var.compartment_id}",
-    "Allow dynamic-group ${oci_identity_dynamic_group.compute.name} to read autonomous-database-family in compartment id ${var.compartment_id}",
-    "Allow dynamic-group ${oci_identity_dynamic_group.compute.name} to read secret-family in compartment id ${var.compartment_id}",
+    "Allow dynamic-group ${oci_identity_dynamic_group.compute[0].name} to read repos in compartment id ${var.compartment_id}",
+    "Allow dynamic-group ${oci_identity_dynamic_group.compute[0].name} to use log-content in compartment id ${var.compartment_id}",
+    "Allow dynamic-group ${oci_identity_dynamic_group.compute[0].name} to use apm-domains in compartment id ${var.compartment_id}",
+    "Allow dynamic-group ${oci_identity_dynamic_group.compute[0].name} to use metrics in compartment id ${var.compartment_id}",
+    "Allow dynamic-group ${oci_identity_dynamic_group.compute[0].name} to use management-agents in compartment id ${var.compartment_id}",
+    "Allow dynamic-group ${oci_identity_dynamic_group.compute[0].name} to read autonomous-database-family in compartment id ${var.compartment_id}",
+    "Allow dynamic-group ${oci_identity_dynamic_group.compute[0].name} to read secret-family in compartment id ${var.compartment_id}",
   ]
 }
 
 resource "oci_logging_unified_agent_configuration" "os_logs" {
+  count          = var.enable_unified_agent_log_collection && var.create_compute_instance_principal_policies ? 1 : 0
   compartment_id = var.compartment_id
   display_name   = "${var.name_prefix}-os-logs"
   description    = "Collect OS, cloud-init, Podman, Docker, and OCTO install logs from the two private Compute instances."
   is_enabled     = true
 
   group_association {
-    group_list = [oci_identity_dynamic_group.compute.id]
+    group_list = [oci_identity_dynamic_group.compute[0].id]
   }
 
   service_configuration {
@@ -1502,13 +1544,14 @@ resource "oci_logging_unified_agent_configuration" "os_logs" {
 }
 
 resource "oci_logging_unified_agent_configuration" "container_stdout" {
+  count          = var.enable_unified_agent_log_collection && var.create_compute_instance_principal_policies ? 1 : 0
   compartment_id = var.compartment_id
   display_name   = "${var.name_prefix}-container-stdout"
   description    = "Collect Podman and Docker container stdout/stderr from OCTO app containers."
   is_enabled     = true
 
   group_association {
-    group_list = [oci_identity_dynamic_group.compute.id]
+    group_list = [oci_identity_dynamic_group.compute[0].id]
   }
 
   service_configuration {

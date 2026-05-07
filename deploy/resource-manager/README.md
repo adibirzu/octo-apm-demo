@@ -1,28 +1,41 @@
 # OCI Resource Manager stack
 
-[![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
 
 One-click tenancy bootstrap for the observability + integration surface
 (APM Domain + RUM, Log Analytics app-log pipeline, WAF policies).
 Uploaded to **OCI Console → Resource Manager → Stacks**.
+
+Private branch note: build `deploy/resource-manager/build/octo-stack.zip`
+locally and upload it manually. The placeholder GitHub release URL previously
+used by the deploy button currently returns HTTP 404 and cannot be imported by
+OCI Resource Manager.
 
 The stack does **not** create OKE, VCNs, or the Autonomous Database —
 those are selected from existing tenancy resources via the picker
 widgets. This is intentional: tenancies vary wildly in network layout
 and DB sizing, so hard-coding those would break portability.
 
+If the Console opens `https://cloud.oracle.com/stacks/create` and returns
+`NotAuthorizedOrNotFound(404)`, manually open the Resource Manager route:
+`https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=...`.
+The shorter `/stacks/create` route is stale. If the corrected route still
+fails, verify the zip URL returns HTTP 200, then verify Console
+tenancy/region context and Resource Manager create/import/job permissions for
+the selected compartment.
+
 ## Package + upload
 
-The button above opens OCI Resource Manager with the latest published
-stack package from the `resource-manager-stack` GitHub Release:
+The historical deploy button expected a stack package from the
+`resource-manager-stack` GitHub Release:
 
 ```text
-https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip
+https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip
 ```
 
-For this upstream repo, the release asset is already published. On a
-fresh fork, build the zip and upload it to an equivalent public release
-asset before using a fork-specific button URL.
+That placeholder asset currently returns HTTP 404. On a private fork, build
+the zip and upload it to a real private release asset before using a
+fork-specific button URL, or use manual Console upload.
 
 ```bash
 ./deploy/resource-manager/stack-package.sh

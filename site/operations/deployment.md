@@ -1,11 +1,11 @@
 # Deployment
 
-For the `DEFAULT` profile, use `cyber-sec.ro` as both the bootstrap base
+For the `DEFAULT` profile, use `example.test` as both the bootstrap base
 domain (`DNS_BASE_DOMAIN`) and the rollout host domain (`DNS_DOMAIN`).
 Check [Current Status](current-status.md) before relying on any shared
-tenancy. As of May 4, 2026, the separate `cap` private Compute
+tenancy. As of May 4, 2026, the separate `<REFERENCE_PROFILE>` private Compute
 deployment is the current production-demo target for
-`shop.1.octodemo.cloud` and `crm.1.octodemo.cloud`; the `DEFAULT` OKE
+`shop.example.test` and `crm.example.test`; the `DEFAULT` OKE
 runtime remains a shared environment that should be validated before
 hostname-only E2E.
 
@@ -25,7 +25,7 @@ compartment:
 ```bash
 OCI_PROFILE=DEFAULT \
 OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
-DNS_BASE_DOMAIN=cyber-sec.ro \
+DNS_BASE_DOMAIN=example.test \
 REMOTE_BUILD_HOST=control-plane-oci \
 ./deploy/bootstrap.sh
 ```
@@ -39,7 +39,7 @@ Shop+CRM rollout.
 ```bash
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
-DNS_DOMAIN=cyber-sec.ro \
+DNS_DOMAIN=example.test \
 ./deploy/deploy.sh                  # Build + push + rollout
 
 ./deploy/deploy.sh --build-only     # Build + push, no rollout

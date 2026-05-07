@@ -35,7 +35,8 @@ def _chat_sync(message: str, documents: list[dict[str, str]]) -> dict[str, Any]:
         documents=documents,
         preamble_override=(
             "You are OCTO Drone Advisor. Answer only with grounded drone product and operations guidance. "
-            "Use ATP catalog facts, be concise, and call out when a detail is not in the catalog."
+            "Use ATP catalog facts, be concise, cite SKUs when useful, and call out when a detail is not in the catalog. "
+            "Do not answer questions outside drone specs, payloads, sensors, stock, pricing, checkout options, or mission fit."
         ),
         max_tokens=500,
         temperature=0.2,

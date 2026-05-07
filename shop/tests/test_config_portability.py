@@ -20,6 +20,7 @@ def env(monkeypatch: pytest.MonkeyPatch) -> Iterator[pytest.MonkeyPatch]:
     """Reset config-affecting env vars for each test and reimport config."""
     keys = [
         "DNS_DOMAIN",
+        "SHOP_PUBLIC_URL",
         "ENVIRONMENT",
         "APP_ENV",
         "AUTH_TOKEN_SECRET",
@@ -34,6 +35,22 @@ def env(monkeypatch: pytest.MonkeyPatch) -> Iterator[pytest.MonkeyPatch]:
         "ENTERPRISE_CRM_URL",
         "ORACLE_DSN",
         "ORACLE_PASSWORD",
+        "JAVA_APM_TIMEOUT_SECONDS",
+        "PORT",
+        "WORKFLOW_POLL_SECONDS",
+        "WORKFLOW_API_BASE_URL",
+        "WORKFLOW_PUBLIC_API_BASE_URL",
+        "LLMETRY_ENABLED",
+        "LLMETRY_STORE_ENABLED",
+        "LLMETRY_CAPTURE_CONTENT",
+        "LANGFUSE_ENABLED",
+        "LANGFUSE_HOST",
+        "LANGFUSE_BASE_URL",
+        "LANGFUSE_PUBLIC_URL",
+        "LANGFUSE_PUBLIC_KEY",
+        "LANGFUSE_PUBLIC_KEY_FILE",
+        "LANGFUSE_SECRET_KEY",
+        "LANGFUSE_SECRET_KEY_FILE",
     ]
     for k in keys:
         monkeypatch.delenv(k, raising=False)
@@ -63,6 +80,15 @@ class TestIdcsRedirectNoLocalhostLeak:
         assert (
             cfg.idcs_redirect_uri
             == "https://shop.tenant-a.example.invalid/api/auth/sso/callback"
+        )
+
+    def test_idcs_redirect_uses_shop_public_url_when_set(self, env):
+        env.setenv("DNS_DOMAIN", "example.test")
+        env.setenv("SHOP_PUBLIC_URL", "https://shop.example.test")
+        cfg = _fresh_config(env)
+        assert (
+            cfg.idcs_redirect_uri
+            == "https://shop.example.test/api/auth/sso/callback"
         )
 
     def test_idcs_redirect_explicit_override_wins(self, env):
@@ -112,10 +138,46 @@ class TestPublicUrlsNoFabrication:
         cfg = _fresh_config(env)
         assert cfg.shop_public_url == ""
 
+    def test_shop_public_url_override_wins(self, env):
+        env.setenv("DNS_DOMAIN", "example.test")
+        env.setenv("SHOP_PUBLIC_URL", "https://shop.example.test")
+        cfg = _fresh_config(env)
+        assert cfg.shop_public_url == "https://shop.example.test"
+
     def test_crm_public_url_empty_without_dns_or_override(self, env):
         cfg = _fresh_config(env)
         assert cfg.crm_public_url == ""
 
+    def test_cors_origins_use_public_url_overrides(self, env):
+        env.setenv("DNS_DOMAIN", "example.test")
+        env.setenv("SHOP_PUBLIC_URL", "https://shop.example.test")
+        env.setenv("CRM_PUBLIC_URL", "https://admin.example.test")
+        cfg = _fresh_config(env)
+        assert cfg.cors_origins_default == (
+            "https://shop.example.test,https://admin.example.test"
+        )
+
     def test_cors_origins_empty_without_dns(self, env):
         cfg = _fresh_config(env)
         assert cfg.cors_origins_default == ""
+
+    def test_workflow_public_api_base_url_allows_same_origin_proxy(self, env):
+        env.setenv("WORKFLOW_API_BASE_URL", "http://127.0.0.1:8090")
+        env.setenv("WORKFLOW_PUBLIC_API_BASE_URL", "/api/workflow-gateway")
+        cfg = _fresh_config(env)
+        assert cfg.workflow_gateway_configured is True
+        assert cfg.workflow_public_api_base_url == "/api/workflow-gateway"
+
+
+@pytest.mark.unit
+class TestBlankNumericEnvDefaults:
+    def test_blank_numeric_values_use_defaults(self, env):
+        env.setenv("JAVA_APM_TIMEOUT_SECONDS", "")
+        env.setenv("PORT", "")
+        env.setenv("WORKFLOW_POLL_SECONDS", "")
+
+        cfg = _fresh_config(env)
+
+        assert cfg.java_apm_timeout_seconds == 3.0
+        assert cfg.port == 8080
+        assert cfg.workflow_poll_seconds == 90

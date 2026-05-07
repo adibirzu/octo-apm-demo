@@ -10,19 +10,125 @@ import re
 import sys
 import threading
 import time
+import uuid
+from contextvars import ContextVar
 from datetime import datetime, timezone
+
+from opentelemetry import trace
 
 from server.config import cfg
 from server.observability.correlation import current_trace_context, service_metadata
 
 
+_REQUEST_SPAN = ContextVar("octo_request_span", default=None)
+
+
 # ── PII masking ──────────────────────────────────────────────────
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 _PHONE_RE = re.compile(r"\+?\d[\d\s\-().]{7,}\d")
+_CARD_RE = re.compile(r"\b(?:\d[ -]?){13,19}\b")
 _PII_KEYS = frozenset({
     "customer_email", "email", "customer.email", "security.username",
     "customer_phone", "phone", "customer.phone",
+    "payment.card_number", "card_number", "card.number",
+    "payment.card_cvv", "card_cvv", "card.cvv", "cvv",
 })
+
+_SPAN_EVENT_KEYS = (
+    "trace_id",
+    "span_id",
+    "oracleApmTraceId",
+    "oracleApmSpanId",
+    "service.name",
+    "app.service",
+    "app.name",
+    "app.module",
+    "app.page.name",
+    "http.method",
+    "http.url.path",
+    "http.status_code",
+    "http.response_time_ms",
+    "correlation.id",
+    "workflow_id",
+    "workflow_step",
+    "workflow.id",
+    "workflow.step",
+    "request_id",
+    "run_id",
+    "upstream.trace_id",
+    "db.target",
+    "db.connection_name",
+    "payment.provider",
+    "payment.status",
+    "payment.risk_score",
+    "payment.interception.detected",
+    "payment.redirect.detected",
+    "assistant.session_id",
+    "assistant.provider",
+    "assistant.model_id",
+    "assistant.documents_grounded",
+    "assistant.guardrail.scope",
+    "assistant.guardrail.allowed",
+    "assistant.guardrail.reason",
+    "assistant.outcome",
+    "llmetry.schema.version",
+    "llmetry.latency_ms",
+    "llmetry.content.captured",
+    "llmetry.error_type",
+    "llm.request.type",
+    "llm.system",
+    "llm.model",
+    "llm.prompt.hash",
+    "llm.prompt.length",
+    "llm.response.hash",
+    "llm.response.length",
+    "llm.token.prompt",
+    "llm.token.completion",
+    "llm.token.total",
+    "gen_ai.system",
+    "gen_ai.operation.name",
+    "gen_ai.request.model",
+    "gen_ai.response.model",
+    "gen_ai.usage.input_tokens",
+    "gen_ai.usage.output_tokens",
+    "gen_ai.usage.total_tokens",
+    "langfuse.configured",
+    "langfuse.trace.name",
+    "langfuse.session.id",
+    "langfuse.observation.type",
+    "java_apm.path",
+    "java_apm.status_code",
+    "java_apm.latency_ms",
+    "java_apm.error_type",
+    "oci.api_gateway.name",
+    "oci.api_gateway.deployment_id",
+    "oci.api_gateway.scope",
+    "oci.api_gateway.route",
+    "oci.api_gateway.route_id",
+    "oci.api_gateway.route_family",
+    "oci.api_gateway.request_id",
+    "oci.api_gateway.action",
+    "oci.api_gateway.policy.decision",
+    "oci.api_gateway.latency_ms",
+    "oci.api_gateway.rate_limit.limit",
+    "oci.api_gateway.rate_limit.remaining",
+    "oci.api_gateway.threat_signal",
+    "mitre.technique_id",
+    "mitre.tactic",
+    "client.address",
+    "source.ip",
+    "server.address",
+    "destination.ip",
+    "destination.port",
+    "host.name",
+    "cloud.instance.id",
+    "security.attack.detected",
+    "security.attack.id",
+    "security.attack.stage",
+    "security.attack.type",
+    "security.attack.severity",
+    "security.severity",
+)
 
 
 def _mask_email(email: str) -> str:
@@ -39,6 +145,15 @@ def _mask_phone(phone: str) -> str:
     return f"***{digits[-4:]}" if len(digits) >= 4 else "***"
 
 
+def _mask_card_number(card_number: str) -> str:
+    digits = re.sub(r"\D", "", card_number)
+    return f"****{digits[-4:]}" if len(digits) >= 4 else "****"
+
+
+def _mask_card_mentions(value: str) -> str:
+    return _CARD_RE.sub(lambda match: _mask_card_number(match.group(0)), value)
+
+
 def _mask_pii(data: dict) -> dict:
     """Return a new dict with PII fields masked. Does not mutate input."""
     masked = {}
@@ -49,13 +164,68 @@ def _mask_pii(data: dict) -> dict:
         if key in _PII_KEYS:
             if "@" in value:
                 masked[key] = _mask_email(value)
+            elif "cvv" in key.lower():
+                masked[key] = "***"
+            elif key.lower() in {"payment.card_number", "card_number", "card.number"}:
+                masked[key] = _mask_card_number(value)
             elif _PHONE_RE.search(value):
                 masked[key] = _mask_phone(value)
             else:
                 masked[key] = "***"
+        elif _EMAIL_RE.search(value):
+            masked[key] = _mask_card_mentions(_EMAIL_RE.sub(lambda match: _mask_email(match.group(0)), value))
+        elif _CARD_RE.search(value):
+            masked[key] = _mask_card_mentions(value)
         else:
             masked[key] = value
     return masked
+
+
+def _span_event_value(value):
+    if isinstance(value, (bool, int, float, str)):
+        return value[:512] if isinstance(value, str) else value
+    if value is None:
+        return ""
+    return json.dumps(value, default=str)[:512]
+
+
+def bind_request_span(span):
+    """Bind the request/server span so app logs also show on root span details."""
+    return _REQUEST_SPAN.set(span)
+
+
+def reset_request_span(token) -> None:
+    _REQUEST_SPAN.reset(token)
+
+
+def _event_attrs(level: str, message: str, payload: dict) -> dict:
+    attrs = {
+        "log.severity": level.upper(),
+        "log.message": message[:512],
+        "log.logger": "security.events",
+    }
+    for key in _SPAN_EVENT_KEYS:
+        if key in payload:
+            attrs[key] = _span_event_value(payload[key])
+    return attrs
+
+
+def _record_span_log_event(span, attrs: dict) -> None:
+    if span and span.is_recording():
+        span.add_event("app.log", attrs)
+
+
+def _add_current_span_log_event(level: str, message: str, payload: dict) -> None:
+    """Attach a compact app log event to active and request-root spans."""
+    try:
+        attrs = _event_attrs(level, message, payload)
+        span = trace.get_current_span()
+        _record_span_log_event(span, attrs)
+        request_span = _REQUEST_SPAN.get()
+        if request_span is not None and request_span is not span:
+            _record_span_log_event(request_span, attrs)
+    except Exception:
+        return
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +331,7 @@ def push_log(level: str, message: str, **kwargs):
 
     # Mask PII before logging to external systems
     safe_kwargs = _mask_pii(kwargs)
+    _add_current_span_log_event(level, message, safe_kwargs)
 
     # Write to structured logger (stdout)
     record = logging.LogRecord(
@@ -180,15 +351,24 @@ def _push_to_oci_logging(level: str, message: str, extra: dict):
     try:
         import oci
         from oci.loggingingestion.models import PutLogsDetails, LogEntryBatch, LogEntry
+        event_time = datetime.now(timezone.utc)
         entry = LogEntry(
-            data=json.dumps({"message": message, **extra}, default=str),
-            id=f"octo-{int(time.time() * 1000)}",
-            time=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            data=json.dumps(
+                {
+                    "timestamp": event_time.isoformat(),
+                    "level": level.upper(),
+                    "message": message,
+                    **extra,
+                },
+                default=str,
+            ),
+            id=f"octo-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}",
+            time=event_time,
         )
         batch = LogEntryBatch(
-            defaultloglevel=level.upper(),
-            source=f"{cfg.app_name}-{cfg.app_runtime}",
-            type="octo-crm-apm",
+            source=cfg.otel_service_name,
+            type=cfg.app_name,
+            subject=cfg.brand_name,
             entries=[entry],
         )
         client.put_logs(

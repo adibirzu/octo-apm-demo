@@ -7,7 +7,7 @@
 #
 # Usage:
 #   ./deploy/compute/deploy-apps.sh --outputs-json outputs.json --role all --image-tag 20260505
-#   ./deploy/compute/deploy-apps.sh --profile cap --role shop --shop-image iad.ocir.io/ns/octo-drone-shop:20260505 --apply
+#   ./deploy/compute/deploy-apps.sh --profile <OCI_PROFILE> --role shop --shop-image iad.ocir.io/ns/octo-drone-shop:20260505 --apply
 #   ./deploy/compute/deploy-apps.sh --outputs-json outputs.json --compartment-id ocid1.compartment.oc1..xxxx --repo-ref main --apply
 #   ./deploy/compute/deploy-apps.sh --shop-instance-id ocid1.instance.oc1..shop --crm-instance-id ocid1.instance.oc1..crm --compartment-id ocid1.compartment.oc1..xxxx --apply
 

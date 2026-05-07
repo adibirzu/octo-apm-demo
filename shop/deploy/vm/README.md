@@ -47,7 +47,7 @@ Cross-service calls stay on the container network:
 sudo dnf install -y git curl unzip                 # or apt-get install ...
 
 # 2. Clone
-git clone https://github.com/adibirzu/octo-drone-shop.git /opt/octo
+git clone https://github.com/example-org/octo-drone-shop.git /opt/octo
 cd /opt/octo/deploy/vm
 
 # 3. Env

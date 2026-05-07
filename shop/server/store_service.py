@@ -2,9 +2,25 @@
 
 from __future__ import annotations
 
+import re
+import uuid
 from typing import Any
 
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+
+
+_CHECKOUT_IDEMPOTENCY_KEY_RE = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
+
+
+def normalize_checkout_idempotency_key(value: object) -> str:
+    """Validate a caller-supplied checkout idempotency key."""
+    key = str(value or "").strip()
+    if not key:
+        return ""
+    if not _CHECKOUT_IDEMPOTENCY_KEY_RE.fullmatch(key):
+        raise ValueError("checkout idempotency key must be 8-128 URL-safe characters")
+    return key
 
 
 async def fetch_cart_items(db, session_id: str) -> list[dict[str, Any]]:
@@ -122,6 +138,57 @@ async def apply_coupon(db, code: str, subtotal: float) -> dict[str, Any]:
     return {"code": code, "discount": discount, "valid": True}
 
 
+async def _existing_order_for_checkout_key(db, checkout_idempotency_key: str) -> dict[str, Any] | None:
+    if not checkout_idempotency_key:
+        return None
+
+    order_lookup = await db.execute(
+        text(
+            "SELECT id, customer_id, total, status, created_at FROM orders "
+            "WHERE checkout_idempotency_key = :key FETCH FIRST 1 ROWS ONLY"
+        ),
+        {"key": checkout_idempotency_key},
+    )
+    order_row = order_lookup.mappings().first()
+    if not order_row:
+        return None
+
+    order = dict(order_row)
+    order_id = order["id"]
+    item_summary = await db.execute(
+        text(
+            "SELECT COALESCE(SUM(quantity * unit_price), 0) AS subtotal, "
+            "COALESCE(SUM(quantity), 0) AS item_count "
+            "FROM order_items WHERE order_id = :order_id"
+        ),
+        {"order_id": order_id},
+    )
+    item_row = item_summary.mappings().first() or {}
+    shipment_lookup = await db.execute(
+        text(
+            "SELECT tracking_number, shipping_cost FROM shipments "
+            "WHERE order_id = :order_id ORDER BY id DESC FETCH FIRST 1 ROWS ONLY"
+        ),
+        {"order_id": order_id},
+    )
+    shipment = shipment_lookup.mappings().first() or {}
+    subtotal = round(float(item_row.get("subtotal") or 0), 2)
+    shipping_cost = round(float(shipment.get("shipping_cost") or 0), 2)
+    total = round(float(order.get("total") or 0), 2)
+    discount = round(max(subtotal + shipping_cost - total, 0), 2)
+
+    return {
+        "order": order,
+        "subtotal": subtotal,
+        "shipping_cost": shipping_cost,
+        "coupon": {"code": "", "discount": discount, "valid": False},
+        "total": total,
+        "tracking_number": shipment.get("tracking_number") or f"OCTO-{order_id:06d}",
+        "item_count": int(item_row.get("item_count") or 0),
+        "idempotent_replay": True,
+    }
+
+
 async def place_order(
     db,
     *,
@@ -134,33 +201,53 @@ async def place_order(
     session_id: str = "",
     source: str = "shop",
     trace_id: str = "",
+    checkout_idempotency_key: str = "",
 ) -> dict[str, Any]:
+    normalized_checkout_key = normalize_checkout_idempotency_key(checkout_idempotency_key)
+    if normalized_checkout_key:
+        existing = await _existing_order_for_checkout_key(db, normalized_checkout_key)
+        if existing:
+            return existing
+
+    order_lookup_key = normalized_checkout_key or f"auto:{uuid.uuid4()}"
     subtotal = compute_subtotal(items)
     coupon = await apply_coupon(db, coupon_code, subtotal)
     shipping_cost = 0.0 if subtotal >= 5000 else 149.0 if subtotal else 0.0
     total = round(max(subtotal - float(coupon["discount"]), 0) + shipping_cost, 2)
 
-    await db.execute(
-        text(
-            "INSERT INTO orders (customer_id, total, status, payment_method, payment_status, notes, shipping_address) "
-            "VALUES (:customer_id, :total, :status, :payment_method, :payment_status, :notes, :shipping_address)"
-        ),
-        {
-            "customer_id": customer["id"],
-            "total": total,
-            "status": "processing",
-            "payment_method": payment_method,
-            "payment_status": "completed" if payment_method in ["credit_card", "crypto"] else "pending",
-            "notes": notes or f"Source={source}; Coupon={coupon_code or 'none'}",
-            "shipping_address": shipping_address,
-        },
-    )
+    try:
+        await db.execute(
+            text(
+                "INSERT INTO orders (customer_id, total, status, payment_method, payment_status, "
+                "notes, shipping_address, checkout_idempotency_key) "
+                "VALUES (:customer_id, :total, :status, :payment_method, :payment_status, "
+                ":notes, :shipping_address, :checkout_idempotency_key)"
+            ),
+            {
+                "customer_id": customer["id"],
+                "total": total,
+                "status": "processing",
+                "payment_method": payment_method,
+                "payment_status": "completed" if payment_method in ["credit_card", "crypto"] else "pending",
+                "notes": notes or f"Source={source}; Coupon={coupon_code or 'none'}",
+                "shipping_address": shipping_address,
+                "checkout_idempotency_key": order_lookup_key,
+            },
+        )
+    except IntegrityError:
+        if not normalized_checkout_key:
+            raise
+        await db.rollback()
+        existing = await _existing_order_for_checkout_key(db, normalized_checkout_key)
+        if existing:
+            return existing
+        raise
     order_lookup = await db.execute(
         text(
-            "SELECT id, total, status, created_at FROM orders WHERE customer_id = :customer_id "
-            "ORDER BY created_at DESC FETCH FIRST 1 ROWS ONLY"
+            "SELECT id, total, status, created_at FROM orders "
+            "WHERE checkout_idempotency_key = :checkout_idempotency_key FETCH FIRST 1 ROWS ONLY"
         ),
-        {"customer_id": customer["id"]},
+        {"checkout_idempotency_key": order_lookup_key},
     )
     order = dict(order_lookup.mappings().first())
 
@@ -207,7 +294,10 @@ async def place_order(
         ),
         {
                 "user_id": customer["id"],
-                "details": f"resource=orders/{order['id']}; source={source}; session_id={session_id or 'n/a'}; coupon={coupon_code or 'none'}",
+                "details": (
+                    f"resource=orders/{order['id']}; source={source}; session_id={session_id or 'n/a'}; "
+                    f"coupon={coupon_code or 'none'}; checkout_idempotency={'present' if normalized_checkout_key else 'generated'}"
+                ),
                 "trace_id": trace_id,
             },
         )
@@ -223,4 +313,43 @@ async def place_order(
         "total": total,
         "tracking_number": tracking_number,
         "item_count": sum(int(item["quantity"]) for item in items),
+        "idempotent_replay": False,
     }
+
+
+async def update_order_payment_state(
+    db,
+    *,
+    order_id: int,
+    payment_provider: str,
+    payment_provider_reference: str,
+    payment_status: str,
+) -> dict[str, str]:
+    """Persist payment simulation/provider details on an order."""
+    normalized_payment_status = (payment_status or "pending").lower()
+    if normalized_payment_status == "authorized":
+        order_status = "processing"
+        stored_payment_status = "completed"
+    elif normalized_payment_status in {"declined", "failed", "timeout"}:
+        order_status = "failed"
+        stored_payment_status = "failed"
+    else:
+        order_status = "payment_pending"
+        stored_payment_status = "pending"
+
+    await db.execute(
+        text(
+            "UPDATE orders SET payment_provider = :payment_provider, "
+            "payment_provider_reference = :payment_provider_reference, "
+            "payment_status = :payment_status, status = :status "
+            "WHERE id = :order_id"
+        ),
+        {
+            "order_id": order_id,
+            "payment_provider": payment_provider,
+            "payment_provider_reference": payment_provider_reference,
+            "payment_status": stored_payment_status,
+            "status": order_status,
+        },
+    )
+    return {"payment_status": stored_payment_status, "order_status": order_status}

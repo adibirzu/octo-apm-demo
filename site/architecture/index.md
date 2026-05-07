@@ -31,9 +31,12 @@ The OCTO Drone Shop uses a **modular, framework-based architecture** that enable
 Drawio sources live in [`diagrams/`](diagrams/README.md) and open at
 [app.diagrams.net](https://app.diagrams.net):
 
+- **Private Demo Observability Reference** — [`diagrams/private-demo-observability-reference.drawio`](diagrams/private-demo-observability-reference.drawio). Current private Compute deployment for `shop.example.test` and `admin.example.test`, including manual LB HTTPS preservation, Java app-server APM, OCI Logging, Service Connector, Log Analytics, Cloud Guard OSQuery, Availability Monitoring, and Stack Monitoring pivots.
 - **Platform Overview** — [`diagrams/platform-overview.drawio`](diagrams/platform-overview.drawio). Users → WAF → OKE → data + observability plane, every service + every OCI backend.
 - **Observability Flow** — [`diagrams/observability-flow.drawio`](diagrams/observability-flow.drawio). MELTS signal flow: traces / logs / metrics / events / SQL-perf routed to OCI APM / Logging / Log Analytics / Stack Monitoring / Events.
 - **Deploy Topology** — [`diagrams/deploy-topology.drawio`](diagrams/deploy-topology.drawio). Build path + OCIR + three deploy targets (OKE, single-VM, local-stack).
+
+![Private Demo OCTO APM Demo architecture](diagrams/private-demo-observability-reference.svg)
 
 See the [diagrams README](diagrams/README.md) for the shape / colour legend and CLI re-render commands.
 

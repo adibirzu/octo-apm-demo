@@ -57,7 +57,7 @@ def test_shop_mutation_rejects_invalid_urls() -> None:
             name="Octo Demo",
             slug="octo-demo",
             storefront_url="not-a-url",
-            crm_base_url="https://crm.example.cloud",
+            crm_base_url="https://crm.example.test",
             region="eu-central",
         )
 

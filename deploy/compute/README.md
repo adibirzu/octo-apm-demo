@@ -6,11 +6,12 @@ Production-demo path for running OCTO without Kubernetes:
 - one private OCI Compute instance for **Enterprise CRM Portal**
 - one dedicated private Oracle ATP database
 - one public OCI Load Balancer with host routing for `shop.<domain>` and
-  `crm.<domain>`
+  `crm.<domain>`, or explicit `shop_hostname` / `crm_hostname` values
 - OCI Web Application Firewall attached to the Load Balancer
 - OCI APM Domain plus OpenTelemetry app instrumentation
 - OCI Logging custom logs for app SDK logs, container stdout, OS,
-  cloud-init, and install logs
+  cloud-init, and install logs, with collection enabled when the required
+  IAM and agent configuration toggles are enabled
 - optional Service Connector Hub pipelines into OCI Log Analytics
 - Stack Monitoring Standard onboarding for hosts, with automatic
   Management Agent plugin deployment and optional explicit
@@ -20,7 +21,21 @@ The old `deploy/vm/` path remains available for a single host. Use this
 path when the demo needs production-shaped network isolation and
 host-level telemetry.
 
-[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+
+Private branch import note: build `deploy/compute/build/octo-compute-stack.zip`
+locally and upload it through **OCI Console -> Developer Services -> Resource
+Manager -> Stacks -> Create Stack -> My Configuration**. The placeholder GitHub
+release URL previously used by the deploy button returns HTTP 404, so the
+button must stay disabled until a real private release asset exists.
+
+If a Console test opens `https://cloud.oracle.com/stacks/create` and
+returns `NotAuthorizedOrNotFound(404)`, use the Resource Manager route instead:
+`/resourcemanager/stacks/create?zipUrl=...`. If that corrected route still
+fails, check that the zip URL returns HTTP 200, then check the active tenancy,
+region, and compartment in the Console and confirm the user has Resource
+Manager stack create/import and job permissions, not only stack list/read
+access.
 
 ## What The Stack Creates
 
@@ -47,9 +62,9 @@ host-level telemetry.
 8. Optional Log Analytics log group and Service Connector Hub pipelines
    for app, OS, container, and WAF logs.
 9. OCI APM Domain and data keys when `create_apm_domain=true`.
-10. Dynamic group and policy for instance-principal app access to APM,
-    Logging, Monitoring, OCIR repository reads, APM agent installers, and
-    Management Agent.
+10. Optional dynamic group and policy for instance-principal app access
+    to Logging, Monitoring, OCIR repository reads, APM agent installers,
+    and Management Agent.
 11. Stack Monitoring Standard license auto-assignment and HOST
     auto-promote, plus automatic deployment of the Stack Monitoring
     Management Agent plugin to both hosts. Explicit host and ATP
@@ -123,7 +138,7 @@ Before applying in a real tenancy, run the read-only limits check with
 the same shape, AD, ATP, and LB settings you plan to use:
 
 ```bash
-OCI_PROFILE=cap \
+OCI_PROFILE=<OCI_PROFILE> \
 COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
 SHOP_AVAILABILITY_DOMAIN="YLXT:EU-FRANKFURT-1-AD-2" \
 CRM_AVAILABILITY_DOMAIN="YLXT:EU-FRANKFURT-1-AD-1" \
@@ -148,11 +163,20 @@ Build and validate the uploadable stack locally:
 ```
 
 Upload that zip in **OCI Console -> Developer Services -> Resource
-Manager -> Stacks -> Create Stack**, or use the button above. The
-published release asset is
-`compute-resource-manager-stack-20260504/octo-compute-stack.zip`.
-The schema lets you create a new network or attach to an existing
-VCN/subnet layout.
+Manager -> Stacks -> Create Stack**. The schema lets you create a new network
+or attach to an existing VCN/subnet layout.
+
+For import failures, validate the asset first:
+
+```bash
+curl -I -L https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip
+```
+
+The placeholder URL above currently returns HTTP 404. A real deploy-button URL
+must return HTTP 200 after redirects. A valid asset plus a
+`NotAuthorizedOrNotFound(404)` response normally points to a stale Console
+route, wrong tenancy/region context, or missing Resource Manager create/import
+permissions.
 
 ## Local Terraform Plan
 
@@ -198,7 +222,7 @@ only into the current process environment:
   --certificate /path/to/fullchain.pem \
   --private-key /path/to/privkey.pem \
   --ca-certificate /path/to/chain.pem \
-  --profile cap \
+  --profile <OCI_PROFILE> \
   --apply
 ```
 
@@ -228,6 +252,22 @@ backend set as default. Also make sure `enable_lb_https=true` or an
 equivalent LB subnet/NSG/security-list rule allows public TCP `443`.
 Manual console changes will show as Terraform drift.
 
+## Host Prerequisites
+
+The Compute bootstrap and `install.sh` install and validate these host
+tools before app startup:
+
+```text
+curl git rsync unzip tar gzip make podman java-21-openjdk-devel maven maven-openjdk21
+```
+
+`podman` runs the Python app containers and the Java app-server sidecar.
+`java-21-openjdk-devel`, `maven`, and `maven-openjdk21` are installed on
+the VM so the sidecar can be tested directly on the target host with Java
+21 before images are rebuilt or services are restarted. `rsync`, archive
+tools, and `make` support controlled repository promotion and operator
+repair workflows.
+
 ## Runtime Env, Wallet, And Images
 
 After apply, render role-specific env files from Terraform outputs plus
@@ -246,6 +286,13 @@ export ORACLE_PASSWORD='<ATP ADMIN password>'
 export ORACLE_WALLET_PASSWORD='<ATP wallet password>'
 export OCI_APM_PRIVATE_DATAKEY='<terraform output apm_private_datakey>'
 export OCI_APM_PUBLIC_DATAKEY='<terraform output apm_public_datakey>'
+export OCI_GENAI_ENDPOINT='<optional OCI GenAI endpoint>'
+export OCI_GENAI_MODEL_ID='<optional OCI GenAI model id>'
+export LLMETRY_CAPTURE_CONTENT=false
+export LANGFUSE_ENABLED=false
+export LANGFUSE_HOST='https://langfuse.example.test'
+export LANGFUSE_PUBLIC_KEY='<optional Langfuse project public key>'
+export LANGFUSE_SECRET_KEY='<optional Langfuse project secret key>'
 export OCIR_USERNAME='<optional OCIR username>'
 export OCIR_AUTH_TOKEN='<optional OCIR auth token>'
 
@@ -273,6 +320,13 @@ plain container env-file format and the Podman/Docker units pass that
 file to the container runtime. Re-run `install.sh --check` after editing
 `runtime.env` so the container env file is regenerated before a service
 restart.
+
+For the assistant demo, the Shop runtime reads `OCI_GENAI_ENDPOINT`,
+`OCI_GENAI_MODEL_ID`, `LLMETRY_*`, and `LANGFUSE_*` from the same
+container env file. Leave Langfuse disabled until a project has been
+created and project ingestion keys are available. Raw prompt/response
+capture stays off by default; the app exports hashes, token counts,
+guardrail results, trace IDs, and session IDs.
 
 Decode the wallet once:
 
@@ -371,6 +425,46 @@ The app records FastAPI, HTTPX, SQLAlchemy, process metrics, and custom
 business spans. Logs carry `oracleApmTraceId` so APM traces and Log
 Analytics searches can pivot both ways.
 
+For the private demo, the shop host can also run the Java app-server sidecar:
+
+- Podman: `octo-java-apm.service`
+- Docker Compose: `java-apm` profile
+- Host port: `18080`
+- Internal URL used by the shop app:
+  `JAVA_APM_SERVICE_URL=http://127.0.0.1:18080`
+
+The checkout route uses this sidecar for simulated payment authorization.
+That gives APM a real Python -> Java HTTP segment and gives the APM App
+Servers page JVM/app-server metrics from a business flow instead of only
+synthetic traffic. If the Java image or agent is not available, the shop
+falls back to the Python simulator and logs the sidecar status.
+
+## Synthetic User And Order Activity
+
+The Compute install also deploys a scheduled `octo-synthetic-users.timer`
+on each VM. It is the cron-equivalent job for keeping APM Users, RUM
+sessions, orders, payment traces, and app logs populated during demos.
+The shop VM posts to its local `/api/synthetic/users/run` endpoint; the
+CRM VM posts through `SERVICE_SHOP_URL` when that private URL is
+configured. Both paths require `X-Internal-Service-Key`.
+
+Tracked defaults use fictional reserved identities:
+
+```text
+SYNTHETIC_USERS_ENABLED=true
+SYNTHETIC_USER_EMAIL_DOMAIN=apex.example.test
+SYNTHETIC_USER_COUNT=12
+SYNTHETIC_USER_ORDER_COUNT=6
+SYNTHETIC_USER_DELETE_AFTER_DAYS=7
+```
+
+For a private deployment, override `SYNTHETIC_USER_EMAIL_DOMAIN` from the
+ignored deployment env file. Do not commit real corporate domains or
+operator names. The app writes the synthetic e-mail into OCI RUM
+`apmrum.username` so the APM Users page shows distinct users, while app
+logs and span attributes keep only domain, counts, and hashed/order
+context.
+
 ## Stack Monitoring Notes
 
 `enable_stack_monitoring_standard=true` now does three things:
@@ -388,27 +482,32 @@ stack will still deploy the plugin and leave auto-promote active. If the
 tenancy is entitled for explicit host resources, set
 `enable_stack_monitoring_host_registration=true`.
 
-For the separate Java APM demo, keep using `services/apm-java-demo/`;
-the Java agent policy (`read apm-agent-installers`) is already included
-for the Compute dynamic group.
+For the Java APM sidecar, keep using `services/apm-java-demo/`; the Java
+agent policy (`read apm-agent-installers`) is already included for the
+Compute dynamic group. The service can bundle the agent into the image or
+mount it at `/opt/apm-agent/bootstrap/apm-java-agent.jar`.
 
 ## OCI Logging And Log Analytics
 
 There are three logging paths:
 
 1. **Application SDK logs**: Shop and CRM call OCI Logging Ingestion
-   directly with instance principal auth. These go to `octo-app` and
-   include `oracleApmTraceId`.
+   directly with instance principal auth when the Compute dynamic group
+   policy is created. These go to `octo-app` and include
+   `oracleApmTraceId`.
 2. **Host and stdout logs**: Oracle Cloud Agent Custom Logs Monitoring
    tails OS/cloud-init/install logs and Podman/Docker stdout logs. These
-   go to the OS and container stdout custom logs.
+   go to the OS and container stdout custom logs when
+   `enable_unified_agent_log_collection=true` and
+   `create_compute_instance_principal_policies=true`.
 3. **WAF logs**: OCI WAF service logs are enabled when
    `enable_waf_logging=true`.
 
 Set `enable_log_analytics=true` only after Log Analytics is onboarded in
 the target tenancy, then provide `log_analytics_namespace` or
 `existing_log_analytics_log_group_id`. The stack creates Service
-Connector Hub pipelines for app, OS, container, and WAF logs.
+Connector Hub pipelines for app, OS, container, and WAF logs when
+`enable_log_analytics_connectors=true` and tenancy quota is available.
 
 Before treating the deployment as production-demo ready, confirm in OCI:
 
@@ -428,7 +527,9 @@ Before treating the deployment as production-demo ready, confirm in OCI:
 ## Smoke Test
 
 Point DNS records at the Load Balancer public IP from the
-`load_balancer` output:
+`load_balancer` output. The default names are `shop.<domain>` and
+`crm.<domain>`, but explicit `shop_hostname` and `crm_hostname` values
+override those names when DNS is managed elsewhere:
 
 ```bash
 curl -fsS http://shop.<domain>/ready | jq
@@ -456,12 +557,14 @@ the stack outputs into a Terraform-style JSON file and run:
 ```
 
 Add `--require-https` after the Load Balancer certificate has been
-attached, and use `--skip-dns` only when you are intentionally testing
-with host headers instead of public DNS. The verifier checks Terraform
-drift, DNS, `/ready` endpoints, LB lifecycle and backend health, WAF,
-APM domain, ATP lifecycle, DB Management, Operations Insights, Log
-Analytics Service Connectors, Management Agents, and Stack Monitoring
-HOST auto-promote state. It never prints sensitive Terraform outputs.
+attached. Use `--skip-dns --skip-endpoints` while DNS is intentionally
+owned in another tenancy and you are validating the Load Balancer with
+explicit `Host` headers instead of hostname resolution. The verifier checks
+Terraform drift, DNS, `/ready` endpoints, LB lifecycle and backend health,
+WAF, APM domain, ATP lifecycle, DB Management, Operations Insights, Log
+Analytics Service Connectors when enabled, Management Agents, and Stack
+Monitoring HOST auto-promote when enabled. It never prints sensitive
+Terraform outputs.
 
 Then run:
 
@@ -473,27 +576,27 @@ CROSS_SERVICE_E2E_ENABLED=1 \
 npx playwright test tests/e2e/cross-service-smoke.spec.ts
 ```
 
-## Validated Cap Deployment
+## Validated Reference Deployment
 
-Validated on May 5, 2026 with `OCI_PROFILE=cap`:
+Validated on May 5, 2026 with `OCI_PROFILE=<OCI_PROFILE>`:
 
-- Hostnames: `shop.1.octodemo.cloud`, `crm.1.octodemo.cloud`
+- Hostnames: `shop.example.test`, `crm.example.test`
 - Load Balancer public IP is available from `terraform output load_balancer`.
 - Private app IPs are available from `terraform output instance_ips`.
 - Dedicated ATP private endpoint is available from `terraform output atp`.
 - APM endpoint is available from `terraform output apm`.
-- Shop and CRM were placed in separate availability domains for the cap
+- Shop and CRM were placed in separate availability domains for the reference
   capacity profile.
 
-The latest cap run of `verify-deployment.sh --profile cap --plan`
+The latest reference run of `verify-deployment.sh --profile <OCI_PROFILE> --plan`
 returned HTTP 200 for both public `/ready` endpoints, confirmed DNS to
 the LB public IP, both LB backend sets reported `OK`, LB/WAF/APM/ATP
 resources were in the expected active states, and Terraform reported `No
-changes`. Log Analytics is enabled in the cap tenancy namespace with an
+changes`. Log Analytics is enabled in the external DNS tenancy namespace with an
 OCTO LA log group and active Service Connector Hub routes for app, OS,
 container, and WAF logs. DB Management and Operations Insights are
 enabled with active private endpoints. The Management Agents for both
 private hosts are `ACTIVE`, and Stack Monitoring HOST auto-promote is
-`ACTIVE`. ATP Stack Monitoring resource registration is disabled in cap
+`ACTIVE`. ATP Stack Monitoring resource registration is disabled in the reference tenancy
 because OCI returned a tenant entitlement error for database monitored
 resources; Stack Monitoring Standard host onboarding remains enabled.

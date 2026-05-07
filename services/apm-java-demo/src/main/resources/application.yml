@@ -1,6 +1,6 @@
 spring:
   application:
-    name: octo-apm-java-demo
+    name: octo-java-app-server
 
 server:
   port: 8080

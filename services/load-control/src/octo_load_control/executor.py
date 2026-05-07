@@ -32,7 +32,7 @@ class ExecutorBackend:
 
     @staticmethod
     def _dns_domain() -> str:
-        return os.getenv("DNS_DOMAIN", "cyber-sec.ro")
+        return os.getenv("DNS_DOMAIN", "example.test")
 
     @classmethod
     def _shop_base_url(cls) -> str:

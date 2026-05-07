@@ -1,7 +1,7 @@
 # Drone Shop — production Deployment on OKE.
 #
 # Namespace:        octo-drone-shop
-# Public hostname:  shop.${DNS_DOMAIN}  (for DEFAULT/oci4cca: shop.cyber-sec.ro)
+# Public hostname:  shop.${DNS_DOMAIN}  (for reference profile: shop.example.test)
 # Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop:${IMAGE_TAG}
 #
 # Rendered via envsubst before apply:
@@ -157,6 +157,42 @@ spec:
                 secretKeyRef:
                   name: octo-oci-config
                   key: genai-model-id
+                  optional: true
+            - name: LLMETRY_ENABLED
+              value: "true"
+            - name: LLMETRY_STORE_ENABLED
+              value: "true"
+            - name: LLMETRY_CAPTURE_CONTENT
+              value: "false"
+            - name: LANGFUSE_ENABLED
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-enabled
+                  optional: true
+            - name: LANGFUSE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-host
+                  optional: true
+            - name: LANGFUSE_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-public-key
+                  optional: true
+            - name: LANGFUSE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-secret-key
+                  optional: true
+            - name: LANGFUSE_OTEL_EXPORT_ENABLED
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-otel-export-enabled
                   optional: true
             # ── IDCS SSO
             - name: IDCS_DOMAIN_URL

@@ -79,7 +79,7 @@ done
 A CronJob (`deploy/k8s/oke/apm-java-demo/deployment.yaml`) also fires the
 same pattern every 5 min so the App Servers view never goes flat.
 
-Deploy + side-load the agent per [services/apm-java-demo/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/services/apm-java-demo/README.md).
+Deploy + side-load the agent per [services/apm-java-demo/README.md](https://github.com/example-org/octo-apm-demo/blob/main/services/apm-java-demo/README.md).
 
 ## 2. Traces drill-down (OCI APM)
 
@@ -109,7 +109,7 @@ Deploy + side-load the agent per [services/apm-java-demo/README.md](https://gith
 The beacon JS is embedded in `shop/server/templates/base.html`; public
 data key lands via the `octo-apm` K8s secret. Registration of the web
 application is a one-time OCI Console step — see
-[OBSERVABILITY-BOOTSTRAP.md §7a](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md).
+[OBSERVABILITY-BOOTSTRAP.md §7a](https://github.com/example-org/octo-apm-demo/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md).
 
 ## 4. Logs drill-down (OCI Logging → Log Analytics)
 

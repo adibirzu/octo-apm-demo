@@ -5,9 +5,9 @@
 
 ## Public surfaces
 
-- CRM: `https://crm.example.cloud`
-- Shop: `https://shop.example.cloud`
-- Optional ops surface: `https://ops.example.cloud`
+- CRM: `https://crm.example.test`
+- Shop: `https://shop.example.test`
+- Optional ops surface: `https://ops.example.test`
 
 Use placeholders in tracked files. Inject real domains through `DNS_DOMAIN`,
 `CRM_BASE_URL`, `OCTO_DRONE_SHOP_URL`, `CONTROL_PLANE_URL`, and

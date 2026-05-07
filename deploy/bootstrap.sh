@@ -8,7 +8,7 @@
 # Usage:
 #   # fully non-interactive
 #   OCI_PROFILE=DEFAULT OCI_COMPARTMENT_ID=ocid1.compartment... \
-#   DNS_BASE_DOMAIN=cyber-sec.ro \
+#   DNS_BASE_DOMAIN=example.test \
 #   OCIR_NAMESPACE=<ns> \
 #   ./deploy/bootstrap.sh
 #
@@ -51,7 +51,7 @@ PROJECT_TAG_VAL="octo-apm-demo"
 
 # ── Defaults (every one overridable via env) ──────────────────────────
 : "${OCI_PROFILE:=DEFAULT}"
-: "${DNS_BASE_DOMAIN:=cyber-sec.ro}"
+: "${DNS_BASE_DOMAIN:=example.test}"
 : "${SHOP_SUBDOMAIN:=shop}"
 : "${CRM_SUBDOMAIN:=crm}"
 : "${K8S_NAMESPACE_SHOP:=octo-drone-shop}"
@@ -62,7 +62,7 @@ PROJECT_TAG_VAL="octo-apm-demo"
 : "${PUBLISH_VIA_INGRESS:=true}"
 : "${TLS_MODE:=auto}"
 : "${TLS_REQUIRED:=false}"
-: "${TLS_SECRET_NAME:=cyber-sec-ro-tls}"
+: "${TLS_SECRET_NAME:=example-test-tls}"
 : "${OCI_CERTIFICATE_OCID:=}"
 # When the cluster is virtual-node-only, classic LB / NLB Services are
 # unsupported. Two paths:

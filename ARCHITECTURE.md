@@ -114,7 +114,7 @@ subsequent tenancy via the Resource Manager stack.
 
 | File | Responsibility |
 |---|---|
-| `deploy/pre-flight-check.sh` | Fail fast on missing env vars + placeholder leaks (`example.cloud`, `example.invalid`) |
+| `deploy/pre-flight-check.sh` | Fail fast on missing env vars + placeholder leaks (`example.test`, `example.invalid`) |
 | `deploy/init-tenancy.sh` | Idempotent bootstrap: OCIR repo, K8s namespace, initial Secrets |
 | `deploy/resource-manager/` | OCI Resource Manager stack (APM + RUM + LA + WAF) — one-click Console deploy |
 | `deploy/vm/` | Single-VM unified install (docker-compose + nginx + systemd + cloud-init) |

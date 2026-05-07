@@ -1,0 +1,257 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120" role="img" aria-labelledby="title desc">
+  <title id="title">Private Demo OCTO APM Demo private Compute observability architecture</title>
+  <desc id="desc">Architecture showing browser RUM, OCI load balancer, WAF, public and private API Gateways, shop, admin, Java app-server sidecar, OCI Generative AI, optional Langfuse LLMetry export, Autonomous Database, OCI APM, OCI Logging, Service Connector Hub, Log Analytics, Cloud Guard OSQuery, Stack Monitoring, and code delivery paths.</desc>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#dc2626"/>
+    </marker>
+    <marker id="arrow-slate" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#475569"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#7c3aed"/>
+    </marker>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+    <style>
+      .title { font: 700 26px Arial, sans-serif; fill: #fff; }
+      .subtitle { font: 400 15px Arial, sans-serif; fill: #dbeafe; }
+      .section { font: 700 17px Arial, sans-serif; fill: #0f172a; }
+      .node-title { font: 700 15px Arial, sans-serif; fill: #0f172a; }
+      .node { font: 400 13px Arial, sans-serif; fill: #334155; }
+      .small { font: 400 12px Arial, sans-serif; fill: #475569; }
+      .edge { font: 600 12px Arial, sans-serif; fill: #334155; }
+      .panel { fill: #f8fafc; stroke: #94a3b8; stroke-width: 1.5; rx: 18; filter: url(#softShadow); }
+      .subpanel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; stroke-dasharray: 7 5; rx: 14; }
+      .blue { fill: #dbeafe; stroke: #2563eb; }
+      .green { fill: #d1fae5; stroke: #059669; }
+      .yellow { fill: #fef3c7; stroke: #d97706; }
+      .orange { fill: #ffedd5; stroke: #ea580c; }
+      .red { fill: #fee2e2; stroke: #dc2626; }
+      .rose { fill: #ffe4e6; stroke: #e11d48; }
+      .indigo { fill: #e0e7ff; stroke: #4f46e5; }
+      .purple { fill: #f5f3ff; stroke: #7c3aed; }
+      .slate { fill: #f1f5f9; stroke: #475569; }
+      .node-box { stroke-width: 2; rx: 12; filter: url(#softShadow); }
+      .solid-blue { stroke: #2563eb; stroke-width: 3; fill: none; marker-end: url(#arrow-blue); }
+      .solid-green { stroke: #059669; stroke-width: 3; fill: none; marker-end: url(#arrow-green); }
+      .solid-red { stroke: #dc2626; stroke-width: 3; fill: none; marker-end: url(#arrow-red); }
+      .solid-slate { stroke: #475569; stroke-width: 3; fill: none; marker-end: url(#arrow-slate); }
+      .dash-blue { stroke: #2563eb; stroke-width: 3; fill: none; stroke-dasharray: 8 6; marker-end: url(#arrow-blue); }
+      .dash-green { stroke: #059669; stroke-width: 3; fill: none; stroke-dasharray: 8 6; marker-end: url(#arrow-green); }
+      .dash-red { stroke: #dc2626; stroke-width: 3; fill: none; stroke-dasharray: 8 6; marker-end: url(#arrow-red); }
+      .dash-slate { stroke: #475569; stroke-width: 3; fill: none; stroke-dasharray: 8 6; marker-end: url(#arrow-slate); }
+      .dash-purple { stroke: #7c3aed; stroke-width: 3; fill: none; stroke-dasharray: 8 6; marker-end: url(#arrow-purple); }
+    </style>
+  </defs>
+
+  <rect x="40" y="24" width="1720" height="76" rx="18" fill="#111827"/>
+  <text x="70" y="58" class="title">Private Demo OCTO APM Demo - Private Compute Observability Reference</text>
+  <text x="70" y="84" class="subtitle">OCI profile OCI_PROFILE - us-phoenix-1 - DNS in external DNS tenancy - preserve manual LB HTTPS 443, certificate, and host routing</text>
+
+  <rect x="40" y="126" width="320" height="315" class="panel"/>
+  <text x="68" y="158" class="section">External entry points</text>
+  <rect x="70" y="180" width="260" height="86" class="node-box blue"/>
+  <text x="92" y="207" class="node-title">Browser users</text>
+  <text x="92" y="229" class="node">Shop, Admin, RUM JavaScript</text>
+  <text x="92" y="249" class="node">shop.example.test</text>
+  <text x="92" y="267" class="small">admin.example.test</text>
+  <rect x="70" y="295" width="260" height="78" class="node-box green"/>
+  <text x="92" y="323" class="node-title">Availability Monitoring</text>
+  <text x="92" y="345" class="node">Phoenix, Ashburn, Frankfurt</text>
+  <text x="92" y="365" class="small">London, Tokyo, Sydney /ready</text>
+  <rect x="70" y="395" width="260" height="54" class="node-box yellow"/>
+  <text x="92" y="424" class="node-title">DNS zone in external DNS tenancy</text>
+  <text x="92" y="443" class="small">A records to LB IP 203.0.113.10</text>
+
+  <rect x="40" y="480" width="320" height="258" class="panel"/>
+  <text x="68" y="512" class="section">Code delivery</text>
+  <rect x="70" y="535" width="260" height="75" class="node-box slate"/>
+  <text x="92" y="563" class="node-title">Git branch</text>
+  <text x="92" y="585" class="node">PRIVATE_OBSERVABILITY_BRANCH</text>
+  <text x="92" y="604" class="small">tests before resource changes</text>
+  <rect x="70" y="642" width="260" height="75" class="node-box slate"/>
+  <text x="92" y="670" class="node-title">OCIR images</text>
+  <text x="92" y="692" class="node">Shop, CRM, Java sidecar</text>
+  <text x="92" y="711" class="small">Podman systemd rollout</text>
+
+  <rect x="390" y="126" width="820" height="765" class="panel"/>
+  <text x="420" y="158" class="section">OCI private demo compartment - COMPARTMENT_NAME</text>
+  <rect x="420" y="178" width="760" height="122" class="subpanel"/>
+  <text x="442" y="205" class="section">Public subnet</text>
+  <rect x="460" y="226" width="210" height="66" class="node-box red"/>
+  <text x="482" y="251" class="node-title">OCI Load Balancer</text>
+  <text x="482" y="272" class="node">HTTPS 443, SSL certificate</text>
+  <text x="482" y="289" class="small">manual host routing preserved</text>
+  <rect x="740" y="226" width="160" height="66" class="node-box rose"/>
+  <text x="766" y="251" class="node-title">OCI WAF</text>
+  <text x="766" y="272" class="node">Detection mode</text>
+  <text x="766" y="289" class="small">service logs</text>
+  <rect x="950" y="218" width="190" height="82" class="node-box blue"/>
+  <text x="974" y="244" class="node-title">OCI API Gateway</text>
+  <text x="974" y="265" class="node">Public /api routes</text>
+  <text x="974" y="284" class="node">auth, quotas, route logs</text>
+  <text x="974" y="301" class="small">trace headers preserved</text>
+
+  <rect x="420" y="330" width="760" height="278" class="subpanel"/>
+  <text x="442" y="357" class="section">Private app subnet</text>
+  <rect x="455" y="385" width="210" height="90" class="node-box yellow"/>
+  <text x="478" y="414" class="node-title">Shop VM</text>
+  <text x="478" y="436" class="node">octo-drone-shop</text>
+  <text x="478" y="456" class="node">FastAPI, checkout, RUM</text>
+  <text x="478" y="474" class="small">App SDK logs and spans</text>
+  <rect x="455" y="505" width="210" height="78" class="node-box orange"/>
+  <text x="478" y="532" class="node-title">Java app-server sidecar</text>
+  <text x="478" y="554" class="node">octo-java-app-server</text>
+  <text x="478" y="574" class="small">OCI APM Java agent, JVM metrics</text>
+  <rect x="720" y="385" width="210" height="90" class="node-box yellow"/>
+  <text x="744" y="414" class="node-title">Admin CRM VM</text>
+  <text x="744" y="436" class="node">enterprise-crm-portal</text>
+  <text x="744" y="456" class="node">Demo Storyboard</text>
+  <text x="744" y="474" class="small">Attack Lab and simulations</text>
+  <rect x="720" y="505" width="210" height="78" class="node-box blue"/>
+  <text x="744" y="531" class="node-title">Private API Gateway</text>
+  <text x="744" y="552" class="node">component calls</text>
+  <text x="744" y="571" class="node">Shop, CRM, Java sidecar</text>
+  <text x="744" y="588" class="small">service auth + traceparent</text>
+  <rect x="950" y="397" width="195" height="78" class="node-box blue"/>
+  <text x="972" y="424" class="node-title">Jumphost v5</text>
+  <text x="972" y="446" class="node">203.0.113.20</text>
+  <text x="972" y="466" class="small">NSG restricted to operator IP</text>
+  <rect x="950" y="505" width="195" height="78" class="node-box blue"/>
+  <text x="972" y="532" class="node-title">OCI Generative AI</text>
+  <text x="972" y="554" class="node">Drone advisor chat</text>
+  <text x="972" y="574" class="small">gen_ai and llm spans</text>
+
+  <rect x="420" y="642" width="760" height="210" class="subpanel"/>
+  <text x="442" y="669" class="section">Private database subnet</text>
+  <path d="M515 710 C515 686 725 686 725 710 L725 778 C725 802 515 802 515 778 Z" class="node-box orange"/>
+  <ellipse cx="620" cy="710" rx="105" ry="24" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+  <text x="552" y="721" class="node-title">Autonomous Database</text>
+  <text x="545" y="750" class="node">octoatp_low, private endpoint</text>
+  <text x="545" y="770" class="small">mTLS wallet, SQL_ID, db.statement</text>
+  <rect x="790" y="710" width="230" height="78" class="node-box indigo"/>
+  <text x="816" y="738" class="node-title">DB visibility</text>
+  <text x="816" y="760" class="node">DB Management, Ops Insights</text>
+  <text x="816" y="779" class="small">Stack Monitoring ATP pivots</text>
+
+  <rect x="1240" y="126" width="520" height="765" class="panel"/>
+  <text x="1270" y="158" class="section">OCI observability and security plane</text>
+  <rect x="1280" y="180" width="200" height="90" class="node-box green"/>
+  <text x="1304" y="209" class="node-title">OCI APM Domain</text>
+  <text x="1304" y="231" class="node">traces, metrics, RUM</text>
+  <text x="1304" y="251" class="node">App Servers details</text>
+  <text x="1304" y="269" class="small">span events app.log</text>
+  <rect x="1515" y="180" width="200" height="90" class="node-box blue"/>
+  <text x="1538" y="209" class="node-title">OCI Logging log group</text>
+  <text x="1538" y="231" class="node">app, stdout, OS, WAF</text>
+  <text x="1538" y="251" class="node">Cloud Guard raw</text>
+  <text x="1538" y="269" class="small">Cloud Guard query results</text>
+  <rect x="1280" y="330" width="200" height="90" class="node-box rose"/>
+  <text x="1304" y="359" class="node-title">Cloud Guard Advanced</text>
+  <text x="1304" y="381" class="node">Instance Security</text>
+  <text x="1304" y="401" class="node">OSQuery saved queries</text>
+  <text x="1304" y="419" class="small">MITRE detections</text>
+  <rect x="1515" y="325" width="200" height="78" class="node-box blue"/>
+  <text x="1538" y="353" class="node-title">Service Connector Hub</text>
+  <text x="1538" y="375" class="node">consolidated route</text>
+  <text x="1538" y="394" class="small">quota-gated in the private demo</text>
+  <rect x="1515" y="455" width="200" height="90" class="node-box green"/>
+  <text x="1538" y="484" class="node-title">OCI Log Analytics</text>
+  <text x="1538" y="506" class="node">Trace drilldowns</text>
+  <text x="1538" y="526" class="node">Attack dashboards</text>
+  <text x="1538" y="544" class="small">OSQuery findings</text>
+  <rect x="1280" y="465" width="200" height="90" class="node-box indigo"/>
+  <text x="1304" y="494" class="node-title">OCI Monitoring</text>
+  <text x="1304" y="516" class="node">VM metrics, JVM metrics</text>
+  <text x="1304" y="536" class="node">alarms and availability</text>
+  <text x="1304" y="554" class="small">oracle_apm_monitoring</text>
+  <rect x="1515" y="565" width="200" height="70" class="node-box purple"/>
+  <text x="1538" y="592" class="node-title">Langfuse comparison</text>
+  <text x="1538" y="614" class="node">LLMetry OTLP export</text>
+  <text x="1538" y="632" class="small">sessions, tokens, hashes</text>
+  <rect x="1395" y="640" width="220" height="90" class="node-box purple"/>
+  <text x="1420" y="669" class="node-title">Demo dashboards</text>
+  <text x="1420" y="691" class="node">APM Trace Explorer</text>
+  <text x="1420" y="711" class="node">Log Analytics drilldown URL</text>
+  <text x="1420" y="729" class="small">Stack Monitoring DB/App</text>
+
+  <path d="M200 267 L200 395" class="solid-blue"/>
+  <text x="215" y="332" class="edge">HTTPS 443</text>
+  <path d="M330 422 C382 422 385 260 456 260" class="solid-blue"/>
+  <text x="358" y="337" class="edge">resolves to LB IP</text>
+  <path d="M330 333 C390 333 395 282 456 270" class="dash-green"/>
+  <text x="364" y="303" class="edge">health checks</text>
+  <path d="M670 260 L737 260" class="solid-red"/>
+  <text x="685" y="247" class="edge">WAF policy</text>
+  <path d="M900 260 L947 260" class="solid-blue"/>
+  <text x="904" y="247" class="edge">/api routes</text>
+  <path d="M826 292 C820 350 641 342 602 383" class="solid-green"/>
+  <text x="650" y="349" class="edge">shop route</text>
+  <path d="M872 292 C910 342 850 348 826 383" class="solid-green"/>
+  <text x="884" y="349" class="edge">admin route</text>
+  <path d="M1038 300 C1030 345 692 342 604 383" class="solid-blue"/>
+  <text x="756" y="327" class="edge">Shop backend APIs</text>
+  <path d="M1075 300 C1060 350 925 355 850 383" class="solid-blue"/>
+  <text x="938" y="335" class="edge">Admin backend APIs</text>
+  <path d="M665 432 C706 456 724 495 755 505" class="solid-blue"/>
+  <text x="676" y="482" class="edge">component API calls</text>
+  <path d="M720 546 L668 546" class="solid-red"/>
+  <text x="670" y="533" class="edge">payment / quote</text>
+  <path d="M825 505 L825 478" class="solid-blue"/>
+  <text x="841" y="495" class="edge">CRM sync</text>
+  <path d="M587 475 C610 585 618 620 620 685" class="solid-slate"/>
+  <text x="628" y="603" class="edge">orders and SQL</text>
+  <path d="M805 475 C760 590 690 625 660 690" class="solid-slate"/>
+  <text x="742" y="596" class="edge">admin data</text>
+  <path d="M665 546 C720 570 700 650 650 694" class="dash-slate"/>
+  <text x="681" y="621" class="edge">JDBC simulation</text>
+  <path d="M665 430 C760 465 845 522 950 544" class="solid-blue"/>
+  <text x="770" y="498" class="edge">assistant chat</text>
+  <path d="M950 436 L668 430" class="dash-blue"/>
+  <path d="M1048 475 C1016 504 961 489 900 475" class="dash-blue"/>
+  <text x="994" y="507" class="edge">SSH via NSG</text>
+  <path d="M200 610 L200 639" class="solid-slate"/>
+  <text x="218" y="629" class="edge">build</text>
+  <path d="M330 678 C390 650 410 513 455 455" class="solid-slate"/>
+  <path d="M330 690 C480 676 693 520 724 475" class="solid-slate"/>
+  <text x="368" y="657" class="edge">deploy images</text>
+
+  <path d="M330 214 C690 106 1040 122 1280 215" class="dash-green"/>
+  <text x="730" y="130" class="edge">RUM beacons</text>
+  <path d="M665 412 C930 340 1070 220 1280 220" class="dash-green"/>
+  <path d="M930 425 C1080 360 1160 250 1280 235" class="dash-green"/>
+  <text x="1048" y="273" class="edge">OTLP and Java agent</text>
+  <path d="M1048 505 C1135 410 1210 260 1280 238" class="dash-green"/>
+  <text x="1138" y="370" class="edge">GenAI spans</text>
+  <path d="M665 452 C925 590 1250 604 1515 600" class="dash-purple"/>
+  <text x="1088" y="622" class="edge">LLMetry OTLP</text>
+  <path d="M665 448 C950 475 1272 212 1515 224" class="dash-blue"/>
+  <path d="M930 442 C1130 472 1335 235 1515 238" class="dash-blue"/>
+  <text x="1128" y="397" class="edge">app logs and stdout</text>
+  <path d="M900 260 C1140 280 1308 190 1515 210" class="dash-blue"/>
+  <text x="1134" y="240" class="edge">WAF service logs</text>
+  <path d="M1480 376 L1515 226" class="dash-red"/>
+  <text x="1465" y="306" class="edge">OSQuery results</text>
+  <path d="M1615 270 L1615 322" class="solid-blue"/>
+  <text x="1630" y="303" class="edge">route logs</text>
+  <path d="M1615 403 L1615 452" class="solid-green"/>
+  <text x="1630" y="434" class="edge">ingest</text>
+  <path d="M1480 232 C1546 235 1547 600 1498 640" class="solid-green"/>
+  <text x="1496" y="606" class="edge">trace id</text>
+  <path d="M1615 545 L1530 640" class="solid-green"/>
+  <text x="1570" y="602" class="edge">saved searches</text>
+  <path d="M1020 750 C1200 745 1235 680 1395 700" class="solid-slate"/>
+  <text x="1122" y="721" class="edge">SQL pivots</text>
+  <path d="M1020 746 L790 748" class="solid-slate"/>
+  <text x="867" y="732" class="edge">DB insight</text>
+  <path d="M665 522 C1025 560 1090 518 1280 514" class="dash-slate"/>
+  <text x="1040" y="542" class="edge">VM and JVM metrics</text>
+</svg>

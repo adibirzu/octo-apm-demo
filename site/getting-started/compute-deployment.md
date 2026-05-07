@@ -6,16 +6,29 @@ Load Balancer and WAF:
 
 | Component | Placement | Purpose |
 |---|---|---|
-| Public Load Balancer | Public LB subnet | Host routing for `shop.<domain>` and `crm.<domain>` |
+| Public Load Balancer | Public LB subnet | Host routing for `shop.<domain>` and `crm.<domain>`, or explicit `shop_hostname` / `crm_hostname` overrides |
 | WAF | Attached to Load Balancer | Edge protection and WAF logs |
 | Shop Compute | Private app subnet | Customer storefront and checkout |
 | CRM Compute | Private app subnet | Operations console, catalog, order sync |
 | ATP | Private DB subnet | Dedicated application database |
 
 The source of truth is
-[`deploy/compute/README.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/compute/README.md).
+[`deploy/compute/README.md`](https://github.com/example-org/octo-apm-demo/blob/main/deploy/compute/README.md).
 
-[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+
+Private branch note: build `deploy/compute/build/octo-compute-stack.zip`
+locally and upload it in Resource Manager. The placeholder GitHub release URL
+previously used by the deploy button returns HTTP 404 until a real private
+release asset is published.
+
+If the Console test opens `https://cloud.oracle.com/stacks/create` and
+returns `NotAuthorizedOrNotFound(404)`, confirm the browser URL contains
+`/resourcemanager/stacks/create` plus a `zipUrl` query parameter. The shorter
+`/stacks/create` route is stale. If the corrected route still fails, verify
+that the zip URL returns HTTP 200, the active Console tenancy, region, and
+compartment are the intended target, and the user can create/import Resource
+Manager stacks and run Resource Manager jobs.
 
 ## What Is Configured
 
@@ -73,7 +86,7 @@ Before applying in a real tenancy, check service limits with the same AD,
 shape, ATP, and LB settings:
 
 ```bash
-OCI_PROFILE=cap \
+OCI_PROFILE=<OCI_PROFILE> \
 COMPARTMENT_ID=ocid1.compartment.oc1..xxxx \
 SHOP_AVAILABILITY_DOMAIN="YLXT:EU-FRANKFURT-1-AD-2" \
 CRM_AVAILABILITY_DOMAIN="YLXT:EU-FRANKFURT-1-AD-1" \
@@ -88,13 +101,19 @@ LB_MAX_BANDWIDTH_MBPS=100 \
 The limits script also reads matching `TF_VAR_*` names, so deployment
 automation can stay variable-driven across tenancies.
 
+For the `<OCI_PROFILE>` profile, the May 6, 2026 read-only gate is recorded in
+[Private Demo Install Plan](../operations/private-demo-install-plan.md). That page
+also documents the required state isolation because the local
+`deploy/compute/terraform` directory contains state and auto-var files
+from the earlier `<REFERENCE_PROFILE>` deployment.
+
 ## Deployment Sequence
 
 1. Build and push the Shop and CRM images.
 2. Build the Resource Manager package with
-   `./deploy/compute/stack-package.sh` or use the button above. The
-   upstream release asset is already published under
-   `compute-resource-manager-stack-20260504/octo-compute-stack.zip`.
+   `./deploy/compute/stack-package.sh` and upload the generated zip manually.
+   Use a deploy button only after the private release asset exists and returns
+   HTTP 200 after redirects.
 3. In the stack form, either create a new network or select an existing
    VCN with a public LB subnet and private app subnet.
 4. Enable HTTPS only when you can provide the Load Balancer certificate
@@ -126,8 +145,10 @@ automation can stay variable-driven across tenancies.
 14. For later image promotions or host script reconciliation, use
     `deploy/compute/deploy-apps.sh` with OCI Run Command instead of
     replacing the stack or opening SSH.
-15. Point `shop.<domain>` and `crm.<domain>` at the Load Balancer public
-    IP.
+15. Point the resolved Shop and CRM hostnames at the Load Balancer
+    public IP. The defaults are `shop.<domain>` and `crm.<domain>`;
+    use `shop_hostname` and `crm_hostname` when DNS is managed in a
+    separate tenancy or uses nonstandard labels.
 16. Run `./deploy/compute/verify-deployment.sh --profile <profile>
     --plan` to verify Terraform drift, DNS, `/ready`, LB health, WAF,
     APM, ATP, DB Management, Operations Insights, Log Analytics
@@ -145,6 +166,20 @@ accidental replacement of production-demo hosts when bootstrap scripts or
 docs change. New stacks receive the latest packaged bootstrap files at
 first boot; existing stacks should be reconciled through Run Command,
 Bastion, or another private admin path when host scripts need updates.
+
+## Host Prerequisites
+
+The Compute bootstrap and `install.sh` install and validate the host
+tooling needed for app delivery and Java sidecar tests:
+
+```text
+curl git rsync unzip tar gzip make podman java-21-openjdk-devel maven maven-openjdk21
+```
+
+`podman` runs the Python app containers and the Java app-server sidecar.
+`java-21-openjdk-devel`, `maven`, and `maven-openjdk21` are installed on
+the VM so `services/apm-java-demo` can run `mvn test` with Java 21 on the
+target host before the updated image is built and restarted.
 
 ## Podman Runtime Check
 
@@ -169,6 +204,14 @@ sudo systemctl cat octo-compute.service
 If you edit `/opt/octo/runtime.env` after first boot, re-run
 `install.sh --check` to regenerate `/opt/octo/container.env`, then
 restart `octo-compute.service`.
+
+For the assistant demo, set `OCI_GENAI_ENDPOINT` and
+`OCI_GENAI_MODEL_ID` on the Shop runtime when OCI GenAI is available. Optional
+Langfuse comparison uses `LANGFUSE_ENABLED`, `LANGFUSE_HOST`,
+`LANGFUSE_PUBLIC_KEY`, and `LANGFUSE_SECRET_KEY` or their `*_FILE` variants.
+Keep `LLMETRY_CAPTURE_CONTENT=false` unless you are running a controlled
+redacted-content demo; the default export uses hashes, token counts, guardrail
+fields, trace IDs, and session IDs.
 
 ## App Promotion
 
@@ -198,18 +241,18 @@ keys, OCIR auth tokens, or cross-service secrets. On each host it runs
 `/opt/octo/deploy/compute/install.sh --check`, applies the install,
 restarts `octo-compute.service`, and checks local `/ready`.
 
-## Current Cap Validation
+## Current Reference Validation
 
-Validated on May 5, 2026 with `OCI_PROFILE=cap`:
+Validated on May 5, 2026 with `OCI_PROFILE=<OCI_PROFILE>`:
 
-- `shop.1.octodemo.cloud` and `crm.1.octodemo.cloud` return HTTP 200
+- `shop.example.test` and `crm.example.test` return HTTP 200
   from `/ready`.
 - Load Balancer backend sets for both services are `OK`.
 - Load Balancer public IP is available from `terraform output load_balancer`.
 - Private app IPs are available from `terraform output instance_ips`.
 - Dedicated ATP private endpoint is available from `terraform output atp`.
 - APM endpoint is available from `terraform output apm`.
-- Shop and CRM were placed in separate availability domains for the cap
+- Shop and CRM were placed in separate availability domains for the reference
   capacity profile.
 - Log Analytics is enabled with an OCTO LA log group and active Service
   Connector Hub routes for app, OS, container, and WAF logs.
@@ -218,13 +261,13 @@ Validated on May 5, 2026 with `OCI_PROFILE=cap`:
 - Stack Monitoring Standard license and HOST auto-promote configs are
   active. The Stack Monitoring Management Agent plugin is deployed and
   running on both hosts.
-- `./deploy/compute/verify-deployment.sh --profile cap --plan` passed
+- `./deploy/compute/verify-deployment.sh --profile <OCI_PROFILE> --plan` passed
   with DNS, LB, WAF, APM, ATP, DB Management, Operations Insights, Log
   Analytics, Management Agent, and Stack Monitoring checks active. The
   only expected warnings are HTTPS not yet enabled and explicit ATP
   Stack Monitoring resource registration disabled.
 - Direct host and ATP Stack Monitoring monitored-resource registration
-  are disabled in cap because OCI returns `Tenant is not permitted to
+  are disabled in the reference profile because OCI returns `Tenant is not permitted to
   perform this operation`; keep the explicit registration toggles off in
   tenancies with the same entitlement behavior.
 - Terraform reports `No changes` after the final apply.
@@ -242,7 +285,7 @@ For local Terraform HTTPS certificate automation:
   --certificate /path/to/fullchain.pem \
   --private-key /path/to/privkey.pem \
   --ca-certificate /path/to/chain.pem \
-  --profile cap \
+  --profile <OCI_PROFILE> \
   --apply
 ```
 

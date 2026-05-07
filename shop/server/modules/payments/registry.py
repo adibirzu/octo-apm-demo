@@ -14,6 +14,7 @@ from functools import lru_cache
 from .base import PaymentProvider
 from .oci_osb_provider import OCIOSBProvider
 from .paypal_provider import PayPalProvider
+from .simulated_provider import SimulatedPaymentProvider
 from .stripe_provider import StripeProvider
 
 
@@ -64,6 +65,9 @@ def _active_provider() -> PaymentProvider | None:
         if not sub or not comp:
             return None
         return OCIOSBProvider(subscription_id=sub, compartment_id=comp)
+
+    if name == "simulated":
+        return SimulatedPaymentProvider()
 
     return None
 

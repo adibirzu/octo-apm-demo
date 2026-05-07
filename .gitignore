@@ -3,6 +3,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+tmp/
 .venv/
 .venv311/
 node_modules/
@@ -42,6 +43,14 @@ test-results/
 firebase-debug.log
 coordinator.log
 debug_restart*.log
+
+# Private live-demo captures and generated operator PDFs
+site/assets/demo/private-live/
+site/assets/demo/private-oci-console/
+site/assets/demo/*private*.pdf
+output/pdf/*private*.pdf
+site/observability-v2/private-*.md
+site/operations/private-*.md
 
 # Terraform
 *.tfstate

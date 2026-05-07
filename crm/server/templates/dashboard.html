@@ -137,18 +137,21 @@ function friendlyUrl(raw) {
 
 function renderStatusGrid(ready, status) {
     const dependencies = status.dependencies || [];
+    const databaseDependency = dependencies.find(dep => dep.type === 'database') || {};
+    const appDependencies = dependencies.filter(dep => dep.type !== 'database');
+    const dbName = databaseDependency.connection_name || ready.atp_connection_name || ready.database_target || 'unknown';
     const cards = [
         {
             label: 'Database',
             status: ready.database || 'unknown',
-            body: `${ready.database_target || 'unknown'}${ready.atp_connection_name ? ' | ' + ready.atp_connection_name : ''}`,
+            body: dbName,
         },
         {
             label: 'Telemetry',
             status: ready.apm_configured && ready.logging_configured ? 'healthy' : 'degraded',
             body: `APM ${ready.apm_configured ? 'on' : 'off'} | Logs ${ready.logging_configured ? 'on' : 'off'} | RUM ${ready.rum_configured ? 'on' : 'off'}`,
         },
-        ...dependencies.map(dep => ({
+        ...appDependencies.map(dep => ({
             label: dep.display_name,
             status: dep.status || 'unknown',
             body: friendlyUrl(dep.url) || dep.connection_name || dep.database_target || 'Not configured',

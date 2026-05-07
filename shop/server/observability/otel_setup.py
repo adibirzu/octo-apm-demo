@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
+from base64 import b64encode
 from typing import TYPE_CHECKING
 
 from opentelemetry import trace
@@ -22,6 +23,20 @@ from server.observability.correlation import current_trace_context, sql_attribut
 
 logger = logging.getLogger(__name__)
 _tracer_provider = None
+_langfuse_exporter_attached = False
+
+
+def _langfuse_otlp_traces_endpoint(host: str) -> str:
+    base = (host or "").rstrip("/")
+    if not base:
+        return ""
+    if base.endswith("/api/public/otel/v1/traces") or base.endswith("/v1/traces"):
+        return base
+    if base.endswith("/api/public/otel"):
+        return f"{base}/v1/traces"
+    if base.endswith("/api/public"):
+        return f"{base}/otel/v1/traces"
+    return f"{base}/api/public/otel/v1/traces"
 
 
 def _try_shared_init(service_name: str, service_version: str,
@@ -116,6 +131,7 @@ def _standalone_init(service_name: str, service_version: str,
         logger.info("OTel console exporter (no APM): %s", service_name)
 
     trace.set_tracer_provider(_tracer_provider)
+    _attach_langfuse_span_exporter(service_name)
 
     if apm_endpoint and apm_private_key and cfg.otlp_log_export_enabled:
         _init_otlp_log_export(resource, apm_endpoint, apm_private_key)
@@ -158,6 +174,8 @@ def init_otel(service_name: str = "octo-crm-apm",
     # Core OTel setup: try shared library, fall back to standalone
     if not _try_shared_init(service_name, service_version, apm_endpoint, apm_private_key):
         _standalone_init(service_name, service_version, apm_endpoint, apm_private_key)
+    else:
+        _attach_langfuse_span_exporter(service_name)
 
     # App-specific instrumentation (always runs regardless of init path)
     try:
@@ -198,6 +216,45 @@ def init_otel(service_name: str = "octo-crm-apm",
 
 def get_tracer(name: str = "octo-crm-apm") -> trace.Tracer:
     return trace.get_tracer(name)
+
+
+def _attach_langfuse_span_exporter(service_name: str) -> None:
+    """Fan out OTel traces to Langfuse when configured.
+
+    OCI APM remains the primary exporter. Langfuse is optional and best-effort;
+    a configuration or export failure must never prevent app startup.
+    """
+    global _langfuse_exporter_attached
+    if _langfuse_exporter_attached:
+        return
+    if not (cfg.langfuse_configured and cfg.langfuse_otel_export_enabled):
+        return
+    try:
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+        provider = trace.get_tracer_provider()
+        add_processor = getattr(provider, "add_span_processor", None)
+        if not callable(add_processor):
+            logger.warning("Langfuse OTLP exporter skipped: active tracer provider cannot add processors")
+            return
+
+        endpoint = _langfuse_otlp_traces_endpoint(cfg.langfuse_host)
+        auth = b64encode(f"{cfg.langfuse_public_key}:{cfg.langfuse_secret_key}".encode("utf-8")).decode("ascii")
+        headers = {
+            "Authorization": f"Basic {auth}",
+            "x-langfuse-ingestion-version": cfg.langfuse_ingestion_version,
+        }
+        exporter = OTLPSpanExporter(
+            endpoint=endpoint,
+            headers=headers,
+            timeout=cfg.langfuse_timeout_seconds,
+        )
+        add_processor(BatchSpanProcessor(exporter))
+        _langfuse_exporter_attached = True
+        logger.info("OTel OTLP exporter -> Langfuse (%s)", service_name)
+    except Exception:
+        logger.debug("Langfuse OTLP exporter unavailable", exc_info=True)
 
 
 def _register_sql_span_enrichment(engine) -> None:
