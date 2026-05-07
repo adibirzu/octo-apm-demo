@@ -126,6 +126,15 @@ as well as the relevant child spans. The CRM `audit_logs` table was also
 checked in the live Oracle database and includes `user_agent`, so product and
 store update audit events should no longer fail with `ORA-00904`.
 
+Later on May 7, the checkout payment drilldown was extended and verified with
+a fresh placeholder order, gateway request, and trace. The Shop now exposes
+`/api/observability/payment-gateway/events` for `order_id`, `trace_id`, and
+`gateway_request_id` filters, and the CRM order view surfaces payment status
+plus the gateway correlation key. The verified event sequence includes
+gateway receipt, card/wallet data receipt, tokenization, antifraud review,
+processor routing, authorization decision, order payment update, and CRM sync;
+all pivots use synthetic IDs and tokenized metadata.
+
 The empty APM **App Servers** details page was traced to Java APM metric
 dimensions reporting `Appserver=false` for
 `ServiceName=octo-java-app-server` even though `HeapUsed` metrics exist

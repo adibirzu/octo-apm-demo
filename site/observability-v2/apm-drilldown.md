@@ -113,6 +113,29 @@ Use repeatable filters for the main demo flows:
   simulation traces
 - `spanName = "shop.assistant.genai"` for OCI GenAI calls
 - `llm.prompt.hash exists` for assistant LLMetry correlation pivots
+- `payment.gateway.request_id exists` for card, Apple Pay, Google Pay, and
+  simulated network authorization traces
+
+## Payment gateway drilldown
+
+For checkout investigations, use `payment.gateway.request_id` as the stable
+payment join key and `trace_id` as the cross-signal join key. A complete
+happy-path trace should include browser checkout, Shop order creation,
+gateway receipt, wallet/card tokenization, antifraud verification, processor
+routing, network authorization, CRM order sync, and ATP write spans.
+
+The operator API returns the stored gateway step timeline:
+
+```text
+GET /api/observability/payment-gateway/events?gateway_request_id=<PGW_REQUEST_ID>
+GET /api/observability/payment-gateway/events?trace_id=<TRACE_ID>
+```
+
+Use the returned `gateway_request_id`, `trace_id`, `order_id`, `method`,
+`provider`, `network`, `status`, `risk_score`, and step names as pivots into
+APM Trace Explorer, OCI Logging, Log Analytics, CRM Orders, and ATP payment
+tables. Declines and synthetic gateway faults should keep the same
+correlation fields even when `payment_status` is not `paid`.
 
 ## Linking from a log row
 
