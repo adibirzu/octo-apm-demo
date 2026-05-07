@@ -193,11 +193,9 @@ The fastest operator flow is:
 5. Export OSQuery results with the same `ATTACK_ID`.
 6. Refresh the Attack Lab Command Center dashboard.
 
-For the private live delivery path, use the real screenshots and OCI Console
-walkthrough in:
-
-- [Private Live Demo Facilitator Guide](private-demo-facilitator-guide.md)
-- [Private OCI Threat Hunting Workflow](private-oci-threat-hunting-workflow.md)
+For the private live delivery path, use the locally generated facilitator
+guide and OCI Console walkthrough. Those private runbooks and screenshots are
+excluded from the public GitHub Pages build.
 
 ## Availability monitoring
 

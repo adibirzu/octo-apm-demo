@@ -32,6 +32,7 @@ async function ensureOutDir() {
 }
 
 async function screenshot(page, name, options = {}) {
+  console.log(`capture ${name}`);
   await page.screenshot({
     path: path.join(outDir, name),
     fullPage: options.fullPage ?? false,
@@ -42,10 +43,21 @@ async function screenshot(page, name, options = {}) {
 async function elementScreenshot(page, selector, name) {
   const locator = page.locator(selector);
   await locator.scrollIntoViewIfNeeded();
+  console.log(`capture ${name}`);
   await locator.screenshot({
     path: path.join(outDir, name),
     animations: "disabled",
   });
+}
+
+async function step(name, action) {
+  console.log(`step: ${name}`);
+  try {
+    return await action();
+  } catch (error) {
+    console.warn(`step failed: ${name}: ${error.message}`);
+    return undefined;
+  }
 }
 
 async function openShop(page) {
@@ -79,15 +91,17 @@ async function runShopCheckout(page) {
   await page.waitForFunction(
     () => {
       const text = document.querySelector("#checkoutStatus")?.textContent || "";
-      return /Order #|Checkout failed|Request failed/i.test(text);
+      return /Order #|Order placed|Order created|Checkout failed|Request failed|Payment failed|success|complete/i.test(text);
     },
     null,
-    { timeout: 45000 },
-  );
+    { timeout: 90000 },
+  ).catch((error) => {
+    console.warn(`checkout status wait timed out: ${error.message}`);
+  });
   await page.waitForFunction(
     () => !document.querySelector("#checkoutSubmitButton")?.disabled,
     null,
-    { timeout: 45000 },
+    { timeout: 15000 },
   ).catch(() => {});
   await elementScreenshot(page, "#cartPanel", "shop-order-complete-live.png");
 }
@@ -171,11 +185,21 @@ async function runAdminLab(page) {
   await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
   await screenshot(page, "admin-simulation-live.png", { fullPage: true });
 
-  await clickCardAction(page, "#card-drone-shop", "Java Health", "#drone-output", "admin-java-apm-health-live.png", 45000);
-  await clickCardAction(page, "#card-storyboard", "Run Story", "#story-output", "admin-storyboard-output-live.png", 90000);
-  await clickCardAction(page, "#card-synthetic-users", "Generate Users", "#synthetic-output", "admin-synthetic-users-output-live.png", 90000);
-  await clickCardAction(page, "#card-attack-lab", "Generate Attack", "#attack-output", "admin-attack-lab-output-live.png", 120000);
-  await clickCardAction(page, "#card-availability", "Show Global Monitor Plan", "#availability-output", "admin-availability-plan-live.png", 30000);
+  await step("admin Java APM health", () =>
+    clickCardAction(page, "#card-drone-shop", "Java Health", "#drone-output", "admin-java-apm-health-live.png", 45000),
+  );
+  await step("admin demo storyboard", () =>
+    clickCardAction(page, "#card-storyboard", "Run Story", "#story-output", "admin-storyboard-output-live.png", 120000),
+  );
+  await step("admin synthetic users", () =>
+    clickCardAction(page, "#card-synthetic-users", "Generate Users", "#synthetic-output", "admin-synthetic-users-output-live.png", 120000),
+  );
+  await step("admin attack lab", () =>
+    clickCardAction(page, "#card-attack-lab", "Generate Attack", "#attack-output", "admin-attack-lab-output-live.png", 150000),
+  );
+  await step("admin availability plan", () =>
+    clickCardAction(page, "#card-availability", "Show Global Monitor Plan", "#availability-output", "admin-availability-plan-live.png", 30000),
+  );
 
   await page.goto(new URL("/observability", adminBase).toString(), { waitUntil: "domcontentloaded" });
   await page.waitForSelector(".card", { timeout: 45000 });
@@ -203,9 +227,9 @@ async function main() {
     const page = await context.newPage();
     page.setDefaultTimeout(45000);
 
-    await runShopCheckout(page);
-    await runSupportTicket(page);
-    await runAdminLab(page);
+    await step("shop checkout", () => runShopCheckout(page));
+    await step("shop support ticket", () => runSupportTicket(page));
+    await step("admin lab", () => runAdminLab(page));
   } finally {
     await browser.close();
   }

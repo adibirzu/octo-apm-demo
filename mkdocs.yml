@@ -39,6 +39,13 @@ plugins:
   - search
   - mermaid2
 
+exclude_docs: |
+  observability-v2/private-*.md
+  operations/private-demo-install-plan.md
+  assets/demo/private-live/**
+  assets/demo/private-oci-console/**
+  assets/demo/*private*.pdf
+
 markdown_extensions:
   - admonition
   - pymdownx.details
@@ -127,9 +134,6 @@ nav:
     - Log Analytics dashboards: observability-v2/log-analytics-dashboards.md
     - APM drill-down: observability-v2/apm-drilldown.md
     - Demo Storyboard and Attack Lab: observability-v2/demo-storyboard-attack-lab.md
-    - Private Demo Facilitator Guide: observability-v2/private-demo-facilitator-guide.md
-    - Private LiveLabs Threat Hunting: observability-v2/private-livelabs-threat-hunting.md
-    - Private OCI Threat Hunting Workflow: observability-v2/private-oci-threat-hunting-workflow.md
     - Stack Monitoring (ATP): observability-v2/stack-monitoring.md
     - WAF observability: observability-v2/waf-observability.md
     - Auto-remediation flow: observability-v2/autoremediation-flow.md
@@ -150,7 +154,6 @@ nav:
     - operations/index.md
     - Deployment: operations/deployment.md
     - Current Status: operations/current-status.md
-    - Private Demo Install Plan: operations/private-demo-install-plan.md
     - Deploy Readiness: operations/deploy-readiness.md
     - Chaos Engineering: operations/chaos.md
     - Alarms & Health: operations/alarms.md

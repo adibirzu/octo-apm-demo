@@ -17,10 +17,9 @@ May 6, 2026 update: the `<OCI_PROFILE>` profile was first reviewed for a new
 private Compute install in compartment
 `<COMPARTMENT_OCID>`
 (`<COMPARTMENT_NAME>`). The preflight and clean no-apply plan passed without
-creating resources. See
-[Private Demo Install Plan](private-demo-install-plan.md) for the exact limits,
-Terraform plan scope, APM/Log Analytics collection review, and apply
-gate.
+creating resources. The exact limits, Terraform plan scope, APM/Log Analytics
+collection review, and apply gate are kept in private operator notes that are
+excluded from the public GitHub Pages build.
 
 Later on May 6, an isolated `<OCI_PROFILE>` apply created the private Compute
 stack resources and was converged after disabling the optional surfaces
