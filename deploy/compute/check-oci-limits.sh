@@ -4,7 +4,7 @@
 # This script calls OCI read-only APIs. It does not create resources.
 #
 # Usage:
-#   OCI_PROFILE=cap \
+#   OCI_PROFILE=<OCI_PROFILE> \
 #   TENANCY_OCID=ocid1.tenancy.oc1..example \
 #   COMPARTMENT_ID=ocid1.compartment.oc1..example \
 #   ./deploy/compute/check-oci-limits.sh

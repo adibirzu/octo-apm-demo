@@ -1,7 +1,7 @@
 # Deployment options
 
 The current deployment source of truth is the unified
-[`octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo) project.
+[`octo-apm-demo`](https://github.com/example-org/octo-apm-demo) project.
 Pick the path that matches the environment; all paths target the same
 Shop and CRM container images and the same Oracle Autonomous Database
 integration contract.
@@ -30,10 +30,10 @@ on a private endpoint, and puts public OCI Load Balancer plus WAF in
 front. It also wires APM, OCI Logging, Log Analytics connectors, DB
 Management, Operations Insights, and Stack Monitoring Standard.
 
-[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
 
 Full walkthrough:
-[Compute Deployment](https://adibirzu.github.io/octo-apm-demo/getting-started/compute-deployment/).
+[Compute Deployment](https://example-org.github.io/octo-apm-demo/getting-started/compute-deployment/).
 
 ## OCI Resource Manager stack
 
@@ -53,7 +53,7 @@ Stacks → Create Stack** (source = My Configuration, file =
 `octo-stack.zip`). The schema groups variables into Tenancy, DNS,
 APM/RUM, Log Analytics, and WAF sections with native OCI pickers.
 
-Full details: [deploy/resource-manager/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/resource-manager/README.md).
+Full details: [deploy/resource-manager/README.md](https://github.com/example-org/octo-apm-demo/blob/main/deploy/resource-manager/README.md).
 
 ## Unified single VM
 
@@ -68,9 +68,9 @@ unzip /path/to/Wallet_<DB>.zip -d wallet
 sudo ./install.sh
 ```
 
-Or paste [`deploy/vm/cloud-init.yaml`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/cloud-init.yaml) into the
+Or paste [`deploy/vm/cloud-init.yaml`](https://github.com/example-org/octo-apm-demo/blob/main/deploy/vm/cloud-init.yaml) into the
 OCI Console Compute create form for a one-shot bootstrap. Full
-walkthrough: [deploy/vm/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/README.md).
+walkthrough: [deploy/vm/README.md](https://github.com/example-org/octo-apm-demo/blob/main/deploy/vm/README.md).
 
 ## Matrix of cross-service contract parity
 

@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-09 | **Commit**: aa5940499 (HEAD) | **Mode**: Full
 **Deployment profile**: Shop storefront on OKE
-**Repo**: `https://github.com/adibirzu/octo-drone-shop`
+**Repo**: `https://github.com/example-org/octo-drone-shop`
 **Repository layout note**: this report describes the standalone shop repo only
 
 ## Executive Summary
@@ -36,7 +36,7 @@ After the changes:
 - **Fix**: Strip `*`, never default to `["*"]`. If filtering produces an empty list, **don't install** the CORS middleware at all and log a `WARNING` so operators see what happened. Wildcard with credentials is now structurally impossible.
 - **Verified**:
   - `CORS_ALLOWED_ORIGINS="" → middleware not installed, warning logged`
-  - `CORS_ALLOWED_ORIGINS=https://shop.example.cloud → middleware installed with that exact origin + credentials`
+  - `CORS_ALLOWED_ORIGINS=https://shop.example.test → middleware installed with that exact origin + credentials`
 
 **CRIT-3: SSO not implemented**
 - **Where**: nowhere — entire `server/` tree had no OIDC/IDCS code.

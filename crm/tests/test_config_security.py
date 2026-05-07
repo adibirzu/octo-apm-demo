@@ -51,26 +51,26 @@ def test_cors_allowed_origins_strip_wildcards_and_slashes(monkeypatch) -> None:
     monkeypatch.setenv("APP_ENV", "development")
     monkeypatch.setenv(
         "CORS_ALLOWED_ORIGINS",
-        "*, https://crm.example.cloud/, https://shop.example.cloud ,https://crm.example.cloud/",
+        "*, https://crm.example.test/, https://shop.example.test ,https://crm.example.test/",
     )
 
     cfg = _config_module().Config()
     assert cfg.cors_allowed_origins == [
-        "https://crm.example.cloud",
-        "https://shop.example.cloud",
+        "https://crm.example.test",
+        "https://shop.example.test",
     ]
 
 
 def test_idcs_redirect_uri_is_derived_from_crm_base_url(monkeypatch) -> None:
     monkeypatch.setenv("APP_ENV", "development")
-    monkeypatch.setenv("CRM_BASE_URL", "https://crm.example.cloud")
-    monkeypatch.setenv("IDCS_DOMAIN_URL", "https://idcs.example.cloud")
+    monkeypatch.setenv("CRM_BASE_URL", "https://crm.example.test")
+    monkeypatch.setenv("IDCS_DOMAIN_URL", "https://idcs.example.test")
     monkeypatch.setenv("IDCS_CLIENT_ID", "client-id")
     monkeypatch.setenv("IDCS_CLIENT_SECRET", "client-secret")
     monkeypatch.delenv("IDCS_REDIRECT_URI", raising=False)
 
     cfg = _config_module().Config()
-    assert cfg.idcs_redirect_uri == "https://crm.example.cloud/api/auth/sso/callback"
+    assert cfg.idcs_redirect_uri == "https://crm.example.test/api/auth/sso/callback"
     assert cfg.idcs_configured is True
 
 

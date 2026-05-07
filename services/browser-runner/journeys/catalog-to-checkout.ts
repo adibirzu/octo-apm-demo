@@ -15,7 +15,7 @@
  */
 
 import type { BrowserContext, Page } from "playwright";
-import type { BrowserRunnerConfig } from "../src/config.js";
+import { syntheticIdentityHeaders, type BrowserRunnerConfig } from "../src/config.js";
 
 export async function runJourney(
   context: BrowserContext,
@@ -29,6 +29,7 @@ export async function runJourney(
     "X-Run-Id": config.runId,
     "X-Operator": config.operator,
     "X-Workflow-Id": `browser.${config.journey}`,
+    ...syntheticIdentityHeaders(config.selectedSyntheticUser),
   });
 
   await page.goto(config.shopBaseUrl, { timeout: config.timeoutPerActionMs });
@@ -51,7 +52,7 @@ export async function runJourney(
 
   // Add to cart
   const addToCartBtn = page.locator(
-    '[data-testid="add-to-cart"], button:has-text("Add to cart")',
+    '[data-testid="add-to-cart"], button:has-text("Add to Cart"), button:has-text("Add to cart")',
   ).first();
   if (await addToCartBtn.count()) {
     await addToCartBtn.click();
@@ -59,7 +60,7 @@ export async function runJourney(
     // Fallback — direct API add so the journey still produces signal
     await page.request.post(`${config.shopBaseUrl}/api/cart`, {
       data: { product_id: 1, quantity: 1 },
-      headers: { "X-Run-Id": config.runId },
+      headers: { "X-Run-Id": config.runId, ...syntheticIdentityHeaders(config.selectedSyntheticUser) },
     });
   }
 
@@ -70,21 +71,56 @@ export async function runJourney(
     await page.waitForLoadState("domcontentloaded", { timeout: config.timeoutPerActionMs });
   }
 
-  // Checkout
-  const checkoutBtn = page.locator(
-    '[data-testid="checkout"], button:has-text("Checkout")',
-  ).first();
-  if (await checkoutBtn.count()) {
-    await checkoutBtn.click();
-    await page.waitForLoadState("domcontentloaded", { timeout: config.timeoutPerActionMs });
+  // Checkout through the real form when the current storefront exposes it.
+  const user = config.selectedSyntheticUser ?? {
+    displayName: "Synthetic Buyer",
+    email: "synthetic.buyer@apex.example.test",
+    username: "synthetic.buyer",
+    domain: "apex.example.test",
+  };
+  const checkoutForm = page.locator("#checkoutForm").first();
+  if (await checkoutForm.count()) {
+    await page.locator('#checkoutForm [name="customer_name"]').fill(user.displayName);
+    await page.locator('#checkoutForm [name="customer_email"]').fill(user.email);
+    await page.locator('#checkoutForm [name="company"]').fill("Apex Synthetic Operations");
+    await page.locator('#checkoutForm [name="customer_phone"]').fill("+1-555-0100");
+    await page.locator('#checkoutForm [name="shipping_address"]').fill("Synthetic operations address");
+    await page.locator('#checkoutForm [name="payment_method"]').selectOption("credit_card");
+    await page.locator('#checkoutForm [name="card_number"]').fill("4111 1111 1111 1111");
+    await page.locator('#checkoutForm [name="card_expiry"]').fill("12/30");
+    await page.locator('#checkoutForm [name="card_cvv"]').fill("123");
+    await page.locator('#checkoutForm [name="cardholder_name"]').fill(user.displayName);
+    await page.locator('#checkoutForm [name="billing_postal_code"]').fill("10001");
+    await Promise.all([
+      page.waitForResponse(
+        (response) => response.url().includes("/api/shop/checkout"),
+        { timeout: config.timeoutPerActionMs },
+      ).catch(() => undefined),
+      page.locator("#checkoutSubmitButton").click(),
+    ]);
   } else {
     // Synthetic checkout via API — the primary purpose is APM signal
-    await page.request.post(`${config.shopBaseUrl}/api/orders`, {
+    await page.request.post(`${config.shopBaseUrl}/api/shop/checkout`, {
       data: {
-        customer_id: 1,
-        items: [{ product_id: 1, quantity: 1, unit_price: 49.99 }],
+        customer_name: user.displayName,
+        customer_email: user.email,
+        company: "Apex Synthetic Operations",
+        customer_phone: "+1-555-0100",
+        shipping_address: "Synthetic operations address",
+        payment_method: "credit_card",
+        payment_details: {
+          card: {
+            number: "4111 1111 1111 1111",
+            expiry: "12/30",
+            cvv: "123",
+            cardholder_name: user.displayName,
+            billing_postal_code: "10001",
+            brand: "visa",
+          },
+        },
+        items: [{ product_id: 1, quantity: 1 }],
       },
-      headers: { "X-Run-Id": config.runId },
+      headers: { "X-Run-Id": config.runId, ...syntheticIdentityHeaders(config.selectedSyntheticUser) },
     });
   }
 

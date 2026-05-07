@@ -45,7 +45,7 @@ retries — re-posting the same order MUST NOT create a second invoice.
 - **CRM is the source of truth** for products, stock, price, category, storefront assignment, and storefront metadata.
 - **Shop is the source of truth** for cart, checkout, and storefront session behavior.
 - **Shared Oracle ATP** allows both services to correlate the same order, customer, and product lifecycle from different operational surfaces.
-- **Public CRM URLs stay public**: browser responses and docs point to `https://crm.example.cloud`, while backend service-to-service calls may still target the in-cluster CRM service URL.
+- **Public CRM URLs stay public**: browser responses and docs point to `https://crm.example.test`, while backend service-to-service calls may still target the in-cluster CRM service URL.
 
 ## Distributed Tracing
 

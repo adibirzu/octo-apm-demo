@@ -3,7 +3,7 @@
 #
 # Usage:
 #   WORKFLOW_BACKEND_URL=https://workflow.example.com \
-#   DNS_DOMAIN=cyber-sec.ro \
+#   DNS_DOMAIN=example.test \
 #   ./deploy/oci/render_workflow_gateway_api_spec.sh
 
 set -euo pipefail

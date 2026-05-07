@@ -34,7 +34,7 @@ WAF annotations, HPA (2→6 replicas, 70% CPU / 75% memory), PDB
 SecretProviderClass per namespace when the OCI Secrets Store CSI
 driver is installed.
 
-Full walkthrough: [deploy/oke/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/oke/README.md).
+Full walkthrough: [deploy/oke/README.md](https://github.com/example-org/octo-apm-demo/blob/main/deploy/oke/README.md).
 
 ## Security posture
 

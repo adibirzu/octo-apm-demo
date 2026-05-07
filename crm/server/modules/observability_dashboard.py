@@ -125,6 +125,103 @@ async def security_detail():
     return await _security_summary()
 
 
+@router.get("/capabilities")
+async def observability_capabilities():
+    """Machine-readable observability signal inventory for demos and checks."""
+    return _observability_capabilities()
+
+
+def _observability_capabilities() -> dict:
+    return {
+        "service": service_metadata(),
+        "runtime": cfg.safe_runtime_summary(),
+        "signals": {
+            "traces": {
+                "enabled": cfg.apm_configured,
+                "provider": "oci-apm",
+                "service_name": cfg.otel_service_name,
+                "span_enrichment": [
+                    "http",
+                    "sql_id",
+                    "business_operations",
+                    "order_sync",
+                    "security_events",
+                    "chaos_simulation",
+                ],
+            },
+            "logs": {
+                "enabled": cfg.logging_configured,
+                "provider": "oci-logging",
+                "trace_correlation_fields": ["trace_id", "span_id", "oracleApmTraceId", "oracleApmSpanId"],
+                "pii_masking": True,
+            },
+            "metrics": {
+                "prometheus_endpoint": "/metrics",
+                "business_metric_families": [
+                    "orders",
+                    "order_sync",
+                    "invoices",
+                    "tickets",
+                    "auth",
+                    "campaigns",
+                    "shipping",
+                    "dashboard",
+                    "security",
+                ],
+            },
+            "rum": {
+                "enabled": cfg.rum_configured,
+                "frontend_ingest_endpoint": "/api/observability/frontend",
+            },
+            "database": {
+                "target": cfg.database_target_label,
+                "sql_id_enrichment": cfg.database_observability_enabled,
+                "session_tagging": True,
+                "connection_name": cfg.atp_connection_name or None,
+                "atp_ocid": cfg.atp_ocid or None,
+            },
+            "security": {
+                "security_spans": cfg.security_log_enabled,
+                "session_gate": True,
+                "sso_configured": cfg.idcs_configured,
+            },
+        },
+        "demo_generators": {
+            "crm_simulation": {
+                "enabled": True,
+                "endpoint": "/api/simulation",
+            },
+            "drone_shop_proxy": {
+                "enabled": bool(cfg.octo_drone_shop_url and cfg.drone_shop_internal_key),
+                "shop_configured": bool(cfg.octo_drone_shop_url),
+            },
+            "order_sync": {
+                "enabled": cfg.orders_sync_enabled,
+                "interval_seconds": cfg.orders_sync_interval_seconds,
+            },
+        },
+        "drilldowns": {
+            "apm_console_url": cfg.apm_console_url or None,
+            "log_analytics_console_url": cfg.log_analytics_console_url or None,
+            "opsi_console_url": cfg.opsi_console_url or None,
+            "db_management_console_url": cfg.db_management_console_url or None,
+        },
+        "endpoints": {
+            "dashboard": "/api/observability/360",
+            "capabilities": "/api/observability/capabilities",
+            "frontend_ingest": "/api/observability/frontend",
+            "metrics": "/metrics",
+            "readiness": "/ready",
+            "integration_schema": "/api/integrations/schema",
+        },
+        "privacy": {
+            "masks_contact_fields": True,
+            "masks_email_mentions_in_text": True,
+            "raw_shared_secret_exposed": False,
+        },
+    }
+
+
 async def _app_health_summary() -> dict:
     """Aggregate application entity counts and recent activity."""
     try:

@@ -97,6 +97,9 @@ class Config:
     demo_stack_name: str = field(default_factory=lambda: _env("DEMO_STACK_NAME", "platform-stack"))
     dns_domain: str = field(default_factory=lambda: _env("DNS_DOMAIN"))
     crm_base_url: str = field(default_factory=lambda: _env("CRM_BASE_URL"))
+    shop_public_url: str = field(default_factory=lambda: _env("SHOP_PUBLIC_URL"))
+    octo_public_hostname: str = field(default_factory=lambda: _env("OCTO_PUBLIC_HOSTNAME"))
+    app_topology_profile: str = field(default_factory=lambda: _env("APP_TOPOLOGY_PROFILE"))
     cors_allowed_origins_raw: str = field(default_factory=lambda: _env("CORS_ALLOWED_ORIGINS"))
 
     # Database — Oracle ATP

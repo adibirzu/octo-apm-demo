@@ -215,7 +215,7 @@
 </div>
 
 <!-- Simulation and demo data controls have been moved to the CRM portal
-     (crm.example.cloud → Integrations page). The backend APIs remain here
+     (crm.example.test → Integrations page). The backend APIs remain here
      and are SSO+service-key protected. -->
 
 <div class="dashboard-row dashboard-row-wide">
@@ -296,37 +296,30 @@ async function loadDashboard() {
 }
 
 function renderStatusGrid(ready, crm, summary, integrations) {
-    const integration = (integrations.integrations || [])[0] || {};
+    const appServers = integrations.app_servers || [];
+    const shopServer = appServers.find(s => s.name === 'drone-shop-portal') || {};
+    const adminServer = appServers.find(s => s.name === 'enterprise-crm-portal') || {};
+    const dbName = integrations.database?.connection_name || ready.atp_connection_name || ready.db_type || 'unknown';
     const cards = [
         {
             label: 'Database',
             status: ready.database || 'unknown',
-            body: ready.db_type || 'unknown',
+            body: dbName,
+        },
+        {
+            label: 'Drone Shop App Server',
+            status: ready.ready ? 'healthy' : 'degraded',
+            body: friendlyUrl(shopServer.url || window.location.origin),
+        },
+        {
+            label: 'Admin App Server',
+            status: crm.status || (adminServer.configured ? 'configured' : 'pending'),
+            body: friendlyUrl(crm.crm_url || adminServer.url || 'Not configured'),
         },
         {
             label: 'Telemetry',
             status: ready.apm_configured ? 'enabled' : 'pending',
             body: `APM ${ready.apm_configured ? 'on' : 'off'} | RUM ${ready.rum_configured ? 'on' : 'off'}`,
-        },
-        {
-            label: 'CRM Sync',
-            status: crm.status || 'unknown',
-            body: crm.crm_url || (crm.crm_configured ? 'Configured for server-side sync' : 'Not configured'),
-        },
-        {
-            label: 'Shared Customers',
-            status: (summary.integration?.last_sync_error ? 'degraded' : 'healthy'),
-            body: `last sync count ${summary.integration?.last_sync_count || 0}`,
-        },
-        {
-            label: 'Products',
-            status: (summary.products?.low_stock || 0) > 0 ? 'degraded' : 'healthy',
-            body: `${summary.products?.total || 0} active | ${summary.products?.low_stock || 0} low stock`,
-        },
-        {
-            label: 'Integration API',
-            status: integration.configured ? 'configured' : 'pending',
-            body: integration.url || (integration.configured ? 'Configured for server-side sync' : 'Not configured'),
         },
     ];
 
@@ -356,6 +349,14 @@ function renderDrilldowns(ready, crm, integrations) {
             <strong>${target.configured ? 'Open' : 'Not configured'}</strong>
         </a>
     `).join('');
+}
+
+function friendlyUrl(raw) {
+    if (!raw) return '';
+    try {
+        const u = new URL(raw);
+        return u.hostname.match(/^\d+\.\d+\.\d+\.\d+$/) ? raw : `${u.protocol}//${u.hostname}`;
+    } catch { return raw; }
 }
 
 function renderFeaturedProducts(products) {

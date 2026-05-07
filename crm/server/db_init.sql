@@ -219,8 +219,8 @@ ON CONFLICT DO NOTHING;
 
 -- Shops
 INSERT INTO shops (name, slug, storefront_url, crm_base_url, region, currency, status, notes) VALUES
-    ('Primary Storefront', 'primary-store', 'https://shop.example.cloud', 'https://crm.example.cloud', 'eu-central', 'USD', 'active', 'Primary public storefront managed from CRM.'),
-    ('Lab Storefront', 'lab-store', 'https://shop-lab.example.cloud', 'https://crm.example.cloud', 'us-east', 'USD', 'maintenance', 'Sandbox storefront for catalog rehearsals.')
+    ('Primary Storefront', 'primary-store', 'https://shop.example.test', 'https://crm.example.test', 'eu-central', 'USD', 'active', 'Primary public storefront managed from CRM.'),
+    ('Lab Storefront', 'lab-store', 'https://shop-lab.example.test', 'https://crm.example.test', 'us-east', 'USD', 'maintenance', 'Sandbox storefront for catalog rehearsals.')
 ON CONFLICT DO NOTHING;
 
 -- Products

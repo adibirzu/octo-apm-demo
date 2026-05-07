@@ -12,7 +12,7 @@
  */
 
 import type { BrowserContext } from "playwright";
-import type { BrowserRunnerConfig } from "../src/config.js";
+import { syntheticIdentityHeaders, type BrowserRunnerConfig } from "../src/config.js";
 
 export async function runJourney(
   context: BrowserContext,
@@ -24,6 +24,7 @@ export async function runJourney(
     "X-Run-Id": config.runId,
     "X-Operator": config.operator,
     "X-Workflow-Id": `browser.${config.journey}`,
+    ...syntheticIdentityHeaders(config.selectedSyntheticUser),
   });
 
   for (const path of ["/", "/customers", "/tickets", "/catalog"]) {

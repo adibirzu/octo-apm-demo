@@ -3,7 +3,7 @@
 ## 1. Repository
 
 ```bash
-git clone https://github.com/adibirzu/octo-drone-shop.git
+git clone https://github.com/example-org/octo-drone-shop.git
 cd octo-drone-shop
 ```
 
@@ -368,9 +368,9 @@ endpoint, so the integration is safe to expose to the internet.
 4. **Client configuration**:
    - Allowed grant types: **Authorization Code**.
    - Allowed operations: **Introspect**.
-   - Redirect URL: `https://shop.example.cloud/api/auth/sso/callback`
+   - Redirect URL: `https://shop.example.test/api/auth/sso/callback`
      (or your hostname).
-   - Post-logout redirect URL: `https://shop.example.cloud/login`.
+   - Post-logout redirect URL: `https://shop.example.test/login`.
    - Client type: **Confidential**.
    - Scopes: `openid`, `profile`, `email`.
 5. **Activate** the app and copy the **Client ID** and **Client Secret**.
@@ -393,8 +393,8 @@ kubectl -n octo-drone-shop create secret generic octo-sso \
   --from-literal=idcs-domain-url="https://idcs-xxxxx.identity.oraclecloud.com" \
   --from-literal=idcs-client-id="..." \
   --from-literal=idcs-client-secret="..." \
-  --from-literal=idcs-redirect-uri="https://shop.example.cloud/api/auth/sso/callback" \
-  --from-literal=idcs-post-logout-redirect="https://shop.example.cloud/login"
+  --from-literal=idcs-redirect-uri="https://shop.example.test/api/auth/sso/callback" \
+  --from-literal=idcs-post-logout-redirect="https://shop.example.test/login"
 kubectl -n octo-drone-shop rollout restart deploy/octo-drone-shop
 ```
 

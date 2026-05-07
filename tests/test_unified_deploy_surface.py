@@ -5,13 +5,13 @@ from urllib.parse import parse_qs, urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESOURCE_MANAGER_ZIP_URL = "https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip"
+RESOURCE_MANAGER_ZIP_URL = "https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip"
 RESOURCE_MANAGER_BUTTON_URL = (
     "https://cloud.oracle.com/resourcemanager/stacks/create"
     f"?zipUrl={RESOURCE_MANAGER_ZIP_URL}"
 )
 COMPUTE_RESOURCE_MANAGER_ZIP_URL = (
-    "https://github.com/adibirzu/octo-apm-demo/releases/download/"
+    "https://github.com/example-org/octo-apm-demo/releases/download/"
     "compute-resource-manager-stack-20260504/octo-compute-stack.zip"
 )
 COMPUTE_RESOURCE_MANAGER_BUTTON_URL = (
@@ -69,8 +69,8 @@ def test_resource_manager_and_root_tf_defaults_match_live_host_pattern() -> None
 
     assert 'default = "shop.example.invalid"' in resource_manager_variables
     assert 'default = "crm.example.invalid"' in resource_manager_variables
-    assert 'default     = "shop.example.cloud"' in terraform_variables
-    assert 'default     = "crm.example.cloud"' in terraform_variables
+    assert 'default     = "shop.example.test"' in terraform_variables
+    assert 'default     = "crm.example.test"' in terraform_variables
 
 
 def test_oke_assets_use_unified_namespaces_and_hostnames() -> None:
@@ -106,8 +106,8 @@ def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
     wizard_cli = read_text("deploy/wizard/src/octo_wizard/cli.py")
     current_status = read_text("site/operations/current-status.md")
 
-    assert "DNS_DOMAIN=cyber-sec.ro" in deploy_wrapper
-    assert "DNS_BASE_DOMAIN=cyber-sec.ro" in bootstrap
+    assert "DNS_DOMAIN=example.test" in deploy_wrapper
+    assert "DNS_BASE_DOMAIN=example.test" in bootstrap
     assert "CERTIFICATE_CONTENT_WITH_PRIVATE_KEY" in bootstrap
     assert "TLS_SECRET_NAME" in bootstrap
     assert "HTTPS" in bootstrap
@@ -120,24 +120,24 @@ def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
     assert "MANAGEMENT_AGENT_ID" in ensure_stack_monitoring
     assert 'CONTAINER="${K8S_CONTAINER:-app}"' in deploy_crm
     assert 'SERVICE_SHOP_URL="${SERVICE_SHOP_URL:-http://octo-drone-shop.' in deploy_crm
-    assert "DNS_DOMAIN=cyber-sec.ro" in deploy_oke
-    assert "DNS_DOMAIN=cyber-sec.ro" in deployment_doc
+    assert "DNS_DOMAIN=example.test" in deploy_oke
+    assert "DNS_DOMAIN=example.test" in deployment_doc
     assert "deploy/bootstrap.sh" in new_tenancy
     assert "deploy/init-tenancy.sh" in new_tenancy
     assert "CROSS_SERVICE_E2E_ENABLED=1" in e2e_doc
     assert "SSO_E2E_ENABLED=1" in e2e_doc
     assert "FULL_PLATFORM_E2E_ENABLED=1" in e2e_doc
-    assert "shop.cyber-sec.ro" in e2e_doc
-    assert "crm.cyber-sec.ro" in e2e_doc
+    assert "shop.example.test" in e2e_doc
+    assert "crm.example.test" in e2e_doc
     assert "helm template" in deploy_readiness
     assert "helm lint" in deploy_readiness
-    assert "cyber-sec.ro" in wizard_cli
-    assert "shop.cyber-sec.ro" in readme
-    assert "crm.cyber-sec.ro" in readme
-    assert "shop.cyber-sec.ro" in site_index
-    assert "crm.cyber-sec.ro" in site_index
-    assert "shop.cyber-sec.ro" in current_status
-    assert "crm.cyber-sec.ro" in current_status
+    assert "example.test" in wizard_cli
+    assert "shop.example.test" in readme
+    assert "crm.example.test" in readme
+    assert "shop.example.test" in site_index
+    assert "crm.example.test" in site_index
+    assert "shop.example.test" in current_status
+    assert "crm.example.test" in current_status
     assert "octo-apm-demo-atp" in current_status
     assert "deploy.sh" in current_status
 
@@ -283,6 +283,7 @@ def test_compute_resource_manager_package_is_self_contained() -> None:
         "bootstrap/nginx/app.conf.template",
         "bootstrap/systemd/octo-compute.service",
         "bootstrap/systemd/octo-podman.service",
+        "bootstrap/systemd/octo-workflow-gateway.service",
     } <= names
     for module in ("atp", "apm_domain", "logging", "stack_monitoring", "waf"):
         assert any(name.startswith(f"modules-shared/modules/{module}/") for name in names)
@@ -403,8 +404,8 @@ def test_platform_service_defaults_and_manifests_follow_shop_crm_contract() -> N
         ]
     )
 
-    assert "https://shop.cyber-sec.ro" in traffic_config
-    assert "https://crm.cyber-sec.ro" in traffic_config
+    assert "https://shop.example.test" in traffic_config
+    assert "https://crm.example.test" in traffic_config
     assert "shop.${DNS_DOMAIN}" in load_control_profiles
     assert "crm.${DNS_DOMAIN}" in load_control_profiles
     assert "enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080" in load_control_api
@@ -415,9 +416,9 @@ def test_platform_service_defaults_and_manifests_follow_shop_crm_contract() -> N
     assert "octo-drone-shop" in remediator_scale
     assert "octo-drone-shop" in remediator_restart
 
-    assert "drone.octodemo.cloud" not in combined
-    assert "backend.octodemo.cloud" not in combined
-    assert "api.drone.octodemo.cloud" not in combined
+    assert "drone.example.test" not in combined
+    assert "backend.example.test" not in combined
+    assert "api.drone.example.test" not in combined
     assert "octo-shop-prod" not in combined
     assert "octo-backend-prod" not in combined
 
@@ -429,6 +430,7 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
     compute_tf = read_text("deploy/compute/terraform/main.tf")
     compute_outputs = read_text("deploy/compute/terraform/outputs.tf")
     compute_schema = read_text("deploy/compute/terraform/schema.yaml")
+    compute_variables = read_text("deploy/compute/terraform/variables.tf")
     compose = read_text("deploy/compute/app-compose.yml")
     deploy_apps = read_text("deploy/compute/deploy-apps.sh")
     install = read_text("deploy/compute/install.sh")
@@ -480,6 +482,8 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
     assert 'oci_management_agent_management_agent" "stack_monitoring_plugin' in compute_tf
     assert "enable_stack_monitoring_agent_plugin" in compute_tf
     assert "enable_stack_monitoring_host_registration" in compute_tf
+    assert "connectors_enabled" in compute_outputs
+    assert "configs_enabled" in compute_outputs
     assert "LICENSE_AUTO_ASSIGN" in compute_tf
     assert "AUTO_PROMOTE" in compute_tf
     assert "crm_admin_username" in compute_outputs
@@ -507,29 +511,51 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
         "existing_db_private_subnet_id",
         "shop_availability_domain_name",
         "crm_availability_domain_name",
+        "shop_hostname",
+        "crm_hostname",
+        "create_compute_instance_principal_policies",
         "public_lb_subnet_cidr",
         "app_private_subnet_cidr",
         "db_private_subnet_cidr",
         "enable_log_analytics",
+        "enable_log_analytics_connectors",
         "enable_stack_monitoring_agent_plugin",
+        "enable_stack_monitoring_configs",
+        "enable_unified_agent_log_collection",
         "enable_stack_monitoring_host_registration",
+        "boot_volume_size_gbs",
     ):
         assert key in compute_schema
+
+    assert 'default     = 500' in compute_variables
+    assert "boot_volume_size_gbs must be at least 500" in compute_variables
+    assert "minimum: 500" in compute_schema
 
     assert "APP_RUNTIME: compute" in compose
     assert "OTEL_TRACES_SAMPLER" in compose
     assert "OCI_APM_PRIVATE_DATAKEY" in compose
     assert "OCI_LOG_ID" in compose
+    assert "SHOP_PUBLIC_URL" in compose
+    assert "CORS_ALLOWED_ORIGINS" in compose
+    assert "WORKFLOW_API_BASE_URL" in compose
+    assert "WORKFLOW_PUBLIC_API_BASE_URL" in compose
+    assert "SELECTAI_PROFILE_NAME" in compose
+    assert "workflow-gateway:" in compose
     assert "CONTAINER_RUNTIME=podman" in runtime_template
+    assert "WORKFLOW_GATEWAY_ENABLED=false" in runtime_template
+    assert "WORKFLOW_PUBLIC_API_BASE_URL=/api/workflow-gateway" in runtime_template
     assert "CONTAINER_ENV_FILE=/opt/octo/container.env" in runtime_template
     assert "render_container_env_file" in install
     assert "--env-file /opt/octo/container.env" in podman_unit
+    assert "octo-workflow-gateway" in read_text("deploy/compute/systemd/octo-workflow-gateway.service")
     assert "--env-file /opt/octo/container.env" in docker_unit
     assert "--env-file /opt/octo/runtime.env" not in podman_unit + docker_unit
     assert "systemd units use container-runtime env file" in validate
     assert "podman" in cloud_init
     assert "compute_bootstrap_files" in compute_tf
     assert "bootstrap/install.sh" in compute_tf
+    assert 'var.shop_hostname != "" ? var.shop_hostname : "shop.${var.dns_domain}"' in compute_tf
+    assert 'var.crm_hostname != "" ? var.crm_hostname : "crm.${var.dns_domain}"' in compute_tf
     assert 'ignore_changes = [metadata["user_data"]]' in compute_tf
     assert "atp_compute_count" in compute_schema
     assert "SHOP_AVAILABILITY_DOMAIN" in read_text("deploy/compute/check-oci-limits.sh")
@@ -544,6 +570,8 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
     assert "docker compose -f" in install
     assert "ENABLE_HOST_NGINX" in install
     assert "oracle-cloud-agent.service" in install
+    assert "$${APP_IMAGE}" in podman_unit
+    assert '"${APP_IMAGE}"' not in podman_unit
     assert "configure-lb-certificate.sh" in validate
     assert "verify-deployment.sh" in validate
     assert "deploy-apps.sh" in validate
@@ -552,6 +580,8 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
     assert "deploy/compute/validate.sh" in verify
     assert "Load Balancer backend set" in deployment_verify
     assert "Load Balancer is ACTIVE" in deployment_verify
+    assert "Log Analytics Service Connectors are disabled in Terraform outputs" in deployment_verify
+    assert "Stack Monitoring HOST auto-promote config is disabled in Terraform outputs" in deployment_verify
     assert "resolves to Load Balancer IP" in deployment_verify
     assert "APM domain is ACTIVE" in deployment_verify
     assert "ATP database is AVAILABLE" in deployment_verify

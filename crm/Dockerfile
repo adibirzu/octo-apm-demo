@@ -1,5 +1,5 @@
 # ── Builder stage: install Python dependencies ──────────────────
-FROM python:3.11-slim AS builder
+FROM docker.io/library/python:3.11-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc && \
@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir --prefix=/install --ignore-installed -r crm/requi
     pip install --no-cache-dir --prefix=/install --ignore-installed --no-deps ./services/cache/client
 
 # ── Runtime stage: slim image with non-root user ────────────────
-FROM python:3.11-slim
+FROM docker.io/library/python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl && \

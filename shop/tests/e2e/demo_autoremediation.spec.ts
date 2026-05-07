@@ -7,8 +7,8 @@
  */
 import { test, expect, request } from '@playwright/test';
 
-const SHOP = process.env.SHOP_DOMAIN ?? 'shop.example.cloud';
-const CRM = process.env.CRM_DOMAIN ?? 'crm.example.cloud';
+const SHOP = process.env.SHOP_DOMAIN ?? 'shop.example.test';
+const CRM = process.env.CRM_DOMAIN ?? 'crm.example.test';
 const COOKIE = process.env.CRM_SESSION_COOKIE ?? '';
 
 test.describe('Octo Demo — auto-remediation loop', () => {

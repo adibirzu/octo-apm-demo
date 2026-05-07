@@ -7,7 +7,12 @@
 
 import { expect, test } from "@playwright/test";
 
-import { loadConfig } from "../src/config.js";
+import {
+  buildSyntheticUsers,
+  loadConfig,
+  selectSyntheticUser,
+  syntheticIdentityHeaders,
+} from "../src/config.js";
 
 test.describe("config loader", () => {
   test("honours OCTO_BROWSER_SHOP_URL env", () => {
@@ -56,5 +61,45 @@ test.describe("config loader", () => {
     delete process.env.OCTO_BROWSER_HEADLESS;
     const cfg = loadConfig();
     expect(cfg.headless).toBe(true);
+  });
+
+  test("synthetic users default to the reserved Apex demo domain", () => {
+    delete process.env.OCTO_BROWSER_SYNTHETIC_USER_DOMAIN;
+    delete process.env.OCTO_BROWSER_SYNTHETIC_USERS;
+    const cfg = loadConfig();
+
+    expect(cfg.syntheticUserDomain).toBe("apex.example.test");
+    expect(cfg.syntheticUsers.length).toBeGreaterThanOrEqual(8);
+    expect(cfg.syntheticUsers.every((user) => user.email.endsWith("@apex.example.test"))).toBe(true);
+    expect(JSON.stringify(cfg.syntheticUsers)).not.toContain("oracle.com");
+  });
+
+  test("synthetic user pool can be overridden by env list", () => {
+    process.env.OCTO_BROWSER_SYNTHETIC_USERS = "alex.chen@corp.example.test, maya.ionescu@corp.example.test";
+    try {
+      const cfg = loadConfig();
+      expect(cfg.syntheticUsers.map((user) => user.email)).toEqual([
+        "alex.chen@corp.example.test",
+        "maya.ionescu@corp.example.test",
+      ]);
+      expect(selectSyntheticUser(cfg, 2).email).toBe("maya.ionescu@corp.example.test");
+    } finally {
+      delete process.env.OCTO_BROWSER_SYNTHETIC_USERS;
+    }
+  });
+
+  test("buildSyntheticUsers rejects unsafe domains", () => {
+    expect(() => buildSyntheticUsers("bad domain.test", "")).toThrow(/domain/i);
+  });
+
+  test("synthetic identity headers omit raw e-mail values", () => {
+    const [user] = buildSyntheticUsers("corp.example.test", "alex.chen@corp.example.test");
+    const headers = syntheticIdentityHeaders(user);
+
+    expect(headers["X-Synthetic-User"]).toBe("alex.chen");
+    expect(headers["X-Synthetic-User-Domain"]).toBe("corp.example.test");
+    expect(headers["X-Synthetic-User-Hash"]).toMatch(/^[0-9a-f]{16}$/);
+    expect(headers).not.toHaveProperty("X-Synthetic-User-Email");
+    expect(JSON.stringify(headers)).not.toContain("alex.chen@corp.example.test");
   });
 });

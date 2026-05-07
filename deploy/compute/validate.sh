@@ -59,6 +59,9 @@ APP_RUNTIME=compute
 OTEL_SERVICE_NAME=octo-drone-shop
 SERVICE_INSTANCE_ID=verify-shop
 DNS_DOMAIN=verify.example.invalid
+OCTO_PUBLIC_HOSTNAME=shop.verify.example.invalid
+SHOP_PUBLIC_URL=https://shop.verify.example.invalid
+CORS_ALLOWED_ORIGINS=https://shop.verify.example.invalid,https://crm.verify.example.invalid
 ENVIRONMENT=production
 DEMO_STACK_NAME=octo-compute
 SERVICE_NAMESPACE=octo
@@ -81,10 +84,10 @@ ORACLE_WALLET_DIR=/opt/oracle/wallet
 ATP_OCID=ocid1.autonomousdatabase.oc1..verify
 DATABASE_OBSERVABILITY_ENABLED=true
 OCI_AUTH_MODE=instance_principal
-OCI_APM_ENDPOINT=https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.apm-agt.eu-frankfurt-1.oci.oraclecloud.com
+OCI_APM_ENDPOINT=https://example.apm-agt.eu-frankfurt-1.oci.oraclecloud.com
 OCI_APM_PRIVATE_DATAKEY=verify-apm-private-key
 OCI_APM_PUBLIC_DATAKEY=verify-apm-public-key
-OCI_APM_RUM_ENDPOINT=https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.apm-agt.eu-frankfurt-1.oci.oraclecloud.com
+OCI_APM_RUM_ENDPOINT=https://example.apm-agt.eu-frankfurt-1.oci.oraclecloud.com
 OCI_APM_RUM_PUBLIC_DATAKEY=verify-apm-public-key
 OCI_LOG_GROUP_ID=ocid1.loggroup.oc1..verify
 OCI_LOG_ID=ocid1.log.oc1..verify
@@ -125,6 +128,13 @@ if grep -q -- "--env-file /opt/octo/container.env" "${SCRIPT_DIR}/systemd/octo-p
     ok "deploy/compute systemd units use container-runtime env file"
 else
     fail "deploy/compute systemd units use container-runtime env file"
+fi
+
+if grep -Fq -- '$${APP_IMAGE}' "${SCRIPT_DIR}/systemd/octo-podman.service" && \
+   ! grep -Fq -- '"${APP_IMAGE}"' "${SCRIPT_DIR}/systemd/octo-podman.service"; then
+    ok "deploy/compute podman unit defers app image expansion to bash"
+else
+    fail "deploy/compute podman unit defers app image expansion to bash"
 fi
 
 python3 - "${SCRIPT_DIR}/terraform/cloud-init/compute.yaml.tftpl" <<'PY'

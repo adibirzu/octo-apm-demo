@@ -12,10 +12,11 @@ set -euo pipefail
 
 AGENT_JAR="${APM_AGENT_DIR:-/opt/apm-agent}/bootstrap/apm-java-agent.jar"
 APM_SERVICE_NAME="${OCI_APM_SERVICE_NAME:-octo-apm-java-demo}"
+APP_PORT="${PORT:-8080}"
 
 JAVA_OPTS=(
     "-Dspring.application.name=${APM_SERVICE_NAME}"
-    "-Dserver.port=8080"
+    "-Dserver.port=${APP_PORT}"
 )
 
 if [[ -f "${AGENT_JAR}" && -n "${OCI_APM_ENDPOINT:-}" && -n "${OCI_APM_PRIVATE_DATAKEY:-}" ]]; then
@@ -24,6 +25,9 @@ if [[ -f "${AGENT_JAR}" && -n "${OCI_APM_ENDPOINT:-}" && -n "${OCI_APM_PRIVATE_D
         "-Dcom.oracle.apm.agent.data.upload.endpoint=${OCI_APM_ENDPOINT}"
         "-Dcom.oracle.apm.agent.private.data.key=${OCI_APM_PRIVATE_DATAKEY}"
         "-Dcom.oracle.apm.agent.service.name=${APM_SERVICE_NAME}"
+        "-Dcom.oracle.apm.agent.resource.appserver=true"
+        "-Dcom.oracle.apm.agent.resource.appserver.name=${APM_SERVICE_NAME}"
+        "-Dcom.oracle.apm.agent.metric.collect.wait.for.appserver=false"
     )
     echo "[entrypoint] OCI APM Java agent attached: ${AGENT_JAR}" >&2
     echo "[entrypoint] service=${APM_SERVICE_NAME}, endpoint=${OCI_APM_ENDPOINT}" >&2

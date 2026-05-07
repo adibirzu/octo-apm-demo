@@ -49,7 +49,7 @@ done
 # ── Placeholder leak detection ────────────────────────────────────────────
 # Any value containing a known placeholder domain indicates the operator
 # copied the template without overriding — refuse.
-placeholder_patterns='example\.cloud|example\.invalid|changeme|TODO|PLACEHOLDER'
+placeholder_patterns='example\.cloud|example\.invalid|example\.test|changeme|TODO|PLACEHOLDER'
 
 for v in "${required_vars[@]}"; do
     val="${!v:-}"

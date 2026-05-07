@@ -1,14 +1,19 @@
 # Architecture diagrams (drawio)
 
-Three diagrams describing the platform from different angles. Open any
+Four diagrams describing the platform from different angles. Open any
 of them at [app.diagrams.net](https://app.diagrams.net) → *File* →
 *Open from → Device* and select the `.drawio` file.
 
 | File | Focus |
 |---|---|
+| [`private-demo-observability-reference.drawio`](./private-demo-observability-reference.drawio) | Current private Compute reference — DNS in external DNS tenancy, preserved LB HTTPS 443, API Gateway layers for public `/api` calls and private component calls, Shop/Admin app hosts, Java app-server APM, OCI GenAI assistant, optional Langfuse LLMetry comparison, ATP, OCI Logging, Service Connector, Log Analytics, Cloud Guard OSQuery, Availability Monitoring, Stack Monitoring |
 | [`platform-overview.drawio`](./platform-overview.drawio) | Full topology — users → WAF → OKE → data + observability plane, every service + every OCI backend |
 | [`observability-flow.drawio`](./observability-flow.drawio) | MELTS signal flow — how traces / logs / metrics / events / SQL-perf reach OCI APM / Logging / Log Analytics / Stack Monitoring / Events |
 | [`deploy-topology.drawio`](./deploy-topology.drawio) | Build path + OCIR + three deploy targets (OKE, single-VM, local-stack) with per-target trade-offs |
+
+Rendered preview:
+
+![Private Demo OCTO APM Demo architecture](./private-demo-observability-reference.svg)
 
 ## Re-rendering
 
@@ -24,6 +29,7 @@ npm install -g @hediet/drawio-cli
 
 # Export to SVG
 drawio --export --format svg --output platform-overview.svg platform-overview.drawio
+drawio --export --format svg --output private-demo-observability-reference.svg private-demo-observability-reference.drawio
 
 # Export to PNG at 2x DPI
 drawio --export --format png --scale 2 --output platform-overview.png platform-overview.drawio

@@ -29,6 +29,9 @@ below is what makes those pivots clickable.
 | `request_id` | span + log + LB/WAF log | `uuid4` | edge middleware (nginx/LB/API-GW) — **not** the app |
 | `workflow_id` | span + log | human-readable slug (`checkout-v2`, `crm-catalog-sync`) | app — one per business flow |
 | `run_id` | span + log + alarm annotation | `uuid4` | emitted by `octo-load-control` when a profile runs; otherwise absent |
+| `assistant.session_id` | LLM span + log + ATP row | `uuid4` or caller-provided session ID | Drone Shop assistant |
+| `llm.prompt.hash` | LLM span + log + ATP row | SHA-256 hex | LLMetry helper |
+| `llm.response.hash` | LLM span + log + ATP row | SHA-256 hex | LLMetry helper |
 | `service.name` | OTel resource | kebab-case short name | Deployment env |
 | `service.namespace` | OTel resource | `octo` | fixed |
 | `deployment.environment` | OTel resource | `production` \| `staging` \| `dev` | Deployment env |
@@ -50,6 +53,9 @@ below is what makes those pivots clickable.
   running. It lets you filter "what happened while I was executing
   the `db-write-burst` profile" without contaminating normal traffic
   queries.
+- **`assistant.session_id` + `llm.*.hash`** join OCI APM spans, OCI
+  Logging rows, ATP `llmetry_events`, and Langfuse observations without
+  logging raw prompts or responses.
 
 ## Field semantics
 
@@ -141,6 +147,31 @@ HTTP call they make. `httpx.Client` auto-propagates `traceparent`
 (via OTel instrumentation); the other three are propagated by the
 app's outbound-headers helper (`server/observability/correlation.py`
 on both shop + crm).
+
+## LLMetry field dictionary
+
+Assistant LLM spans and logs MUST include these fields when the
+assistant path is executed:
+
+| Field | Purpose |
+|---|---|
+| `assistant.session_id` | Conversation/session join key shared by browser, ATP, spans, logs, and Langfuse |
+| `assistant.provider` | `oci_genai`, `local_grounded_fallback`, or `guardrail_scope_filter` |
+| `assistant.model_id` | OCI GenAI model ID or fallback model label |
+| `assistant.guardrail.allowed` | Boolean scope decision |
+| `assistant.guardrail.reason` | `catalog_product`, `drone_domain_keyword`, `blocked_term`, `out_of_scope`, etc. |
+| `assistant.documents_grounded` | Count of ATP product documents passed to the model |
+| `llm.prompt.hash` | SHA-256 hash of the user prompt |
+| `llm.response.hash` | SHA-256 hash of the assistant response |
+| `llm.prompt.length` / `llm.response.length` | Character counts used for sizing without storing raw text |
+| `gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens` | OCI GenAI token usage when returned by the provider |
+| `langfuse.trace.name` / `langfuse.session.id` | Optional Langfuse OTLP mapping fields |
+
+Raw prompt and response text MUST NOT be emitted to spans or logs unless
+`LLMETRY_CAPTURE_CONTENT=true`, and even then only redacted previews are
+allowed. The default path stores hashes, lengths, token counts, provider,
+model, guardrail result, latency, trace ID, and span ID in the ATP
+`llmetry_events` table.
 
 ## OCI Events envelope
 

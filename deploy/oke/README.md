@@ -14,8 +14,8 @@ into APM + RUM + OCI Logging → Log Analytics + Stack Monitoring.
 | CRM Deployment | `enterprise-crm-portal` |
 | Shop in-cluster URL | `http://octo-drone-shop.octo-drone-shop.svc.cluster.local:8080` |
 | CRM in-cluster URL | `http://enterprise-crm-portal.enterprise-crm.svc.cluster.local:8080` |
-| Shop public hostname | `shop.${DNS_DOMAIN}` (for `DEFAULT` / `oci4cca`, use `shop.cyber-sec.ro`) |
-| CRM public hostname | `crm.${DNS_DOMAIN}` (for `DEFAULT` / `oci4cca`, use `crm.cyber-sec.ro`) |
+| Shop public hostname | `shop.${DNS_DOMAIN}` (for reference profile, use `shop.example.test`) |
+| CRM public hostname | `crm.${DNS_DOMAIN}` (for reference profile, use `crm.example.test`) |
 
 Deliberately different from the unified-VM names so both deployments
 can co-exist on the same tenancy (different compartments / clusters)
@@ -24,7 +24,7 @@ without collisions.
 ## One-shot apply
 
 ```bash
-DNS_DOMAIN=cyber-sec.ro \
+DNS_DOMAIN=example.test \
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
 OCI_LB_SUBNET_OCID=ocid1.subnet.oc1..xxx \

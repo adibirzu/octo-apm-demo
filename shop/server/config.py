@@ -18,6 +18,23 @@ def _env_value(name: str, default: str = "") -> str:
     return os.getenv(name, default)
 
 
+def _env_int(name: str, default: int) -> int:
+    value = (os.getenv(name) or "").strip()
+    return int(value) if value else default
+
+
+def _env_float(name: str, default: float) -> float:
+    value = (os.getenv(name) or "").strip()
+    return float(value) if value else default
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = (os.getenv(name) or "").strip().lower()
+    if not value:
+        return default
+    return value in ("1", "true", "yes", "on")
+
+
 def _env_secret(name: str, default: str = "") -> str:
     explicit = os.getenv(name)
     if explicit is not None and explicit != "":
@@ -43,7 +60,7 @@ class Config:
         _env_value("OBSERVABILITY_SERVICE_NAME", "octo-drone-shop"),
     )
     oci_auth_mode = _env_value("OCI_AUTH_MODE", "auto")
-    port = int(_env_value("PORT", "8080"))
+    port = _env_int("PORT", 8080)
     environment = _env_value("ENVIRONMENT", "production")
     auth_token_secret = _env_secret("AUTH_TOKEN_SECRET", "")
 
@@ -69,12 +86,26 @@ class Config:
     _using_legacy_crm_url_alias = bool(
         os.getenv("ENTERPRISE_CRM_URL") and not os.getenv("SERVICE_CRM_URL")
     )
+    _shop_public_url = _env_value("SHOP_PUBLIC_URL", "").rstrip("/")
     _crm_public_url = _env_value("CRM_PUBLIC_URL", "").rstrip("/")
     workflow_api_base_url = _env_value("WORKFLOW_API_BASE_URL", "").rstrip("/")
     _workflow_public_api_base_url = _env_value("WORKFLOW_PUBLIC_API_BASE_URL", "").rstrip("/")
     workflow_service_name = _env_value("WORKFLOW_SERVICE_NAME", "octo-workflow-gateway")
-    workflow_poll_seconds = int(_env_value("WORKFLOW_POLL_SECONDS", "90"))
+    workflow_poll_seconds = _env_int("WORKFLOW_POLL_SECONDS", 90)
     workflow_faulty_query_enabled = _env_value("WORKFLOW_FAULTY_QUERY_ENABLED", "false").lower() in ("1", "true", "yes")
+
+    # ── Java APM app-server sidecar ──
+    java_apm_service_url = _env_value("JAVA_APM_SERVICE_URL", "").rstrip("/")
+    java_apm_timeout_seconds = _env_float("JAVA_APM_TIMEOUT_SECONDS", 3.0)
+    java_apm_enabled = _env_value("JAVA_APM_ENABLED", "true").lower() in ("1", "true", "yes") and bool(java_apm_service_url)
+
+    # ── Payment gateway simulation ──
+    payment_provider = _env_value("PAYMENT_PROVIDER", "")
+    payment_gateway_simulation_enabled = _env_value(
+        "PAYMENT_GATEWAY_SIMULATION_ENABLED",
+        "true" if payment_provider.lower() == "simulated" or java_apm_service_url else "false",
+    ).lower() in ("1", "true", "yes")
+    payment_simulation_currency = _env_value("PAYMENT_SIMULATION_CURRENCY", "usd").lower()
 
     # ── OCI APM ──
     oci_apm_endpoint = _env_value("OCI_APM_ENDPOINT", "")
@@ -92,6 +123,23 @@ class Config:
     oci_genai_endpoint = _env_value("OCI_GENAI_ENDPOINT", "")
     oci_genai_model_id = _env_value("OCI_GENAI_MODEL_ID", "")
     selectai_profile_name = _env_value("SELECTAI_PROFILE_NAME", "")
+
+    # ── LLM telemetry / Langfuse comparison ──
+    llmetry_enabled = _env_bool("LLMETRY_ENABLED", True)
+    llmetry_store_enabled = _env_bool("LLMETRY_STORE_ENABLED", True)
+    # Raw prompts/responses are not emitted by default. When enabled, the
+    # LLMetry helper still redacts PII before attaching previews.
+    llmetry_capture_content = _env_bool("LLMETRY_CAPTURE_CONTENT", False)
+    langfuse_enabled = _env_bool("LANGFUSE_ENABLED", True)
+    langfuse_host = _env_value(
+        "LANGFUSE_HOST",
+        _env_value("LANGFUSE_BASE_URL", _env_value("LANGFUSE_PUBLIC_URL", "")),
+    ).rstrip("/")
+    langfuse_public_key = _env_secret("LANGFUSE_PUBLIC_KEY", "")
+    langfuse_secret_key = _env_secret("LANGFUSE_SECRET_KEY", "")
+    langfuse_otel_export_enabled = _env_bool("LANGFUSE_OTEL_EXPORT_ENABLED", True)
+    langfuse_timeout_seconds = _env_float("LANGFUSE_TIMEOUT_SECONDS", 2.0)
+    langfuse_ingestion_version = _env_value("LANGFUSE_INGESTION_VERSION", "4")
 
     # ── OCI Console Drilldown URLs ──
     apm_console_url = _env_value("APM_CONSOLE_URL", "")
@@ -124,6 +172,8 @@ class Config:
     @property
     def shop_public_url(self) -> str:
         """Derive the shop's public URL from DNS_DOMAIN if set."""
+        if self._shop_public_url:
+            return self._shop_public_url
         if self.dns_domain:
             return f"https://shop.{self.dns_domain}"
         return ""
@@ -169,9 +219,8 @@ class Config:
     @property
     def cors_origins_default(self) -> str:
         """Build default CORS origins from DNS_DOMAIN or fall back to empty."""
-        if self.dns_domain:
-            return f"https://shop.{self.dns_domain},https://crm.{self.dns_domain}"
-        return ""
+        origins = [self.shop_public_url, self.crm_public_url]
+        return ",".join(dict.fromkeys(origin for origin in origins if origin))
 
     @property
     def is_production(self) -> bool:
@@ -198,11 +247,22 @@ class Config:
         return bool(self.selectai_profile_name)
 
     @property
+    def langfuse_configured(self) -> bool:
+        return bool(
+            self.langfuse_enabled
+            and self.langfuse_host
+            and self.langfuse_public_key
+            and self.langfuse_secret_key
+        )
+
+    @property
     def idcs_redirect_uri(self) -> str:
         # No localhost fallback: a missing redirect must surface as an
         # IDCS misconfiguration in validate(), not silently break SSO.
         if self._idcs_redirect_uri:
             return self._idcs_redirect_uri
+        if self.shop_public_url:
+            return f"{self.shop_public_url}/api/auth/sso/callback"
         if self.dns_domain:
             return f"https://shop.{self.dns_domain}/api/auth/sso/callback"
         return ""
@@ -211,6 +271,8 @@ class Config:
     def idcs_post_logout_redirect(self) -> str:
         if self._idcs_post_logout_redirect:
             return self._idcs_post_logout_redirect
+        if self.shop_public_url:
+            return f"{self.shop_public_url}/login"
         if self.dns_domain:
             return f"https://shop.{self.dns_domain}/login"
         return "/login"
@@ -270,11 +332,18 @@ class Config:
             "splunk_configured": bool(self.splunk_hec_url and self.splunk_hec_token),
             "genai_configured": bool(self.oci_compartment_id and self.oci_genai_endpoint and self.oci_genai_model_id),
             "selectai_configured": self.selectai_configured,
+            "llmetry_enabled": self.llmetry_enabled,
+            "llmetry_store_enabled": self.llmetry_store_enabled,
+            "llmetry_capture_content": self.llmetry_capture_content,
+            "langfuse_configured": self.langfuse_configured,
+            "langfuse_host": self._public_url_or_empty(self.langfuse_host) or None,
             "crm_configured": bool(self.enterprise_crm_url),
             "crm_host": self.crm_public_hostname or None,
             "crm_public_url": self.crm_public_url or None,
             "workflow_gateway_configured": self.workflow_gateway_configured,
             "workflow_api_base_url": self.workflow_public_api_base_url or None,
+            "java_apm_enabled": self.java_apm_enabled,
+            "payment_gateway_simulation_enabled": self.payment_gateway_simulation_enabled,
         }
 
     def warn_deprecations(self) -> list[str]:
@@ -319,8 +388,12 @@ class Config:
             # Common cause: IDCS_REDIRECT_URI is neither set explicitly nor
             # derivable (DNS_DOMAIN empty). Name it in the error to save
             # operator time.
-            needs_dns = bool(self.idcs_domain_url and not self.dns_domain and not self._idcs_redirect_uri)
-            hint = " Missing DNS_DOMAIN prevents IDCS_REDIRECT_URI derivation." if needs_dns else ""
+            needs_public_url = bool(
+                self.idcs_domain_url
+                and not self.shop_public_url
+                and not self._idcs_redirect_uri
+            )
+            hint = " Missing DNS_DOMAIN or SHOP_PUBLIC_URL prevents IDCS_REDIRECT_URI derivation." if needs_public_url else ""
             raise RuntimeError(
                 "IDCS SSO is partially configured. Set IDCS_DOMAIN_URL, "
                 "IDCS_CLIENT_ID, IDCS_CLIENT_SECRET, IDCS_REDIRECT_URI."

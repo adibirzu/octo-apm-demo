@@ -11,6 +11,7 @@ from sqlalchemy import text
 from server.auth_security import require_authenticated_or_internal_service, require_authenticated_user
 from server.database import get_db
 from server.modules.integrations import sync_customers_from_crm, sync_order_to_crm
+from server.observability import business_metrics
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
@@ -105,7 +106,7 @@ async def add_to_cart(payload: dict, request: Request):
         async with get_db() as db:
             product_lookup = await db.execute(
                 text(
-                    "SELECT id, stock, is_active FROM products "
+                    "SELECT id, stock, is_active, category FROM products "
                     "WHERE id = :product_id FETCH FIRST 1 ROWS ONLY"
                 ),
                 {"product_id": product_id},
@@ -148,6 +149,7 @@ async def add_to_cart(payload: dict, request: Request):
                     {"sid": sid, "product_id": product_id, "quantity": quantity},
                 )
 
+        business_metrics.record_cart_addition(category=str(product.get("category") or ""))
         push_log("INFO", "Cart updated", **{"cart.session_id": sid, "cart.product_id": product_id})
         return {"status": "added", "session_id": sid}
 
@@ -277,6 +279,7 @@ async def create_order(payload: dict, request: Request):
                 items = await resolve_direct_items(db, payload.get("items", []))
 
             if not items:
+                business_metrics.record_checkout(success=False)
                 return {"error": "Cart is empty", "session_id": session_id}
 
             customer = await ensure_customer(
@@ -309,6 +312,9 @@ async def create_order(payload: dict, request: Request):
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
         span.set_attribute("integration.crm_order_synced", bool(crm_sync.get("synced")))
+        business_metrics.record_checkout(success=True)
+        if not order_result.get("idempotent_replay"):
+            business_metrics.record_order_created(order_result["total"], source="orders_api")
         push_log(
             "INFO",
             "Order persisted in backend",

@@ -17,7 +17,7 @@ The root repo ships **deployment-targeted** Playwright specs under
 - ATP must already be `AVAILABLE`.
 - `INTERNAL_SERVICE_KEY` is required for cross-service and full-platform smoke.
 - `octo-sso` plus a real test user are required for the SSO spec.
-- For the shared `DEFAULT` environment, the baked-in URLs are `https://shop.cyber-sec.ro` and `https://crm.cyber-sec.ro`, but do not rely on those defaults unless [Current Status](../operations/current-status.md) says the tenancy is healthy.
+- For the shared `DEFAULT` environment, the baked-in URLs are `https://shop.example.test` and `https://crm.example.test`, but do not rely on those defaults unless [Current Status](../operations/current-status.md) says the tenancy is healthy.
 
 ## Install Playwright once
 

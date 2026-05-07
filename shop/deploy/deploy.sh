@@ -34,7 +34,7 @@ for arg in "$@"; do
 done
 
 # DNS_DOMAIN is only needed when rolling out (deriving SHOP/CRM URLs); a
-# pure build can skip it. No example.cloud fallback — a wrong DNS default
+# pure build can skip it. No example.test fallback — a wrong DNS default
 # has historically caused CRM/shop URLs to publish placeholder hostnames in
 # production, so we refuse to guess.
 if $ROLLOUT; then

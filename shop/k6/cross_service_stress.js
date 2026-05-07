@@ -14,16 +14,16 @@
  *
  * Usage:
  *   # Against live OKE deployment
- *   k6 run --env DNS_DOMAIN=example.cloud k6/cross_service_stress.js
+ *   k6 run --env DNS_DOMAIN=example.test k6/cross_service_stress.js
  *
  *   # Against local docker-compose
  *   k6 run --env SHOP_URL=http://localhost:8080 --env CRM_URL=http://localhost:8081 k6/cross_service_stress.js
  *
  *   # Moderate load (default)
- *   k6 run --env DNS_DOMAIN=example.cloud k6/cross_service_stress.js
+ *   k6 run --env DNS_DOMAIN=example.test k6/cross_service_stress.js
  *
  *   # Heavy load
- *   k6 run --env DNS_DOMAIN=example.cloud --env PROFILE=heavy k6/cross_service_stress.js
+ *   k6 run --env DNS_DOMAIN=example.test --env PROFILE=heavy k6/cross_service_stress.js
  *
  * OCI Observability verification after the run:
  *   1. OCI APM → Trace Explorer: filter by serviceName=octo-drone-shop

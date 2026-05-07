@@ -21,6 +21,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <oracle.jdbc.version>23.26.1.0.0</oracle.jdbc.version>
     </properties>
 
     <dependencies>
@@ -31,6 +32,17 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc11-production</artifactId>
+            <version>${oracle.jdbc.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

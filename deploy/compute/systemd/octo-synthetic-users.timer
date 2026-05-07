@@ -1,0 +1,12 @@
+[Unit]
+Description=Run OCTO synthetic users and orders generator every 10 minutes
+
+[Timer]
+OnBootSec=4min
+OnUnitActiveSec=10min
+AccuracySec=30s
+Unit=octo-synthetic-users.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

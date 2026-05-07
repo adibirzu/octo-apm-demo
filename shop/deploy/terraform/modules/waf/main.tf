@@ -37,7 +37,7 @@ variable "display_name" {
 
 variable "domain" {
   type        = string
-  description = "Public hostname the policy protects (e.g. shop.example.cloud)."
+  description = "Public hostname the policy protects (e.g. shop.example.test)."
 }
 
 variable "mode" {

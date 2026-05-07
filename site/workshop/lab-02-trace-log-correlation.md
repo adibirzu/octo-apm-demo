@@ -108,7 +108,7 @@ PASS — Lab 02 complete
 
 ## Read more
 
-- [Tools → la-saved-searches/](https://github.com/adibirzu/octo-apm-demo/tree/main/tools/la-saved-searches)
+- [Tools → la-saved-searches/](https://github.com/example-org/octo-apm-demo/tree/main/tools/la-saved-searches)
 - [Architecture → Correlation Contract](../architecture/correlation-contract.md)
 - [Observability → Cross-Service Tracing](../observability/distributed-traces.md)
 

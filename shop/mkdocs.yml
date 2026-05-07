@@ -1,8 +1,8 @@
 site_name: OCTO Cloud-Native Platform
 site_description: Cloud-native e-commerce and CRM platform with full OCI observability (MELTS), shared Oracle ATP, IDCS SSO, and automated remediation
-site_url: https://adibirzu.github.io/octo-drone-shop
-repo_url: https://github.com/adibirzu/octo-drone-shop
-repo_name: adibirzu/octo-drone-shop
+site_url: https://example-org.github.io/octo-drone-shop
+repo_url: https://github.com/example-org/octo-drone-shop
+repo_name: example-org/octo-drone-shop
 edit_uri: edit/main/site/
 
 theme:
@@ -70,9 +70,9 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/adibirzu/octo-drone-shop
+      link: https://github.com/example-org/octo-drone-shop
     - icon: fontawesome/brands/github
-      link: https://github.com/adibirzu/enterprise-crm-portal
+      link: https://github.com/example-org/enterprise-crm-portal
 
 nav:
   - Home: index.md

@@ -4,6 +4,10 @@ The platform ships four supported install paths. Pick the one that
 matches the environment; all four target the same container images
 and the same Oracle Autonomous Database integration contract.
 
+[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+
+[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+
 | Path | When to pick | Setup time | Scaling | Zero-downtime rollouts |
 |---|---|---|---|---|
 | **OKE (Kubernetes)** | Production, HA, autoscaling, WAF-as-code | 45–90 min | Horizontal + vertical | Yes (rolling) |
@@ -28,7 +32,10 @@ endpoint, NAT and Service Gateway routes, OCI APM, OCI Logging custom
 logs, optional Log Analytics pipelines, Stack Monitoring Standard, and
 the instance-principal policies needed for app and OS telemetry.
 
-[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+Private branch note: build `deploy/compute/build/octo-compute-stack.zip`
+locally and upload it in Resource Manager. The placeholder GitHub release URL
+previously used by the deploy button returns HTTP 404 until a real private
+release asset is published.
 
 ```bash
 ./deploy/compute/validate.sh
@@ -54,14 +61,12 @@ starting services. For later image promotions, use
 `deploy/compute/deploy-apps.sh`; it targets the private instances with
 OCI Run Command, updates only non-secret deployment values, runs the
 host pre-flight, restarts `octo-compute.service`, and checks local
-`/ready`. The `cap` profile deployment for
-`shop.1.octodemo.cloud` and `crm.1.octodemo.cloud` was validated on May
+`/ready`. The `<REFERENCE_PROFILE>` profile deployment for
+`shop.example.test` and `crm.example.test` was validated on May
 5, 2026. Full walkthrough:
 [compute-deployment.md](compute-deployment.md).
 
 ## OCI Resource Manager stack
-
-[![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
 
 A pre-packaged Terraform stack that provisions only the **tenancy-level
 observability + security surface** (APM Domain, RUM app, Log Analytics
@@ -79,13 +84,13 @@ Stacks → Create Stack** (source = My Configuration, file =
 `octo-stack.zip`). The schema groups variables into Tenancy, DNS,
 APM/RUM, Log Analytics, and WAF sections with native OCI pickers.
 
-The button uses the published GitHub Release stack package at
-`https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip`.
-For this upstream repo, that release asset is already published. On a
-fresh fork, build the zip and upload it to an equivalent public release
-asset before using a fork-specific button URL.
+The historical deploy button used the GitHub Release stack package at
+`https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip`.
+That placeholder URL currently returns HTTP 404. On a private branch, build the
+zip and upload it manually, or publish a real private release asset before
+using a deploy button.
 
-Full details: [deploy/resource-manager/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/resource-manager/README.md).
+Full details: [deploy/resource-manager/README.md](https://github.com/example-org/octo-apm-demo/blob/main/deploy/resource-manager/README.md).
 
 ## Unified single VM
 
@@ -100,9 +105,9 @@ unzip /path/to/Wallet_<DB>.zip -d wallet
 sudo ./install.sh
 ```
 
-Or paste [`deploy/vm/cloud-init.yaml`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/cloud-init.yaml) into the
+Or paste [`deploy/vm/cloud-init.yaml`](https://github.com/example-org/octo-apm-demo/blob/main/deploy/vm/cloud-init.yaml) into the
 OCI Console Compute create form for a one-shot bootstrap. Full
-walkthrough: [deploy/vm/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/README.md).
+walkthrough: [deploy/vm/README.md](https://github.com/example-org/octo-apm-demo/blob/main/deploy/vm/README.md).
 
 ## Matrix of cross-service contract parity
 

@@ -41,7 +41,7 @@ Cloud-native CRM application built for **OCI Observability** demonstration. Show
 ## Deployment Bill of Materials
 
 Full minimum-required resource/cred/tool list for a new-tenancy deploy:
-[octo-drone-shop/deploy/BOM.md](https://github.com/adibirzu/octo-drone-shop/blob/main/deploy/BOM.md)
+[octo-drone-shop/deploy/BOM.md](https://github.com/example-org/octo-drone-shop/blob/main/deploy/BOM.md)
 — the shop side owns the authoritative BOM because the shop's deploy
 scripts (`pre-flight-check.sh`, `init-tenancy.sh`) validate against it
 and the Resource Manager schema is generated from the same source of
@@ -54,14 +54,14 @@ Three supported install paths, same container image on each:
 | Path | Entry point | When to use |
 |---|---|---|
 | OKE (Kubernetes) | `deploy/k8s/deployment-atp.yaml` | Production / HA |
-| OCI Resource Manager stack | [octo-drone-shop/deploy/resource-manager/](https://github.com/adibirzu/octo-drone-shop/tree/main/deploy/resource-manager) | One-click observability + WAF bootstrap (shared with the shop) |
-| Unified single VM | [octo-drone-shop/deploy/vm/](https://github.com/adibirzu/octo-drone-shop/tree/main/deploy/vm) | Runs shop + CRM on one VM against ATP (demos, workshops, air-gapped) |
+| OCI Resource Manager stack | [octo-drone-shop/deploy/resource-manager/](https://github.com/example-org/octo-drone-shop/tree/main/deploy/resource-manager) | One-click observability + WAF bootstrap (shared with the shop) |
+| Unified single VM | [octo-drone-shop/deploy/vm/](https://github.com/example-org/octo-drone-shop/tree/main/deploy/vm) | Runs shop + CRM on one VM against ATP (demos, workshops, air-gapped) |
 
-See [deployment-options](https://adibirzu.github.io/octo-drone-shop/getting-started/deployment-options/) for the full matrix.
+See [deployment-options](https://example-org.github.io/octo-drone-shop/getting-started/deployment-options/) for the full matrix.
 
 ## Cross-service integration contract
 
-This service pairs with the [OCTO Drone Shop](https://github.com/adibirzu/octo-drone-shop). The integration is symmetric on both sides:
+This service pairs with the [OCTO Drone Shop](https://github.com/example-org/octo-drone-shop). The integration is symmetric on both sides:
 
 | Concern | Value |
 |---|---|
@@ -149,7 +149,7 @@ middleware.entry ─── IP, user-agent, URL
 
 ## Cross-Service Integration
 
-Integrates with [OCTO Drone Shop](https://github.com/adibirzu/octo-drone-shop) via:
+Integrates with [OCTO Drone Shop](https://github.com/example-org/octo-drone-shop) via:
 - **Order sync** — one-way sync (Shop → CRM) with audit trail
 - **Distributed traces** — W3C `traceparent` propagation
 - **Shared ATP** — same Oracle ATP instance, session-tagged for OPSI
@@ -158,7 +158,7 @@ Integrates with [OCTO Drone Shop](https://github.com/adibirzu/octo-drone-shop) v
 ## Quick Start
 
 ```bash
-git clone https://github.com/adibirzu/enterprise-crm-portal.git
+git clone https://github.com/example-org/enterprise-crm-portal.git
 cd enterprise-crm-portal
 cp .env.example .env
 cp deploy/credentials.template deploy/credentials.env
@@ -216,9 +216,9 @@ kubectl apply -f deploy/k8s/deployment-atp.yaml    # ATP-backed
 
 | Document | Coverage |
 |----------|----------|
-| [Platform Docs](https://adibirzu.github.io/octo-drone-shop/) | Full platform documentation (both repos) |
-| [OCI Observability Add-Ons](https://adibirzu.github.io/octo-drone-shop/observability/) | How to enable each OCI service |
-| [Database Integration](https://adibirzu.github.io/octo-drone-shop/architecture/database-integration/) | Shared ATP architecture |
+| [Platform Docs](https://example-org.github.io/octo-drone-shop/) | Full platform documentation (both repos) |
+| [OCI Observability Add-Ons](https://example-org.github.io/octo-drone-shop/observability/) | How to enable each OCI service |
+| [Database Integration](https://example-org.github.io/octo-drone-shop/architecture/database-integration/) | Shared ATP architecture |
 | [Security Testing Guide](docs/security-testing.md) | Optional OWASP vulnerability testing |
 
 ## Project Structure

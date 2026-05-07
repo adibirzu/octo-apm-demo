@@ -1,13 +1,13 @@
 # Pin the base image per tenancy build. For reproducibility, override
 # PYTHON_BASE at build time with a digest-locked reference:
-#   docker build --build-arg PYTHON_BASE=python:3.12-slim@sha256:<digest> .
+#   docker build --build-arg PYTHON_BASE=docker.io/library/python:3.12-slim@sha256:<digest> .
 # The floating tag below is acceptable for local development only.
 #
 # BUILD CONTEXT MUST BE THE REPO ROOT (octo-apm-demo/), NOT shop/, because
 # the image installs two sibling editable packages (services/cache/client
 # and services/async-worker). Build with:
 #     docker build -f shop/Dockerfile -t <image>:<tag> .
-ARG PYTHON_BASE=python:3.12-slim
+ARG PYTHON_BASE=docker.io/library/python:3.12-slim
 
 # ── Builder stage: install Python deps + local editable packages ───
 FROM ${PYTHON_BASE} AS builder

@@ -7,5 +7,5 @@ def test_default_base_urls_use_current_default_hosts(monkeypatch) -> None:
 
     cfg = TrafficConfig()
 
-    assert cfg.shop_base_url == "https://shop.cyber-sec.ro"
-    assert cfg.crm_base_url == "https://crm.cyber-sec.ro"
+    assert cfg.shop_base_url == "https://shop.example.test"
+    assert cfg.crm_base_url == "https://crm.example.test"

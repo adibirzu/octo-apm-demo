@@ -6,7 +6,7 @@ surface plus the optional OCI 360 platform services.
 ## 0. Preflight
 
 ```bash
-cd /opt/octo || git clone https://github.com/adibirzu/octo-apm-demo.git /opt/octo && cd /opt/octo
+cd /opt/octo || git clone https://github.com/example-org/octo-apm-demo.git /opt/octo && cd /opt/octo
 
 python3 -m pytest -q tests/test_unified_deploy_surface.py
 bash deploy/verify.sh

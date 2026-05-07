@@ -1,0 +1,34 @@
+{
+  "displayName": "Attack Lab Command Center",
+  "description": "MITRE attack path, APM trace correlation, and OSQuery findings for the private demo lab.",
+  "freeformTags": {
+    "deployment-profile": "private-demo",
+    "lab": "attack-storyboard"
+  },
+  "widgets": [
+    {
+      "title": "MITRE detections by attack id",
+      "search": "attack-lab-detections"
+    },
+    {
+      "title": "Attack trace timeline",
+      "search": "attack-lab-trace-timeline"
+    },
+    {
+      "title": "API Gateway route policy detections",
+      "search": "api-gateway-edge-detections"
+    },
+    {
+      "title": "OSQuery findings by host",
+      "search": "osquery-attack-findings"
+    },
+    {
+      "title": "Trace drill-down",
+      "search": "trace-drilldown"
+    },
+    {
+      "title": "WAF and app errors",
+      "search": "waf-vs-app-errors"
+    }
+  ]
+}

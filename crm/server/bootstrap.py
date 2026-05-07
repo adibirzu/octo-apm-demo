@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import logging
+import os
 import secrets
 
 from passlib.hash import bcrypt
@@ -31,6 +32,13 @@ from server.database import (
 
 logger = logging.getLogger(__name__)
 
+_PLACEHOLDER_HOST_FRAGMENTS = (
+    "example.test",
+    "example.invalid",
+    "localhost",
+    "127.0.0.1",
+)
+
 
 def _bootstrap_users() -> dict[str, tuple[str, str, str]]:
     admin_password = cfg.bootstrap_admin_password.strip()
@@ -54,6 +62,7 @@ async def bootstrap_database() -> None:
     """Create tables and seed a compact demo dataset."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_ensure_audit_log_columns)
         await conn.run_sync(_ensure_order_columns)
         await conn.run_sync(_ensure_product_columns)
         await conn.run_sync(_ensure_catalog_schema)
@@ -237,6 +246,36 @@ async def bootstrap_database() -> None:
         await session.commit()
 
 
+def _ensure_audit_log_columns(sync_conn) -> None:
+    """Reconcile audit_logs when another service created the shared table first."""
+    inspector = inspect(sync_conn)
+    if "audit_logs" not in inspector.get_table_names():
+        return
+
+    existing = {column["name"].lower() for column in inspector.get_columns("audit_logs")}
+    dialect = sync_conn.dialect.name
+    type_map = {
+        "user_id": "NUMBER(10)" if dialect == "oracle" else "INTEGER",
+        "action": "VARCHAR2(100 CHAR)" if dialect == "oracle" else "VARCHAR(100)",
+        "resource": "VARCHAR2(200 CHAR)" if dialect == "oracle" else "VARCHAR(200)",
+        "details": "CLOB" if dialect == "oracle" else "TEXT",
+        "ip_address": "VARCHAR2(50 CHAR)" if dialect == "oracle" else "VARCHAR(50)",
+        "user_agent": "VARCHAR2(500 CHAR)" if dialect == "oracle" else "VARCHAR(500)",
+        "trace_id": "VARCHAR2(64 CHAR)" if dialect == "oracle" else "VARCHAR(64)",
+        "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    }
+    for column_name, ddl_type in type_map.items():
+        if column_name not in existing:
+            sync_conn.execute(
+                text(
+                    f"ALTER TABLE audit_logs ADD ({column_name} {ddl_type})"
+                    if dialect == "oracle"
+                    else f"ALTER TABLE audit_logs ADD COLUMN {column_name} {ddl_type}"
+                )
+            )
+            logger.info("Added missing column audit_logs.%s", column_name)
+
+
 def _ensure_order_columns(sync_conn) -> None:
     inspector = inspect(sync_conn)
     if "orders" not in inspector.get_table_names():
@@ -360,18 +399,60 @@ def _ensure_catalog_schema(sync_conn) -> None:
             )
 
 
+def _derived_shop_public_url() -> str:
+    if cfg.shop_public_url:
+        return cfg.shop_public_url.rstrip("/")
+    if cfg.dns_domain:
+        return f"https://shop.{cfg.dns_domain}".rstrip("/")
+    return "https://shop.example.test"
+
+
+def _derived_crm_public_url() -> str:
+    crm_public_url = os.getenv("CRM_PUBLIC_URL", "").strip()
+    if crm_public_url:
+        return crm_public_url.rstrip("/")
+    if cfg.crm_base_url:
+        return cfg.crm_base_url.rstrip("/")
+    if cfg.dns_domain:
+        return f"https://crm.{cfg.dns_domain}".rstrip("/")
+    return "https://crm.example.test"
+
+
+def _seed_contact_email(local_part: str) -> str:
+    if cfg.dns_domain:
+        return f"{local_part}@{cfg.dns_domain}"
+    return f"{local_part}@example.invalid"
+
+
+def _is_placeholder_value(value: str | None) -> bool:
+    if not value:
+        return True
+    normalized = value.strip().lower()
+    return any(fragment in normalized for fragment in _PLACEHOLDER_HOST_FRAGMENTS)
+
+
+def _should_reconcile_seed_field(current: object, proposed: object) -> bool:
+    if current in (None, ""):
+        return True
+    if isinstance(current, str) and isinstance(proposed, str):
+        return _is_placeholder_value(current) and not _is_placeholder_value(proposed)
+    return False
+
+
 async def _ensure_demo_shops(session) -> list[Shop]:
+    shop_public_url = _derived_shop_public_url()
+    crm_public_url = _derived_crm_public_url()
     demo_shops = [
         {
             "name": "Primary Storefront",
-            "address": "1 Platform Plaza, Example City",
+            "address": "1 Platform Plaza, OCTO Demo Region",
             "coordinates": "50.1109,8.6821",
-            "contact_email": "ops@example.invalid",
+            "contact_email": _seed_contact_email("ops"),
             "contact_phone": "+49-69-555-0101",
             "is_active": 1,
             "slug": "primary-store",
-            "storefront_url": "https://shop.example.cloud",
-            "crm_base_url": "https://crm.example.cloud",
+            "storefront_url": shop_public_url,
+            "crm_base_url": crm_public_url,
             "region": "eu-central",
             "currency": "USD",
             "status": "active",
@@ -379,14 +460,18 @@ async def _ensure_demo_shops(session) -> list[Shop]:
         },
         {
             "name": "Lab Storefront",
-            "address": "77 Flight Lab Avenue, Example East",
+            "address": "77 Flight Lab Avenue, OCTO Demo Region",
             "coordinates": "39.0438,-77.4874",
-            "contact_email": "lab@example.invalid",
+            "contact_email": _seed_contact_email("lab"),
             "contact_phone": "+1-703-555-0102",
             "is_active": 0,
             "slug": "lab-store",
-            "storefront_url": "https://shop-lab.example.cloud",
-            "crm_base_url": "https://crm.example.cloud",
+            "storefront_url": (
+                f"https://shop-lab.{cfg.dns_domain}".rstrip("/")
+                if cfg.dns_domain
+                else "https://shop-lab.example.test"
+            ),
+            "crm_base_url": crm_public_url,
             "region": "us-east",
             "currency": "USD",
             "status": "maintenance",
@@ -403,7 +488,8 @@ async def _ensure_demo_shops(session) -> list[Shop]:
             await session.flush()
         else:
             for field, value in payload.items():
-                setattr(shop, field, value)
+                if _should_reconcile_seed_field(getattr(shop, field, None), value):
+                    setattr(shop, field, value)
         shops.append(shop)
 
     primary_shop = next((shop for shop in shops if shop.slug == "primary-store"), shops[0])

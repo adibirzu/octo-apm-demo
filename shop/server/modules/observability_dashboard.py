@@ -21,6 +21,7 @@ from server.database import (
     SecurityEvent, engine, get_db, AsyncSessionLocal,
 )
 from server.middleware.circuit_breaker import crm_breaker, workflow_breaker
+from server.modules.api_gateway_observability import supported_api_gateway_scenarios
 from server.observability.correlation import build_correlation_id, current_trace_context, service_metadata
 from server.observability.logging_sdk import push_log
 from server.observability.oci_vss import get_vulnerability_summary
@@ -122,6 +123,166 @@ async def db_health_detail():
 @router.get("/360/security")
 async def security_detail():
     return await _security_summary()
+
+
+@router.get("/capabilities")
+async def observability_capabilities():
+    """Machine-readable observability signal inventory for demos and checks."""
+    return _observability_capabilities()
+
+
+def _observability_capabilities() -> dict:
+    return {
+        "service": service_metadata(),
+        "runtime": cfg.safe_runtime_summary(),
+        "signals": {
+            "traces": {
+                "enabled": cfg.apm_configured,
+                "provider": "oci-apm",
+                "service_name": cfg.otel_service_name,
+                "span_enrichment": [
+                    "http",
+                    "sql_id",
+                    "business_operations",
+                    "java_app_server",
+                    "payment_gateway",
+                    "api_gateway",
+                    "attack_lab",
+                    "oci_genai",
+                    "llmetry",
+                ],
+            },
+            "logs": {
+                "enabled": cfg.logging_configured,
+                "provider": "oci-logging",
+                "trace_correlation_fields": ["trace_id", "span_id", "oracleApmTraceId", "oracleApmSpanId"],
+                "pii_masking": True,
+            },
+            "metrics": {
+                "prometheus_endpoint": "/metrics",
+                "oci_monitoring_enabled": bool(cfg.oci_compartment_id),
+                "business_metric_families": [
+                    "orders",
+                    "checkout",
+                    "cart",
+                    "payments",
+                    "payment_orchestration",
+                    "java_app_server",
+                    "synthetic_users",
+                    "attack_lab",
+                    "api_gateway",
+                    "crm_sync",
+                    "assistant",
+                    "llmetry",
+                ],
+            },
+            "ai": {
+                "assistant_endpoint": "/api/shop/assistant/query",
+                "provider": "oci-genai" if cfg.oci_genai_endpoint else "local-grounded-fallback",
+                "genai_configured": bool(cfg.oci_compartment_id and cfg.oci_genai_endpoint and cfg.oci_genai_model_id),
+                "selectai_configured": cfg.selectai_configured,
+                "llmetry_enabled": cfg.llmetry_enabled,
+                "llmetry_store": "llmetry_events",
+                "langfuse_configured": cfg.langfuse_configured,
+                "correlation_fields": [
+                    "trace_id",
+                    "span_id",
+                    "oracleApmTraceId",
+                    "assistant.session_id",
+                    "llm.prompt.hash",
+                    "llm.response.hash",
+                ],
+            },
+            "edge": {
+                "api_gateway": {
+                    "enabled": True,
+                    "provider": "oci-api-gateway",
+                    "scopes": ["public", "private"],
+                    "controls": ["route_policy", "authentication", "quota", "rate_limit", "backend_health"],
+                    "correlation_fields": [
+                        "oci.api_gateway.request_id",
+                        "oci.api_gateway.route",
+                        "oci.api_gateway.action",
+                        "oracleApmTraceId",
+                    ],
+                },
+            },
+            "rum": {
+                "enabled": cfg.rum_configured,
+                "web_application": cfg.oci_apm_web_application,
+                "synthetic_user_identity": "domain-only",
+            },
+            "database": {
+                "target": cfg.database_target_label,
+                "sql_id_enrichment": True,
+                "session_tagging": not cfg.use_postgres,
+                "connection_name": cfg.oracle_dsn or None,
+            },
+            "security": {
+                "security_spans": True,
+                "attack_lab": True,
+                "api_gateway_detection": True,
+                "cloud_guard_osquery_assets": True,
+            },
+        },
+        "demo_generators": {
+            "synthetic_users": {
+                "enabled": bool(cfg.internal_service_key),
+                "endpoint": "/api/synthetic/users/run",
+            },
+            "demo_storyboard": {
+                "enabled": True,
+                "endpoint": "/api/shop/demo/storyboard",
+            },
+            "attack_lab": {
+                "enabled": True,
+                "endpoint": "/api/shop/attack/simulate",
+            },
+            "api_gateway_detection": {
+                "enabled": True,
+                "endpoint": "/api/shop/attack/simulate",
+                "scenarios": supported_api_gateway_scenarios(),
+                "safe_storage": "policy_metadata_only",
+            },
+            "payment_gateway": {
+                "enabled": cfg.payment_gateway_simulation_enabled,
+                "java_app_server_enabled": cfg.java_apm_enabled,
+                "methods": ["credit_card", "apple_pay", "google_pay"],
+                "simulated_gateways": ["visa", "mastercard", "apple_pay", "google_pay"],
+                "safe_storage": "tokenized_metadata_only",
+            },
+            "assistant_llmetry": {
+                "enabled": cfg.llmetry_enabled,
+                "endpoint": "/api/shop/assistant/query",
+                "stores": ["assistant_sessions", "assistant_messages", "llmetry_events"],
+                "exports": ["oci-apm", "oci-logging", "langfuse-otlp"],
+            },
+        },
+        "drilldowns": {
+            "apm_console_url": cfg.apm_console_url or None,
+            "log_analytics_console_url": cfg.log_analytics_console_url or None,
+            "opsi_console_url": cfg.opsi_console_url or None,
+            "db_management_console_url": cfg.db_management_console_url or None,
+        },
+        "endpoints": {
+            "dashboard": "/api/observability/360",
+            "capabilities": "/api/observability/capabilities",
+            "metrics": "/metrics",
+            "readiness": "/ready",
+            "integration_status": "/api/integrations/status",
+        },
+        "privacy": {
+            "masks_contact_fields": True,
+            "masks_email_mentions_in_text": True,
+            "raw_card_numbers_logged": False,
+            "raw_card_numbers_persisted": False,
+            "raw_card_cvv_persisted": False,
+            "raw_llm_prompts_logged": False,
+            "raw_llm_responses_logged": False,
+            "raw_synthetic_user_email_in_rum_dimensions": False,
+            "raw_synthetic_user_email_in_http_headers": False,
+        },
+    }
 
 
 async def _app_health_summary() -> dict:

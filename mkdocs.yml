@@ -1,8 +1,8 @@
 site_name: OCTO APM Demo — Unified Platform
 site_description: Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install.
-site_url: https://adibirzu.github.io/octo-apm-demo
-repo_url: https://github.com/adibirzu/octo-apm-demo
-repo_name: adibirzu/octo-apm-demo
+site_url: https://example-org.github.io/octo-apm-demo
+repo_url: https://github.com/example-org/octo-apm-demo
+repo_name: example-org/octo-apm-demo
 edit_uri: edit/main/site/
 
 theme:
@@ -126,6 +126,10 @@ nav:
     - Chaos playbook: observability-v2/chaos-playbook.md
     - Log Analytics dashboards: observability-v2/log-analytics-dashboards.md
     - APM drill-down: observability-v2/apm-drilldown.md
+    - Demo Storyboard and Attack Lab: observability-v2/demo-storyboard-attack-lab.md
+    - Private Demo Facilitator Guide: observability-v2/private-demo-facilitator-guide.md
+    - Private LiveLabs Threat Hunting: observability-v2/private-livelabs-threat-hunting.md
+    - Private OCI Threat Hunting Workflow: observability-v2/private-oci-threat-hunting-workflow.md
     - Stack Monitoring (ATP): observability-v2/stack-monitoring.md
     - WAF observability: observability-v2/waf-observability.md
     - Auto-remediation flow: observability-v2/autoremediation-flow.md
@@ -146,6 +150,7 @@ nav:
     - operations/index.md
     - Deployment: operations/deployment.md
     - Current Status: operations/current-status.md
+    - Private Demo Install Plan: operations/private-demo-install-plan.md
     - Deploy Readiness: operations/deploy-readiness.md
     - Chaos Engineering: operations/chaos.md
     - Alarms & Health: operations/alarms.md
@@ -165,7 +170,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/adibirzu/octo-apm-demo
+      link: https://github.com/example/octo-apm-demo
 
 docs_dir: site
 site_dir: build

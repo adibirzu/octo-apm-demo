@@ -124,6 +124,7 @@ output "apm_private_datakey" {
 output "stack_monitoring" {
   value = {
     standard_enabled            = var.enable_stack_monitoring_standard
+    configs_enabled             = var.enable_stack_monitoring_configs
     agent_plugin_enabled        = var.enable_stack_monitoring_agent_plugin
     agent_ids                   = local.stack_monitoring_agent_ids
     plugin_resource_ids         = var.enable_stack_monitoring_standard && var.enable_stack_monitoring_agent_plugin ? { for role, agent in oci_management_agent_management_agent.stack_monitoring_plugin : role => agent.id } : {}
@@ -132,7 +133,7 @@ output "stack_monitoring" {
     atp_registration_enabled    = var.enable_stack_monitoring_atp_registration
     atp_resource_id             = var.enable_stack_monitoring_standard && var.enable_stack_monitoring_atp_registration ? try(module.stack_monitoring_atp[0].monitored_resource_id, "") : ""
     atp_management_agent_id     = var.enable_stack_monitoring_standard ? local.stack_monitoring_atp_management_agent_id : ""
-    host_auto_promote_config_id = var.enable_stack_monitoring_standard ? try(oci_stack_monitoring_config.host_auto_promote[0].id, "") : ""
+    host_auto_promote_config_id = var.enable_stack_monitoring_standard && var.enable_stack_monitoring_configs ? try(oci_stack_monitoring_config.host_auto_promote[0].id, "") : ""
     database_management_enabled = var.enable_database_management
     operations_insights_enabled = var.enable_operations_insights
     db_management_endpoint_id   = var.enable_database_management_private_endpoint ? oci_database_management_db_management_private_endpoint.this[0].id : ""
@@ -147,10 +148,11 @@ output "crm_admin_username" {
 
 output "log_analytics" {
   value = {
-    enabled      = var.enable_log_analytics
-    namespace    = local.effective_log_analytics_namespace
-    log_group_id = local.log_analytics_log_group_id
-    connectors = var.enable_log_analytics ? {
+    enabled            = var.enable_log_analytics
+    connectors_enabled = var.enable_log_analytics_connectors
+    namespace          = local.effective_log_analytics_namespace
+    log_group_id       = local.log_analytics_log_group_id
+    connectors = var.enable_log_analytics && var.enable_log_analytics_connectors ? {
       app       = oci_sch_service_connector.log_analytics_app[0].id
       os        = oci_sch_service_connector.log_analytics_os[0].id
       container = oci_sch_service_connector.log_analytics_container[0].id
@@ -166,14 +168,24 @@ output "runtime_env_hints" {
       otel_service_name   = "octo-drone-shop"
       service_instance_id = "${var.name_prefix}-shop"
       service_crm_url     = try("http://${oci_core_instance.app["crm"].private_ip}:8080", "")
-      crm_public_url      = var.enable_lb_https ? "https://${local.crm_hostname}" : "http://${local.crm_hostname}"
+      shop_public_url     = local.shop_public_url
+      crm_public_url      = local.crm_public_url
+      cors_allowed_origins = join(",", [
+        local.shop_public_url,
+        local.crm_public_url,
+      ])
     }
     crm = {
       app_name            = "enterprise-crm-portal"
       otel_service_name   = "enterprise-crm-portal"
       service_instance_id = "${var.name_prefix}-crm"
-      crm_base_url        = var.enable_lb_https ? "https://${local.crm_hostname}" : "http://${local.crm_hostname}"
+      shop_public_url     = local.shop_public_url
+      crm_base_url        = local.crm_public_url
       service_shop_url    = try("http://${oci_core_instance.app["shop"].private_ip}:8080", "")
+      cors_allowed_origins = join(",", [
+        local.shop_public_url,
+        local.crm_public_url,
+      ])
     }
   }
 }

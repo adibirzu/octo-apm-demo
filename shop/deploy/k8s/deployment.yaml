@@ -165,6 +165,42 @@ spec:
                   name: octo-genai
                   key: model-id
                   optional: true
+            - name: LLMETRY_ENABLED
+              value: "true"
+            - name: LLMETRY_STORE_ENABLED
+              value: "true"
+            - name: LLMETRY_CAPTURE_CONTENT
+              value: "false"
+            - name: LANGFUSE_ENABLED
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-enabled
+                  optional: true
+            - name: LANGFUSE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-host
+                  optional: true
+            - name: LANGFUSE_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-public-key
+                  optional: true
+            - name: LANGFUSE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-secret-key
+                  optional: true
+            - name: LANGFUSE_OTEL_EXPORT_ENABLED
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-otel-export-enabled
+                  optional: true
             - name: SELECTAI_PROFILE_NAME
               valueFrom:
                 secretKeyRef:

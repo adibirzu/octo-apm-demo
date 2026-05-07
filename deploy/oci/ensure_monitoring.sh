@@ -9,7 +9,7 @@
 # Prerequisites:
 #   - OCI CLI configured (instance_principal or config file)
 #   - COMPARTMENT_ID set
-#   - SHOP_PUBLIC_URL set (e.g. https://shop.example.cloud)
+#   - SHOP_PUBLIC_URL set (e.g. https://shop.example.test)
 #
 # Usage:
 #   COMPARTMENT_ID="ocid1.compartment...." \

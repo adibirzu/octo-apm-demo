@@ -1,0 +1,15 @@
+[Unit]
+Description=OCTO Langfuse comparison stack
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/octo/repo/deploy/compute/langfuse
+RemainAfterExit=yes
+TimeoutStartSec=0
+ExecStart=/usr/bin/bash -lc 'set -a; . /opt/octo/langfuse.env; set +a; ${LANGFUSE_COMPOSE_BIN:-docker compose} -f /opt/octo/repo/deploy/compute/langfuse/langfuse-compose.yml --env-file /opt/octo/langfuse.env up -d'
+ExecStop=/usr/bin/bash -lc 'set -a; . /opt/octo/langfuse.env; set +a; ${LANGFUSE_COMPOSE_BIN:-docker compose} -f /opt/octo/repo/deploy/compute/langfuse/langfuse-compose.yml --env-file /opt/octo/langfuse.env down'
+
+[Install]
+WantedBy=multi-user.target

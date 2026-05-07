@@ -1,6 +1,6 @@
 # OCTO Drone Shop
 
-[:octicons-mark-github-16: Source](https://github.com/adibirzu/octo-drone-shop){ .md-button }
+[:octicons-mark-github-16: Source](https://github.com/example-org/octo-drone-shop){ .md-button }
 
 **ATP-backed drone commerce platform** with 98 API routes across 13 modules, full MELTS observability (Metrics, Events, Logs, Traces, SQL), IDCS SSO, and cross-service CRM integration.
 
@@ -18,8 +18,8 @@
 
 | URL | Status |
 |---|---|
-| [shop.example.cloud](https://shop.example.cloud) | Production (OKE) |
-| [shop.example.cloud/api/observability/360](https://shop.example.cloud/api/observability/360) | 360 Dashboard |
+| [shop.example.test](https://shop.example.test) | Production (OKE) |
+| [shop.example.test/api/observability/360](https://shop.example.test/api/observability/360) | 360 Dashboard |
 
 ## Current Boundary
 

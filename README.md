@@ -6,13 +6,37 @@ Manager stack, one unified-VM path. The two services live side-by-side
 as independent containers under `shop/` and `crm/` so they keep the
 cross-service contract hardened in the upstream repos.
 
-**Docs site**: https://adibirzu.github.io/octo-apm-demo
-**Target hostnames (`DEFAULT` / `oci4cca`)**: `shop.cyber-sec.ro` (Shop) · `crm.cyber-sec.ro` (CRM)
-**Status (May 5, 2026)**: the private Compute Resource Manager stack has been applied in the `cap` profile for `shop.1.octodemo.cloud` and `crm.1.octodemo.cloud` with two private Compute instances, dedicated private ATP, public LB/WAF, APM, OCI Logging, Log Analytics pipelines, DB Management, Operations Insights, and Stack Monitoring Standard host plugin deployment. `deploy/compute/verify-deployment.sh --profile cap --plan` now performs the read-only production-demo gate. Use `deploy/bootstrap.sh` for OKE fresh tenancies, or `deploy/compute/` for the private Compute production demo, and check [`site/operations/current-status.md`](site/operations/current-status.md) before treating any shared environment as E2E-ready.
+**Docs site**: https://example-org.github.io/octo-apm-demo
+**Private Demo target hostnames**: `shop.example.test` (Shop) · `admin.example.test` (Admin/CRM)
+**Legacy reference profile hostnames**: `shop.example.test` (Shop) · `crm.example.test` (CRM)
+**Status (May 6, 2026)**: the `<OCI_PROFILE>` private Compute deployment is live in compartment `<COMPARTMENT_OCID>` with two private app hosts, a private ATP database using `octoatp_low`, public OCI Load Balancer IP `203.0.113.10`, WAF, APM/RUM, OCI Logging, Cloud Guard Instance Security OSQuery assets, availability monitors, and Log Analytics assets. DNS is handled in the separate external DNS tenancy. The manual LB SSL certificate, HTTPS `443` listener, and host routing for `shop.example.test` and `admin.example.test` must be preserved when promoting app changes. The Log Analytics Service Connector route is quota-gated in this tenancy. Check [`site/operations/current-status.md`](site/operations/current-status.md) and [`site/operations/private-demo-install-plan.md`](site/operations/private-demo-install-plan.md) before treating any shared environment as E2E-ready.
 
-[![Deploy Full Private Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+## Private Resource Manager status
 
-[![Deploy Observability Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+
+[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+
+This private branch should be deployed by building the Resource Manager zip
+locally and uploading it in **OCI Console -> Developer Services -> Resource
+Manager -> Stacks -> Create stack -> My configuration**. The previous deploy
+badge URLs used placeholder GitHub release assets and currently return HTTP
+404, so OCI cannot import them. Publish real private release assets before
+re-enabling one-click deploy buttons.
+
+## Private Demo architecture
+
+![Private Demo OCTO APM Demo architecture](site/architecture/diagrams/private-demo-observability-reference.svg)
+
+Editable DrawIO source: [`site/architecture/diagrams/private-demo-observability-reference.drawio`](site/architecture/diagrams/private-demo-observability-reference.drawio).
+
+Resource Manager troubleshooting: the supported Console import route is
+`/resourcemanager/stacks/create?zipUrl=...`. A Console URL that lands on
+`/stacks/create` is stale and can return `NotAuthorizedOrNotFound(404)` before
+the zip import starts. If the route is correct, verify the zip URL returns HTTP
+200, the active tenancy/region/compartment context is correct, and the user has
+Resource Manager stack create/import and job permissions in the selected
+compartment.
 
 ## Repository layout
 
@@ -59,7 +83,7 @@ octo-apm-demo/
 | **OKE (Helm, existing cluster)** | `deploy/helm/octo-apm-demo/` | Drop-in for operators who already have OKE + secrets. `helm upgrade --install`, `helm rollback`, one release owns both apps. See [`deploy/helm/octo-apm-demo/README.md`](deploy/helm/octo-apm-demo/README.md). |
 | **Bootstrap (unified)** | `deploy/bootstrap.sh` + `deploy/destroy.sh` | End-to-end lifecycle: compartment picker → OCIR → kubeconfig → ATP terraform → seed secrets → build+push → apply manifests → ingress + DNS + TLS + smoke test. See [`deploy/BOOTSTRAP-README.md`](deploy/BOOTSTRAP-README.md). |
 | **Two-instance Compute** | `deploy/compute/` | Production demo without Kubernetes: public LB/WAF, private Shop and CRM Compute instances, private ATP, Podman by default, OCI APM, Logging, Log Analytics pipelines, and Stack Monitoring Standard. |
-| **OCI Resource Manager stack** | `deploy/resource-manager/` | Console one-click bootstrap of APM + RUM + LA + WAF. Use the Deploy to Oracle Cloud button above. |
+| **OCI Resource Manager stack** | `deploy/resource-manager/` | Console bootstrap of APM + RUM + LA + WAF. Build and upload the stack zip manually on this private branch unless a real private release asset exists. |
 | **Unified single VM** | `deploy/vm/docker-compose-unified.yml` | Demos, workshops, air-gapped — both services on one Compute instance |
 | **local-stack** | `deploy/local-stack/docker-compose.test.yml` | Hermetic regression — Playwright + k6 + CI without OCI credentials. NOT for prod. |
 
@@ -90,7 +114,7 @@ it.
 sudo dnf install -y git curl unzip                  # or apt-get
 
 # 2. Clone + configure
-git clone https://github.com/adibirzu/octo-apm-demo.git /opt/octo
+git clone https://github.com/example-org/octo-apm-demo.git /opt/octo
 cd /opt/octo/deploy/vm
 cp .env.template .env
 ${EDITOR:-vi} .env                                   # set DNS_DOMAIN=example.tld, OCIR, ATP, keys
@@ -125,8 +149,8 @@ must return an OpenAPI doc with `InternalServiceKey` in
 
 | Path | Source repo | Subtree command |
 |---|---|---|
-| `shop/` | `github.com/adibirzu/octo-drone-shop` | `git subtree pull --prefix=shop https://github.com/adibirzu/octo-drone-shop.git main` |
-| `crm/`  | `github.com/adibirzu/enterprise-crm-portal` | `git subtree pull --prefix=crm  https://github.com/adibirzu/enterprise-crm-portal.git main` |
+| `shop/` | `github.com/example-org/octo-drone-shop` | `git subtree pull --prefix=shop https://github.com/example-org/octo-drone-shop.git main` |
+| `crm/`  | `github.com/example-org/enterprise-crm-portal` | `git subtree pull --prefix=crm  https://github.com/example-org/enterprise-crm-portal.git main` |
 
 Either subtree can be pulled to grab upstream fixes without disturbing
 the other service. The upstream repos remain the per-service source of

@@ -1,0 +1,10 @@
+[Unit]
+Description=OCTO synthetic users and orders generator
+Wants=network-online.target
+After=network-online.target octo-compute.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/octo/runtime.env
+ExecStart=/usr/local/bin/octo-synthetic-users
+SyslogIdentifier=octo-synthetic-users

@@ -2,11 +2,10 @@
 
 **Two-service cloud-native platform with shared Oracle ATP, full OCI observability (MELTS: Metrics, Events, Logs, Traces, SQL), IDCS SSO, cross-service distributed tracing, and automated remediation.**
 
-[:octicons-mark-github-16: Unified Project](https://github.com/adibirzu/octo-apm-demo){ .md-button .md-button--primary }
-[:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-drone-shop){ .md-button }
-[:octicons-mark-github-16: CRM Portal](https://github.com/adibirzu/enterprise-crm-portal){ .md-button .md-button--primary }
-[:material-cloud-upload: Deploy Compute Stack to OCI](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip){ .md-button .md-button--primary }
-[:material-cloud-upload: Private Compute Stack](getting-started/compute-deployment.md){ .md-button }
+[:octicons-mark-github-16: Unified Project](https://github.com/example-org/octo-apm-demo){ .md-button .md-button--primary }
+[:octicons-mark-github-16: Drone Shop](https://github.com/example-org/octo-drone-shop){ .md-button }
+[:octicons-mark-github-16: CRM Portal](https://github.com/example-org/enterprise-crm-portal){ .md-button .md-button--primary }
+[:material-cloud-upload: Private Compute Stack](getting-started/compute-deployment.md){ .md-button .md-button--primary }
 [:material-domain: DNS Cutover](operations/current-status.md#public-dns-status){ .md-button }
 [:material-clipboard-text: Current Status](operations/current-status.md){ .md-button }
 
@@ -14,7 +13,16 @@
 
 ## What is OCTO?
 
-Current `DEFAULT` target hostnames remain `shop.cyber-sec.ro` and `crm.cyber-sec.ro`, but treat them as an operational snapshot, not a permanently live demo endpoint. As of **May 4, 2026**, the private Compute Resource Manager stack is live in the `cap` profile for `shop.1.octodemo.cloud` and `crm.1.octodemo.cloud`, with both services in private subnets behind public LB/WAF and a dedicated private ATP database. See [Current Status](operations/current-status.md) for shared-environment evidence, and use [Compute Deployment](getting-started/compute-deployment.md) for the private production-demo stack.
+Current `<OCI_PROFILE>` target hostnames are `shop.example.test` for the
+Shop and `admin.example.test` for the Admin/CRM app. DNS is managed in
+the separate external DNS tenancy; the private demo Load Balancer IP is
+`203.0.113.10`, and its manual HTTPS `443` listener, SSL certificate,
+and host-routing rules are preserved outside normal app delivery. The
+older `DEFAULT` target hostnames `shop.example.test` and
+`crm.example.test` are still documented as a historical operational
+snapshot. See [Current Status](operations/current-status.md) for
+shared-environment evidence and [Private Demo Install Plan](operations/private-demo-install-plan.md)
+for the current private Compute deployment.
 
 The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.
 
@@ -29,10 +37,10 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 
 - **CRM owns catalog and storefront administration** — products, stock, pricing, category changes, shop assignment, and storefront metadata are now managed from the CRM control plane.
 - **Shop stays customer-facing** — the public storefront remains focused on browse, cart, checkout, and shipment flows; operational edits are intentionally removed from the customer frontend.
-- **Public and private CRM URLs are split** — browser-visible links use `https://crm.example.cloud`, while backend service-to-service calls may continue to use a private service endpoint.
+- **Public and private CRM URLs are split** — browser-visible links use `https://crm.example.test`, while backend service-to-service calls may continue to use a private service endpoint.
 - **Frontend hardening is live** — CRM page rendering, observability beacon ingestion, CSP-safe scripts, and favicon handling were updated to remove recent runtime errors.
 - **Enhancement roadmap is published** — the docs now define the rollout path for complex flows, OCI APM, OCI Logging, Log Analytics, drilldowns, and DB tooling.
-- **Deployment status is now published** — the docs include dated OCI + runtime snapshots for the validated `oci4cca` / `DEFAULT` environment and the private Compute `cap` deployment.
+- **Private Demo deployment status is now published** — the docs include dated OCI, runtime, APM, Logging, Log Analytics, Cloud Guard, Availability Monitoring, and Resource Manager troubleshooting snapshots for the private Compute `<OCI_PROFILE>` deployment.
 
 <div class="grid cards" markdown>
 
@@ -95,6 +103,8 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 </div>
 
 ## Architecture at a Glance
+
+![Private Demo OCTO APM Demo architecture](architecture/diagrams/private-demo-observability-reference.svg)
 
 ```mermaid
 flowchart TD
@@ -166,8 +176,8 @@ No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.
 
 | ID | Component | Repository |
 |---|---|---|
-| **Unified deploy** | OCTO APM Demo deployment, docs, and Resource Manager stacks | [octo-apm-demo](https://github.com/adibirzu/octo-apm-demo) |
-| **Shop service** | Drone Shop Portal (OKE) | [octo-drone-shop](https://github.com/adibirzu/octo-drone-shop) |
-| **CRM service** | Enterprise CRM Portal (OKE) | [enterprise-crm-portal](https://github.com/adibirzu/enterprise-crm-portal) |
+| **Unified deploy** | OCTO APM Demo deployment, docs, and Resource Manager stacks | [octo-apm-demo](https://github.com/example-org/octo-apm-demo) |
+| **Shop service** | Drone Shop Portal (OKE) | [octo-drone-shop](https://github.com/example-org/octo-drone-shop) |
+| **CRM service** | Enterprise CRM Portal (OKE) | [enterprise-crm-portal](https://github.com/example-org/enterprise-crm-portal) |
 
 Often deployed alongside an ops portal and OCI Coordinator, but this repository remains standalone and tenancy-portable.

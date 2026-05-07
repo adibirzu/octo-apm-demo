@@ -8,11 +8,11 @@
 # create, update, or delete OCI resources.
 #
 # Usage:
-#   ./deploy/compute/verify-deployment.sh --profile cap --plan
+#   ./deploy/compute/verify-deployment.sh --profile <OCI_PROFILE> --plan
 #   ./deploy/compute/verify-deployment.sh --terraform-dir deploy/compute/terraform
-#   ./deploy/compute/verify-deployment.sh --outputs-json outputs.json --profile cap
-#   ./deploy/compute/verify-deployment.sh --profile cap --require-https
-#   ./deploy/compute/verify-deployment.sh --profile cap --skip-dns
+#   ./deploy/compute/verify-deployment.sh --outputs-json outputs.json --profile <OCI_PROFILE>
+#   ./deploy/compute/verify-deployment.sh --profile <OCI_PROFILE> --require-https
+#   ./deploy/compute/verify-deployment.sh --profile <OCI_PROFILE> --skip-dns
 
 set -euo pipefail
 
@@ -372,7 +372,9 @@ else:
 log_analytics = value(outputs, "log_analytics", {})
 if log_analytics.get("enabled"):
     connectors = log_analytics.get("connectors", {})
-    if connectors:
+    if not log_analytics.get("connectors_enabled", True):
+        warn("Log Analytics Service Connectors are disabled in Terraform outputs")
+    elif connectors:
         for name, connector_id in sorted(connectors.items()):
             if not connector_id:
                 warn(f"Log Analytics Service Connector {name} is not configured")
@@ -470,7 +472,9 @@ if stack_monitoring.get("standard_enabled"):
                 fail(f"Stack Monitoring plugin resource is missing for {role}")
 
     config_id = stack_monitoring.get("host_auto_promote_config_id")
-    if config_id:
+    if not stack_monitoring.get("configs_enabled", True):
+        warn("Stack Monitoring HOST auto-promote config is disabled in Terraform outputs")
+    elif config_id:
         try:
             config = oci_json(["stack-monitoring", "config", "get", "--config-id", config_id])
             state = config.get("lifecycle-state")

@@ -1,10 +1,27 @@
 # Stack Monitoring — Autonomous Database
 
+Current note for May 2026: OCI Stack Monitoring is still useful for this
+lab, but Oracle has announced service deprecation. Treat this integration
+as an private demo visibility enhancement, keep DB Management and Operations
+Insights as the durable ATP investigation path, and avoid making new demo
+content depend only on Stack Monitoring.
+
 OCI Stack Monitoring complements APM traces with a unified topology +
 health view of the underlying Autonomous Database. Once the ATP is
 registered as a `MonitoredResource`, health, performance, and capacity
 metrics become visible in the Stack Monitoring console alongside the OKE
 workloads.
+
+## Private Demo status
+
+For the May 6, 2026 private demo Compute deployment, DB Management and
+Operations Insights were enabled for the dedicated ATP, and Management
+Agent resources were created for the private Compute hosts. Explicit
+Stack Monitoring HOST auto-promote/plugin updates and ATP
+`MonitoredResource` registration remain disabled because the tenancy
+returned authorization/tagging errors for those operations. Use APM,
+DB Management, and Operations Insights as the live drilldown path until
+Stack Monitoring authorization is granted.
 
 ## Why it matters
 

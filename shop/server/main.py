@@ -42,6 +42,8 @@ from server.modules.dashboard import router as dashboard_router
 from server.modules.integrations import router as integrations_router
 from server.modules.services import router as services_router
 from server.modules.observability_dashboard import router as observability_dashboard_router
+from server.modules.synthetic_users import router as synthetic_users_router
+from server.modules.workflow_gateway import router as workflow_gateway_router
 
 # New modules (Phase 2 + 11 + platform status)
 from server.modules.payments.webhooks import router as payments_webhooks_router
@@ -176,6 +178,8 @@ app.include_router(dashboard_router)
 app.include_router(integrations_router)
 app.include_router(services_router)
 app.include_router(observability_dashboard_router)
+app.include_router(synthetic_users_router)
+app.include_router(workflow_gateway_router)
 
 # Phase 2 — payment gateway webhook ingestion
 app.include_router(payments_webhooks_router)
@@ -233,10 +237,18 @@ async def ready():
             "ready": db_ok,
             "database": "connected" if db_ok else "disconnected",
             "db_type": cfg.database_target_label,
+            "atp_connection_name": cfg.oracle_dsn or None,
             "apm_configured": cfg.apm_configured,
             "rum_configured": cfg.rum_configured,
+            "java_apm_enabled": cfg.java_apm_enabled,
+            "java_apm_service_url": cfg.java_apm_service_url or None,
+            "payment_gateway_simulation_enabled": cfg.payment_gateway_simulation_enabled,
             "workflow_gateway_configured": cfg.workflow_gateway_configured,
             "selectai_configured": cfg.selectai_configured,
+            "genai_configured": bool(cfg.oci_compartment_id and cfg.oci_genai_endpoint and cfg.oci_genai_model_id),
+            "llmetry_enabled": cfg.llmetry_enabled,
+            "llmetry_store_enabled": cfg.llmetry_store_enabled,
+            "langfuse_configured": cfg.langfuse_configured,
             "runtime": runtime_snapshot(),
         }
 
@@ -302,6 +314,8 @@ def _render_page(request: Request, page: str, title: str, **ctx):
          "workflow_gateway_configured": cfg.workflow_gateway_configured,
          "selectai_profile_name": cfg.selectai_profile_name,
          "selectai_configured": cfg.selectai_configured,
+         "java_apm_enabled": cfg.java_apm_enabled,
+         "payment_gateway_simulation_enabled": cfg.payment_gateway_simulation_enabled,
          "idcs_configured": cfg.idcs_configured,
          "genai_configured": bool(cfg.oci_genai_endpoint and cfg.oci_genai_model_id),
          "app_name": cfg.app_name, **ctx},
