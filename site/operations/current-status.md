@@ -9,7 +9,7 @@ guarantee that the shared environment will remain healthy without checking
 the validation commands below.
 
 May 4, 2026 update: the private two-instance Compute Resource Manager
-stack has been applied in the `<REFERENCE_PROFILE>` profile as a new deployment for
+stack has been applied in the `<OCI_PROFILE>` profile as a new deployment for
 `shop.example.test` and `crm.example.test`. It is separate from
 the shared `DEFAULT` OKE runtime described below.
 
@@ -205,7 +205,7 @@ Service Gateway.
 Temporary Bastion debug access was removed after validation: the app NSG
 SSH rule was deleted, both Bastion sessions are `DELETED`, and the
 Bastion resource is `DELETED`. Direct Stack Monitoring host and ATP
-monitored-resource creation remain disabled in the reference profile because OCI returns
+monitored-resource creation remain disabled in the reference tenancy because OCI returns
 `Tenant is not permitted to perform this operation`; Standard license
 auto-assignment, HOST auto-promote, and the host Stack Monitoring
 Management Agent plugin remain enabled.

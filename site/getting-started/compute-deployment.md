@@ -267,7 +267,7 @@ Validated on May 5, 2026 with `OCI_PROFILE=<OCI_PROFILE>`:
   only expected warnings are HTTPS not yet enabled and explicit ATP
   Stack Monitoring resource registration disabled.
 - Direct host and ATP Stack Monitoring monitored-resource registration
-  are disabled in the reference profile because OCI returns `Tenant is not permitted to
+  are disabled in the reference tenancy because OCI returns `Tenant is not permitted to
   perform this operation`; keep the explicit registration toggles off in
   tenancies with the same entitlement behavior.
 - Terraform reports `No changes` after the final apply.

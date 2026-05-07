@@ -23,8 +23,8 @@ Both services integrate with the full OCI observability stack through modular ad
 
 ## Current Runtime Model
 
-- **Canonical deployment repo**: [`example-org/octo-apm-demo`](https://github.com/example-org/octo-apm-demo)
-- **Canonical docs site**: <https://example-org.github.io/octo-apm-demo>
+- **Canonical deployment repo**: [`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo)
+- **Canonical docs site**: <https://adibirzu.github.io/octo-apm-demo>
 - **Default shared deployment hostnames**: `https://shop.example.test` and `https://crm.example.test`
 - **Validated private Compute hostnames**: `http://shop.example.test` and `http://crm.example.test`
 - **Shop frontend**: `https://shop.example.test`
@@ -59,10 +59,10 @@ LB/WAF, APM, OCI Logging, Log Analytics pipelines, DB Management,
 Operations Insights, and Stack Monitoring Standard.
 
 If you prefer OKE, start with the unified
-[new tenancy guide](https://example-org.github.io/octo-apm-demo/getting-started/new-tenancy/).
-For the shared reference profile profile, the baked-in domain is
+[new tenancy guide](https://adibirzu.github.io/octo-apm-demo/getting-started/new-tenancy/).
+For the shared `DEFAULT` / `<OCI_PROFILE>` profile, the baked-in domain is
 `example.test`; check the unified
-[current status page](https://example-org.github.io/octo-apm-demo/operations/current-status/)
+[current status page](https://adibirzu.github.io/octo-apm-demo/operations/current-status/)
 before treating that shared environment as E2E-ready.
 
 ## OCI Services
