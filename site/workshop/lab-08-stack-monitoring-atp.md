@@ -15,10 +15,35 @@ a database health concern that started as an APM symptom.
 - Lab 03.
 - ATP onboarded as a Stack Monitoring `MonitoredResource`
   (`./deploy/oci/ensure_stack_monitoring.sh DRY_RUN=false`).
+- The shop and admin hosts have active Management Agents if you want to
+  demonstrate host discovery and host metrics.
 
 ## Steps
 
-### 1. Find the ATP in Stack Monitoring
+### 1. Discover the app hosts
+
+Console → Observability & Management → **Stack Monitoring → Resource
+Discovery**.
+
+For each app host:
+
+1. Click **Discover New Resource**.
+2. Select **Resource Type = Host**.
+3. Enter the deployment host FQDN, using `<shop-host-fqdn>` for the shop host
+   and `<admin-host-fqdn>` for the admin host in public docs.
+4. Select the Management Agent installed on the same host.
+5. Select **Stack Monitoring and Log Analytics (recommended)** so discovery
+   feeds both resource monitoring and log context.
+6. Select **Enterprise Edition** unless the lab is explicitly running Standard
+   Edition.
+7. Click **Discover New Resource** and wait for **Succeeded**.
+8. Open the host detail page and confirm CPU, memory, filesystem, process, and
+   availability charts are present.
+
+Do not commit real live hostnames, OCIDs, private IPs, or tenancy names in this
+lab. Use ignored private runbooks for live delivery values.
+
+### 2. Find the ATP in Stack Monitoring
 
 Console → Observability & Management → **Stack Monitoring → Monitored
 Resources**.
@@ -33,7 +58,7 @@ The resource page shows:
 - **Alarms** — anything currently firing on this resource.
 - **Topology** — the graph of related resources (pods, services).
 
-### 2. Read the topology
+### 3. Read the topology
 
 The shop + CRM pods point at this ATP. Stack Monitoring infers the
 relationship from the OCID references in the pod env, so the topology
@@ -43,7 +68,7 @@ manual configuration.
 This is the value: at incident time, click the ATP, see what depends
 on it, and prioritize the broadcast accordingly.
 
-### 3. Trigger a session-pressure event
+### 4. Trigger a session-pressure event
 
 Run a high-concurrency burst against the shop:
 
@@ -57,7 +82,7 @@ wait
 Within 60-90 s, the **Sessions** chart on the ATP resource page should
 show a spike.
 
-### 4. Drill from Stack Monitoring to OPSI
+### 5. Drill from Stack Monitoring to OPSI
 
 On the ATP page, click **Operations Insights → Open**. OPSI shows
 the same session timeline but with longer history and richer SQL
@@ -67,7 +92,7 @@ breakdowns:
 - Top SQL statements (correlate with Lab 03's `SQL_ID`).
 - Wait class breakdown (`User I/O`, `CPU`, `Concurrency`, etc.).
 
-### 5. Cross-reference with APM
+### 6. Cross-reference with APM
 
 The session pressure should also be visible in APM:
 
@@ -76,7 +101,7 @@ The session pressure should also be visible in APM:
 - Trace Explorer for the burst window shows many parallel traces, all
   spending most of their time in the SQL span.
 
-### 6. (Optional) Configure an alarm
+### 7. (Optional) Configure an alarm
 
 Stack Monitoring resources expose their own metric namespace
 (`oracle_oci_database`). Create an alarm:

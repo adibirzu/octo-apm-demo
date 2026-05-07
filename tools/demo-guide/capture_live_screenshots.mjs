@@ -84,6 +84,11 @@ async function runShopCheckout(page) {
   await page.fill('#checkoutForm [name="customer_phone"]', checkoutPerson.phone);
   await page.fill('#checkoutForm [name="shipping_address"]', checkoutPerson.address);
   await page.selectOption('#checkoutForm [name="payment_method"]', "credit_card");
+  await page.fill('#checkoutForm [name="card_number"]', "4111111111111111");
+  await page.fill('#checkoutForm [name="card_expiry"]', "12/30");
+  await page.fill('#checkoutForm [name="card_cvv"]', "123");
+  await page.fill('#checkoutForm [name="cardholder_name"]', checkoutPerson.name);
+  await page.fill('#checkoutForm [name="billing_postal_code"]', "10001");
   await page.fill('#checkoutForm [name="coupon_code"]', "DEMO-LAB");
 
   await elementScreenshot(page, "#cartPanel", "shop-checkout-ready-live.png");

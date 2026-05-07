@@ -47,6 +47,18 @@ Expected evidence:
 The dummy card number is never logged. The app stores only card brand,
 last four digits, and a generated demo token in the storyboard response.
 
+For frontend delivery, use the same payment choices that the shop form
+supports:
+
+| payment method | demo input | expected observability fields |
+| --- | --- | --- |
+| Credit Card / VISA | `4111111111111111`, future expiry, CVV `123` | `payment.method=credit_card`, `payment.card_brand=visa`, authorized status |
+| Credit Card / Mastercard | `5555555555554444`, future expiry, CVV `321` | `payment.card_brand=mastercard`, gateway authorization path |
+| Issuer decline | `4000000000000002`, future expiry, CVV `123` | declined/review decision and antifraud reason |
+| Apple Pay | click **Simulate Apple Pay** | `payment.wallet_type=apple_pay`, token hash only |
+| Google Pay | click **Simulate Google Pay** | `payment.wallet_type=google_pay`, token hash only |
+| Bank Transfer | select **Bank Transfer (Net 30)** | manual/offline payment method path |
+
 ## Synthetic users for APM Users
 
 The VM scheduler runs `octo-synthetic-users.timer` every 10 minutes when
@@ -73,6 +85,23 @@ The browser runner uses the same identity pool. Each Chromium session
 sets `apmrum.username` before the OCI RUM browser agent loads, so the APM
 Users page shows separate users instead of one anonymous synthetic
 client. Override the domain only from ignored private deployment files.
+
+Default fictional users:
+
+| username | e-mail |
+| --- | --- |
+| `alex.chen` | `alex.chen@apex.example.test` |
+| `maya.ionescu` | `maya.ionescu@apex.example.test` |
+| `nora.patel` | `nora.patel@apex.example.test` |
+| `daniel.rossi` | `daniel.rossi@apex.example.test` |
+| `irina.marin` | `irina.marin@apex.example.test` |
+| `samuel.wright` | `samuel.wright@apex.example.test` |
+| `elena.garcia` | `elena.garcia@apex.example.test` |
+| `noah.kim` | `noah.kim@apex.example.test` |
+| `sofia.andersen` | `sofia.andersen@apex.example.test` |
+| `matei.popa` | `matei.popa@apex.example.test` |
+| `lina.hoffman` | `lina.hoffman@apex.example.test` |
+| `omar.saleh` | `omar.saleh@apex.example.test` |
 
 ## Attack lab path
 
@@ -156,11 +185,10 @@ OCI_LOG_ID=<custom-log-ocid> \
 ./deploy/oci/export_osquery_results_to_logging.sh
 ```
 
-The initial private demo run exported 246 normalized OSQuery result entries to
-the `<DEPLOYMENT_PREFIX>-os` OCI custom log with
-`ATTACK_ID=attack-851e80f8751b`. Service Connector Hub quota is currently
-exhausted (`service-connector-count available=0`), so these rows are in
-OCI Logging but are not yet visible in Log Analytics.
+If Service Connector Hub quota is exhausted, OSQuery result rows may be visible
+in OCI Logging before they appear in Log Analytics. Keep that as a known demo
+gap and do not delete shared connectors unless the operator explicitly approves
+the change.
 
 ## Dashboards and searches
 
@@ -206,5 +234,7 @@ Two APM Availability Monitoring REST monitors are enabled:
 - `<DEPLOYMENT_PREFIX>-admin-ready-global` for
   `https://admin.example.test/ready`
 
-Both use the preserved LB IP `203.0.113.10` and run from Phoenix,
-Ashburn, Frankfurt, London, Tokyo, and Sydney.
+Private deployments may use DNS override or dedicated vantage points when the
+public DNS route is managed outside this tenancy. Configure real hostnames and
+IP overrides only in ignored deployment files, the OCI Console, or private
+runbooks, never in tracked public docs.
