@@ -15,7 +15,7 @@ auto-remediation.
 - [Demo Storyboard and Attack Lab](demo-storyboard-attack-lab.md)
 - [Auto-remediation flow](autoremediation-flow.md)
 - [Security + WAF observability](waf-observability.md)
-- [Demo script](demo-script.md)
+- [Demo script](demo-script.md) with [end-user PDF guide](../assets/demo/octo-end-user-demo-guide.pdf)
 
 ## One-paragraph overview
 

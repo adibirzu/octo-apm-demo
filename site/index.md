@@ -8,6 +8,7 @@
 [:material-cloud-upload: Private Compute Stack](getting-started/compute-deployment.md){ .md-button .md-button--primary }
 [:material-domain: DNS Cutover](operations/current-status.md#public-dns-status){ .md-button }
 [:material-clipboard-text: Current Status](operations/current-status.md){ .md-button }
+[:material-file-pdf-box: End-User Demo PDF](assets/demo/octo-end-user-demo-guide.pdf){ .md-button }
 
 ---
 
