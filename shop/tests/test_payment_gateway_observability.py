@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import asyncio
 from datetime import datetime
 from typing import Any
 
@@ -12,6 +13,7 @@ from fastapi.testclient import TestClient
 from server.auth_security import cfg as auth_cfg
 from server.modules import observability_dashboard as dashboard_module
 from server.modules.observability_dashboard import (
+    _payment_gateway_events,
     _payment_gateway_event_summary,
     _safe_filter_value,
     _serialize_payment_gateway_event,
@@ -91,6 +93,19 @@ def test_payment_gateway_event_endpoint_returns_trace_drilldown_for_internal_ser
     assert body["summary"]["gateway_request_ids"] == ["pgw-42-test"]
     assert body["events"][0]["step"]["name"] == "merchant_authorization_result"
     assert body["events"][0]["order"]["payment_required"] is True
+
+
+def test_payment_gateway_event_query_uses_null_filters_for_oracle_empty_strings(monkeypatch) -> None:
+    fake_session = _FakeSession([])
+    monkeypatch.setattr(dashboard_module, "AsyncSessionLocal", lambda: fake_session)
+
+    events = asyncio.run(
+        _payment_gateway_events(order_id=0, trace_id="", gateway_request_id="", limit=3)
+    )
+
+    assert events == []
+    assert fake_session.params["trace_id"] is None
+    assert fake_session.params["gateway_request_id"] is None
 
 
 def test_payment_gateway_event_serializer_is_token_safe() -> None:
