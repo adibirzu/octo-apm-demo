@@ -7,6 +7,7 @@ as independent containers under `shop/` and `crm/` so they keep the
 cross-service contract hardened in the upstream repos.
 
 **Docs site**: https://adibirzu.github.io/octo-apm-demo
+**End-user demo PDF**: https://adibirzu.github.io/octo-apm-demo/assets/demo/octo-end-user-demo-guide.pdf
 **Private Compute target hostnames**: `shop.example.test` (Shop) · `admin.example.test` (Admin/CRM)
 **Legacy `DEFAULT` hostnames**: `shop.example.test` (Shop) · `crm.example.test` (CRM)
 **Status (May 7, 2026)**: the `<OCI_PROFILE>` private Compute deployment is live with two private app hosts, shared ATP through `octoatp_low`, public LB/WAF, APM/RUM, OCI Logging, Cloud Guard Instance Security OSQuery assets, availability monitors, and payment gateway trace drilldowns. DNS is managed outside this repo; keep hostnames, IPs, OCIDs, and secrets represented by placeholders in public docs. Check [`site/operations/current-status.md`](site/operations/current-status.md) before treating any shared environment as E2E-ready.

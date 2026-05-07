@@ -4,6 +4,8 @@ This guide is the sanitized delivery script for the OCTO observability demo.
 Use placeholders in committed documentation. For a private live delivery, load
 the real endpoints from ignored deployment files or shell variables:
 
+[:material-file-pdf-box: Download the end-user PDF guide](../assets/demo/octo-end-user-demo-guide.pdf){ .md-button .md-button--primary }
+
 ```bash
 export OCTO_LIVE_SHOP_URL="https://shop.example.test"
 export OCTO_LIVE_ADMIN_URL="https://admin.example.test"
