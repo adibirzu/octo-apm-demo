@@ -15,11 +15,11 @@ class TrafficConfig(BaseSettings):
 
     # ── Targets ──
     shop_base_url: str = Field(
-        default="https://shop.cyber-sec.ro",
+        default="https://shop.example.test",
         description="Drone Shop public URL.",
     )
     crm_base_url: str = Field(
-        default="https://crm.cyber-sec.ro",
+        default="https://crm.example.test",
         description="Enterprise CRM public URL (for partner-mode simulations).",
     )
     verify_tls: bool = True

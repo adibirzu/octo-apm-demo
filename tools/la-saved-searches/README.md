@@ -38,7 +38,7 @@ to `https://cloud.oracle.com/apm-traces/trace-explorer?traceId=<x>`.
 ```bash
 # 1. Run the traffic generator briefly
 OCTO_TRAFFIC_RUN_DURATION_SECONDS=90 \
-OCTO_TRAFFIC_SHOP_BASE_URL=https://shop.cyber-sec.ro \
+OCTO_TRAFFIC_SHOP_BASE_URL=https://shop.example.test \
 octo-traffic
 
 # 2. Grab any trace_id from APM Trace Explorer (30 chars hex)

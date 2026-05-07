@@ -173,7 +173,7 @@ def main() -> int:
         existing_atp_id = next(a.id for a in inv.atps if a.id.endswith(pick.split("[")[1][:-1]))
 
     dns_domain = questionary.text(
-        "DNS domain (e.g. cyber-sec.ro):", default="cyber-sec.ro"
+        "DNS domain (e.g. example.test):", default="example.test"
     ).ask()
 
     # Build plan

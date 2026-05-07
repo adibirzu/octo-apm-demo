@@ -12,7 +12,7 @@
 # ./deploy/deploy.sh for ongoing rollouts.
 #
 # Usage:
-#   DNS_DOMAIN=cyber-sec.ro \
+#   DNS_DOMAIN=example.test \
 #   OCIR_REGION=eu-frankfurt-1 \
 #   OCIR_TENANCY=<namespace> \
 #   OCI_COMPARTMENT_ID=ocid1.compartment... \
@@ -33,7 +33,7 @@ esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-: "${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/oci4cca use cyber-sec.ro)}"
+: "${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/<OCI_PROFILE> use example.test)}"
 : "${OCIR_REGION:?Set OCIR_REGION (for example eu-frankfurt-1)}"
 : "${OCIR_TENANCY:?Set OCIR_TENANCY (object storage namespace)}"
 : "${OCI_COMPARTMENT_ID:?Set OCI_COMPARTMENT_ID}"

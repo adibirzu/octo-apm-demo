@@ -75,5 +75,5 @@ def test_profile_targets_use_current_shop_crm_contract() -> None:
     assert mem.executor_args["target_namespace"] == "octo-drone-shop"
 
     combined = "\n".join(repr(profile) for profile in list_profiles())
-    assert "octodemo.cloud" not in combined
+    assert "example.test" not in combined
     assert "octo-shop-prod" not in combined

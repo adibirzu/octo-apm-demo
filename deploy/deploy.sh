@@ -2,7 +2,7 @@
 # Unified build + push + rollout wrapper for the OCTO Drone Shop + CRM.
 #
 # Usage:
-#   OCIR_REGION=eu-frankfurt-1 OCIR_TENANCY=<namespace> DNS_DOMAIN=cyber-sec.ro \
+#   OCIR_REGION=eu-frankfurt-1 OCIR_TENANCY=<namespace> DNS_DOMAIN=example.test \
 #   ./deploy/deploy.sh
 #
 #   ./deploy/deploy.sh --build-only

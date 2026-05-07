@@ -36,8 +36,8 @@ cd services/browser-runner
 npm install
 npx playwright install chromium
 
-OCTO_BROWSER_SHOP_URL=https://shop.cyber-sec.ro \
-OCTO_BROWSER_CRM_URL=https://crm.cyber-sec.ro \
+OCTO_BROWSER_SHOP_URL=https://shop.example.test \
+OCTO_BROWSER_CRM_URL=https://crm.example.test \
 OCTO_BROWSER_ITERATIONS=3 \
 OCTO_BROWSER_HEADLESS=false \
 npx tsx src/run-journey.ts catalog-to-checkout
