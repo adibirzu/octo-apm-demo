@@ -87,6 +87,34 @@ CREATE INDEX IF NOT EXISTS ix_payment_transactions_order_id
 CREATE INDEX IF NOT EXISTS ix_payment_transactions_provider_reference
     ON payment_transactions (provider_reference);
 
+CREATE TABLE IF NOT EXISTS payment_gateway_events (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER REFERENCES orders(id) NOT NULL,
+    gateway_name VARCHAR(80) NOT NULL,
+    gateway_provider VARCHAR(100) NOT NULL,
+    gateway_request_id VARCHAR(128) NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    wallet_type VARCHAR(40),
+    card_brand VARCHAR(40),
+    card_last4 VARCHAR(4),
+    payment_network VARCHAR(40),
+    step_name VARCHAR(100) NOT NULL,
+    step_phase VARCHAR(80) NOT NULL,
+    step_status VARCHAR(40) NOT NULL,
+    step_index INTEGER DEFAULT 0,
+    latency_ms NUMERIC DEFAULT 0,
+    trace_id VARCHAR(64),
+    span_id VARCHAR(32),
+    metadata_json TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_payment_gateway_events_order_id
+    ON payment_gateway_events (order_id);
+CREATE INDEX IF NOT EXISTS ix_payment_gateway_events_gateway_request_id
+    ON payment_gateway_events (gateway_request_id);
+CREATE INDEX IF NOT EXISTS ix_payment_gateway_events_trace_id
+    ON payment_gateway_events (trace_id);
+
 CREATE TABLE IF NOT EXISTS shops (
     id SERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,

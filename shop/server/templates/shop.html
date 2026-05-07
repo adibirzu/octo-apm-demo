@@ -1505,12 +1505,18 @@ async function submitCheckout(e) {
             payment_provider: result.payment?.provider || '',
             'payment.card_brand': result.payment?.card_brand || '',
             'payment.wallet_type': result.payment?.wallet_type || '',
+            'payment.gateway.name': result.payment?.gateway?.gateway || '',
+            'payment.gateway.request_id': result.payment?.gateway?.request_id || '',
+            'payment.gateway.step_count': (result.payment?.gateway?.steps || []).length + (result.payment?.gateway?.final_step ? 1 : 0),
         });
         const payment = result.payment || {};
         const paymentLabel = payment.wallet_type
             ? payment.wallet_type.replace('_', ' ')
             : `${payment.card_brand || 'card'}${payment.card_last4 ? ` ending ${payment.card_last4}` : ''}`;
-        status.textContent = `Order #${result.order_id} placed. Payment ${payment.status || 'processed'} via ${payment.provider || paymentLabel}. Tracking: ${result.tracking_number} — Total: $${result.total.toLocaleString()}`;
+        const gateway = payment.gateway || {};
+        const gatewayStepCount = (gateway.steps || []).length + (gateway.final_step ? 1 : 0);
+        const gatewayText = gatewayStepCount ? ` Gateway ${gatewayStepCount} steps.` : '';
+        status.textContent = `Order #${result.order_id} placed. Payment ${payment.status || 'processed'} via ${payment.provider || paymentLabel}.${gatewayText} Tracking: ${result.tracking_number} — Total: $${result.total.toLocaleString()}`;
         state.checkoutIdempotencyKey = '';
         formEl.reset();
         updatePaymentPanels();

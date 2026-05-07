@@ -22,6 +22,7 @@ from server.database import (
 )
 from server.middleware.circuit_breaker import crm_breaker, workflow_breaker
 from server.modules.api_gateway_observability import supported_api_gateway_scenarios
+from server.modules.payments.gateway_emulator import payment_gateway_capabilities
 from server.observability.correlation import build_correlation_id, current_trace_context, service_metadata
 from server.observability.logging_sdk import push_log
 from server.observability.oci_vss import get_vulnerability_summary
@@ -247,9 +248,7 @@ def _observability_capabilities() -> dict:
             "payment_gateway": {
                 "enabled": cfg.payment_gateway_simulation_enabled,
                 "java_app_server_enabled": cfg.java_apm_enabled,
-                "methods": ["credit_card", "apple_pay", "google_pay"],
-                "simulated_gateways": ["visa", "mastercard", "apple_pay", "google_pay"],
-                "safe_storage": "tokenized_metadata_only",
+                **payment_gateway_capabilities(),
             },
             "assistant_llmetry": {
                 "enabled": cfg.llmetry_enabled,
