@@ -45,12 +45,14 @@
                         <th>Customer</th>
                         <th>Total</th>
                         <th>Status</th>
+                        <th>Payment</th>
+                        <th>Gateway</th>
                         <th>Source</th>
                         <th>Backlog</th>
                     </tr>
                 </thead>
                 <tbody id="orders-table-body">
-                    <tr><td colspan="6">Loading…</td></tr>
+                    <tr><td colspan="8">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -88,10 +90,15 @@ async function loadOrders() {
             <td>${order.customer_name || 'Unknown'}</td>
             <td>$${Number(order.total || 0).toLocaleString()}</td>
             <td><span class="badge badge-${order.status}">${order.status}</span></td>
+            <td>
+                <span class="badge badge-${order.payment_status || 'pending'}">${order.payment_status || 'pending'}</span>
+                ${order.payment_required ? '<small>Required</small>' : '<small>Paid</small>'}
+            </td>
+            <td><code>${order.payment_gateway_request_id || 'n/a'}</code></td>
             <td>${order.source_system || 'enterprise-crm'}</td>
             <td><span class="badge badge-${order.backlog_status}">${order.backlog_status}</span></td>
         </tr>
-    `).join('') || '<tr><td colspan="6">No orders found</td></tr>';
+    `).join('') || '<tr><td colspan="8">No orders found</td></tr>';
 }
 
 async function showOrder(id) {
@@ -106,6 +113,20 @@ async function showOrder(id) {
             <div><strong>Customer</strong><br>${order.customer_name || 'Unknown'}<br>${order.customer_email || ''}</div>
             <div><strong>Status</strong><br>${order.status} / ${order.backlog_status}</div>
             <div><strong>Sync</strong><br>${order.sync_status || 'local'}<br>${order.last_synced_at || 'n/a'}</div>
+            <div><strong>Payment</strong><br>${order.payment_status || 'pending'}<br>${order.payment_required ? 'Payment required' : 'Paid'}</div>
+            <div><strong>Gateway</strong><br><code>${order.payment_gateway_request_id || 'n/a'}</code><br>${order.payment_provider || 'n/a'}</div>
+        </div>
+        <div class="detail-block">
+            <h3>Payment Correlation</h3>
+            <pre>${JSON.stringify({
+                payment_method: order.payment_method || '',
+                payment_status: order.payment_status || '',
+                payment_required: Boolean(order.payment_required),
+                payment_provider: order.payment_provider || '',
+                payment_provider_reference: order.payment_provider_reference || '',
+                payment_gateway_request_id: order.payment_gateway_request_id || '',
+                payment_paid_at: order.payment_paid_at || ''
+            }, null, 2)}</pre>
         </div>
         <div class="detail-block">
             <h3>Items</h3>

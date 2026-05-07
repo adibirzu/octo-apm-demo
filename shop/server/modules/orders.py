@@ -179,7 +179,7 @@ async def list_orders(request: Request, limit: int = Query(default=100, ge=1, le
                 text(
                     "SELECT o.id, o.customer_id, o.user_id, c.name AS customer_name, c.email AS customer_email, "
                     "o.total, o.status, o.payment_method, o.payment_status, o.payment_required, "
-                    "o.payment_provider, o.payment_provider_reference, o.payment_paid_at, "
+                    "o.payment_provider, o.payment_provider_reference, o.payment_gateway_request_id, o.payment_paid_at, "
                     "o.shipping_address, o.created_at, "
                     "COALESCE((SELECT SUM(oi.quantity * oi.unit_price) FROM order_items oi "
                     "WHERE oi.order_id = o.id), 0) AS subtotal, "
@@ -235,7 +235,7 @@ async def get_order(order_id: int, request: Request):
                 text(
                     "SELECT o.id, o.customer_id, o.user_id, c.name AS customer_name, c.email AS customer_email, "
                     "o.total, o.status, o.payment_method, o.payment_status, o.payment_required, "
-                    "o.payment_provider, o.payment_provider_reference, o.payment_paid_at, "
+                    "o.payment_provider, o.payment_provider_reference, o.payment_gateway_request_id, o.payment_paid_at, "
                     "o.shipping_address, o.notes, o.created_at "
                     "FROM orders o LEFT JOIN customers c ON c.id = o.customer_id WHERE o.id = :id"
                 ),

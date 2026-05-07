@@ -9,6 +9,7 @@ def test_shop_observability_capabilities_are_dashboard_safe() -> None:
     payload = _observability_capabilities()
 
     assert payload["endpoints"]["capabilities"] == "/api/observability/capabilities"
+    assert payload["endpoints"]["payment_gateway_events"] == "/api/observability/payment-gateway/events"
     assert payload["signals"]["logs"]["trace_correlation_fields"] == [
         "trace_id",
         "span_id",
@@ -37,6 +38,7 @@ def test_shop_observability_capabilities_are_dashboard_safe() -> None:
     ]
     assert payload["signals"]["security"]["api_gateway_detection"] is True
     assert payload["demo_generators"]["payment_gateway"]["methods"] == ["credit_card", "apple_pay", "google_pay"]
+    assert payload["demo_generators"]["payment_gateway"]["event_drilldown_endpoint"] == "/api/observability/payment-gateway/events"
     assert payload["demo_generators"]["api_gateway_detection"]["endpoint"] == "/api/shop/attack/simulate"
     assert payload["demo_generators"]["api_gateway_detection"]["scenarios"] == [
         "allow",
