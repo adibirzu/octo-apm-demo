@@ -6,10 +6,10 @@ Manager stack, one unified-VM path. The two services live side-by-side
 as independent containers under `shop/` and `crm/` so they keep the
 cross-service contract hardened in the upstream repos.
 
-**Docs site**: https://example-org.github.io/octo-apm-demo
-**Private Demo target hostnames**: `shop.example.test` (Shop) · `admin.example.test` (Admin/CRM)
-**Legacy reference profile hostnames**: `shop.example.test` (Shop) · `crm.example.test` (CRM)
-**Status (May 6, 2026)**: the `<OCI_PROFILE>` private Compute deployment is live in compartment `<COMPARTMENT_OCID>` with two private app hosts, a private ATP database using `octoatp_low`, public OCI Load Balancer IP `203.0.113.10`, WAF, APM/RUM, OCI Logging, Cloud Guard Instance Security OSQuery assets, availability monitors, and Log Analytics assets. DNS is handled in the separate external DNS tenancy. The manual LB SSL certificate, HTTPS `443` listener, and host routing for `shop.example.test` and `admin.example.test` must be preserved when promoting app changes. The Log Analytics Service Connector route is quota-gated in this tenancy. Check [`site/operations/current-status.md`](site/operations/current-status.md) before treating any shared environment as E2E-ready; private operator plans are intentionally excluded from the public docs build.
+**Docs site**: https://adibirzu.github.io/octo-apm-demo
+**Private Compute target hostnames**: `shop.example.test` (Shop) · `admin.example.test` (Admin/CRM)
+**Legacy `DEFAULT` hostnames**: `shop.example.test` (Shop) · `crm.example.test` (CRM)
+**Status (May 7, 2026)**: the `<OCI_PROFILE>` private Compute deployment is live with two private app hosts, shared ATP through `octoatp_low`, public LB/WAF, APM/RUM, OCI Logging, Cloud Guard Instance Security OSQuery assets, availability monitors, and payment gateway trace drilldowns. DNS is managed outside this repo; keep hostnames, IPs, OCIDs, and secrets represented by placeholders in public docs. Check [`site/operations/current-status.md`](site/operations/current-status.md) before treating any shared environment as E2E-ready.
 
 ## Private Resource Manager status
 

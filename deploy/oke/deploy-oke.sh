@@ -35,7 +35,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OKE_DIR="${REPO_ROOT}/k8s/oke"
 
-: "${DNS_DOMAIN:?Set DNS_DOMAIN (for reference profile use example.test)}"
+: "${DNS_DOMAIN:?Set DNS_DOMAIN (for DEFAULT/<OCI_PROFILE> use example.test)}"
 : "${OCIR_REGION:?Set OCIR_REGION}"
 : "${OCIR_TENANCY:?Set OCIR_TENANCY}"
 : "${OCI_LB_SUBNET_OCID:?Set OCI_LB_SUBNET_OCID}"

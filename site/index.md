@@ -15,9 +15,9 @@
 
 Current `<OCI_PROFILE>` target hostnames are `shop.example.test` for the
 Shop and `admin.example.test` for the Admin/CRM app. DNS is managed in
-the separate external DNS tenancy; the private demo Load Balancer IP is
-`203.0.113.10`, and its manual HTTPS `443` listener, SSL certificate,
-and host-routing rules are preserved outside normal app delivery. The
+the separate external DNS tenancy; use placeholder-safe IPs and hostnames in
+public docs, and preserve the manual HTTPS `443` listener, SSL certificate,
+and host-routing rules outside normal app delivery. The
 older `DEFAULT` target hostnames `shop.example.test` and
 `crm.example.test` are still documented as a historical operational
 snapshot. See [Current Status](operations/current-status.md) for
@@ -40,7 +40,7 @@ Both services share a **single Oracle ATP database**, enabling cross-service dat
 - **Public and private CRM URLs are split** — browser-visible links use `https://crm.example.test`, while backend service-to-service calls may continue to use a private service endpoint.
 - **Frontend hardening is live** — CRM page rendering, observability beacon ingestion, CSP-safe scripts, and favicon handling were updated to remove recent runtime errors.
 - **Enhancement roadmap is published** — the docs now define the rollout path for complex flows, OCI APM, OCI Logging, Log Analytics, drilldowns, and DB tooling.
-- **Private Demo deployment status is now published** — the docs include dated OCI, runtime, APM, Logging, Log Analytics, Cloud Guard, Availability Monitoring, and Resource Manager troubleshooting snapshots for the private Compute `<OCI_PROFILE>` deployment.
+- **Deployment status is now published** — the docs include dated OCI, runtime, APM, Logging, Log Analytics, Cloud Guard, Availability Monitoring, payment gateway observability, and Resource Manager troubleshooting snapshots for the private Compute `<OCI_PROFILE>` deployment and the legacy `DEFAULT` environment.
 
 <div class="grid cards" markdown>
 
