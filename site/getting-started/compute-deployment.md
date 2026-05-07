@@ -102,10 +102,10 @@ The limits script also reads matching `TF_VAR_*` names, so deployment
 automation can stay variable-driven across tenancies.
 
 For the `<OCI_PROFILE>` profile, the May 6, 2026 read-only gate is recorded in
-[Private Demo Install Plan](../operations/private-demo-install-plan.md). That page
-also documents the required state isolation because the local
-`deploy/compute/terraform` directory contains state and auto-var files
-from the earlier `<REFERENCE_PROFILE>` deployment.
+private operator notes that are excluded from the public GitHub Pages build.
+Those notes also document the required state isolation because the local
+`deploy/compute/terraform` directory contains state and auto-var files from an
+earlier reference deployment.
 
 ## Deployment Sequence
 

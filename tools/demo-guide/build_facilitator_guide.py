@@ -290,6 +290,14 @@ def bullet_list(items: list[str], style: ParagraphStyle) -> ListFlowable:
     )
 
 
+def numbered_list(items: list[str], style: ParagraphStyle) -> ListFlowable:
+    return ListFlowable(
+        [ListItem(paragraph(item, style), bulletColor=colors.HexColor("#2f6f73")) for item in items],
+        bulletType="1",
+        leftIndent=18,
+    )
+
+
 def add_screenshot(story: list, path: Path, width: float = 6.6 * inch, max_height: float = 8.3 * inch) -> None:
     image_width, image_height = ImageReader(str(path)).getSize()
     render_height = width * image_height / image_width
@@ -388,6 +396,9 @@ def collect_live_screenshots() -> dict[str, Path]:
         "admin-availability": "admin-availability-plan-live.png",
         "admin-monitoring": "admin-360-monitoring-live.png",
     }
+    optional_mapping = {
+        "admin-synthetic-users": "admin-synthetic-users-output-live.png",
+    }
     console_mapping = {
         "oci-apm-trace": "oci-apm-trace-explorer-live.png",
         "oci-apm-rum": "oci-apm-rum-live.png",
@@ -400,6 +411,10 @@ def collect_live_screenshots() -> dict[str, Path]:
         "oci-availability": "oci-availability-monitoring-live.png",
     }
     screenshots = {key: LIVE_SCREENSHOT_DIR / name for key, name in mapping.items()}
+    for key, name in optional_mapping.items():
+        optional_path = LIVE_SCREENSHOT_DIR / name
+        if optional_path.exists():
+            screenshots[key] = optional_path
     screenshots.update({key: OCI_CONSOLE_SCREENSHOT_DIR / name for key, name in console_mapping.items()})
     missing = [str(path.relative_to(ROOT)) for path in screenshots.values() if not path.exists()]
     if missing:
@@ -447,11 +462,13 @@ def build_live_pdf(screenshots: dict[str, Path]) -> None:
             ]),
         ),
         Spacer(1, 0.2 * inch),
-        Paragraph("Live Frontend Flow", styles["GuideHeading"]),
-        bullet_list([
-            "Open the Drone Shop, confirm ATP + APM and CRM sync pills, and add two drone products to the cart.",
-            "Submit checkout with fictional buyer details and dummy payment data. The result creates an order, payment simulator spans, ATP SQL spans, RUM actions, and app logs.",
-            "Open Services & Support and submit a ticket so the support path appears in APM and Log Analytics.",
+        Paragraph("Lab 1 - Buyer Frontend Flow", styles["GuideHeading"]),
+        numbered_list([
+            f"Open {shop_url}/shop and confirm the live catalog renders with ATP, APM, and CRM sync indicators.",
+            "Add two drone products to the cart. Use fictional buyer details only.",
+            "Submit checkout once with dummy payment data. Capture the returned order id for the investigation story.",
+            f"Open {shop_url}/services and submit a support ticket for the same fictional buyer.",
+            "Keep the browser tab active so RUM records the page views, user actions, and session attributes.",
         ], body),
     ]
     add_screenshot(story, screenshots["shop-catalog"], width=6.6 * inch, max_height=5.0 * inch)
@@ -461,25 +478,30 @@ def build_live_pdf(screenshots: dict[str, Path]) -> None:
 
     story.extend([
         PageBreak(),
-        Paragraph("Live Admin Lab Flow", styles["GuideHeading"]),
-        bullet_list([
-            "Open the Admin Simulation page and use the Java App Server controls to validate the OCI APM agent path.",
-            "Run Demo Storyboard to link shop, dummy payment, support ticket, Java app-server, ATP SQL, and logs.",
-            "Run Attack Lab to generate MITRE-tagged spans and logs with an attack id and trace id.",
-            "Use the Availability Monitoring card to show the global monitor plan for both live domains.",
+        Paragraph("Lab 2 - Admin Simulation Flow", styles["GuideHeading"]),
+        numbered_list([
+            f"Open {admin_url}/login and sign in with the demo admin account from the ignored deployment credential file.",
+            f"Open {admin_url}/settings and verify the Java APM, Storyboard, Synthetic Users, Attack Lab, Availability, and 360 Monitoring controls that are visible in the current build.",
+            "Run Java Health to validate the small Java app-server component instrumented with the OCI APM Java agent.",
+            "Run Demo Storyboard to link shop, dummy payment, support ticket, Java app-server, ATP SQL, and structured logs.",
+            "Run Synthetic Users when the card is visible, or use the configured VM timer, so APM Users receives multiple fictional corporate identities.",
+            "Run Attack Lab and copy the returned attack id and trace id.",
+            "Use the Availability Monitoring card to explain the global monitor plan for both live domains.",
         ], body),
     ])
     add_screenshot(story, screenshots["admin-simulation"], width=6.6 * inch, max_height=7.3 * inch)
     add_screenshot(story, screenshots["admin-java"], width=4.7 * inch, max_height=4.3 * inch)
     add_screenshot(story, screenshots["admin-storyboard"], width=4.7 * inch, max_height=4.3 * inch)
+    if "admin-synthetic-users" in screenshots:
+        add_screenshot(story, screenshots["admin-synthetic-users"], width=4.7 * inch, max_height=4.3 * inch)
     add_screenshot(story, screenshots["admin-attack"], width=4.7 * inch, max_height=4.3 * inch)
     add_screenshot(story, screenshots["admin-availability"], width=4.7 * inch, max_height=3.5 * inch)
 
     story.extend([
         PageBreak(),
-        Paragraph("OCI Console Threat Hunting Workflow", styles["GuideHeading"]),
+        Paragraph("Lab 3 - OCI Console Threat Hunting Workflow", styles["GuideHeading"]),
         paragraph("Start from the Admin Attack Lab output. Copy the returned attack id and trace id, then pivot through the OCI Console services below. The same values also drive the Log Analytics saved searches shipped in deploy/oci/log_analytics/searches/.", body),
-        bullet_list([
+        numbered_list([
             "Monitoring: open Alarm Status and Metrics Explorer for the scenario window; verify VM CPU, memory, network, app error, and checkout latency spikes.",
             "APM Trace Explorer: search by trace id, then inspect Shop, CRM, Java app-server, payment, SQL, and attack-lab spans. Add attributes for workflow.id, security.attack.id, mitre.technique_id, db.statement, DbOracleSqlId, and oracleApmTraceId.",
             "APM Users: verify RUM user sessions for fictional synthetic identities and confirm browser actions align with the checkout/support timeline.",
@@ -517,7 +539,7 @@ def build_live_pdf(screenshots: dict[str, Path]) -> None:
     add_screenshot(story, screenshots["oci-stack-monitoring"], width=6.6 * inch, max_height=2.7 * inch)
     add_screenshot(story, screenshots["oci-availability"], width=6.6 * inch, max_height=2.7 * inch)
     story.extend([
-        paragraph("The live app currently shows the Java APM, Storyboard, Attack Lab, Availability, and 360 Monitoring controls. The Synthetic Users card appears after deploying the branch version that includes the synthetic-user module and VM timer.", small),
+        paragraph("If a control is hidden in the live UI, use the paired VM timer or backend endpoint already configured for the deployment and document the gap before the demo starts.", small),
         paragraph("Keep this branch, screenshots, and generated PDF private. Redact screenshots again if the live UI changes and starts showing OCIDs, tenancy names, private IPs, credentials, or wallet details.", small),
     ])
 

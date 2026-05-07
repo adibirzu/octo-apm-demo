@@ -21,8 +21,8 @@ and host-routing rules are preserved outside normal app delivery. The
 older `DEFAULT` target hostnames `shop.example.test` and
 `crm.example.test` are still documented as a historical operational
 snapshot. See [Current Status](operations/current-status.md) for
-shared-environment evidence and [Private Demo Install Plan](operations/private-demo-install-plan.md)
-for the current private Compute deployment.
+shared-environment evidence. Private operator install plans are excluded from
+the public GitHub Pages build.
 
 The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.
 
