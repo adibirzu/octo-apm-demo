@@ -489,7 +489,7 @@ imports the zip.
 If the URL is correct, verify these in order:
 
 ```bash
-curl -I -L "https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip"
+curl -I -L "https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip"
 
 oci resource-manager stack list --profile <OCI_PROFILE> \
   --compartment-id <COMPARTMENT_OCID>

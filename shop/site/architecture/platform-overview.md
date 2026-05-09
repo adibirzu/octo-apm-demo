@@ -62,8 +62,8 @@ flowchart TD
 
 | Repository | Component | Tech | Purpose |
 |---|---|---|---|
-| [octo-drone-shop](https://github.com/example-org/octo-drone-shop) | Drone Shop + Workflow Gateway | Python/FastAPI + Go | Customer storefront, observability, AI assistant, workflow/query surfaces |
-| [enterprise-crm-portal](https://github.com/example-org/enterprise-crm-portal) | Enterprise CRM Portal | Python/FastAPI | CRM operations, storefront management, catalog editing, simulation lab |
+| [octo-drone-shop](https://github.com/adibirzu/octo-apm-demo/tree/main/shop) | Drone Shop + Workflow Gateway | Python/FastAPI + Go | Customer storefront, observability, AI assistant, workflow/query surfaces |
+| [enterprise-crm-portal](https://github.com/adibirzu/octo-apm-demo/tree/main/crm) | Enterprise CRM Portal | Python/FastAPI | CRM operations, storefront management, catalog editing, simulation lab |
 
 ## Shared Infrastructure
 

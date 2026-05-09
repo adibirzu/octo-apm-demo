@@ -115,14 +115,30 @@ Use repeatable filters for the main demo flows:
 - `llm.prompt.hash exists` for assistant LLMetry correlation pivots
 - `payment.gateway.request_id exists` for card, Apple Pay, Google Pay, and
   simulated network authorization traces
+- `spanName startsWith "ATTACK:"` or `security.check.name exists` for cart
+  guardrail detections that should also appear in Log Analytics
 
 ## Payment gateway drilldown
 
 For checkout investigations, use `payment.gateway.request_id` as the stable
 payment join key and `trace_id` as the cross-signal join key. A complete
 happy-path trace should include browser checkout, Shop order creation,
-gateway receipt, wallet/card tokenization, antifraud verification, processor
-routing, network authorization, CRM order sync, and ATP write spans.
+gateway receipt, wallet/card tokenization, internal antifraud screening,
+Java antifraud verification, Java processor authorization, network routing,
+merchant authorization result, CRM order sync, and ATP write spans.
+
+The simulator's emitted gateway step names are:
+
+| method | ordered method-specific steps |
+| --- | --- |
+| credit card | `gateway_payment_received`, `card_data_received`, `gateway_card_tokenization`, `internal_antifraud_screening`, `card_network_routing` |
+| Apple Pay | `gateway_payment_received`, `apple_pay_merchant_validation`, `wallet_token_received`, `gateway_token_decryption`, `network_token_cryptogram_validation`, `internal_antifraud_screening` |
+| Google Pay | `gateway_payment_received`, `wallet_token_received`, `gateway_token_decryption`, `network_token_cryptogram_validation`, `internal_antifraud_screening` |
+
+All methods then emit `verification_antifraud_request`,
+`verification_antifraud_response`, `processor_authorization_request`,
+`processor_authorization_response`, `network_authorization_routing`, and
+`merchant_authorization_result`.
 
 The operator API returns the stored gateway step timeline:
 

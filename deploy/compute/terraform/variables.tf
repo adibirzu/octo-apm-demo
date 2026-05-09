@@ -22,7 +22,7 @@ variable "name_prefix" {
 
 variable "repo_url" {
   type    = string
-  default = "https://github.com/example-org/octo-apm-demo.git"
+  default = "https://github.com/adibirzu/octo-apm-demo.git"
 }
 
 variable "repo_ref" {

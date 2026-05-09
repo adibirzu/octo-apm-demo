@@ -18,7 +18,11 @@ def test_attack_lab_saved_searches_and_dashboard_are_present() -> None:
         "api-gateway-edge-detections.sql",
         "attack-lab-detections.sql",
         "attack-lab-trace-timeline.sql",
+        "checkout-security-checks.sql",
         "osquery-attack-findings.sql",
+        "payment-gateway-timeline.sql",
+        "payment-risk-decisions.sql",
+        "user-order-action-correlation.sql",
     }
     searches = {path.name for path in (ROOT / "deploy/oci/log_analytics/searches").glob("*.sql")}
     assert search_names.issubset(searches)
@@ -30,15 +34,32 @@ def test_attack_lab_saved_searches_and_dashboard_are_present() -> None:
         "api-gateway-edge-detections",
         "attack-lab-detections",
         "attack-lab-trace-timeline",
+        "checkout-security-checks",
         "osquery-attack-findings",
+        "payment-risk-decisions",
     }.issubset(widget_searches)
+
+    payment_dashboard = json.loads(_read("deploy/oci/log_analytics/dashboards/payment-security-command-center.json"))
+    assert payment_dashboard["displayName"] == "Payment and Checkout Security Command Center"
+    payment_widget_searches = {widget["search"] for widget in payment_dashboard["widgets"]}
+    assert {
+        "payment-gateway-timeline",
+        "payment-risk-decisions",
+        "checkout-security-checks",
+        "user-order-action-correlation",
+        "trace-drilldown",
+    }.issubset(payment_widget_searches)
 
 
 def test_private_demo_architecture_diagram_is_published() -> None:
     drawio = ROOT / "site/architecture/diagrams/private-demo-observability-reference.drawio"
     svg = ROOT / "site/architecture/diagrams/private-demo-observability-reference.svg"
+    payment_drawio = ROOT / "site/architecture/diagrams/checkout-payment-flow.drawio"
+    payment_svg = ROOT / "site/architecture/diagrams/checkout-payment-flow.svg"
     assert drawio.exists()
     assert svg.exists()
+    assert payment_drawio.exists()
+    assert payment_svg.exists()
 
     for relative_path in (
         "README.md",
@@ -48,6 +69,33 @@ def test_private_demo_architecture_diagram_is_published() -> None:
     ):
         content = _read(relative_path)
         assert "private-demo-observability-reference" in content
+
+
+def test_checkout_payment_flow_diagram_is_layered_and_animated() -> None:
+    drawio = _read("site/architecture/diagrams/checkout-payment-flow.drawio")
+    svg = _read("site/architecture/diagrams/checkout-payment-flow.svg")
+
+    for layer_name in (
+        "00 Actors And Services",
+        "10 Gateway Steps",
+        "20 Persistence And Sync",
+        "30 Observability",
+        "40 Flow Overlay",
+    ):
+        assert layer_name in drawio
+
+    for simulator_step in (
+        "gateway_card_tokenization",
+        "network_token_cryptogram_validation",
+        "verification_antifraud_request",
+        "merchant_authorization_result",
+    ):
+        assert simulator_step in drawio
+        assert simulator_step in svg
+
+    assert "payment-gateway-timeline.sql" in svg
+    assert "animation: move" in svg
+    assert "prefers-reduced-motion" in svg
 
 
 def test_app_log_parsers_extract_attack_and_osquery_fields() -> None:
@@ -72,6 +120,13 @@ def test_app_log_parsers_extract_attack_and_osquery_fields() -> None:
         "Payment Provider",
         "Payment Status",
         "Payment Risk Score",
+        "Payment Method",
+        "Payment Gateway Request ID",
+        "Payment Gateway Step",
+        "Payment Gateway Step Index",
+        "Payment Gateway Phase",
+        "Payment Verification Decision",
+        "Payment Processor Decision",
         "Payment Card Last4",
         "Payment Interception",
         "Payment Redirect",
@@ -79,6 +134,12 @@ def test_app_log_parsers_extract_attack_and_osquery_fields() -> None:
         "HTTP Redirect Location",
         "HTTP Request Method",
         "HTTP Status Code",
+        "Auth User ID",
+        "Auth Username",
+        "Auth Role",
+        "Auth Method",
+        "Auth Success",
+        "Auth Failure Reason",
         "API Gateway Name",
         "API Gateway Scope",
         "API Gateway Deployment ID",
@@ -91,6 +152,10 @@ def test_app_log_parsers_extract_attack_and_osquery_fields() -> None:
         "API Gateway Rate Limit",
         "API Gateway Rate Remaining",
         "API Gateway Threat Signal",
+        "Security Check",
+        "Security Endpoint",
+        "Security Session ID",
+        "OWASP Category",
     }
 
     for parser_name in ("octo-shop-v2.json", "octo-crm-v2.json"):
@@ -101,6 +166,7 @@ def test_app_log_parsers_extract_attack_and_osquery_fields() -> None:
         assert {"$.level", "$.severity"} <= source_paths
         assert {"$.http.method", "$.http.status_code"} <= source_paths
         assert {"$.oci.api_gateway.action", "$.oci.api_gateway.request_id"} <= source_paths
+        assert {"$.auth.user_id", "$.auth.success", "$.auth.failure_reason"} <= source_paths
 
 
 def test_cloud_guard_advanced_contains_attack_lab_osquery_queries() -> None:

@@ -32,7 +32,7 @@ SHOP_URL=http://localhost:18080 \
   npx playwright test tests/e2e/shopping-flow.spec.ts
 ```
 
-See [`deploy/local-stack/README.md`](https://github.com/example-org/octo-apm-demo/blob/main/deploy/local-stack/README.md) for teardown, logs,
+See [`deploy/local-stack/README.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/local-stack/README.md) for teardown, logs,
 and caveats (Postgres parity, disabled OCI exporters, no IDCS).
 
 ## When to use it

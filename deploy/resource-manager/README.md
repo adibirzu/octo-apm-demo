@@ -1,6 +1,6 @@
 # OCI Resource Manager stack
 
-[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
 
 One-click tenancy bootstrap for the observability + integration surface
 (APM Domain + RUM, Log Analytics app-log pipeline, WAF policies).
@@ -30,7 +30,7 @@ The historical deploy button expected a stack package from the
 `resource-manager-stack` GitHub Release:
 
 ```text
-https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip
+https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip
 ```
 
 That placeholder asset currently returns HTTP 404. On a private fork, build

@@ -12,7 +12,7 @@ auto-remediation.
 - [Log Analytics dashboards](log-analytics-dashboards.md)
 - [APM drill-down](apm-drilldown.md)
 - [Drone assistant LLMetry](../drone-shop/assistant.md)
-- [Demo Storyboard and Attack Lab](demo-storyboard-attack-lab.md)
+- [Demo Storyboard and Attack Lab](https://adibirzu.github.io/octo-apm-demo/observability-v2/demo-storyboard-attack-lab/)
 - [Auto-remediation flow](autoremediation-flow.md)
 - [Security + WAF observability](waf-observability.md)
 - [Demo script](demo-script.md)

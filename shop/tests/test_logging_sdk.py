@@ -98,7 +98,12 @@ def test_push_log_adds_app_log_event_to_current_and_request_spans(monkeypatch) -
         logging_sdk.push_log(
             "INFO",
             "checkout event",
-            **{"payment.provider": "simulated", "customer_email": "grace@example.com"},
+            **{
+                "payment.provider": "simulated",
+                "auth.user_id": 41,
+                "auth.success": True,
+                "customer_email": "grace@example.com",
+            },
         )
     finally:
         logging_sdk.reset_request_span(token)
@@ -107,6 +112,8 @@ def test_push_log_adds_app_log_event_to_current_and_request_spans(monkeypatch) -
     assert events["request"][0][0] == "app.log"
     assert events["request"][0][1]["log.message"] == "checkout event"
     assert events["request"][0][1]["payment.provider"] == "simulated"
+    assert events["request"][0][1]["auth.user_id"] == 41
+    assert events["request"][0][1]["auth.success"] is True
     assert "customer_email" not in events["request"][0][1]
 
 

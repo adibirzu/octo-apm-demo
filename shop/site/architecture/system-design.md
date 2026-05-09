@@ -5,7 +5,7 @@
 The current private demo deployment uses the private Compute topology shown in
 the editable DrawIO reference:
 
-![Private Demo OCTO APM Demo architecture](diagrams/private-demo-observability-reference.svg)
+![Private Demo OCTO APM Demo architecture](https://adibirzu.github.io/octo-apm-demo/architecture/diagrams/private-demo-observability-reference.svg)
 
 Key differences from the older OKE reference below:
 

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Checkout Payment Flow</title>
+  <desc id="desc">Animated checkout payment flow showing the actual Drone Shop payment gateway emulator, Java processor simulator, ATP persistence, CRM sync, APM, and Log Analytics paths.</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#2563EB"/></marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#9333EA"/></marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#F97316"/></marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#059669"/></marker>
+    <style>
+      text { font-family: Arial, sans-serif; fill: #111827; }
+      .title { font-size: 24px; font-weight: 700; fill: #fff; }
+      .subtitle { font-size: 14px; fill: #E5E7EB; }
+      .box { rx: 10; ry: 10; stroke-width: 2; }
+      .edge { fill: #DBEAFE; stroke: #2563EB; }
+      .app { fill: #FEF3C7; stroke: #D97706; }
+      .gateway { fill: #F5F3FF; stroke: #9333EA; }
+      .data { fill: #FED7AA; stroke: #F97316; }
+      .obs { fill: #D1FAE5; stroke: #059669; }
+      .h { font-size: 15px; font-weight: 700; }
+      .p { font-size: 12px; }
+      .flow { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 12 12; animation: move 1.5s linear infinite; }
+      .blue { stroke: #2563EB; marker-end: url(#arrow-blue); }
+      .purple { stroke: #9333EA; marker-end: url(#arrow-purple); }
+      .orange { stroke: #F97316; marker-end: url(#arrow-orange); }
+      .green { stroke: #059669; marker-end: url(#arrow-green); stroke-dasharray: 8 10; }
+      @keyframes move { to { stroke-dashoffset: -48; } }
+      @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
+    </style>
+  </defs>
+  <rect width="1600" height="900" fill="#fff"/>
+  <rect x="40" y="24" width="1520" height="72" fill="#111827"/>
+  <text x="64" y="57" class="title">Checkout Payment Flow</text>
+  <text x="64" y="82" class="subtitle">Actual simulator path from payment_gateway_simulation.py and payments/gateway_emulator.py</text>
+
+  <rect x="70" y="150" width="180" height="80" class="box edge"/><text x="92" y="181" class="h">Browser</text><text x="92" y="204" class="p">cart, checkout, RUM</text>
+  <rect x="310" y="150" width="210" height="80" class="box app"/><text x="332" y="178" class="h">Drone Shop</text><text x="332" y="201" class="p">orders.cart.add</text><text x="332" y="219" class="p">shop.checkout</text>
+  <rect x="600" y="150" width="270" height="80" class="box gateway"/><text x="622" y="178" class="h">Payment Gateway Emulator</text><text x="622" y="201" class="p">payment_gateway.emulator.authorize</text>
+  <rect x="950" y="150" width="250" height="80" class="box app"/><text x="972" y="178" class="h">Java Processor Simulator</text><text x="972" y="201" class="p">verify_payment + authorize_payment</text>
+  <rect x="1270" y="150" width="210" height="80" class="box app"/><text x="1292" y="181" class="h">Enterprise CRM</text><text x="1292" y="204" class="p">POST /api/orders</text>
+
+  <rect x="600" y="300" width="270" height="145" class="box gateway"/><text x="622" y="326" class="h">credit_card branch</text><text x="622" y="350" class="p">gateway_payment_received</text><text x="622" y="370" class="p">card_data_received</text><text x="622" y="390" class="p">gateway_card_tokenization</text><text x="622" y="410" class="p">internal_antifraud_screening</text><text x="622" y="430" class="p">card_network_routing</text>
+  <rect x="600" y="485" width="270" height="145" class="box gateway"/><text x="622" y="511" class="h">apple_pay / google_pay branch</text><text x="622" y="535" class="p">gateway_payment_received</text><text x="622" y="555" class="p">wallet_token_received</text><text x="622" y="575" class="p">gateway_token_decryption</text><text x="622" y="595" class="p">network_token_cryptogram_validation</text><text x="622" y="615" class="p">internal_antifraud_screening</text>
+  <rect x="930" y="350" width="300" height="160" class="box gateway"/><text x="952" y="377" class="h">common gateway tail</text><text x="952" y="401" class="p">verification_antifraud_request / response</text><text x="952" y="424" class="p">processor_authorization_request / response</text><text x="952" y="447" class="p">network_authorization_routing</text><text x="952" y="470" class="p">merchant_authorization_result</text>
+
+  <rect x="310" y="600" width="250" height="120" class="box data"/><text x="332" y="628" class="h">Oracle ATP</text><text x="332" y="652" class="p">orders, order_items, shipments</text><text x="332" y="672" class="p">payment_transactions</text><text x="332" y="692" class="p">payment_gateway_events</text><text x="332" y="712" class="p">security_events</text>
+  <rect x="930" y="600" width="280" height="120" class="box obs"/><text x="952" y="628" class="h">OCI APM + RUM</text><text x="952" y="652" class="p">traceparent from browser</text><text x="952" y="672" class="p">auth.login, shop.checkout</text><text x="952" y="692" class="p">payment_gateway.* and ATTACK:* spans</text>
+  <rect x="1270" y="600" width="250" height="120" class="box obs"/><text x="1292" y="628" class="h">OCI Logging + Log Analytics</text><text x="1292" y="652" class="p">payment-gateway-timeline.sql</text><text x="1292" y="672" class="p">payment-risk-decisions.sql</text><text x="1292" y="692" class="p">checkout-security-checks.sql</text>
+
+  <path class="flow blue" d="M250 190 L310 190"/>
+  <path class="flow purple" d="M520 190 L600 190"/>
+  <path class="flow purple" d="M735 230 L735 300"/>
+  <path class="flow purple" d="M735 230 L735 485"/>
+  <path class="flow purple" d="M870 372 L930 430"/>
+  <path class="flow purple" d="M870 557 L930 430"/>
+  <path class="flow orange" d="M1080 350 L1080 230"/>
+  <path class="flow orange" d="M420 230 L420 600"/>
+  <path class="flow orange" d="M520 190 C850 95 1110 110 1270 190"/>
+  <path class="flow green" d="M520 190 C700 560 780 650 930 660"/>
+  <path class="flow green" d="M1210 660 L1270 660"/>
+</svg>

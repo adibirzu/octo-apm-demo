@@ -1,8 +1,8 @@
 site_name: OCTO APM Demo — Unified Platform
 site_description: Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install.
-site_url: https://example-org.github.io/octo-apm-demo
-repo_url: https://github.com/example-org/octo-apm-demo
-repo_name: example-org/octo-apm-demo
+site_url: https://adibirzu.github.io/octo-apm-demo
+repo_url: https://github.com/adibirzu/octo-apm-demo
+repo_name: adibirzu/octo-apm-demo
 edit_uri: edit/main/site/
 
 theme:
@@ -173,7 +173,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/example/octo-apm-demo
+      link: https://github.com/adibirzu/octo-apm-demo
 
 docs_dir: site
 site_dir: build
