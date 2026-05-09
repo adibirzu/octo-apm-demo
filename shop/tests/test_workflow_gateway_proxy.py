@@ -6,6 +6,7 @@ import httpx
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+import server.auth_security as auth_security
 import server.modules.workflow_gateway as workflow_gateway
 
 
@@ -14,6 +15,13 @@ def _client(monkeypatch, fake_cfg) -> TestClient:
     app = FastAPI()
     app.include_router(workflow_gateway.router)
     return TestClient(app)
+
+
+def _admin_headers(monkeypatch) -> dict[str, str]:
+    monkeypatch.setattr(auth_security.cfg, "environment", "test")
+    monkeypatch.setattr(auth_security.cfg, "auth_token_secret", "x" * 32)
+    token = auth_security.issue_token(user_id=1, username="admin", role="admin")
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_workflow_gateway_proxy_forwards_allowed_request(monkeypatch) -> None:
@@ -48,13 +56,18 @@ def test_workflow_gateway_proxy_forwards_allowed_request(monkeypatch) -> None:
             workflow_gateway_configured=True,
             workflow_api_base_url="http://127.0.0.1:8090",
             workflow_service_name="octo-workflow-gateway",
+            selectai_configured=True,
+            selectai_profile_name="OCTO_SELECTAI",
         ),
     )
 
     response = client.post(
         "/api/workflow-gateway/api/selectai/generate?action=showsql",
         json={"prompt": "show active drone inventory"},
-        headers={"traceparent": "00-" + "1" * 32 + "-" + "2" * 16 + "-01"},
+        headers={
+            **_admin_headers(monkeypatch),
+            "traceparent": "00-" + "1" * 32 + "-" + "2" * 16 + "-01",
+        },
     )
 
     assert response.status_code == 200
@@ -72,12 +85,34 @@ def test_workflow_gateway_proxy_rejects_unknown_paths(monkeypatch) -> None:
             workflow_gateway_configured=True,
             workflow_api_base_url="http://127.0.0.1:8090",
             workflow_service_name="octo-workflow-gateway",
+            selectai_configured=False,
+            selectai_profile_name="",
         ),
     )
 
-    response = client.get("/api/workflow-gateway/admin/metadata")
+    response = client.get("/api/workflow-gateway/admin/metadata", headers=_admin_headers(monkeypatch))
 
     assert response.status_code == 404
+
+
+def test_workflow_gateway_proxy_requires_admin_token(monkeypatch) -> None:
+    client = _client(
+        monkeypatch,
+        SimpleNamespace(
+            workflow_gateway_configured=True,
+            workflow_api_base_url="http://127.0.0.1:8090",
+            workflow_service_name="octo-workflow-gateway",
+            selectai_configured=False,
+            selectai_profile_name="",
+        ),
+    )
+
+    response = client.post(
+        "/api/workflow-gateway/api/selectai/generate",
+        json={"prompt": "show active drone inventory"},
+    )
+
+    assert response.status_code == 401
 
 
 def test_workflow_gateway_proxy_reports_disabled_gateway(monkeypatch) -> None:
@@ -87,9 +122,32 @@ def test_workflow_gateway_proxy_reports_disabled_gateway(monkeypatch) -> None:
             workflow_gateway_configured=False,
             workflow_api_base_url="",
             workflow_service_name="octo-workflow-gateway",
+            selectai_configured=False,
+            selectai_profile_name="",
         ),
     )
 
-    response = client.get("/api/workflow-gateway/api/workflows/overview")
+    response = client.get("/api/workflow-gateway/api/workflows/overview", headers=_admin_headers(monkeypatch))
 
     assert response.status_code == 503
+
+
+def test_workflow_gateway_proxy_rejects_oversized_selectai_prompt(monkeypatch) -> None:
+    client = _client(
+        monkeypatch,
+        SimpleNamespace(
+            workflow_gateway_configured=True,
+            workflow_api_base_url="http://127.0.0.1:8090",
+            workflow_service_name="octo-workflow-gateway",
+            selectai_configured=True,
+            selectai_profile_name="OCTO_SELECTAI",
+        ),
+    )
+
+    response = client.post(
+        "/api/workflow-gateway/api/selectai/generate",
+        json={"prompt": "x" * 1001, "action": "showsql"},
+        headers=_admin_headers(monkeypatch),
+    )
+
+    assert response.status_code == 400

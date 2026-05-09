@@ -103,15 +103,78 @@
     .auth-callout p {
         color: var(--ink);
     }
+    .admin-ops-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+    .admin-ops-card {
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(108, 210, 224, 0.22);
+        background: rgba(108, 210, 224, 0.08);
+    }
+    .admin-ops-card.wide {
+        grid-column: 1 / -1;
+    }
+    .admin-ops-card form,
+    .admin-query-buttons,
+    .admin-stat-grid,
+    .admin-component-list {
+        display: grid;
+        gap: 10px;
+    }
+    .admin-query-buttons {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .admin-stat-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .admin-stat {
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.18);
+    }
+    .admin-stat strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 1.35rem;
+    }
+    .admin-output {
+        min-height: 118px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--muted);
+        line-height: 1.55;
+        white-space: pre-wrap;
+    }
+    .admin-table-wrap {
+        overflow-x: auto;
+    }
+    .admin-table-wrap td {
+        color: var(--muted);
+        font-size: 0.82rem;
+    }
     @media (max-width: 1100px) {
         .module-hero,
-        .content-grid {
+        .content-grid,
+        .admin-ops-grid {
             grid-template-columns: 1fr;
+        }
+        .admin-ops-card.wide {
+            grid-column: auto;
         }
     }
     @media (max-width: 760px) {
         .signal-list,
-        .metric-grid {
+        .metric-grid,
+        .admin-query-buttons,
+        .admin-stat-grid {
             grid-template-columns: 1fr;
         }
         .module-hero {
@@ -302,6 +365,83 @@
                 <textarea name="notes" placeholder="Notes" rows="3" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;"></textarea>
                 <button type="submit" class="btn">Save Invoice</button>
             </form>
+        </div>
+        <div class="section-title" style="margin-top: 22px;">
+            <h3>Admin AI + Workflow Labs</h3>
+            <span class="chip" id="adminWorkflowGatewayChip">checking</span>
+        </div>
+        <div class="admin-ops-grid">
+            <div class="admin-ops-card">
+                <div class="section-title">
+                    <h3>OCTO Advisor</h3>
+                    <span class="chip" id="adminAssistantProvider">admin gated</span>
+                </div>
+                <form id="adminAssistantForm">
+                    <input type="text" name="product_focus" placeholder="Product focus (optional)" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                    <textarea name="message" placeholder="Compare platforms for thermal utility inspection." rows="4" maxlength="1000" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;"></textarea>
+                    <button type="submit" class="btn">Ask Advisor</button>
+                </form>
+                <div class="admin-output" id="adminAssistantOutput">Advisor output will appear here.</div>
+            </div>
+            <div class="admin-ops-card">
+                <div class="section-title">
+                    <h3>Workflow Gateway</h3>
+                    <span class="chip" id="adminQueryLabChip">manual</span>
+                </div>
+                <div class="admin-stat-grid">
+                    <div class="admin-stat"><span>Orders</span><strong id="adminWorkflowOrdersCount">-</strong></div>
+                    <div class="admin-stat"><span>Revenue</span><strong id="adminWorkflowRevenue">-</strong></div>
+                    <div class="admin-stat"><span>CRM Linked</span><strong id="adminWorkflowCrmLinked">-</strong></div>
+                    <div class="admin-stat"><span>Low Stock</span><strong id="adminWorkflowLowStock">-</strong></div>
+                </div>
+                <div class="admin-component-list" id="adminComponentSnapshotList">
+                    <p class="runtime-note">Waiting for component snapshots.</p>
+                </div>
+            </div>
+            <div class="admin-ops-card wide">
+                <div class="section-title">
+                    <h3>DB Query Lab</h3>
+                    <span class="chip">admin only</span>
+                </div>
+                <div class="admin-query-buttons">
+                    <button class="btn btn-outline admin-query-runner" type="button" data-query="orders_backlog">Orders</button>
+                    <button class="btn btn-outline admin-query-runner" type="button" data-query="inventory_watch">Inventory</button>
+                    <button class="btn btn-outline admin-query-runner" type="button" data-query="crm_customer_mix">CRM Mix</button>
+                    <button class="btn btn-outline admin-query-runner" type="button" data-query="broken_orders_probe">Broken Query</button>
+                </div>
+                <p class="runtime-note" id="adminQueryLabStatus">Query runs are gated by the admin token and recorded for APM drilldown.</p>
+                <div class="admin-table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Query</th>
+                                <th>Status</th>
+                                <th>Rows</th>
+                                <th>Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminQueryExecutionBody">
+                            <tr><td colspan="4" class="empty-state">Loading recent executions.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="admin-ops-card wide">
+                <div class="section-title">
+                    <h3>Select AI Console</h3>
+                    <span class="chip" id="adminSelectAiChip">profile pending</span>
+                </div>
+                <form id="adminSelectAiForm">
+                    <select name="action" style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;">
+                        <option value="showsql">Show SQL</option>
+                        <option value="narrate">Narrate</option>
+                        <option value="chat">Chat</option>
+                    </select>
+                    <textarea name="prompt" placeholder="show SQL for orders by status with revenue totals" rows="4" maxlength="1000" required style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--ink); border-radius: 6px;"></textarea>
+                    <button type="submit" class="btn">Run Select AI</button>
+                </form>
+                <div class="admin-output" id="adminSelectAiOutput">Select AI output will appear here once the ATP profile is configured.</div>
+            </div>
         </div>
         <p id="adminStatusMsg" style="margin-top: 10px; color: var(--ok);"></p>
     </section>
@@ -597,7 +737,7 @@ const MODULE_CONFIG = {
     admin: {
         eyebrow: 'Governed Control',
         title: 'Administrative access for governed CRM-side operations across shops, products, customers, orders, and invoices.',
-        copy: 'The admin surface is intended for governed operational use. It requires a signed admin token, hides secrets, and keeps catalog and shop management on the CRM/admin page instead of the storefront-facing views.',
+        copy: 'The admin surface is intended for governed operational use. It requires a signed admin token, hides secrets, and keeps catalog, AI, query lab, and Select AI operations away from storefront-facing views.',
         primary: { url: '/api/admin/users', key: 'users', requiresAuth: true },
         extras: [
             { name: 'audit', url: '/api/admin/audit-logs', requiresAuth: true },
@@ -619,11 +759,13 @@ const MODULE_CONFIG = {
             'Shop locations and product catalog entries are managed from this CRM/admin surface, not the storefront pages.',
             'Customer and order master data can be edited without leaving the app.',
             'Invoices can be created and updated against the shared database.',
+            'Advisor, DB Query Lab, and Select AI execution stay behind admin authentication.',
             'Recent audit activity and runtime feature toggles stay visible without secret disclosure.'
         ],
         sources: [
             'Primary source: `/api/admin/users` with admin bearer token.',
             'Supporting sources: `/api/admin/shops`, `/api/admin/products`, `/api/admin/customers`, `/api/admin/orders`, `/api/admin/invoices`, `/api/admin/audit-logs`, and `/api/admin/config`.',
+            'AI and database labs: `/api/admin/assistant/query` and `/api/workflow-gateway/*` with admin bearer token.',
             'Authentication source: `/api/auth/login`.'
         ],
         runtimeNote: 'If this page shows an auth prompt, the portal is behaving as intended. Sign in as an admin to browse and modify governed CRM records without exposing those controls in the public shop experience.',
@@ -665,7 +807,8 @@ const MODULE_CONFIG = {
                 { title: 'Active products', value: products.filter((item) => Number(item.is_active) === 1).length, copy: 'Currently enabled product catalog entries.' },
                 { title: 'Audit rows', value: audits.length, copy: 'Recent audit entries available for review.' },
                 { title: 'APM status', value: config.apm_configured ? 'enabled' : 'pending', copy: 'Whether backend trace export is configured.' },
-                { title: 'RUM status', value: config.rum_configured ? 'enabled' : 'pending', copy: 'Whether browser telemetry is configured.' }
+                { title: 'RUM status', value: config.rum_configured ? 'enabled' : 'pending', copy: 'Whether browser telemetry is configured.' },
+                { title: 'Select AI', value: config.selectai_configured ? 'profile ready' : 'profile pending', copy: 'Whether DBMS_CLOUD_AI profile execution is configured.' }
             ];
         }
     }
@@ -856,6 +999,175 @@ async function submitAdminForm({ form, idField, baseUrl, entityKey, successLabel
     if (idSelect) idSelect.value = '';
     await loadModule();
     return body[entityKey];
+}
+
+async function adminWorkflowFetch(path, options = {}) {
+    const headers = {
+        ...(options.body ? {'Content-Type': 'application/json'} : {}),
+        ...(options.headers || {}),
+        ...authHeaders(true)
+    };
+    return fetch(`/api/workflow-gateway${path}`, {...options, headers});
+}
+
+function renderAdminComponentSnapshots(items = []) {
+    const node = document.getElementById('adminComponentSnapshotList');
+    if (!node) return;
+    if (!items.length) {
+        node.innerHTML = '<p class="runtime-note">No component snapshots captured yet.</p>';
+        return;
+    }
+    node.innerHTML = items.slice(0, 4).map((item) => `
+        <article class="source-card">
+            <strong>${escapeHtml(item.component_name || 'component')}</strong>
+            <p>${escapeHtml(item.component_type || 'service')} - ${escapeHtml(item.status || 'unknown')}</p>
+            <p>${escapeHtml(item.details || 'No details yet.')}</p>
+        </article>
+    `).join('');
+}
+
+function renderAdminQueryExecutions(items = []) {
+    const body = document.getElementById('adminQueryExecutionBody');
+    if (!body) return;
+    if (!items.length) {
+        body.innerHTML = '<tr><td colspan="4" class="empty-state">No query executions captured yet.</td></tr>';
+        return;
+    }
+    body.innerHTML = items.map((item) => `
+        <tr>
+            <td><strong>${escapeHtml(item.query_name || '-')}</strong><br><span class="muted">${escapeHtml(item.component_name || '-')}</span></td>
+            <td>${escapeHtml(item.status || '-')}</td>
+            <td>${escapeHtml(item.row_count ?? '-')}</td>
+            <td>${Number(item.duration_ms || 0).toFixed(2)} ms</td>
+        </tr>
+    `).join('');
+}
+
+async function loadAdminWorkflowOverview() {
+    const gatewayChip = document.getElementById('adminWorkflowGatewayChip');
+    if (!gatewayChip) return;
+    try {
+        const res = await adminWorkflowFetch('/api/workflows/overview');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error || `workflow overview ${res.status}`);
+        gatewayChip.textContent = data.gateway?.service_name || 'connected';
+        document.getElementById('adminQueryLabChip').textContent = data.gateway?.faulty_query_enabled ? 'faulty auto-on' : 'manual';
+        document.getElementById('adminSelectAiChip').textContent = data.gateway?.selectai_configured
+            ? `profile ${data.gateway.selectai_profile_name || 'ready'}`
+            : 'profile pending';
+        document.getElementById('adminWorkflowOrdersCount').textContent = data.orders?.order_count ?? 0;
+        document.getElementById('adminWorkflowRevenue').textContent = money(data.orders?.revenue ?? 0);
+        document.getElementById('adminWorkflowCrmLinked').textContent = data.crm?.crm_linked ?? 0;
+        document.getElementById('adminWorkflowLowStock').textContent = data.inventory?.low_stock_count ?? 0;
+        renderAdminComponentSnapshots(data.components || []);
+    } catch (error) {
+        gatewayChip.textContent = 'unreachable';
+        const status = document.getElementById('adminQueryLabStatus');
+        if (status) status.textContent = `Workflow gateway request failed: ${error.message}`;
+    }
+}
+
+async function loadAdminQueryExecutions() {
+    try {
+        const res = await adminWorkflowFetch('/api/query-lab/executions?limit=8');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error || `query executions ${res.status}`);
+        renderAdminQueryExecutions(data.items || []);
+    } catch (error) {
+        const body = document.getElementById('adminQueryExecutionBody');
+        if (body) {
+            body.innerHTML = `<tr><td colspan="4" class="empty-state">Failed to load query executions: ${escapeHtml(error.message)}</td></tr>`;
+        }
+    }
+}
+
+async function runAdminWorkflowQuery(queryName) {
+    const status = document.getElementById('adminQueryLabStatus');
+    if (status) status.textContent = `Running ${queryName}...`;
+    try {
+        const res = await adminWorkflowFetch('/api/query-lab/run', {
+            method: 'POST',
+            body: JSON.stringify({query_name: queryName})
+        });
+        const data = await res.json();
+        if (!res.ok && !data.result) {
+            if (status) status.textContent = data.detail || data.error || `Failed to run ${queryName}.`;
+            return;
+        }
+        const result = data.result || data;
+        if (status) {
+            status.textContent = result.status === 'error'
+                ? `${queryName} failed as expected: ${result.error_message || data.error || 'unknown error'}`
+                : `${queryName} completed with ${result.row_count || 0} rows in ${Number(result.duration_ms || 0).toFixed(2)} ms.`;
+        }
+        await Promise.all([loadAdminWorkflowOverview(), loadAdminQueryExecutions()]);
+    } catch (error) {
+        if (status) status.textContent = `Query runner failed: ${error.message}`;
+    }
+}
+
+async function submitAdminSelectAi(event) {
+    event.preventDefault();
+    const output = document.getElementById('adminSelectAiOutput');
+    const form = new FormData(event.currentTarget);
+    if (output) output.textContent = 'Running Select AI against ATP...';
+    try {
+        const res = await adminWorkflowFetch('/api/selectai/generate', {
+            method: 'POST',
+            body: JSON.stringify({
+                prompt: String(form.get('prompt') || ''),
+                action: String(form.get('action') || 'showsql')
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            if (output) output.textContent = data.detail || data.error || 'Select AI request failed.';
+            return;
+        }
+        if (output) output.textContent = data.rows?.[0]?.generated || 'No Select AI output returned.';
+        await loadAdminQueryExecutions();
+    } catch (error) {
+        if (output) output.textContent = `Select AI request failed: ${error.message}`;
+    }
+}
+
+async function submitAdminAssistant(event) {
+    event.preventDefault();
+    const output = document.getElementById('adminAssistantOutput');
+    const provider = document.getElementById('adminAssistantProvider');
+    const form = new FormData(event.currentTarget);
+    if (output) output.textContent = 'Running advisor...';
+    try {
+        const response = await fetch('/api/admin/assistant/query', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', ...authHeaders(true)},
+            body: JSON.stringify({
+                message: String(form.get('message') || ''),
+                product_focus: String(form.get('product_focus') || '')
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            if (output) output.textContent = data.detail || data.error || 'Advisor request failed.';
+            return;
+        }
+        if (provider) provider.textContent = data.provider || 'completed';
+        if (output) output.textContent = data.answer || 'No advisor response returned.';
+    } catch (error) {
+        if (output) output.textContent = `Advisor request failed: ${error.message}`;
+    }
+}
+
+function bindAdminAiOps() {
+    const assistantForm = document.getElementById('adminAssistantForm');
+    const selectAiForm = document.getElementById('adminSelectAiForm');
+    if (assistantForm) assistantForm.onsubmit = submitAdminAssistant;
+    if (selectAiForm) selectAiForm.onsubmit = submitAdminSelectAi;
+    document.querySelectorAll('.admin-query-runner').forEach((button) => {
+        button.onclick = () => runAdminWorkflowQuery(button.dataset.query);
+    });
+    loadAdminWorkflowOverview();
+    loadAdminQueryExecutions();
 }
 
 function bindAdminControls(data) {
@@ -1099,6 +1411,7 @@ async function loadModule() {
         if (controls) {
             controls.style.display = 'block';
             bindAdminControls(data);
+            bindAdminAiOps();
             document.getElementById('createUserForm').onsubmit = async (e) => {
                 e.preventDefault();
                 const f = new FormData(e.target);

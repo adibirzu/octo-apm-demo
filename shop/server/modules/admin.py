@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from opentelemetry import trace
 from sqlalchemy import text
 
+from server.assistant_service import assistant_history_payload, run_assistant_query
 from server.auth_security import require_role
 from server.config import cfg
 from server.database import AuditLog, Base, get_db, seed_data, sync_engine
@@ -284,6 +285,28 @@ async def get_config(request: Request):
         span.set_attribute("admin.requested_by", admin_user["username"])
         span.set_attribute("admin.config_requested", True)
         return cfg.safe_runtime_summary()
+
+
+@router.get("/assistant/history/{session_id}")
+async def admin_assistant_history(session_id: str, request: Request):
+    """Return stored assistant messages for admin review."""
+    admin_user = _require_admin(request)
+    tracer = get_tracer()
+    with tracer.start_as_current_span("admin.assistant.history") as span:
+        span.set_attribute("admin.requested_by", admin_user["username"])
+        span.set_attribute("assistant.session_id", session_id[:64])
+        return await assistant_history_payload(session_id)
+
+
+@router.post("/assistant/query")
+async def admin_assistant_query(request: Request, payload: dict):
+    """Run the governed drone advisor from the admin surface."""
+    admin_user = _require_admin(request)
+    tracer = get_tracer()
+    with tracer.start_as_current_span("admin.assistant.request") as span:
+        span.set_attribute("admin.requested_by", admin_user["username"])
+        span.set_attribute("assistant.message_length", len(str(payload.get("message", ""))))
+        return await run_assistant_query(payload, surface="admin", actor=admin_user)
 
 
 @router.post("/seed")
