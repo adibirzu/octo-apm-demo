@@ -53,6 +53,7 @@ def test_compute_runtime_exposes_langfuse_export_settings_without_values() -> No
         "LLMETRY_CAPTURE_CONTENT",
         "LANGFUSE_ENABLED",
         "LANGFUSE_HOST",
+        "LANGFUSE_PROJECT_NAME",
         "LANGFUSE_PUBLIC_KEY",
         "LANGFUSE_SECRET_KEY",
         "LANGFUSE_OTEL_EXPORT_ENABLED",
@@ -68,6 +69,7 @@ def test_compute_runtime_exposes_langfuse_export_settings_without_values() -> No
         "llmetry_capture_content",
         "langfuse_enabled",
         "langfuse_host",
+        "langfuse_project_name",
         "langfuse_public_key",
         "langfuse_secret_key",
     ]:

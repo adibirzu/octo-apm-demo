@@ -118,6 +118,8 @@ def build_assistant_observation(
     response_hash = _hash_text(answer)
     prompt_length = len(message or "")
     response_length = len(answer or "")
+    project_name = _safe_label(cfg.langfuse_project_name, fallback=cfg.app_name, limit=160)
+    public_host = _safe_label(cfg.shop_public_hostname, fallback="", limit=160) if cfg.shop_public_hostname else ""
 
     event = {
         "session_id": session_id,
@@ -145,6 +147,8 @@ def build_assistant_observation(
                 "error_type": _safe_label(error_type, fallback="", limit=80) if error_type else "",
                 "llmetry_capture_content": cfg.llmetry_capture_content,
                 "langfuse_configured": cfg.langfuse_configured,
+                "project_name": project_name,
+                "shop_public_host": public_host,
             },
             sort_keys=True,
         ),
@@ -162,19 +166,30 @@ def build_assistant_observation(
         "llm.response.hash": response_hash,
         "llm.response.length": response_length,
         "assistant.session_id": session_id,
+        "assistant.project.name": project_name,
+        "assistant.public_host": public_host,
         "assistant.provider": provider_label,
         "assistant.model_id": model_label,
         "assistant.documents_grounded": int(documents_grounded or 0),
         "assistant.guardrail.allowed": bool(guardrail_allowed),
         "assistant.guardrail.reason": _safe_label(guardrail_reason, limit=80),
         "assistant.outcome": event["outcome"],
+        "llmetry.project.name": project_name,
         "gen_ai.system": provider_label,
+        "gen_ai.provider.name": provider_label,
         "gen_ai.operation.name": "chat",
         "gen_ai.request.model": model_label,
         "gen_ai.response.model": model_label,
+        "oci.auth.mode": _safe_label(cfg.oci_auth_mode, limit=40),
+        "oci.genai.endpoint_host": cfg.genai_endpoint_host,
         "langfuse.trace.name": "drone-shop-assistant",
+        "langfuse.project.name": project_name,
+        "langfuse.environment": _safe_label(cfg.app_env, limit=80),
+        "langfuse.release": _safe_label(cfg.app_version, limit=80),
         "langfuse.session.id": session_id,
         "langfuse.observation.type": "generation" if provider_label == "oci_genai" else "span",
+        "langfuse.observation.metadata.project": project_name,
+        "langfuse.observation.metadata.public_host": public_host,
         "langfuse.observation.metadata.prompt_hash": prompt_hash,
         "langfuse.observation.metadata.response_hash": response_hash,
         "langfuse.observation.metadata.documents_grounded": int(documents_grounded or 0),
@@ -252,13 +267,18 @@ def record_assistant_observation(
                 "llm.token.prompt": event["input_tokens"],
                 "llm.token.completion": event["output_tokens"],
                 "assistant.session_id": event["session_id"],
+                "assistant.project.name": attrs.get("assistant.project.name"),
+                "assistant.public_host": attrs.get("assistant.public_host"),
                 "assistant.provider": event["provider"],
                 "assistant.model_id": event["model_id"],
                 "assistant.documents_grounded": event["documents_grounded"],
                 "assistant.guardrail.allowed": bool(event["guardrail_allowed"]),
                 "assistant.guardrail.reason": event["guardrail_reason"],
                 "assistant.outcome": event["outcome"],
+                "llmetry.project.name": attrs.get("llmetry.project.name"),
                 "langfuse.configured": cfg.langfuse_configured,
+                "langfuse.host": cfg._public_url_or_empty(cfg.langfuse_host) or "",
+                "langfuse.project.name": attrs.get("langfuse.project.name"),
             },
         )
     return event

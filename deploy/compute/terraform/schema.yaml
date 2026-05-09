@@ -103,6 +103,7 @@ variableGroups:
       - llmetry_capture_content
       - langfuse_enabled
       - langfuse_host
+      - langfuse_project_name
       - langfuse_public_key
       - langfuse_secret_key
 
@@ -768,6 +769,16 @@ variables:
     type: string
     title: "Langfuse URL"
     required: false
+    visible:
+      eq:
+        - langfuse_enabled
+        - true
+
+  langfuse_project_name:
+    type: string
+    title: "Langfuse project name"
+    required: false
+    description: "Logical LLMetry project name. Empty derives from the Shop public hostname."
     visible:
       eq:
         - langfuse_enabled

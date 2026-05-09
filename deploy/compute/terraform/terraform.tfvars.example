@@ -43,6 +43,7 @@ oci_genai_model_id       = ""
 llmetry_capture_content  = false
 langfuse_enabled         = false
 langfuse_host            = "https://langfuse.example.test"
+langfuse_project_name    = ""
 langfuse_public_key      = ""
 langfuse_secret_key      = ""
 

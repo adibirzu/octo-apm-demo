@@ -40,11 +40,16 @@ def env(monkeypatch: pytest.MonkeyPatch) -> Iterator[pytest.MonkeyPatch]:
         "WORKFLOW_POLL_SECONDS",
         "WORKFLOW_API_BASE_URL",
         "WORKFLOW_PUBLIC_API_BASE_URL",
+        "OCI_COMPARTMENT_ID",
+        "OCI_GENAI_ENDPOINT",
+        "OCI_GENAI_MODEL_ID",
         "LLMETRY_ENABLED",
         "LLMETRY_STORE_ENABLED",
         "LLMETRY_CAPTURE_CONTENT",
         "LANGFUSE_ENABLED",
         "LANGFUSE_HOST",
+        "LANGFUSE_PROJECT_NAME",
+        "LANGFUSE_PROJECT",
         "LANGFUSE_BASE_URL",
         "LANGFUSE_PUBLIC_URL",
         "LANGFUSE_PUBLIC_KEY",
@@ -167,6 +172,29 @@ class TestPublicUrlsNoFabrication:
         cfg = _fresh_config(env)
         assert cfg.workflow_gateway_configured is True
         assert cfg.workflow_public_api_base_url == "/api/workflow-gateway"
+
+
+@pytest.mark.unit
+class TestAssistantTelemetryConfig:
+    def test_langfuse_project_defaults_to_shop_hostname(self, env):
+        env.setenv("SHOP_PUBLIC_URL", "https://drones.octodemo.cloud")
+        cfg = _fresh_config(env)
+        assert cfg.shop_public_hostname == "drones.octodemo.cloud"
+        assert cfg.langfuse_project_name == "drones.octodemo.cloud"
+
+    def test_explicit_langfuse_project_name_wins(self, env):
+        env.setenv("SHOP_PUBLIC_URL", "https://drones.octodemo.cloud")
+        env.setenv("LANGFUSE_PROJECT_NAME", "custom-drone-assistant")
+        cfg = _fresh_config(env)
+        assert cfg.langfuse_project_name == "custom-drone-assistant"
+
+    def test_genai_configured_requires_endpoint_model_and_compartment(self, env):
+        env.setenv("OCI_COMPARTMENT_ID", "ocid1.compartment.oc1..example")
+        env.setenv("OCI_GENAI_ENDPOINT", "https://inference.generativeai.uk-london-1.oci.oraclecloud.com")
+        env.setenv("OCI_GENAI_MODEL_ID", "cohere.command-r-08-2024")
+        cfg = _fresh_config(env)
+        assert cfg.genai_configured is True
+        assert cfg.genai_endpoint_host == "inference.generativeai.uk-london-1.oci.oraclecloud.com"
 
 
 @pytest.mark.unit

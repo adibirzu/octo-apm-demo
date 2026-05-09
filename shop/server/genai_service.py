@@ -11,8 +11,13 @@ from server.config import cfg
 
 
 def _build_signer():
-    if cfg.oci_auth_mode == "instance_principal":
+    auth_mode = (cfg.oci_auth_mode or "auto").strip().lower().replace("-", "_")
+    if auth_mode == "instance_principal":
         return {}, oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+    if auth_mode == "resource_principal":
+        return {}, oci.auth.signers.get_resource_principals_signer()
+    if auth_mode in {"config_file", "config"}:
+        return oci.config.from_file(), None
     try:
         return {}, oci.auth.signers.get_resource_principals_signer()
     except Exception:
@@ -20,7 +25,7 @@ def _build_signer():
 
 
 def genai_configured() -> bool:
-    return bool(cfg.oci_genai_endpoint and cfg.oci_genai_model_id and cfg.oci_compartment_id)
+    return cfg.genai_configured
 
 
 def _chat_sync(message: str, documents: list[dict[str, str]]) -> dict[str, Any]:

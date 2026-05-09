@@ -18,13 +18,15 @@ Langfuse.
 
 ```bash
 OCI_GENAI_ENDPOINT="https://inference.generativeai.<region>.oci.oraclecloud.com"
-OCI_GENAI_MODEL_ID="cohere.command-r-plus"
+OCI_GENAI_MODEL_ID="cohere.command-r-08-2024"
 OCI_COMPARTMENT_ID="<compartment-ocid>"
+OCI_AUTH_MODE=instance_principal
 LLMETRY_ENABLED=true
 LLMETRY_STORE_ENABLED=true
 LLMETRY_CAPTURE_CONTENT=false
 LANGFUSE_ENABLED=false
 LANGFUSE_HOST="https://langfuse.example.test"
+LANGFUSE_PROJECT_NAME="drones.octodemo.cloud"
 LANGFUSE_PUBLIC_KEY="<project-public-key>"
 LANGFUSE_SECRET_KEY="<project-secret-key>"
 LANGFUSE_OTEL_EXPORT_ENABLED=true
@@ -50,11 +52,13 @@ POST /api/shop/assistant/query
 
 - Span: `shop.assistant.query` + `shop.assistant.genai`
 - Attributes:
+  - `assistant.project.name`, `assistant.public_host`, `llmetry.project.name`
   - `assistant.provider`, `assistant.model_id`, `assistant.documents_grounded`
   - `assistant.guardrail.allowed`, `assistant.guardrail.reason`, `assistant.outcome`
   - `llm.prompt.hash`, `llm.response.hash`, `llm.prompt.length`, `llm.response.length`
+  - `oci.auth.mode`, `oci.genai.endpoint_host`
   - `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`
-  - `langfuse.trace.name`, `langfuse.session.id`, `langfuse.observation.type`
+  - `langfuse.project.name`, `langfuse.trace.name`, `langfuse.session.id`, `langfuse.observation.type`
 - Metrics: `shop.business.assistant.queries`, `shop.business.assistant.latency`, `shop.business.assistant.tokens`, `shop.business.assistant.errors`
 - Logs: `Assistant LLMetry observation` records include `oracleApmTraceId`, token counts, hashes, provider, model, session, and guardrail fields.
 - ATP rows: `assistant_sessions`, `assistant_messages`, and `llmetry_events` let operators join the conversation record to APM/Logging by `trace_id`.

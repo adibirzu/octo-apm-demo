@@ -150,6 +150,7 @@ values = {
     "LLMETRY_CAPTURE_CONTENT": os.environ.get("LLMETRY_CAPTURE_CONTENT", "false"),
     "LANGFUSE_ENABLED": os.environ.get("LANGFUSE_ENABLED", "false"),
     "LANGFUSE_HOST": os.environ.get("LANGFUSE_HOST", os.environ.get("LANGFUSE_PUBLIC_URL", "")),
+    "LANGFUSE_PROJECT_NAME": os.environ.get("LANGFUSE_PROJECT_NAME", os.environ.get("LANGFUSE_PROJECT", "")),
     "LANGFUSE_PUBLIC_KEY": os.environ.get("LANGFUSE_PUBLIC_KEY", ""),
     "LANGFUSE_PUBLIC_KEY_FILE": os.environ.get("LANGFUSE_PUBLIC_KEY_FILE", ""),
     "LANGFUSE_SECRET_KEY": os.environ.get("LANGFUSE_SECRET_KEY", ""),

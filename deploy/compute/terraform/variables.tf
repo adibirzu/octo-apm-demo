@@ -201,6 +201,12 @@ variable "langfuse_host" {
   description = "Optional Langfuse base URL for OTLP export, for example https://langfuse.example.test."
 }
 
+variable "langfuse_project_name" {
+  type        = string
+  default     = ""
+  description = "Optional logical project name attached to assistant LLMetry spans/logs. Empty derives from the Shop public hostname."
+}
+
 variable "langfuse_public_key" {
   type        = string
   default     = ""
