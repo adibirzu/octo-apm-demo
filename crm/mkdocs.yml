@@ -1,6 +1,6 @@
 site_name: Enterprise CRM Portal
 site_description: Enterprise CRM portal for shared storefront operations, catalog control, and observability.
-repo_url: https://github.com/example-org/enterprise-crm-portal
+repo_url: https://github.com/adibirzu/octo-apm-demo/tree/main/crm
 theme:
   name: material
   features:

@@ -34,7 +34,7 @@ write_files:
       ORACLE_PASSWORD=TODO
       ORACLE_WALLET_PASSWORD=TODO
       WALLET_PAR_URL=https://objectstorage...TODO
-      REPO_URL=https://github.com/example-org/octo-apm-demo.git
+      REPO_URL=https://github.com/adibirzu/octo-apm-demo.git
 
 runcmd:
   # 1. Clone the repo (unified deploy files only)

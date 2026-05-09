@@ -1,12 +1,13 @@
 # Architecture diagrams (drawio)
 
-Four diagrams describing the platform from different angles. Open any
+Five diagrams describing the platform from different angles. Open any
 of them at [app.diagrams.net](https://app.diagrams.net) → *File* →
 *Open from → Device* and select the `.drawio` file.
 
 | File | Focus |
 |---|---|
 | [`private-demo-observability-reference.drawio`](./private-demo-observability-reference.drawio) | Current private Compute reference — DNS in external DNS tenancy, preserved LB HTTPS 443, API Gateway layers for public `/api` calls and private component calls, Shop/Admin app hosts, Java app-server APM, OCI GenAI assistant, optional Langfuse LLMetry comparison, ATP, OCI Logging, Service Connector, Log Analytics, Cloud Guard OSQuery, Availability Monitoring, Stack Monitoring |
+| [`checkout-payment-flow.drawio`](./checkout-payment-flow.drawio) | Layered checkout/payment flow — Browser, Shop, gateway emulator method branches, Java verification/processor, ATP persistence, CRM sync, APM/RUM, and Log Analytics saved-search pivots. The SVG preview has animated request, payment, persistence, and telemetry movement. |
 | [`platform-overview.drawio`](./platform-overview.drawio) | Full topology — users → WAF → OKE → data + observability plane, every service + every OCI backend |
 | [`observability-flow.drawio`](./observability-flow.drawio) | MELTS signal flow — how traces / logs / metrics / events / SQL-perf reach OCI APM / Logging / Log Analytics / Stack Monitoring / Events |
 | [`deploy-topology.drawio`](./deploy-topology.drawio) | Build path + OCIR + three deploy targets (OKE, single-VM, local-stack) with per-target trade-offs |
@@ -14,6 +15,10 @@ of them at [app.diagrams.net](https://app.diagrams.net) → *File* →
 Rendered preview:
 
 ![Private Demo OCTO APM Demo architecture](./private-demo-observability-reference.svg)
+
+Payment flow preview:
+
+![Checkout payment flow](./checkout-payment-flow.svg?v=20260509-flow)
 
 ## Re-rendering
 
@@ -30,6 +35,7 @@ npm install -g @hediet/drawio-cli
 # Export to SVG
 drawio --export --format svg --output platform-overview.svg platform-overview.drawio
 drawio --export --format svg --output private-demo-observability-reference.svg private-demo-observability-reference.drawio
+drawio --export --format svg --output checkout-payment-flow.svg checkout-payment-flow.drawio
 
 # Export to PNG at 2x DPI
 drawio --export --format png --scale 2 --output platform-overview.png platform-overview.drawio
@@ -37,6 +43,9 @@ drawio --export --format png --scale 2 --output platform-overview.png platform-o
 
 Commit both the `.drawio` source and the rendered asset — reviewers
 on the PR can then diff the image directly.
+
+Use the `skills/layered-architecture-diagrams` workflow when creating or
+changing editable diagrams with layers or animated flow overlays.
 
 ## Conventions
 

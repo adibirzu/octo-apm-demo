@@ -2,9 +2,9 @@
 
 **Two-service cloud-native platform with shared Oracle ATP, full OCI observability (MELTS: Metrics, Events, Logs, Traces, SQL), IDCS SSO, cross-service distributed tracing, and automated remediation.**
 
-[:octicons-mark-github-16: Unified Project](https://github.com/example-org/octo-apm-demo){ .md-button .md-button--primary }
-[:octicons-mark-github-16: Drone Shop](https://github.com/example-org/octo-drone-shop){ .md-button }
-[:octicons-mark-github-16: CRM Portal](https://github.com/example-org/enterprise-crm-portal){ .md-button .md-button--primary }
+[:octicons-mark-github-16: Unified Project](https://github.com/adibirzu/octo-apm-demo){ .md-button .md-button--primary }
+[:octicons-mark-github-16: Drone Shop](https://github.com/adibirzu/octo-apm-demo/tree/main/shop){ .md-button }
+[:octicons-mark-github-16: CRM Portal](https://github.com/adibirzu/octo-apm-demo/tree/main/crm){ .md-button .md-button--primary }
 [:material-cloud-upload: Private Compute Stack](getting-started/compute-deployment.md){ .md-button .md-button--primary }
 [:material-domain: DNS Cutover](operations/current-status.md#public-dns-status){ .md-button }
 [:material-clipboard-text: Current Status](operations/current-status.md){ .md-button }
@@ -14,16 +14,15 @@
 
 ## What is OCTO?
 
-Current `<OCI_PROFILE>` target hostnames are `shop.example.test` for the
-Shop and `admin.example.test` for the Admin/CRM app. DNS is managed in
-the separate external DNS tenancy; use placeholder-safe IPs and hostnames in
-public docs, and preserve the manual HTTPS `443` listener, SSL certificate,
-and host-routing rules outside normal app delivery. The
-older `DEFAULT` target hostnames `shop.example.test` and
-`crm.example.test` are still documented as a historical operational
-snapshot. See [Current Status](operations/current-status.md) for
-shared-environment evidence. Private operator install plans are excluded from
-the public GitHub Pages build.
+Current emdemo hostnames are `drones.octodemo.cloud` for the Shop and
+`admin.octodemo.cloud` for the Admin/CRM app. DNS is managed outside
+this repo; use placeholder-safe IPs and hostnames in operator docs, and
+preserve the manual HTTPS `443` listener, SSL certificate, and host-routing
+rules outside normal app delivery. The older `DEFAULT` target hostnames
+`shop.example.test` and `crm.example.test` are still documented as a
+historical operational snapshot. See [Current Status](operations/current-status.md)
+for shared-environment evidence. Private operator install plans are excluded
+from the public GitHub Pages build.
 
 The OCTO Cloud-Native Platform is a **two-service architecture** built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.
 
@@ -177,8 +176,8 @@ No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.
 
 | ID | Component | Repository |
 |---|---|---|
-| **Unified deploy** | OCTO APM Demo deployment, docs, and Resource Manager stacks | [octo-apm-demo](https://github.com/example-org/octo-apm-demo) |
-| **Shop service** | Drone Shop Portal (OKE) | [octo-drone-shop](https://github.com/example-org/octo-drone-shop) |
-| **CRM service** | Enterprise CRM Portal (OKE) | [enterprise-crm-portal](https://github.com/example-org/enterprise-crm-portal) |
+| **Unified deploy** | OCTO APM Demo deployment, docs, and Resource Manager stacks | [octo-apm-demo](https://github.com/adibirzu/octo-apm-demo) |
+| **Shop service** | Drone Shop Portal (OKE) | [octo-drone-shop](https://github.com/adibirzu/octo-apm-demo/tree/main/shop) |
+| **CRM service** | Enterprise CRM Portal (OKE) | [enterprise-crm-portal](https://github.com/adibirzu/octo-apm-demo/tree/main/crm) |
 
 Often deployed alongside an ops portal and OCI Coordinator, but this repository remains standalone and tenancy-portable.

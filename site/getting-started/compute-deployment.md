@@ -13,9 +13,9 @@ Load Balancer and WAF:
 | ATP | Private DB subnet | Dedicated application database |
 
 The source of truth is
-[`deploy/compute/README.md`](https://github.com/example-org/octo-apm-demo/blob/main/deploy/compute/README.md).
+[`deploy/compute/README.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/compute/README.md).
 
-[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
 
 Private branch note: build `deploy/compute/build/octo-compute-stack.zip`
 locally and upload it in Resource Manager. The placeholder GitHub release URL

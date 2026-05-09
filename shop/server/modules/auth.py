@@ -14,6 +14,7 @@ from server.auth_security import (
     require_authenticated_user,
 )
 from server.database import get_db
+from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
 from server.observability.security_spans import security_span
 
@@ -133,6 +134,21 @@ async def login(request: Request, payload: dict):
                     reason="invalid_credentials",
                     browser_trace_id=browser_trace_id,
                 )
+                push_log(
+                    "WARNING",
+                    "Login attempt failed",
+                    **{
+                        "auth.method": "password",
+                        "auth.username": username or "anonymous",
+                        "auth.user_id": known_user_id or 0,
+                        "auth.success": False,
+                        "auth.failure_reason": "invalid_credentials",
+                        "http.url.path": "/api/auth/login",
+                        "client.address": source_ip,
+                        "source.ip": source_ip,
+                        "browser.trace_id": browser_trace_id,
+                    },
+                )
                 register_login_attempt(source_ip, success=False)
                 security_span(
                     "brute_force",
@@ -158,6 +174,21 @@ async def login(request: Request, payload: dict):
                     success=True,
                     reason="password_verified",
                     browser_trace_id=browser_trace_id,
+                )
+                push_log(
+                    "INFO",
+                    "Login succeeded",
+                    **{
+                        "auth.method": "password",
+                        "auth.username": str(user["username"]),
+                        "auth.user_id": int(user["id"]),
+                        "auth.role": str(user["role"]),
+                        "auth.success": True,
+                        "http.url.path": "/api/auth/login",
+                        "client.address": source_ip,
+                        "source.ip": source_ip,
+                        "browser.trace_id": browser_trace_id,
+                    },
                 )
 
         if failed_login:

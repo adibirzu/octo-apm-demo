@@ -522,7 +522,7 @@ variables:
   repo_url:
     type: string
     title: "Repository URL"
-    default: "https://github.com/example-org/octo-apm-demo.git"
+    default: "https://github.com/adibirzu/octo-apm-demo.git"
 
   repo_ref:
     type: string

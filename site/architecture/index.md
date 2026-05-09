@@ -31,7 +31,8 @@ The OCTO Drone Shop uses a **modular, framework-based architecture** that enable
 Drawio sources live in [`diagrams/`](diagrams/README.md) and open at
 [app.diagrams.net](https://app.diagrams.net):
 
-- **Private Demo Observability Reference** — [`diagrams/private-demo-observability-reference.drawio`](diagrams/private-demo-observability-reference.drawio). Current private Compute deployment for `shop.example.test` and `admin.example.test`, including manual LB HTTPS preservation, Java app-server APM, OCI Logging, Service Connector, Log Analytics, Cloud Guard OSQuery, Availability Monitoring, and Stack Monitoring pivots.
+- **Private Demo Observability Reference** — [`diagrams/private-demo-observability-reference.drawio`](diagrams/private-demo-observability-reference.drawio). Current private Compute deployment for `drones.octodemo.cloud` and `admin.octodemo.cloud`, including manual LB HTTPS preservation, Java app-server APM, OCI Logging, Service Connector, Log Analytics, Cloud Guard OSQuery, Availability Monitoring, and Stack Monitoring pivots.
+- **Checkout Payment Flow** — [`diagrams/checkout-payment-flow.drawio`](diagrams/checkout-payment-flow.drawio). Layered editable flow for Browser -> Shop -> payment gateway emulator -> Java simulator -> ATP/CRM/APM/Log Analytics, with animated movement in the SVG preview.
 - **Platform Overview** — [`diagrams/platform-overview.drawio`](diagrams/platform-overview.drawio). Users → WAF → OKE → data + observability plane, every service + every OCI backend.
 - **Observability Flow** — [`diagrams/observability-flow.drawio`](diagrams/observability-flow.drawio). MELTS signal flow: traces / logs / metrics / events / SQL-perf routed to OCI APM / Logging / Log Analytics / Stack Monitoring / Events.
 - **Deploy Topology** — [`diagrams/deploy-topology.drawio`](diagrams/deploy-topology.drawio). Build path + OCIR + three deploy targets (OKE, single-VM, local-stack).

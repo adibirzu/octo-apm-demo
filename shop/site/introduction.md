@@ -1,6 +1,6 @@
 # Introduction
 
-The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). The current unified deployment, Resource Manager stacks, and documentation live in [`example-org/octo-apm-demo`](https://github.com/example-org/octo-apm-demo), which combines the Drone Shop service, Enterprise CRM service, OCI deployment automation, and the production-demo Compute stack.
+The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). The current unified deployment, Resource Manager stacks, and documentation live in [`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo), which combines the Drone Shop service, Enterprise CRM service, OCI deployment automation, and the production-demo Compute stack.
 
 ## Goals
 
@@ -43,14 +43,14 @@ the current `deploy/bootstrap.sh` flow, private Compute Resource Manager
 package, Helm chart, cross-service E2E tests, and deployment runbooks.
 
 ```bash
-git clone https://github.com/example-org/octo-apm-demo.git
+git clone https://github.com/adibirzu/octo-apm-demo.git
 cd octo-apm-demo
 ./deploy/verify.sh
 ```
 
 Recommended production-demo path:
 
-[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[![Deploy Full Compute Stack to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
 
 That stack can create the VCN, public LB subnet, private app subnet,
 private DB subnet, NAT Gateway, Service Gateway, NSGs/security lists,
@@ -215,8 +215,8 @@ flowchart TD
 |---|---|---|
 | [Local Docker](getting-started/quickstart.md) | 5 min | Development and testing |
 | [OKE Deployment](getting-started/oke-deployment.md) | 30 min | Production with full OCI observability |
-| [Private Compute Deployment](https://example-org.github.io/octo-apm-demo/getting-started/compute-deployment/) | 60-90 min | Production demo without Kubernetes, with LB/WAF, private instances, private ATP, APM, Logging, Log Analytics, and Stack Monitoring |
-| [Unified Deployment Options](https://example-org.github.io/octo-apm-demo/getting-started/deployment-options/) | varies | Choosing between OKE, private Compute, Resource Manager, and single-VM paths |
+| [Private Compute Deployment](https://adibirzu.github.io/octo-apm-demo/getting-started/compute-deployment/) | 60-90 min | Production demo without Kubernetes, with LB/WAF, private instances, private ATP, APM, Logging, Log Analytics, and Stack Monitoring |
+| [Unified Deployment Options](https://adibirzu.github.io/octo-apm-demo/getting-started/deployment-options/) | varies | Choosing between OKE, private Compute, Resource Manager, and single-VM paths |
 
 ## Next Steps
 
@@ -229,6 +229,6 @@ flowchart TD
 
 | Repository | Component |
 |---|---|
-| [octo-apm-demo](https://github.com/example-org/octo-apm-demo) | Unified deployment, Resource Manager stacks, and current documentation source |
-| [octo-drone-shop](https://github.com/example-org/octo-drone-shop) | Drone Shop + Workflow Gateway service source |
-| [enterprise-crm-portal](https://github.com/example-org/enterprise-crm-portal) | Enterprise CRM Portal |
+| [octo-apm-demo](https://github.com/adibirzu/octo-apm-demo) | Unified deployment, Resource Manager stacks, and current documentation source |
+| [octo-drone-shop](https://github.com/adibirzu/octo-apm-demo/tree/main/shop) | Drone Shop + Workflow Gateway service source |
+| [enterprise-crm-portal](https://github.com/adibirzu/octo-apm-demo/tree/main/crm) | Enterprise CRM Portal |

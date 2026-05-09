@@ -27,6 +27,14 @@
       "search": "trace-drilldown"
     },
     {
+      "title": "Checkout security checks",
+      "search": "checkout-security-checks"
+    },
+    {
+      "title": "Payment risk decisions",
+      "search": "payment-risk-decisions"
+    },
+    {
       "title": "WAF and app errors",
       "search": "waf-vs-app-errors"
     }

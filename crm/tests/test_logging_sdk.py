@@ -83,7 +83,12 @@ def test_push_log_adds_app_log_event_to_current_and_request_spans(monkeypatch) -
             "INFO",
             "customer event",
             customer_email="grace@example.com",
-            **{"http.url.path": "/api/simulate"},
+            **{
+                "http.url.path": "/api/simulate",
+                "auth.user_id": 41,
+                "auth.success": True,
+                "orders.order_id": 9001,
+            },
         )
     finally:
         logging_sdk.reset_request_span(token)
@@ -92,6 +97,9 @@ def test_push_log_adds_app_log_event_to_current_and_request_spans(monkeypatch) -
     assert events["request"][0][0] == "app.log"
     assert events["request"][0][1]["log.message"] == "customer event"
     assert events["request"][0][1]["http.url.path"] == "/api/simulate"
+    assert events["request"][0][1]["auth.user_id"] == 41
+    assert events["request"][0][1]["auth.success"] is True
+    assert events["request"][0][1]["orders.order_id"] == 9001
     assert "customer_email" not in events["request"][0][1]
 
 

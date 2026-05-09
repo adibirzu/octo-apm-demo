@@ -56,11 +56,44 @@ _SPAN_EVENT_KEYS = (
     "request_id",
     "run_id",
     "upstream.trace_id",
+    "auth.user_id",
+    "auth.username",
+    "auth.role",
+    "auth.method",
+    "auth.success",
+    "auth.failure_reason",
     "db.target",
     "db.connection_name",
+    "orders.order_id",
+    "orders.user_id",
+    "orders.customer_id",
+    "cart.session_id",
+    "cart.product_id",
+    "cart.quantity",
+    "payment.method",
     "payment.provider",
     "payment.status",
     "payment.risk_score",
+    "payment.gateway.name",
+    "payment.gateway.provider",
+    "payment.gateway.request_id",
+    "payment.gateway.step",
+    "payment.gateway.step_index",
+    "payment.gateway.phase",
+    "payment.gateway.step_status",
+    "payment.gateway.step_latency_ms",
+    "payment.gateway.step_count",
+    "payment.network",
+    "payment.card_brand",
+    "payment.card_last4",
+    "payment.wallet_type",
+    "payment.verification.provider",
+    "payment.verification.status",
+    "payment.verification.decision",
+    "payment.verification.risk_score",
+    "payment.processor.name",
+    "payment.processor.status",
+    "payment.processor.decision",
     "payment.interception.detected",
     "payment.redirect.detected",
     "assistant.session_id",
@@ -128,6 +161,12 @@ _SPAN_EVENT_KEYS = (
     "security.attack.type",
     "security.attack.severity",
     "security.severity",
+    "security.check.name",
+    "security.endpoint",
+    "security.session_id",
+    "security.product_id",
+    "owasp.category",
+    "owasp.name",
 )
 
 
@@ -425,6 +464,16 @@ def log_security_event(
     **extra,
 ):
     """Log a security event with standard attributes for Log Analytics correlation."""
+    endpoint = str(extra.pop("endpoint", "") or "")
+    security_check = str(extra.pop("security_check", vuln_type) or vuln_type)
+    security_stage = str(extra.pop("security_stage", "request_validation") or "request_validation")
+    product_id = extra.pop("product_id", 0)
+    session_id = str(extra.pop("session_id", "") or "")
+    mitre_technique_id = extra.get("mitre_technique_id", "")
+    mitre_tactic = extra.get("mitre_tactic", "")
+    mitre_technique = extra.get("mitre_technique", "")
+    owasp_category = extra.get("owasp_category", "")
+    owasp_name = extra.get("owasp_name", "")
     push_log(
         "WARNING" if severity in ("low", "medium") else "ERROR",
         message,
@@ -432,9 +481,24 @@ def log_security_event(
             "security.attack.detected": True,
             "security.attack.type": vuln_type,
             "security.attack.severity": severity,
+            "security.attack.stage": security_stage,
+            "security.check.name": security_check,
+            "security.endpoint": endpoint,
+            "security.session_id": session_id,
+            "security.product_id": product_id,
             "security.source_ip": source_ip,
             "security.username": username,
             "security.attack.payload": payload[:512] if payload else "",
+            "http.url.path": endpoint,
+            "client.address": source_ip,
+            "source.ip": source_ip,
+            "cart.product_id": product_id,
+            "cart.session_id": session_id,
+            "mitre.technique_id": mitre_technique_id,
+            "mitre.tactic": mitre_tactic,
+            "mitre.technique": mitre_technique,
+            "owasp.category": owasp_category,
+            "owasp.name": owasp_name,
             **extra,
         },
     )

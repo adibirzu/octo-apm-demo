@@ -131,6 +131,7 @@ def security_span(
     tracer = get_tracer("security")
     mitre = MITRE_MAP.get(vuln_type, ("T0000", "Unknown", "Unknown"))
     owasp = OWASP_MAP.get(vuln_type, ("A00:2021", "Unknown"))
+    stage = "cart_input_validation" if endpoint == "/api/cart/add" else "request_validation"
 
     span = tracer.start_span(f"ATTACK:{vuln_type.upper()}")
     trace_id = ""
@@ -138,13 +139,23 @@ def security_span(
         trace_id = format(span.get_span_context().trace_id, "032x")
     span.set_attributes({
         "security.event": True,
+        "security.attack.detected": True,
+        "security.attack.type": vuln_type,
+        "security.attack.severity": severity,
+        "security.attack.stage": stage,
         "security.vuln_type": vuln_type,
         "security.severity": severity,
+        "security.check.name": vuln_type,
         "security.payload": payload[:500],
         "security.source_ip": source_ip,
         "security.endpoint": endpoint,
         "security.product_id": product_id or 0,
         "security.session_id": session_id or "n/a",
+        "http.url.path": endpoint,
+        "client.address": source_ip,
+        "source.ip": source_ip,
+        "cart.product_id": product_id or 0,
+        "cart.session_id": session_id or "n/a",
         "mitre.technique_id": mitre[0],
         "mitre.tactic": mitre[1],
         "mitre.technique_name": mitre[2],
@@ -161,9 +172,15 @@ def security_span(
         source_ip=source_ip,
         payload=payload,
         endpoint=endpoint,
+        security_check=vuln_type,
+        security_stage=stage,
+        product_id=product_id or 0,
+        session_id=session_id or "n/a",
         mitre_technique_id=mitre[0],
         mitre_tactic=mitre[1],
+        mitre_technique=mitre[2],
         owasp_category=owasp[0],
+        owasp_name=owasp[1],
     )
     _persist_security_event(
         vuln_type=vuln_type,

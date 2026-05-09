@@ -14,9 +14,9 @@ cross-service contract hardened in the upstream repos.
 
 ## Private Resource Manager status
 
-[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
 
-[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
 
 This private branch should be deployed by building the Resource Manager zip
 locally and uploading it in **OCI Console -> Developer Services -> Resource
@@ -115,7 +115,7 @@ it.
 sudo dnf install -y git curl unzip                  # or apt-get
 
 # 2. Clone + configure
-git clone https://github.com/example-org/octo-apm-demo.git /opt/octo
+git clone https://github.com/adibirzu/octo-apm-demo.git /opt/octo
 cd /opt/octo/deploy/vm
 cp .env.template .env
 ${EDITOR:-vi} .env                                   # set DNS_DOMAIN=example.tld, OCIR, ATP, keys
@@ -146,17 +146,16 @@ Both `/ready` must show `database.reachable=true`; both `/api/integrations/schem
 must return an OpenAPI doc with `InternalServiceKey` in
 `components.securitySchemes`.
 
-## Subtree sources
+## Monorepo source paths
 
-| Path | Source repo | Subtree command |
+| Path | Source location | Notes |
 |---|---|---|
-| `shop/` | `github.com/example-org/octo-drone-shop` | `git subtree pull --prefix=shop https://github.com/example-org/octo-drone-shop.git main` |
-| `crm/`  | `github.com/example-org/enterprise-crm-portal` | `git subtree pull --prefix=crm  https://github.com/example-org/enterprise-crm-portal.git main` |
+| `shop/` | `github.com/adibirzu/octo-apm-demo/tree/main/shop` | Drone Shop service, workflow gateway, tests, and service-specific deploy assets |
+| `crm/`  | `github.com/adibirzu/octo-apm-demo/tree/main/crm` | Enterprise CRM Portal service, operations control plane, and CRM deploy assets |
 
-Either subtree can be pulled to grab upstream fixes without disturbing
-the other service. The upstream repos remain the per-service source of
-truth for app-layer changes; this repo owns the unified deploy + docs
-surface.
+The services now live in this unified repository. Keep service-local
+changes inside `shop/` or `crm/`, and keep shared deployment, docs, and
+observability assets at the repository root.
 
 ## License
 

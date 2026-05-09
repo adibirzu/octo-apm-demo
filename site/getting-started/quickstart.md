@@ -3,7 +3,7 @@
 ## Clone the Unified Repo
 
 ```bash
-git clone https://github.com/example-org/octo-apm-demo.git
+git clone https://github.com/adibirzu/octo-apm-demo.git
 cd octo-apm-demo
 ```
 

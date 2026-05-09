@@ -53,11 +53,21 @@ Saved searches:
   `Attack ID` or `Trace ID`.
 * `osquery-attack-findings.sql` — Cloud Guard/OSQuery findings by host,
   instance OCID, query name, and severity.
+* `checkout-security-checks.sql` — real add-to-cart guardrails from
+  `ATTACK:MASS_ASSIGN`, `ATTACK:RATE_LIMIT`, and `ATTACK:IDOR` spans/logs.
+* `payment-gateway-timeline.sql` — real checkout gateway steps keyed by
+  `Payment Gateway Request ID`, trace id, and order id.
+* `payment-risk-decisions.sql` — authorization outcomes, antifraud decisions,
+  processor decisions, and risk-score pivots.
+* `user-order-action-correlation.sql` — password-login, checkout, order,
+  payment, and guardrail pivots by authenticated user id, order id, and trace.
 
 Dashboard:
 
 * `attack-lab-command-center.json` — attack detections, trace timeline,
   OSQuery findings, trace drilldown, and WAF/app-error widgets.
+* `payment-security-command-center.json` — payment gateway timeline,
+  antifraud decisions, checkout security checks, and trace drilldown.
 
 Cloud Guard OSQuery result ingestion:
 

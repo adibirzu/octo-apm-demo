@@ -26,7 +26,7 @@ operator step after the connectors are active.
 
 | name | feeds | key fields |
 | --- | --- | --- |
-| `octo-shop-v2` | Shop JSON stdout | Trace ID, Request ID, Workflow ID, DB Elapsed ms, Chaos Injected |
+| `octo-shop-v2` | Shop JSON stdout | Trace ID, Request ID, Workflow ID, DB Elapsed ms, Chaos Injected, payment gateway steps, checkout security checks |
 | `octo-crm-v2` | CRM JSON stdout | same contract |
 | `octo-waf` | OCI WAF event logs | WAF Rule Name, Client IP, Request ID, Trace ID |
 | `octo-chaos-audit` | CRM chaos admin logger | Event, Chaos Scenario, Target, Applied By |
@@ -39,11 +39,19 @@ Additional private demo fields to extract from app/container logs:
 | `java_apm.status_code` | Shop sidecar client logs | HTTP status from the Java sidecar |
 | `java_apm.latency_ms` | Shop sidecar client logs | Downstream app-server latency |
 | `payment.provider` | Checkout/payment simulation logs | Active gateway simulator |
+| `payment.method` | Checkout/payment simulation logs | credit card, Apple Pay, Google Pay, or other safe simulator method |
 | `payment.status` | Checkout/payment simulation logs | authorized, declined, timeout |
 | `payment.risk_score` | Checkout/payment simulation logs | demo fraud/risk score |
+| `payment.gateway.request_id` | Payment gateway emulator logs | stable join key across order, trace, CRM, and gateway step records |
+| `payment.gateway.step` | Payment gateway emulator logs | ordered gateway step such as `gateway_card_tokenization` or `merchant_authorization_result` |
+| `payment.gateway.phase` | Payment gateway emulator logs | ingress, card token, wallet token, verification, processor, network, or merchant response |
+| `payment.verification.decision` | Java antifraud verification logs | approved, review, declined |
+| `payment.processor.decision` | Java processor simulator logs | processor authorization decision |
 | `payment.amount_bucket` | Checkout/payment simulation logs | low-cardinality amount range |
 | `payment.decision_source` | Checkout/payment simulation logs | python-simulator or java-app-server |
 | `payment.java_app_server.status` | Checkout/payment simulation logs | sidecar ok/disabled/unreachable |
+| `auth.user_id` / `auth.role` | Login, profile, checkout, and order logs | user-to-order correlation for DB audit rows and checkout actions |
+| `auth.success` / `auth.failure_reason` | Login logs | password login success/failure and rate-limit investigation |
 | `oci.api_gateway.request_id` | Attack lab/API Gateway logs | edge request pivot for route-policy decisions |
 | `oci.api_gateway.route` | Attack lab/API Gateway logs | public or private route that handled the request |
 | `oci.api_gateway.action` | Attack lab/API Gateway logs | allow, deny, throttle, or backend_error |
@@ -51,6 +59,10 @@ Additional private demo fields to extract from app/container logs:
 | `oci.api_gateway.latency_ms` | Attack lab/API Gateway logs | edge-to-backend decision latency |
 | `security.attack.id` | Attack lab logs | groups one full attack run |
 | `security.attack.stage` | Attack lab logs | kill-chain stage for timeline widgets |
+| `security.check.name` | Checkout guardrail logs | cart validation check: `mass_assign`, `rate_limit`, or `idor` |
+| `security.endpoint` | Checkout guardrail logs | endpoint where the guardrail fired, for example `/api/cart/add` |
+| `cart.product_id` / `cart.quantity` | Checkout guardrail logs | product and quantity involved in a cart security event |
+| `owasp.category` | Checkout guardrail logs | OWASP category for the guardrail event |
 | `mitre.technique_id` | Attack lab and OSQuery logs | MITRE ATT&CK technique pivot |
 | `mitre.tactic` | Attack lab and OSQuery logs | tactic-level grouping |
 | `client.address` / `source.ip` | Attack lab logs | entry source address |
@@ -74,6 +86,10 @@ Additional private demo fields to extract from app/container logs:
 | `attack-lab-detections.sql` | MITRE detections by attack id, tactic, technique, and source |
 | `attack-lab-trace-timeline.sql` | Full attack timeline by `Attack ID` or `Trace ID` |
 | `osquery-attack-findings.sql` | OSQuery findings by host, instance, query, and severity |
+| `payment-gateway-timeline.sql` | Ordered real payment gateway steps by gateway request id, trace id, or order id |
+| `payment-risk-decisions.sql` | Payment authorization and antifraud outcomes by method, network, status, and risk |
+| `checkout-security-checks.sql` | Real cart/checkout security guardrails by check, endpoint, source IP, product, and trace |
+| `user-order-action-correlation.sql` | Login, checkout, order, payment, and guardrail pivots by user id, order id, and trace |
 
 ## Dashboards
 
@@ -82,6 +98,9 @@ Additional private demo fields to extract from app/container logs:
 - `attack-lab-command-center.json` — attack-lab command center with
   API Gateway route-policy evidence, MITRE detections, APM trace timeline,
   OSQuery findings, and WAF/app error correlation.
+- `payment-security-command-center.json` — payment gateway timeline,
+  payment risk decisions, checkout security checks, user/order correlation,
+  and trace drilldown.
 
 ## Private Demo attack lab ingestion
 

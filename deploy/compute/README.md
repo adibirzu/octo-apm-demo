@@ -21,7 +21,7 @@ The old `deploy/vm/` path remains available for a single host. Use this
 path when the demo needs production-shaped network isolation and
 host-level telemetry.
 
-[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
 
 Private branch import note: build `deploy/compute/build/octo-compute-stack.zip`
 locally and upload it through **OCI Console -> Developer Services -> Resource
@@ -169,7 +169,7 @@ or attach to an existing VCN/subnet layout.
 For import failures, validate the asset first:
 
 ```bash
-curl -I -L https://github.com/example-org/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip
+curl -I -L https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip
 ```
 
 The placeholder URL above currently returns HTTP 404. A real deploy-button URL

@@ -111,11 +111,13 @@ def _request() -> Request:
 def test_login_success_writes_audit_and_trace_attributes(monkeypatch: pytest.MonkeyPatch) -> None:
     db = _FakeDb()
     tracer = _DummyTracer()
+    logs: list[tuple[str, str, dict[str, Any]]] = []
     monkeypatch.setattr(auth_module, "get_db", lambda: _FakeDbContext(db))
     monkeypatch.setattr(auth_module, "get_tracer", lambda: tracer)
     monkeypatch.setattr(auth_module, "issue_token", lambda **_: "signed-token")
     monkeypatch.setattr(auth_module, "login_rate_limited", lambda _source_ip: False)
     monkeypatch.setattr(auth_module, "register_login_attempt", lambda _source_ip, success: None)
+    monkeypatch.setattr(auth_module, "push_log", lambda level, message, **kwargs: logs.append((level, message, kwargs)))
 
     response = asyncio.run(
         auth_module.login(
@@ -133,15 +135,24 @@ def test_login_success_writes_audit_and_trace_attributes(monkeypatch: pytest.Mon
     assert tracer.span.attributes["auth.success"] is True
     assert tracer.span.attributes["auth.user_id"] == 41
     assert tracer.span.attributes["db.audit.entity"] == "audit_logs"
+    assert logs[-1][0] == "INFO"
+    assert logs[-1][1] == "Login succeeded"
+    assert logs[-1][2]["auth.user_id"] == 41
+    assert logs[-1][2]["auth.role"] == "user"
+    assert logs[-1][2]["auth.success"] is True
+    assert logs[-1][2]["http.url.path"] == "/api/auth/login"
 
 
 def test_login_failure_writes_audit_before_rejecting(monkeypatch: pytest.MonkeyPatch) -> None:
     db = _FakeDb()
     tracer = _DummyTracer()
+    logs: list[tuple[str, str, dict[str, Any]]] = []
     monkeypatch.setattr(auth_module, "get_db", lambda: _FakeDbContext(db))
     monkeypatch.setattr(auth_module, "get_tracer", lambda: tracer)
     monkeypatch.setattr(auth_module, "login_rate_limited", lambda _source_ip: False)
     monkeypatch.setattr(auth_module, "register_login_attempt", lambda _source_ip, success: None)
+    monkeypatch.setattr(auth_module, "push_log", lambda level, message, **kwargs: logs.append((level, message, kwargs)))
+    monkeypatch.setattr(auth_module, "security_span", lambda *_, **__: None)
 
     with pytest.raises(HTTPException) as exc:
         asyncio.run(
@@ -157,3 +168,9 @@ def test_login_failure_writes_audit_before_rejecting(monkeypatch: pytest.MonkeyP
     assert "reason=invalid_credentials" in db.audit_logs[0]["details"]
     assert tracer.span.attributes["auth.success"] is False
     assert tracer.span.attributes["auth.failure_reason"] == "invalid_credentials"
+    assert logs[-1][0] == "WARNING"
+    assert logs[-1][1] == "Login attempt failed"
+    assert logs[-1][2]["auth.user_id"] == 41
+    assert logs[-1][2]["auth.success"] is False
+    assert logs[-1][2]["auth.failure_reason"] == "invalid_credentials"
+    assert logs[-1][2]["client.address"] == "198.51.100.10"

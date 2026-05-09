@@ -2,7 +2,7 @@
 
 The authoritative minimal list of tenancy resources, secrets, CLIs, and
 container images required to redeploy the platform from a blank slate.
-Mirrored from [`deploy/BOM.md`](https://github.com/example-org/octo-apm-demo/blob/main/deploy/BOM.md)
+Mirrored from [`deploy/BOM.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/BOM.md)
 in the repo so both `pre-flight-check.sh` and new operators are reading
 the same source of truth.
 
@@ -30,7 +30,7 @@ the same source of truth.
 | Runtime | OKE cluster **OR** private two-instance Compute stack **OR** 1 Compute VM | Console, Terraform, or Resource Manager |
 | Container images | 2–3 | `deploy/deploy.sh` |
 
-Full row-by-row detail in [`deploy/BOM.md`](https://github.com/example-org/octo-apm-demo/blob/main/deploy/BOM.md).
+Full row-by-row detail in [`deploy/BOM.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/BOM.md).
 
 ## Smallest viable deploy (workshop/demo)
 
@@ -56,7 +56,7 @@ Full row-by-row detail in [`deploy/BOM.md`](https://github.com/example-org/octo-
   Analytics, DB Management, Operations Insights, and Stack Monitoring
   Standard
 - Resource Manager one-click stack:
-  <https://example-org.github.io/octo-apm-demo/getting-started/compute-deployment/>
+  <https://adibirzu.github.io/octo-apm-demo/getting-started/compute-deployment/>
 
 ## Variable → script map (excerpt)
 

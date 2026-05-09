@@ -1,0 +1,30 @@
+{
+  "displayName": "Payment and Checkout Security Command Center",
+  "description": "Real checkout payment gateway timelines, antifraud decisions, and cart security guardrails correlated by trace id and gateway request id.",
+  "freeformTags": {
+    "deployment-profile": "private-demo",
+    "domain": "payment-security"
+  },
+  "widgets": [
+    {
+      "title": "Payment gateway timeline",
+      "search": "payment-gateway-timeline"
+    },
+    {
+      "title": "Payment risk decisions",
+      "search": "payment-risk-decisions"
+    },
+    {
+      "title": "Checkout security checks",
+      "search": "checkout-security-checks"
+    },
+    {
+      "title": "User and order action correlation",
+      "search": "user-order-action-correlation"
+    },
+    {
+      "title": "Trace drill-down",
+      "search": "trace-drilldown"
+    }
+  ]
+}
