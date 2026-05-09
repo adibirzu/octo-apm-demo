@@ -605,6 +605,8 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
     assert "--crm-instance-id" in deploy_apps
     assert "APP_IMAGE_PULL_POLICY" in deploy_apps
     assert "APP_IMAGE_BUILD_ENABLED" in deploy_apps
+    assert "re-executing deployment script with sudo" in deploy_apps
+    assert "sudo -n /usr/bin/env bash" in deploy_apps
     assert "/opt/octo/deploy/compute/install.sh --check" in deploy_apps
     assert "systemctl restart octo-compute.service" in deploy_apps
     assert "bootstrap_admin_password" not in deploy_apps.lower()
