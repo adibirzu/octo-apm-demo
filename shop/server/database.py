@@ -309,25 +309,25 @@ SEED_USERS = [
     {
         "username": "shopper",
         "email": _seed_email("shopper"),
-        "password_hash": "$2b$12$xHlGrfFw.WcVjkJRR2cFUuP2WgKqA90AcaBPwwm3ccPBNZmE76gx6",
+        "password_hash": "$2b$12$J11Bx1w9DCz1iy/niMaYV.9aVkWmgH0bwdOFtm4mB6wNr3yR0GC8m",
         "role": "user",
     },
     {
         "username": "manager",
         "email": _seed_email("manager"),
-        "password_hash": "$2b$12$xHlGrfFw.WcVjkJRR2cFUuP2WgKqA90AcaBPwwm3ccPBNZmE76gx6",
+        "password_hash": "$2b$12$wk1/3sDuKbmd4YRplGtlm.6mQ82Lu00nQ2LIWsUO3apU.ACGiYXX.",
         "role": "manager",
     },
     {
         "username": "analyst",
         "email": _seed_email("analyst"),
-        "password_hash": "$2b$12$xHlGrfFw.WcVjkJRR2cFUuP2WgKqA90AcaBPwwm3ccPBNZmE76gx6",
+        "password_hash": "$2b$12$aaa/YfRLl5/xVL1b5DnLe.KoCaMpKQdIIlk90ZyuksL3MGkaCVwBG",
         "role": "analyst",
     },
     {
         "username": "support",
         "email": _seed_email("support"),
-        "password_hash": "$2b$12$xHlGrfFw.WcVjkJRR2cFUuP2WgKqA90AcaBPwwm3ccPBNZmE76gx6",
+        "password_hash": "$2b$12$6/edty/KrokG.3FKAuOMm.6l25OyUK8i6om6aVVgu2wGPgHGdHrd.",
         "role": "support",
     },
 ]

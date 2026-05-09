@@ -301,14 +301,16 @@ async def place_order(
             "VALUES (:user_id, 'order.created', :details, :trace_id)"
         ),
         {
-                "user_id": customer["id"],
-                "details": (
-                    f"resource=orders/{order['id']}; source={source}; session_id={session_id or 'n/a'}; "
-                    f"coupon={coupon_code or 'none'}; checkout_idempotency={'present' if normalized_checkout_key else 'generated'}"
-                ),
-                "trace_id": trace_id,
-            },
-        )
+            "user_id": user_id,
+            "details": (
+                f"resource=orders/{order['id']}; customer_id={customer['id']}; "
+                f"actor_user_id={user_id if user_id is not None else 'guest'}; source={source}; "
+                f"session_id={session_id or 'n/a'}; coupon={coupon_code or 'none'}; "
+                f"checkout_idempotency={'present' if normalized_checkout_key else 'generated'}"
+            ),
+            "trace_id": trace_id,
+        },
+    )
 
     if session_id:
         await db.execute(text("DELETE FROM cart_items WHERE session_id = :sid"), {"sid": session_id})

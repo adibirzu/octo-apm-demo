@@ -321,6 +321,8 @@ async def create_order(payload: dict, request: Request):
             source="orders_api",
         )
         span.set_attribute("orders.order_id", order_result["order"]["id"])
+        span.set_attribute("orders.user_id", int(order_result["order"].get("user_id") or 0))
+        span.set_attribute("orders.customer_id", int(order_result["order"].get("customer_id") or 0))
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
         span.set_attribute("integration.crm_order_synced", bool(crm_sync.get("synced")))
