@@ -25,7 +25,9 @@ def test_shop_observability_capabilities_are_dashboard_safe() -> None:
     assert "api_gateway" in payload["signals"]["traces"]["span_enrichment"]
     assert "oci_genai" in payload["signals"]["traces"]["span_enrichment"]
     assert "llmetry" in payload["signals"]["traces"]["span_enrichment"]
-    assert payload["signals"]["ai"]["assistant_endpoint"] == "/api/shop/assistant/query"
+    assert payload["signals"]["ai"]["assistant_endpoint"] == "/api/admin/assistant/query"
+    assert payload["signals"]["ai"]["selectai_endpoint"] == "/api/workflow-gateway/api/selectai/generate"
+    assert payload["signals"]["ai"]["admin_required"] is True
     assert payload["signals"]["ai"]["llmetry_enabled"] is True
     assert payload["signals"]["ai"]["llmetry_store"] == "llmetry_events"
     assert "llm.prompt.hash" in payload["signals"]["ai"]["correlation_fields"]

@@ -236,3 +236,10 @@ def require_role(request: Request, *roles: str) -> dict[str, Any]:
             detail="Insufficient permissions",
         )
     return payload
+
+
+def require_admin_or_internal_service(request: Request) -> dict[str, Any]:
+    """Require a shop admin token or the configured service-to-service key."""
+    if _is_internal_service_call(request):
+        return require_internal_service(request)
+    return require_role(request, "admin")
