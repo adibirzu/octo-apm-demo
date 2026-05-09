@@ -295,8 +295,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 INSERT INTO users (username, email, password_hash, role) VALUES
     ('admin', 'admin@mushop.local', '$2b$12$LJ3X5wKv7IfAzGMkVbHDneFQ3KQJXhHjqW/Tq3hXqp6NpXq8vU5Lm', 'admin'),
-    ('shopper', 'shopper@mushop.local', '$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'user'),
-    ('manager', 'manager@mushop.local', '$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'manager')
+    ('shopper', 'shopper@mushop.local', '$2b$12$J11Bx1w9DCz1iy/niMaYV.9aVkWmgH0bwdOFtm4mB6wNr3yR0GC8m', 'user'),
+    ('manager', 'manager@mushop.local', '$2b$12$wk1/3sDuKbmd4YRplGtlm.6mQ82Lu00nQ2LIWsUO3apU.ACGiYXX.', 'manager')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO products (name, sku, description, price, stock, category, image_url) VALUES

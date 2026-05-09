@@ -16,7 +16,7 @@ import {
 } from './helpers';
 
 const SHOPPER_USERNAME = process.env.SHOP_E2E_USERNAME ?? 'shopper';
-const SHOPPER_PASSWORD = process.env.SHOP_E2E_PASSWORD ?? '';
+const SHOPPER_PASSWORD = process.env.SHOP_E2E_PASSWORD ?? 'OrderDemo2026!';
 
 interface LoginResult {
   token: string;

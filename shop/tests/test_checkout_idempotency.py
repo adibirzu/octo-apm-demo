@@ -34,6 +34,7 @@ class _FakeDb:
         self.orders: list[dict[str, Any]] = []
         self.order_items: dict[int, list[dict[str, Any]]] = {}
         self.shipments: dict[int, dict[str, Any]] = {}
+        self.audit_logs: list[dict[str, Any]] = []
         self.order_insert_count = 0
 
     async def execute(self, statement: Any, params: dict[str, Any] | None = None) -> _Rows:
@@ -94,6 +95,10 @@ class _FakeDb:
             }
             return _Rows()
 
+        if "INSERT INTO audit_logs" in sql:
+            self.audit_logs.append(params)
+            return _Rows()
+
         if "FROM order_items WHERE order_id" in sql:
             items = self.order_items.get(params["order_id"], [])
             subtotal = sum(item["quantity"] * item["unit_price"] for item in items)
@@ -146,6 +151,31 @@ def test_place_order_reuses_existing_order_for_same_checkout_key() -> None:
     assert db.order_insert_count == 1
     assert first["order"]["id"] == replay["order"]["id"]
     assert replay["idempotent_replay"] is True
+
+
+def test_place_order_audit_log_uses_authenticated_user_id() -> None:
+    db = _FakeDb()
+    customer = {"id": 7, "email": "buyer@example.invalid", "name": "Buyer"}
+    items = [{"product_id": 11, "quantity": 2, "price": 100.0}]
+
+    order = asyncio.run(
+        place_order(
+            db,
+            customer=customer,
+            items=items,
+            shipping_address="Dock 1",
+            checkout_idempotency_key="550e8400-e29b-41d4-a716-446655440010",
+            session_id="browser-session-1",
+            source="shop_checkout",
+            trace_id="trace-1",
+            user_id=42,
+        )
+    )
+
+    assert order["order"]["id"] == 1
+    assert db.audit_logs[0]["user_id"] == 42
+    assert "customer_id=7" in db.audit_logs[0]["details"]
+    assert "actor_user_id=42" in db.audit_logs[0]["details"]
 
 
 def test_update_order_payment_state_persists_gateway_request_id() -> None:

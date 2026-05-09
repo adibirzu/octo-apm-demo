@@ -329,6 +329,8 @@ async def checkout(payload: dict, request: Request):
             payment_gateway_request_id=payment_gateway_request_id,
         )
         span.set_attribute("orders.order_id", order_result["order"]["id"])
+        span.set_attribute("orders.user_id", int(order_result["order"].get("user_id") or 0))
+        span.set_attribute("orders.customer_id", int(order_result["order"].get("customer_id") or 0))
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
         span.set_attribute("orders.subtotal", order_result.get("subtotal", order_result["total"]))
