@@ -43,12 +43,12 @@ async def _write_login_audit(
     await db.execute(
         text(
             "INSERT INTO audit_logs (user_id, action, resource, details, ip_address, user_agent, trace_id) "
-            "VALUES (:user_id, :action, :resource, :details, :ip_address, :user_agent, :trace_id)"
+            "VALUES (:user_id, :action, :audit_resource, :details, :ip_address, :user_agent, :trace_id)"
         ),
         {
             "user_id": user_id,
             "action": action,
-            "resource": resource,
+            "audit_resource": resource,
             "details": (
                 f"username={username or 'anonymous'}; result={'success' if success else 'failure'}; "
                 f"reason={reason}; browser_trace_id={browser_trace_id or 'n/a'}"
