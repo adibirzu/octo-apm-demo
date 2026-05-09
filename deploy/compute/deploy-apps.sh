@@ -313,31 +313,14 @@ fail() {
 set_env_var() {
     local name="$1"
     local value="$2"
-    python3 - "${ENV_FILE}" "${name}" "${value}" <<'PYENV'
-import pathlib
-import shlex
-import sys
-
-path = pathlib.Path(sys.argv[1])
-name = sys.argv[2]
-value = sys.argv[3]
-new_line = f"{name}={shlex.quote(value)}"
-lines = path.read_text(encoding="utf-8").splitlines()
-updated = False
-rendered = []
-for line in lines:
-    if line.startswith(f"{name}="):
-        rendered.append(new_line)
-        updated = True
-    else:
-        rendered.append(line)
-if not updated:
-    rendered.append(new_line)
-tmp = path.with_name(f"{path.name}.tmp")
-tmp.write_text("\n".join(rendered) + "\n", encoding="utf-8")
-tmp.chmod(0o600)
-tmp.replace(path)
-PYENV
+    local escaped
+    escaped="$(printf '%q' "${value}")"
+    if grep -q "^${name}=" "${ENV_FILE}"; then
+        sed -i.bak "s|^${name}=.*|${name}=${escaped}|" "${ENV_FILE}"
+    else
+        printf '%s=%s\n' "${name}" "${escaped}" >>"${ENV_FILE}"
+    fi
+    chmod 0600 "${ENV_FILE}"
 }
 
 retag_image() {
@@ -358,11 +341,8 @@ retag_image() {
 }
 
 if [[ "$(id -u)" -ne 0 ]]; then
-    if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
-        log "re-executing deployment script with sudo"
-        exec sudo -n /usr/bin/env bash "$0"
-    fi
-    fail "OCI Run Command must run as root or have passwordless sudo; check Oracle Cloud Agent privileges"
+    command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1 && exec sudo -n bash "$0"
+    fail "root or passwordless sudo required"
 fi
 
 if [[ ! -f "${ENV_FILE}" ]]; then
@@ -579,6 +559,13 @@ while IFS=$'\t' read -r role instance_id; do
     [[ -n "${APP_IMAGE_BUILD_ENABLED}" ]] && printf 'APP_IMAGE_BUILD_ENABLED: %s\n' "${APP_IMAGE_BUILD_ENABLED}"
 
     if [[ "${APPLY}" != "true" ]]; then
+        text_bytes="$(python3 - "${payload_file}" <<'PY'
+import json
+import sys
+print(len(json.load(open(sys.argv[1], encoding="utf-8"))["content"]["source"]["text"].encode("utf-8")))
+PY
+)"
+        printf 'Run Command text bytes: %s\n' "${text_bytes}"
         printf 'Would create OCI Run Command: octo-compute-%s-app-deploy\n' "${role}"
         continue
     fi
