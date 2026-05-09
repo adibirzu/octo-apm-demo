@@ -358,8 +358,13 @@ retag_image() {
 }
 
 if [[ "$(id -u)" -ne 0 ]]; then
-    fail "OCI Run Command must run as root; check Oracle Cloud Agent privileges"
+    if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+        log "re-executing deployment script with sudo"
+        exec sudo -n /usr/bin/env bash "$0"
+    fi
+    fail "OCI Run Command must run as root or have passwordless sudo; check Oracle Cloud Agent privileges"
 fi
+
 if [[ ! -f "${ENV_FILE}" ]]; then
     fail "missing ${ENV_FILE}; render/copy runtime.env before app promotion"
 fi
