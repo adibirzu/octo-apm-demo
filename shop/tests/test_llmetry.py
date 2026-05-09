@@ -10,7 +10,7 @@ def test_assistant_llmetry_uses_hashes_not_raw_prompt_content() -> None:
         message="Can jane@example.test use card 4111 1111 1111 1111 for a Skydio X10?",
         answer="The Skydio X10 supports public safety payloads.",
         provider="oci_genai",
-        model_id="cohere.command-r-plus",
+        model_id="cohere.command-r-08-2024",
         usage={"input_tokens": 11, "output_tokens": 7},
         documents_grounded=3,
         guardrail_allowed=True,
@@ -28,7 +28,11 @@ def test_assistant_llmetry_uses_hashes_not_raw_prompt_content() -> None:
     assert attrs["gen_ai.usage.input_tokens"] == 11
     assert attrs["gen_ai.usage.output_tokens"] == 7
     assert attrs["langfuse.observation.type"] == "generation"
+    assert attrs["langfuse.project.name"] == attrs["assistant.project.name"]
+    assert attrs["langfuse.observation.metadata.project"] == attrs["assistant.project.name"]
+    assert attrs["llmetry.project.name"] == attrs["assistant.project.name"]
     assert attrs["langfuse.user.id"] == "domain:example.test"
+    assert "project_name" in event["metadata_json"]
 
 
 def test_langfuse_otlp_endpoint_normalizes_hosts() -> None:

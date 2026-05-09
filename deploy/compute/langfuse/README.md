@@ -49,6 +49,7 @@ curl -fsS http://127.0.0.1:${LANGFUSE_WEB_PORT:-33000}/api/public/health
 ```bash
 LANGFUSE_ENABLED=true
 LANGFUSE_HOST=${LANGFUSE_PUBLIC_URL}
+LANGFUSE_PROJECT_NAME=drones.octodemo.cloud
 LANGFUSE_PUBLIC_KEY=<project-public-key>
 LANGFUSE_SECRET_KEY_FILE=/opt/octo/secrets/langfuse-secret-key
 LANGFUSE_OTEL_EXPORT_ENABLED=true

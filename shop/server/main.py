@@ -245,10 +245,15 @@ async def ready():
             "payment_gateway_simulation_enabled": cfg.payment_gateway_simulation_enabled,
             "workflow_gateway_configured": cfg.workflow_gateway_configured,
             "selectai_configured": cfg.selectai_configured,
-            "genai_configured": bool(cfg.oci_compartment_id and cfg.oci_genai_endpoint and cfg.oci_genai_model_id),
+            "genai_configured": cfg.genai_configured,
+            "genai_endpoint_host": cfg.genai_endpoint_host or None,
+            "genai_model_id": cfg.oci_genai_model_id or None,
             "llmetry_enabled": cfg.llmetry_enabled,
             "llmetry_store_enabled": cfg.llmetry_store_enabled,
+            "llmetry_project_name": cfg.langfuse_project_name,
             "langfuse_configured": cfg.langfuse_configured,
+            "langfuse_host": cfg._public_url_or_empty(cfg.langfuse_host) or None,
+            "langfuse_project_name": cfg.langfuse_project_name,
             "runtime": runtime_snapshot(),
         }
 
@@ -317,7 +322,7 @@ def _render_page(request: Request, page: str, title: str, **ctx):
          "java_apm_enabled": cfg.java_apm_enabled,
          "payment_gateway_simulation_enabled": cfg.payment_gateway_simulation_enabled,
          "idcs_configured": cfg.idcs_configured,
-         "genai_configured": bool(cfg.oci_genai_endpoint and cfg.oci_genai_model_id),
+         "genai_configured": cfg.genai_configured,
          "app_name": cfg.app_name, **ctx},
     )
 

@@ -291,6 +291,7 @@ export OCI_GENAI_MODEL_ID='<optional OCI GenAI model id>'
 export LLMETRY_CAPTURE_CONTENT=false
 export LANGFUSE_ENABLED=false
 export LANGFUSE_HOST='https://langfuse.example.test'
+export LANGFUSE_PROJECT_NAME='drones.octodemo.cloud'
 export LANGFUSE_PUBLIC_KEY='<optional Langfuse project public key>'
 export LANGFUSE_SECRET_KEY='<optional Langfuse project secret key>'
 export OCIR_USERNAME='<optional OCIR username>'

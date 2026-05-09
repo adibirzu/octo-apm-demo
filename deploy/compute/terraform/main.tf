@@ -133,6 +133,7 @@ locals {
       LLMETRY_CAPTURE_CONTENT        = tostring(var.llmetry_capture_content)
       LANGFUSE_ENABLED               = tostring(var.langfuse_enabled)
       LANGFUSE_HOST                  = var.langfuse_host
+      LANGFUSE_PROJECT_NAME          = var.langfuse_project_name
       LANGFUSE_PUBLIC_KEY            = var.langfuse_public_key
       LANGFUSE_SECRET_KEY            = var.langfuse_secret_key
       LANGFUSE_OTEL_EXPORT_ENABLED   = "true"
@@ -206,6 +207,7 @@ locals {
       LLMETRY_CAPTURE_CONTENT        = "false"
       LANGFUSE_ENABLED               = "false"
       LANGFUSE_HOST                  = ""
+      LANGFUSE_PROJECT_NAME          = ""
       LANGFUSE_PUBLIC_KEY            = ""
       LANGFUSE_SECRET_KEY            = ""
       LANGFUSE_OTEL_EXPORT_ENABLED   = "false"

@@ -125,6 +125,10 @@ class Config:
     selectai_profile_name = _env_value("SELECTAI_PROFILE_NAME", "")
 
     # ── LLM telemetry / Langfuse comparison ──
+    _langfuse_project_name = _env_value(
+        "LANGFUSE_PROJECT_NAME",
+        _env_value("LANGFUSE_PROJECT", ""),
+    )
     llmetry_enabled = _env_bool("LLMETRY_ENABLED", True)
     llmetry_store_enabled = _env_bool("LLMETRY_STORE_ENABLED", True)
     # Raw prompts/responses are not emitted by default. When enabled, the
@@ -211,6 +215,10 @@ class Config:
         return self._hostname_from_url(self.crm_public_url)
 
     @property
+    def shop_public_hostname(self) -> str:
+        return self._hostname_from_url(self.shop_public_url)
+
+    @property
     def workflow_public_api_base_url(self) -> str:
         if self._workflow_public_api_base_url:
             return self._workflow_public_api_base_url
@@ -245,6 +253,23 @@ class Config:
     @property
     def selectai_configured(self) -> bool:
         return bool(self.selectai_profile_name)
+
+    @property
+    def genai_configured(self) -> bool:
+        return bool(self.oci_compartment_id and self.oci_genai_endpoint and self.oci_genai_model_id)
+
+    @property
+    def genai_endpoint_host(self) -> str:
+        return self._hostname_from_url(self.oci_genai_endpoint)
+
+    @property
+    def langfuse_project_name(self) -> str:
+        return (
+            self._langfuse_project_name.strip()
+            or self.shop_public_hostname
+            or self.oci_apm_web_application
+            or self.app_name
+        )
 
     @property
     def langfuse_configured(self) -> bool:
@@ -330,13 +355,18 @@ class Config:
             "rum_configured": self.rum_configured,
             "logging_configured": self.logging_configured,
             "splunk_configured": bool(self.splunk_hec_url and self.splunk_hec_token),
-            "genai_configured": bool(self.oci_compartment_id and self.oci_genai_endpoint and self.oci_genai_model_id),
+            "oci_auth_mode": self.oci_auth_mode,
+            "genai_configured": self.genai_configured,
+            "genai_endpoint_host": self.genai_endpoint_host or None,
+            "genai_model_id": self.oci_genai_model_id or None,
             "selectai_configured": self.selectai_configured,
             "llmetry_enabled": self.llmetry_enabled,
             "llmetry_store_enabled": self.llmetry_store_enabled,
             "llmetry_capture_content": self.llmetry_capture_content,
+            "llmetry_project_name": self.langfuse_project_name,
             "langfuse_configured": self.langfuse_configured,
             "langfuse_host": self._public_url_or_empty(self.langfuse_host) or None,
+            "langfuse_project_name": self.langfuse_project_name,
             "crm_configured": bool(self.enterprise_crm_url),
             "crm_host": self.crm_public_hostname or None,
             "crm_public_url": self.crm_public_url or None,

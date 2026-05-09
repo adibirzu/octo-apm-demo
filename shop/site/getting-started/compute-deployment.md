@@ -205,7 +205,8 @@ restart `octo-compute.service`.
 For the assistant demo, set `OCI_GENAI_ENDPOINT` and
 `OCI_GENAI_MODEL_ID` on the Shop runtime when OCI GenAI is available. Optional
 Langfuse comparison uses `LANGFUSE_ENABLED`, `LANGFUSE_HOST`,
-`LANGFUSE_PUBLIC_KEY`, and `LANGFUSE_SECRET_KEY` or their `*_FILE` variants.
+`LANGFUSE_PROJECT_NAME`, `LANGFUSE_PUBLIC_KEY`, and `LANGFUSE_SECRET_KEY`
+or their `*_FILE` variants.
 Keep `LLMETRY_CAPTURE_CONTENT=false` unless you are running a controlled
 redacted-content demo; the default export uses hashes, token counts, guardrail
 fields, trace IDs, and session IDs.
