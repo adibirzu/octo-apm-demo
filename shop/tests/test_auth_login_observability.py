@@ -128,7 +128,7 @@ def test_login_success_writes_audit_and_trace_attributes(monkeypatch: pytest.Mon
     assert db.last_login_updates == [41]
     assert db.audit_logs[0]["action"] == "auth.login.success"
     assert db.audit_logs[0]["user_id"] == 41
-    assert db.audit_logs[0]["resource"] == "users/41"
+    assert db.audit_logs[0]["audit_resource"] == "users/41"
     assert "browser_trace_id=abc123abc123abc123abc123abc123ab" in db.audit_logs[0]["details"]
     assert tracer.span.attributes["auth.success"] is True
     assert tracer.span.attributes["auth.user_id"] == 41
