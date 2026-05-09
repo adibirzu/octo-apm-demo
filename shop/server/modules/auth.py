@@ -42,15 +42,14 @@ async def _write_login_audit(
     resource = f"users/{user_id}" if user_id else "auth/login"
     await db.execute(
         text(
-            "INSERT INTO audit_logs (user_id, action, resource, details, ip_address, user_agent, trace_id) "
-            "VALUES (:user_id, :action, :audit_resource, :details, :ip_address, :user_agent, :trace_id)"
+            "INSERT INTO audit_logs (user_id, action, details, ip_address, user_agent, trace_id) "
+            "VALUES (:user_id, :action, :details, :ip_address, :user_agent, :trace_id)"
         ),
         {
             "user_id": user_id,
             "action": action,
-            "audit_resource": resource,
             "details": (
-                f"username={username or 'anonymous'}; result={'success' if success else 'failure'}; "
+                f"resource={resource}; username={username or 'anonymous'}; result={'success' if success else 'failure'}; "
                 f"reason={reason}; browser_trace_id={browser_trace_id or 'n/a'}"
             ),
             "ip_address": source_ip,
