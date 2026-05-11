@@ -19,6 +19,8 @@ def test_crm_observability_capabilities_are_dashboard_safe() -> None:
         "oracleApmTraceId",
         "oracleApmSpanId",
     ]
+    assert payload["signals"]["rum"]["same_origin_w3c_trace_propagation"] is True
+    assert payload["signals"]["rum"]["login_actions"] == ["auth.login.submit", "auth.login.result"]
     assert "order_sync" in payload["signals"]["metrics"]["business_metric_families"]
     assert payload["signals"]["database"]["sql_id_enrichment"] in (True, False)
     assert payload["privacy"]["raw_shared_secret_exposed"] is False

@@ -22,6 +22,14 @@ emit `coordinator.surface`, `coordinator.host`, `coordinator.scope`,
 `coordinator.allowed`, `coordinator.topic`, `trace_id`, and
 `oracleApmTraceId` for APM and Log Analytics drilldown.
 
+Later on May 11, the CRM frontend was aligned with OCI APM RUM W3C trace
+propagation. Same-origin browser calls now use the instrumented fetch path
+with `headers: ["W3C"]`, while the native fetch handle remains only as a
+fallback. The login form emits sanitized RUM actions (`auth.login.submit`
+and `auth.login.result`) without usernames or passwords, so login and admin
+actions can be followed from RUM to backend spans, ATP queries, and
+`oracleApmTraceId` logs.
+
 May 4, 2026 update: the private two-instance Compute Resource Manager
 stack has been applied in the `<OCI_PROFILE>` profile as a new deployment for
 `shop.example.test` and `crm.example.test`. It is separate from

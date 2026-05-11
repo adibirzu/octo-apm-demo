@@ -29,6 +29,11 @@ See [integrations/cross-service-contract.md](integrations/cross-service-contract
 | `request_id` (`X-Request-Id`) | middleware | WAF ↔ app |
 | `workflow_id` | middleware | LA dashboards, playbooks |
 
+The CRM browser uses OCI APM RUM W3C propagation for same-origin API calls.
+That lets login and admin actions join to backend spans such as `auth.login`,
+`db.user_lookup`, and `admin.coordinator.query`, then to logs through
+`trace_id` / `oracleApmTraceId`.
+
 ## Chaos admin
 
 - UI: `/admin/chaos` (role `chaos-operator`).

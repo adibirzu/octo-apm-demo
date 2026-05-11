@@ -11,7 +11,8 @@
     <script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
         window.__nativeFetch = window.fetch.bind(window);
         window.__NativeXHR = window.XMLHttpRequest;
-        window._fetch = window.__nativeFetch;
+        window.octoFetch = (...args) => window.fetch(...args);
+        window._fetch = window.octoFetch;
         window.apmrum = (window.apmrum || {});
         window.apmrum.serviceName = '{{ service_name }}';
         window.apmrum.webApplication = '{{ app_name }}-frontend';
@@ -41,9 +42,10 @@
             { name: "synthetic_user_domain", value: () => window.apmrum.syntheticUserDomain || undefined },
             { name: "synthetic_user_enabled", value: () => window.apmrum.username ? "true" : "false" }
         ]);
-        /* Prevent RUM from adding tracing headers to app API calls */
+        /* Let OCI APM RUM propagate W3C trace context to same-origin app APIs. */
+        const octoHostPattern = window.location.host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         window.apmrum.traceSupportingEndpoints = [
-            { hostPattern: '.*', headers: [] }
+            { hostPattern: octoHostPattern, headers: ["W3C"] }
         ];
     </script>
     <script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}" async crossorigin="anonymous" src="{{ rum_endpoint }}/static/jslib/apmrum.min.js"></script>
