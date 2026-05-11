@@ -247,28 +247,33 @@ async def checkout(payload: dict, request: Request):
                 "orders.checkout_idempotency_key_hash",
                 sha256(checkout_idempotency_key.encode("utf-8")).hexdigest()[:16],
             )
+        anonymous_customer_email: str | None = None
+        if not _request_has_auth_token(request):
+            try:
+                anonymous_customer_email = normalize_customer_email(payload.get("customer_email") or "")
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
         crm_customer_sync = await sync_customers_from_crm(force=False, limit=200, source="shop_checkout")
         async with get_db() as db:
-            items = await fetch_cart_items(db, session_id)
-            if not items and payload.get("items"):
-                items = await resolve_direct_items(db, payload["items"])
-            if not items:
-                business_metrics.record_checkout(success=False)
-                return {"error": "Cart is empty", "session_id": session_id}
-
             checkout_user = await _optional_checkout_user(db, request)
             if checkout_user:
                 span.set_attribute("auth.user_id", int(checkout_user["id"]))
                 span.set_attribute("auth.username", str(checkout_user["username"]))
                 span.set_attribute("auth.role", str(checkout_user["role"]))
-            default_email = str(checkout_user["email"]) if checkout_user else "buyer@octo.local"
+            default_email = str(checkout_user["email"]) if checkout_user else ""
             default_name = str(checkout_user["username"]) if checkout_user else "OCTO Buyer"
             try:
                 customer_email = normalize_customer_email(
-                    payload.get("customer_email") or (default_email if checkout_user else ""),
+                    payload.get("customer_email") or default_email or anonymous_customer_email or "",
                 )
             except ValueError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
+            items = await fetch_cart_items(db, session_id)
+            if not items and payload.get("items"):
+                items = await resolve_direct_items(db, payload["items"])
+            if not items:
+                business_metrics.record_checkout(success=False)
+                raise HTTPException(status_code=400, detail="Cart is empty")
             customer_name = str(payload.get("customer_name") or default_name)
             customer = await ensure_customer(
                 db,

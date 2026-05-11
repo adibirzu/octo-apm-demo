@@ -64,6 +64,43 @@ flowchart TD
 | **Custom Metrics** | OCI Monitoring | Alarm triggers |
 | **DB Performance** | DB Management / OPSI | SQL root cause |
 
+## OCTO DEMO OKE Coordinator Readiness
+
+May 11, 2026 `emdemo` status:
+
+| Capability | Current State | Notes |
+|---|---|---|
+| Ask the live websites | Ready | `drones.octodemo.cloud` and `admin.octodemo.cloud` `/ready` return HTTP 200 through the preserved OCI Load Balancer. |
+| Ask OCI APM | Ready from app side | Shop/CRM emit OTel traces, RUM is configured, and the Java APM sidecar is enabled on the Shop VM. |
+| Ask OCI Logging | Ready | Fresh app records carry `oracleApmTraceId`, `trace_id`, route, status, service, DB target, and deployment metadata. |
+| Ask Log Analytics | Partially blocked | The Log Analytics namespace/log group exist, but no OCTO app source/parser rows are present because Service Connector Hub quota is exhausted for new routes. |
+| Install Coordinator on OKE | Blocked on target cluster | Existing OKE clusters are in the quickstart VCN; no ACTIVE OKE cluster exists in the OCTO project VCN yet. |
+
+For an OKE-hosted Coordinator, use instance principal or workload identity for
+OCI API authentication and keep the dynamic group/policy scoped to the OCTO
+DEMO compartment. The minimum read path is:
+
+- read APM domains and traces for the OCTO APM domain
+- read Logging log groups/logs for the OCTO app log group
+- read Log Analytics queries once the OCTO source/parser/connector path is
+  active
+- read Monitoring alarms and metrics for the OCTO namespaces
+- read OKE cluster/node/pod state for the selected same-VCN cluster
+
+Until Log Analytics routing is unblocked, Coordinator question answering should
+prefer OCI Logging queries by `oracleApmTraceId` and use Log Analytics only for
+shared/non-OCTO sources that are already routed.
+
+Example Coordinator questions that are supported once deployed:
+
+| Question | Required data |
+|---|---|
+| "Which user login led to this order?" | APM trace, app logs, `auth.user_id`, order fields, DB audit rows |
+| "Why did this checkout fail?" | `payment.gateway.request_id`, payment simulation spans/logs, order payment state |
+| "What backend calls made this page slow?" | APM trace spans, DB span attributes, Workflow Gateway spans |
+| "Which guardrail blocked this request?" | security span/log fields and checkout security saved searches |
+| "Did this incident reach the database?" | `trace_id`/`oracleApmTraceId` plus DB statement/sql-id span attributes |
+
 ## Remediation Actions
 
 ### Infrastructure (via kubectl MCP)

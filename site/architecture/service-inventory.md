@@ -27,6 +27,25 @@ and which correlation-contract fields it emits.
 | 8b | `octo-vm-lab` | `services/vm-lab/` | cloud-init + systemd-wrapped stress-ng on a dedicated VM. |
 | 9 | `octo-remediator` | `services/remediator/` | Alarm-driven recovery. Tier-gated playbooks (LOW auto, MEDIUM conditional, HIGH approval). |
 
+## Placement By Deployment Type
+
+| Component | OKE | Two-instance Compute | Unified VM |
+|---|---|---|---|
+| Drone Shop | `octo-drone-shop` Deployment + public LB Service | `octo-compute.service` on the private Shop VM | local app process/container |
+| Enterprise CRM Portal | `enterprise-crm-portal` Deployment + public LB Service | `octo-compute.service` on the private CRM VM | local app process/container |
+| Java APM sidecar | sidecar/Deployment option for App Server and JVM metrics | `octo-java-apm` Podman container on the Shop VM | optional local sidecar |
+| Workflow Gateway | `octo-workflow-gateway` Deployment/Service | `octo-workflow-gateway` Podman container on the Shop VM | optional local service |
+| Browser Runner | Kubernetes Job launched by load-control | local Playwright E2E against public hosts | local Playwright E2E |
+| Load Control | service Deployment when enabled | not currently deployed on private Compute | optional local service |
+| Remediator | service Deployment when enabled | not currently deployed on private Compute | optional local service |
+| OTel Gateway | collector Deployment when enabled | not required; apps export directly to OCI APM | optional collector |
+| Langfuse | low-resource `octo-langfuse` namespace on OKE | external `lf.octodemo.cloud` used by live Shop | optional external |
+
+The May 11, 2026 `emdemo` live Compute deployment currently runs Shop, CRM,
+the Java APM sidecar, and the Workflow Gateway. The OKE manifests cover the
+same app/service contracts, but the target OCTO project VCN still needs a new
+or selected OKE cluster before those manifests can be applied there.
+
 ## Tooling
 
 | Tool | Path | Purpose |
