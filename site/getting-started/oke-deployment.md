@@ -36,6 +36,19 @@ driver is installed.
 
 Full walkthrough: [deploy/oke/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/oke/README.md).
 
+## Langfuse Test Environment
+
+For a dedicated low-resource Langfuse environment on OKE:
+
+```bash
+./deploy/oke/deploy-langfuse.sh --check
+LANGFUSE_HOSTNAME=langfuse.octodemo.cloud ./deploy/oke/deploy-langfuse.sh
+```
+
+The script targets the same OCTO project VCN by default, deploys one replica
+per Langfuse component, and can update the Shop `octo-llmetry` secret after
+project ingestion keys are created.
+
 ## Security posture
 
 | Control | Where |

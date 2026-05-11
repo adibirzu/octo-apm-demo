@@ -176,6 +176,12 @@ spec:
                   name: octo-llmetry
                   key: langfuse-host
                   optional: true
+            - name: LANGFUSE_PROJECT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: octo-llmetry
+                  key: langfuse-project-name
+                  optional: true
             - name: LANGFUSE_PUBLIC_KEY
               valueFrom:
                 secretKeyRef:
