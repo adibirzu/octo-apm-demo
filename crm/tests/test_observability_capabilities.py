@@ -10,6 +10,9 @@ def test_crm_observability_capabilities_are_dashboard_safe() -> None:
 
     assert payload["endpoints"]["capabilities"] == "/api/observability/capabilities"
     assert payload["endpoints"]["frontend_ingest"] == "/api/observability/frontend"
+    assert payload["endpoints"]["admin_coordinator"] == "/api/admin/coordinator/query"
+    assert payload["signals"]["admin_coordinator"]["surface"] == "admin.octodemo.cloud"
+    assert payload["signals"]["admin_coordinator"]["scope"] == "octo-apm-demo"
     assert payload["signals"]["logs"]["trace_correlation_fields"] == [
         "trace_id",
         "span_id",
