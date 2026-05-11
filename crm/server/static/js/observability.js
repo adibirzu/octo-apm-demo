@@ -8,7 +8,7 @@
 (() => {
     'use strict';
 
-    const _fetch = window.__nativeFetch || window.fetch.bind(window);
+    const _fetch = window.octoFetch || ((...args) => window.fetch(...args));
     const viewId = (crypto.randomUUID ? crypto.randomUUID() :
         'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
             const r = Math.random() * 16 | 0;
@@ -143,7 +143,7 @@
     // ── API Call Tracking ─────────────────────────────────────────
     // Wrap fetch to capture API latency and failures from the frontend perspective.
     const originalFetch = _fetch;
-    window.__nativeFetch = async function(...args) {
+    window.octoFetch = async function(...args) {
         const url = typeof args[0] === 'string' ? args[0] :
                     (args[0] instanceof Request ? args[0].url : '');
 
@@ -175,6 +175,5 @@
             throw err;
         }
     };
-    // Also update the module-level _fetch alias used by app.js
-    window._fetch = window.__nativeFetch;
+    window._fetch = window.octoFetch;
 })();

@@ -9,7 +9,7 @@
         <div class="login-divider"><span>or sign in locally</span></div>
         {% endif %}
 
-        <form id="login-form" onsubmit="doLogin(event)">
+        <form id="login-form" onsubmit="doLogin(event)" data-rum-action="auth.login.submit">
             <label>Username</label>
             <input type="text" id="login-username" name="username" class="form-input" required>
             <label>Password</label>
@@ -27,6 +27,9 @@ async function doLogin(e) {
     e.preventDefault();
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
+    if (window.octoRumEvent) {
+        window.octoRumEvent('auth.login.submit', { auth_method: 'password' });
+    }
     try {
         const resp = await _fetch('/api/auth/login', {
             method: 'POST',
@@ -35,12 +38,24 @@ async function doLogin(e) {
         });
         const data = await resp.json();
         if (data.status === 'success') {
+            if (window.octoRumEvent) {
+                window.octoRumEvent('auth.login.result', {
+                    status: 'success',
+                    role: data.user && data.user.role ? data.user.role : 'unknown',
+                });
+            }
             window.location.href = '/';
         } else {
+            if (window.octoRumEvent) {
+                window.octoRumEvent('auth.login.result', { status: data.status || 'failed' });
+            }
             document.getElementById('login-error').textContent = data.error;
             document.getElementById('login-error').classList.remove('hidden');
         }
     } catch (e) {
+        if (window.octoRumEvent) {
+            window.octoRumEvent('auth.login.result', { status: 'error' });
+        }
         document.getElementById('login-error').textContent = 'Login failed: ' + e.message;
         document.getElementById('login-error').classList.remove('hidden');
     }

@@ -1,6 +1,9 @@
 # Cross-Service Distributed Tracing
 
-Both services propagate W3C `traceparent` headers on every cross-service call, creating distributed traces visible in OCI APM Topology.
+Both services propagate W3C `traceparent` headers on cross-service calls, and
+same-origin browser calls are configured for W3C propagation from OCI APM RUM
+into backend spans. This creates distributed traces visible in OCI APM Topology
+and Trace Explorer.
 
 ## Trace Flow
 
@@ -12,6 +15,7 @@ flowchart LR
     ATP["Oracle ATP<br/>SQL_ID spans"]
 
     Browser -->|"traceparent: 00-abc...01"| Shop
+    Browser -->|"W3C trace context"| CRM
     Shop -->|"traceparent: 00-abc...01"| CRM
     Shop -->|"CLIENT_IDENTIFIER=abc"| ATP
     CRM -->|"CLIENT_IDENTIFIER=abc"| ATP
@@ -21,7 +25,7 @@ flowchart LR
 
 | Header/Field | Propagated By | Visible In |
 |---|---|---|
-| `traceparent` | W3C standard (HTTPXClientInstrumentor) | APM Trace Explorer |
+| `traceparent` | W3C standard (RUM + HTTPXClientInstrumentor) | APM Trace Explorer |
 | `X-Trace-Id` | Response header | Frontend correlation |
 | `X-Span-Id` | Response header | Frontend correlation |
 | `X-Correlation-Id` | Custom header (both services) | APM + Logs |
@@ -74,6 +78,21 @@ CRM: simulation.drone_shop_proxy
   ├── HTTP POST shop/api/simulate/* (X-Internal-Service-Key)
   └── Shop: simulation.set
        └── ChaosMiddleware state updated
+```
+
+### 4. CRM Login and Admin Coordinator
+
+```
+Browser RUM action: auth.login.submit
+  └── CRM: auth.login
+       ├── db.user_lookup
+       ├── auth.password_verify
+       └── INSERT user_sessions
+
+Browser RUM action: ui.click / admin coordinator
+  └── CRM: admin.coordinator.query
+       ├── coordinator.scope=octo-apm-demo
+       └── structured log: coordinator.allowed / coordinator.topic
 ```
 
 ## Verification in OCI Console

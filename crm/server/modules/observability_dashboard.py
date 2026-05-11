@@ -172,6 +172,8 @@ def _observability_capabilities() -> dict:
             "rum": {
                 "enabled": cfg.rum_configured,
                 "frontend_ingest_endpoint": "/api/observability/frontend",
+                "same_origin_w3c_trace_propagation": True,
+                "login_actions": ["auth.login.submit", "auth.login.result"],
             },
             "database": {
                 "target": cfg.database_target_label,
