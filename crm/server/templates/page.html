@@ -10,6 +10,22 @@
         <button onclick="loadData()" class="btn btn-primary">Refresh</button>
         <button onclick="showCreateForm()" class="btn btn-success" id="btn-create" style="display:none">+ New</button>
     </div>
+    {% if module == "admin" %}
+    <section class="coordinator-panel" id="admin-coordinator-panel" aria-label="OCI Coordinator">
+        <div class="coordinator-head">
+            <div>
+                <p class="eyebrow">Admin-only</p>
+                <h2>OCI Coordinator</h2>
+            </div>
+            <span class="status-value-pill is-healthy" id="coordinator-scope">octo-apm-demo</span>
+        </div>
+        <form class="coordinator-form" id="coordinator-form">
+            <textarea id="coordinator-question" class="form-input coordinator-input" rows="3" maxlength="1000" placeholder="Ask about admin users, orders, traces, logs, DB status, Select AI, or OCTO resources"></textarea>
+            <button type="submit" class="btn btn-primary" id="coordinator-submit">Ask</button>
+        </form>
+        <div class="coordinator-answer" id="coordinator-answer" aria-live="polite"></div>
+    </section>
+    {% endif %}
     <div class="card">
         <table class="data-table" id="data-table">
             <thead id="table-head"></thead>
@@ -147,6 +163,16 @@ const MODULE_CONFIG = {
 
 const config = MODULE_CONFIG[MODULE] || {};
 let _allData = [];
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[char]);
+}
 
 /* ── Stats Cards ────────────────────────────────────── */
 
@@ -548,6 +574,65 @@ async function executeReport(id) {
     }
 }
 
+function renderCoordinatorResponse(payload) {
+    const answer = document.getElementById('coordinator-answer');
+    if (!answer) return;
+    const tone = payload.allowed ? 'is-allowed' : 'is-blocked';
+    const sources = (payload.sources || []).map(source => `
+        <a href="${escapeHtml(source.endpoint)}" class="coordinator-source">${escapeHtml(source.label)}</a>
+    `).join('');
+    const actions = (payload.suggested_actions || []).map(action => `
+        <li>${escapeHtml(action)}</li>
+    `).join('');
+    answer.className = `coordinator-answer ${tone}`;
+    answer.innerHTML = `
+        <p>${escapeHtml(payload.answer || '')}</p>
+        ${sources ? `<div class="coordinator-sources">${sources}</div>` : ''}
+        ${actions ? `<ul class="coordinator-actions">${actions}</ul>` : ''}
+    `;
+}
+
+async function setupAdminCoordinator() {
+    if (MODULE !== 'admin') return;
+    const form = document.getElementById('coordinator-form');
+    const question = document.getElementById('coordinator-question');
+    const submit = document.getElementById('coordinator-submit');
+    const answer = document.getElementById('coordinator-answer');
+    if (!form || !question || !submit || !answer) return;
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const message = question.value.trim();
+        if (!message) {
+            answer.className = 'coordinator-answer is-blocked';
+            answer.innerHTML = '<p>Enter an OCTO APM Demo admin question.</p>';
+            return;
+        }
+        submit.disabled = true;
+        answer.className = 'coordinator-answer';
+        answer.innerHTML = '<p>Checking OCTO scope...</p>';
+        try {
+            const resp = await _fetch('/api/admin/coordinator/query', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    message,
+                    page: MODULE,
+                    context: { path: window.location.pathname },
+                }),
+            });
+            const payload = await resp.json();
+            if (!resp.ok) throw new Error(payload.detail || 'Coordinator request failed');
+            renderCoordinatorResponse(payload);
+        } catch (error) {
+            answer.className = 'coordinator-answer is-blocked';
+            answer.innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+        } finally {
+            submit.disabled = false;
+        }
+    });
+}
+
 /* ── Init ───────────────────────────────────────────── */
 
 if (config.createFields) document.getElementById('btn-create').style.display = '';
@@ -567,6 +652,7 @@ document.getElementById('search-input').addEventListener('keyup', (e) => {
     if (e.key === 'Enter') loadData();
 });
 
+setupAdminCoordinator();
 loadData();
 </script>
 {% endblock %}

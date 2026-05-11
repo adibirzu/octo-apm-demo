@@ -185,6 +185,20 @@ def _observability_capabilities() -> dict:
                 "session_gate": True,
                 "sso_configured": cfg.idcs_configured,
             },
+            "admin_coordinator": {
+                "enabled": True,
+                "surface": "admin.octodemo.cloud",
+                "scope": "octo-apm-demo",
+                "span_names": ["admin.coordinator.scope", "admin.coordinator.query"],
+                "log_fields": [
+                    "coordinator.surface",
+                    "coordinator.host",
+                    "coordinator.scope",
+                    "coordinator.allowed",
+                    "coordinator.topic",
+                    "coordinator.refusal_reason",
+                ],
+            },
         },
         "demo_generators": {
             "crm_simulation": {
@@ -210,6 +224,7 @@ def _observability_capabilities() -> dict:
             "dashboard": "/api/observability/360",
             "capabilities": "/api/observability/capabilities",
             "frontend_ingest": "/api/observability/frontend",
+            "admin_coordinator": "/api/admin/coordinator/query",
             "metrics": "/metrics",
             "readiness": "/ready",
             "integration_schema": "/api/integrations/schema",
