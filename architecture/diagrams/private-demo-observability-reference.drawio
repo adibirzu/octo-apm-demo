@@ -1,0 +1,217 @@
+<mxfile host="app.diagrams.net" modified="2026-05-07T12:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="private-demo-observability-reference" name="Private Demo Observability Reference">
+    <mxGraphModel dx="1800" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1120" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Private Compute Observability Reference&#10;OCI Observability demo - DNS in external DNS tenancy - preserved HTTPS 443 listener, certificate, and host routing" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#111827;fontColor=#FFFFFF;strokeColor=#111827;fontSize=24;fontStyle=1;align=left;spacingLeft=24;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="1720" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="external" value="External Entry Points" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;fontSize=16;fontStyle=1;align=left;spacingLeft=16;verticalAlign=top;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="320" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="browser" value="Browser Users&#10;Shop, Admin, RUM JS&#10;shop.example.test&#10;admin.example.test" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="70" y="170" width="260" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="availability" value="Availability Monitoring&#10;Phoenix, Ashburn, Frankfurt&#10;London, Tokyo, Sydney&#10;/ready global checks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;fontSize=14;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="70" y="278" width="260" height="72" as="geometry"/>
+        </mxCell>
+        <mxCell id="dns" value="DNS Zone in external DNS tenancy&#10;A records point to load balancer&#10;No IP values published" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDE68A;strokeColor=#D97706;fontSize=14;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="70" y="370" width="260" height="66" as="geometry"/>
+        </mxCell>
+        <mxCell id="oci" value="OCI private demo compartment - COMPARTMENT_NAME" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;fontSize=16;fontStyle=1;align=left;spacingLeft=16;verticalAlign=top;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="390" y="120" width="820" height="750" as="geometry"/>
+        </mxCell>
+        <mxCell id="publicSubnet" value="Public subnet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;fontSize=14;fontStyle=1;align=left;spacingLeft=12;verticalAlign=top;dashed=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="420" y="170" width="760" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="lb" value="OCI Load Balancer&#10;HTTPS listener 443&#10;manual SSL certificate&#10;host routing preserved" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="460" y="205" width="210" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="waf" value="OCI WAF&#10;Detection mode&#10;WAF service logs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE4E6;strokeColor=#E11D48;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="740" y="205" width="160" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="apiGwPublic" value="OCI API Gateway&#10;Public /api routes&#10;auth, quotas, route logs&#10;trace headers preserved" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=13;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="960" y="198" width="180" height="78" as="geometry"/>
+        </mxCell>
+        <mxCell id="appSubnet" value="Private app subnet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontSize=14;fontStyle=1;align=left;spacingLeft=12;verticalAlign=top;dashed=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="420" y="320" width="760" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="shop" value="Shop VM&#10;octo-drone-shop&#10;FastAPI, checkout, RUM&#10;App SDK logs and spans" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="455" y="370" width="210" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="java" value="Java app-server sidecar&#10;octo-java-app-server&#10;OCI APM Java agent&#10;JVM and app-server metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#EA580C;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="455" y="485" width="210" height="74" as="geometry"/>
+        </mxCell>
+        <mxCell id="crm" value="Admin CRM VM&#10;enterprise-crm-portal&#10;Demo Storyboard&#10;Attack Lab and simulations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="720" y="370" width="210" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="apiGwInternal" value="Private API Gateway&#10;component calls&#10;Shop, CRM, Java sidecar&#10;service auth + traceparent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=13;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="720" y="495" width="210" height="74" as="geometry"/>
+        </mxCell>
+        <mxCell id="jump" value="Jumphost v5&#10;Operator-only access&#10;NSG restricted to allowlist&#10;SSH config kept private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=13;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="950" y="378" width="195" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="genai" value="OCI Generative AI&#10;Drone advisor chat&#10;catalog-grounded answers&#10;gen_ai and llm spans" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=13;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="950" y="485" width="195" height="74" as="geometry"/>
+        </mxCell>
+        <mxCell id="dbSubnet" value="Private database subnet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontSize=14;fontStyle=1;align=left;spacingLeft=12;verticalAlign=top;dashed=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="420" y="625" width="760" height="205" as="geometry"/>
+        </mxCell>
+        <mxCell id="atp" value="Autonomous Database&#10;octoatp_low&#10;private endpoint, mTLS wallet&#10;SQL_ID and db.statement spans" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FED7AA;strokeColor=#C2410C;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="515" y="675" width="210" height="96" as="geometry"/>
+        </mxCell>
+        <mxCell id="stackDb" value="DB Management&#10;Operations Insights&#10;Stack Monitoring ATP&#10;SQL Performance Hub pivots" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#4F46E5;fontSize=14;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="790" y="685" width="230" height="76" as="geometry"/>
+        </mxCell>
+        <mxCell id="delivery" value="Code Delivery and Images" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;fontSize=16;fontStyle=1;align=left;spacingLeft=16;verticalAlign=top;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="40" y="460" width="320" height="260" as="geometry"/>
+        </mxCell>
+        <mxCell id="branch" value="Git branch&#10;PRIVATE_OBSERVABILITY_BRANCH&#10;tests before resource changes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#475569;fontSize=14;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="70" y="510" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ocir" value="OCIR images&#10;Shop, CRM, Java sidecar&#10;Podman systemd rollout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#475569;fontSize=14;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="70" y="615" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="observability" value="OCI Observability and Security Plane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;fontSize=16;fontStyle=1;align=left;spacingLeft=16;verticalAlign=top;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1240" y="120" width="520" height="750" as="geometry"/>
+        </mxCell>
+        <mxCell id="apm" value="OCI APM Domain&#10;traces, metrics, RUM&#10;App Servers details&#10;span events app.log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1280" y="170" width="200" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="logging" value="OCI Logging log group&#10;octo-app, stdout, OS&#10;WAF, Cloud Guard raw&#10;Cloud Guard query results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1515" y="170" width="200" height="88" as="geometry"/>
+        </mxCell>
+        <mxCell id="sch" value="Service Connector Hub&#10;consolidated route&#10;quota-gated in the private demo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1515" y="305" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="logan" value="OCI Log Analytics&#10;Trace drilldowns&#10;Attack dashboards&#10;OSQuery findings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1515" y="420" width="200" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="cloudguard" value="Cloud Guard Advanced&#10;Instance Security&#10;OSQuery saved queries&#10;MITRE detections" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE4E6;strokeColor=#E11D48;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1280" y="315" width="200" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="monitoring" value="OCI Monitoring&#10;VM metrics, JVM metrics&#10;alarms and availability&#10;APM metric namespace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0E7FF;strokeColor=#4F46E5;fontSize=14;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1280" y="445" width="200" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="langfuse" value="Langfuse comparison&#10;optional OTLP export&#10;LLMetry sessions, tokens, hashes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1515" y="535" width="200" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="dashboards" value="Demo dashboards&#10;APM Trace Explorer&#10;Log Analytics drilldown URL&#10;Stack Monitoring DB/App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontSize=14;fontStyle=1;fontColor=#111827" vertex="1" parent="1">
+          <mxGeometry x="1395" y="605" width="210" height="86" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="HTTPS 443" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="browser" target="dns">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="DNS" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="dns" target="lb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="health checks" style="endArrow=block;html=1;rounded=0;strokeColor=#059669;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="availability" target="lb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="WAF policy" style="endArrow=block;html=1;rounded=0;strokeColor=#DC2626;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="lb" target="waf">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4b" value="/api backend routes" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="waf" target="apiGwPublic">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="host route shop" style="endArrow=block;html=1;rounded=0;strokeColor=#16A34A;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="waf" target="shop">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="host route admin" style="endArrow=block;html=1;rounded=0;strokeColor=#16A34A;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="waf" target="crm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6b" value="Shop APIs" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="apiGwPublic" target="shop">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6c" value="Admin APIs" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="apiGwPublic" target="crm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="component APIs" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="shop" target="apiGwInternal">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7b" value="payment and quote APIs" style="endArrow=block;html=1;rounded=0;strokeColor=#EA580C;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="apiGwInternal" target="java">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7c" value="CRM sync" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="apiGwInternal" target="crm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e8" value="orders and SQL" style="endArrow=block;html=1;rounded=0;strokeColor=#C2410C;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="shop" target="atp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" value="admin data" style="endArrow=block;html=1;rounded=0;strokeColor=#C2410C;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="crm" target="atp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10" value="JDBC simulation" style="endArrow=block;html=1;rounded=0;strokeColor=#C2410C;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="java" target="atp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10b" value="assistant" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="shop" target="genai">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e11" value="SSH via NSG" style="endArrow=block;html=1;rounded=0;strokeColor=#0284C7;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="jump" target="shop">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e12" value="SSH via NSG" style="endArrow=block;html=1;rounded=0;strokeColor=#0284C7;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="jump" target="crm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e13" value="build and push" style="endArrow=block;html=1;rounded=0;strokeColor=#475569;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="branch" target="ocir">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e14" value="deploy images" style="endArrow=block;html=1;rounded=0;strokeColor=#475569;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="ocir" target="shop">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e15" value="deploy images" style="endArrow=block;html=1;rounded=0;strokeColor=#475569;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="ocir" target="crm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e16" value="RUM, traces, metrics" style="endArrow=block;html=1;rounded=0;strokeColor=#059669;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="browser" target="apm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e17" value="OTLP" style="endArrow=block;html=1;rounded=0;strokeColor=#059669;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="shop" target="apm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e17b" value="LLMetry" style="endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="shop" target="langfuse">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e17c" value="GenAI spans" style="endArrow=block;html=1;rounded=0;strokeColor=#059669;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="genai" target="apm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e18" value="OTLP" style="endArrow=block;html=1;rounded=0;strokeColor=#059669;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="crm" target="apm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e19" value="app logs" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="shop" target="logging">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e20" value="app logs" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="crm" target="logging">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e21" value="WAF logs" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="waf" target="logging">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e22" value="OSQuery results" style="endArrow=block;html=1;rounded=0;strokeColor=#E11D48;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="cloudguard" target="logging">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e23" value="route logs" style="endArrow=block;html=1;rounded=0;strokeColor=#0284C7;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="logging" target="sch">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e24" value="ingest" style="endArrow=block;html=1;rounded=0;strokeColor=#059669;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="sch" target="logan">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e25" value="trace drilldown" style="endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="apm" target="dashboards">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e26" value="saved searches" style="endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="logan" target="dashboards">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e27" value="VM/JVM metrics" style="endArrow=block;html=1;rounded=0;strokeColor=#4F46E5;strokeWidth=2;dashed=1;fontColor=#334155" edge="1" parent="1" source="shop" target="monitoring">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e28" value="DB insight" style="endArrow=block;html=1;rounded=0;strokeColor=#4F46E5;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="atp" target="stackDb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e29" value="SQL pivots" style="endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;strokeWidth=2;fontColor=#334155" edge="1" parent="1" source="stackDb" target="dashboards">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

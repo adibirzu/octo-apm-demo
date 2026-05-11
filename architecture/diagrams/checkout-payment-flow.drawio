@@ -1,0 +1,62 @@
+<mxfile host="app.diagrams.net" modified="2026-05-09T10:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="checkout-payment-flow" name="Checkout Payment Flow">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="layer-actors" value="00 Actors And Services" parent="0"/>
+        <mxCell id="layer-gateway" value="10 Gateway Steps" parent="0"/>
+        <mxCell id="layer-persistence" value="20 Persistence And Sync" parent="0"/>
+        <mxCell id="layer-observability" value="30 Observability" parent="0"/>
+        <mxCell id="layer-flow" value="40 Flow Overlay" parent="0"/>
+        <mxCell id="title" value="Checkout Payment Flow&#10;Actual simulator path from payment_gateway_simulation.py and payments/gateway_emulator.py" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#111827;fontColor=#FFFFFF;strokeColor=#111827;fontSize=22;fontStyle=1;align=left;spacingLeft=24;" vertex="1" parent="layer-actors">
+          <mxGeometry x="40" y="24" width="1520" height="72" as="geometry"/>
+        </mxCell>
+        <mxCell id="browser" value="Browser&#10;cart + checkout + RUM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontSize=13;fontStyle=1;" vertex="1" parent="layer-actors">
+          <mxGeometry x="70" y="150" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="shop" value="Drone Shop&#10;orders.cart.add&#10;shop.checkout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=13;fontStyle=1;" vertex="1" parent="layer-actors">
+          <mxGeometry x="310" y="150" width="210" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="pgw" value="Payment Gateway Emulator&#10;payment_gateway.emulator.authorize" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#9333EA;fontSize=13;fontStyle=1;" vertex="1" parent="layer-actors">
+          <mxGeometry x="600" y="150" width="270" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="java" value="Java Processor Simulator&#10;verify_payment + authorize_payment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=13;fontStyle=1;" vertex="1" parent="layer-actors">
+          <mxGeometry x="950" y="150" width="250" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="crm" value="Enterprise CRM&#10;POST /api/orders" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=13;fontStyle=1;" vertex="1" parent="layer-persistence">
+          <mxGeometry x="1270" y="150" width="210" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="card" value="credit_card branch&#10;gateway_payment_received&#10;card_data_received&#10;gateway_card_tokenization&#10;internal_antifraud_screening&#10;card_network_routing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#9333EA;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="layer-gateway">
+          <mxGeometry x="600" y="300" width="270" height="145" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallet" value="apple_pay / google_pay branch&#10;gateway_payment_received&#10;wallet_token_received&#10;gateway_token_decryption&#10;network_token_cryptogram_validation&#10;internal_antifraud_screening" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#9333EA;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="layer-gateway">
+          <mxGeometry x="600" y="485" width="270" height="145" as="geometry"/>
+        </mxCell>
+        <mxCell id="common" value="common gateway tail&#10;verification_antifraud_request / response&#10;processor_authorization_request / response&#10;network_authorization_routing&#10;merchant_authorization_result" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#9333EA;fontSize=12;align=left;spacingLeft=12;" vertex="1" parent="layer-gateway">
+          <mxGeometry x="930" y="350" width="300" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="atp" value="Oracle ATP&#10;orders, order_items, shipments&#10;payment_transactions&#10;payment_gateway_events&#10;security_events" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#F97316;fontSize=13;fontStyle=1;" vertex="1" parent="layer-persistence">
+          <mxGeometry x="310" y="600" width="250" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="apm" value="OCI APM + RUM&#10;traceparent from browser&#10;auth.login, shop.checkout&#10;payment_gateway.* and ATTACK:* spans" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=13;fontStyle=1;" vertex="1" parent="layer-observability">
+          <mxGeometry x="930" y="600" width="280" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="la" value="OCI Logging + Log Analytics&#10;payment-gateway-timeline.sql&#10;payment-risk-decisions.sql&#10;checkout-security-checks.sql" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontSize=13;fontStyle=1;" vertex="1" parent="layer-observability">
+          <mxGeometry x="1270" y="600" width="250" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="f-browser-shop" value="checkout request" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;strokeWidth=3;" edge="1" parent="layer-flow" source="browser" target="shop"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-shop-pgw" value="PCI-safe payment context" style="endArrow=block;html=1;rounded=0;strokeColor=#9333EA;strokeWidth=3;" edge="1" parent="layer-flow" source="shop" target="pgw"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-pgw-card" value="card path" style="endArrow=block;html=1;rounded=0;strokeColor=#9333EA;strokeWidth=3;" edge="1" parent="layer-flow" source="pgw" target="card"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-pgw-wallet" value="wallet path" style="endArrow=block;html=1;rounded=0;strokeColor=#9333EA;strokeWidth=3;" edge="1" parent="layer-flow" source="pgw" target="wallet"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-card-common" value="method steps" style="endArrow=block;html=1;rounded=0;strokeColor=#9333EA;strokeWidth=3;" edge="1" parent="layer-flow" source="card" target="common"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-wallet-common" value="method steps" style="endArrow=block;html=1;rounded=0;strokeColor=#9333EA;strokeWidth=3;" edge="1" parent="layer-flow" source="wallet" target="common"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-common-java" value="verify + authorize" style="endArrow=block;html=1;rounded=0;strokeColor=#D97706;strokeWidth=3;" edge="1" parent="layer-flow" source="common" target="java"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-shop-atp" value="order + payment rows" style="endArrow=block;html=1;rounded=0;strokeColor=#F97316;strokeWidth=3;" edge="1" parent="layer-flow" source="shop" target="atp"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-shop-crm" value="traceparent order sync" style="endArrow=block;html=1;rounded=0;strokeColor=#D97706;strokeWidth=3;" edge="1" parent="layer-flow" source="shop" target="crm"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-telemetry-apm" value="spans + RUM" style="endArrow=block;html=1;rounded=0;dashed=1;dashPattern=8 8;strokeColor=#059669;strokeWidth=3;" edge="1" parent="layer-flow" source="shop" target="apm"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f-logs-la" value="structured logs" style="endArrow=block;html=1;rounded=0;dashed=1;dashPattern=8 8;strokeColor=#059669;strokeWidth=3;" edge="1" parent="layer-flow" source="apm" target="la"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
