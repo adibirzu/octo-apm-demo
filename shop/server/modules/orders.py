@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from opentelemetry import trace
 from sqlalchemy import text
 
@@ -19,6 +19,7 @@ from server.store_service import (
     compute_subtotal,
     ensure_customer,
     fetch_cart_items,
+    normalize_storefront_session_id,
     place_order,
     resolve_direct_items,
 )
@@ -38,7 +39,11 @@ def _trace_id() -> str:
 async def get_cart(request: Request, session_id: str = ""):
     """Get cart items for the active storefront session."""
     tracer = get_tracer()
-    sid = session_id or request.cookies.get("session_id", "")
+    raw_sid = session_id or request.cookies.get("session_id", "")
+    try:
+        sid = normalize_storefront_session_id(raw_sid, allow_empty=True)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     with tracer.start_as_current_span("orders.cart.get") as span:
         span.set_attribute("cart.session_id", sid or "anonymous")
@@ -60,7 +65,11 @@ async def add_to_cart(payload: dict, request: Request):
     """Add or increment an item in the current cart."""
     tracer = get_tracer()
     with tracer.start_as_current_span("orders.cart.add") as span:
-        sid = payload.get("session_id") or request.cookies.get("session_id") or str(uuid.uuid4())
+        raw_sid = payload.get("session_id") or request.cookies.get("session_id") or str(uuid.uuid4())
+        try:
+            sid = normalize_storefront_session_id(raw_sid)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         source_ip = request.client.host if request.client else "unknown"
         try:
             product_id = int(payload.get("product_id"))
@@ -73,7 +82,7 @@ async def add_to_cart(payload: dict, request: Request):
                 endpoint="/api/cart/add",
                 session_id=sid,
             )
-            return {"error": "Invalid product id", "session_id": sid}
+            raise HTTPException(status_code=400, detail="Invalid product id")
         try:
             quantity = max(int(payload.get("quantity", 1) or 1), 1)
         except (TypeError, ValueError):
@@ -86,7 +95,7 @@ async def add_to_cart(payload: dict, request: Request):
                 product_id=product_id,
                 session_id=sid,
             )
-            return {"error": "Invalid quantity", "session_id": sid}
+            raise HTTPException(status_code=400, detail="Invalid quantity")
 
         span.set_attribute("cart.session_id", sid)
         span.set_attribute("cart.product_id", product_id)
@@ -101,7 +110,7 @@ async def add_to_cart(payload: dict, request: Request):
                 product_id=product_id,
                 session_id=sid,
             )
-            return {"error": "Quantity exceeds allowed threshold", "session_id": sid}
+            raise HTTPException(status_code=400, detail="Quantity exceeds allowed threshold")
 
         async with get_db() as db:
             product_lookup = await db.execute(
@@ -122,10 +131,10 @@ async def add_to_cart(payload: dict, request: Request):
                     product_id=product_id,
                     session_id=sid,
                 )
-                return {"error": "Product not found", "session_id": sid}
+                raise HTTPException(status_code=404, detail="Product not found")
 
             if int(product.get("stock") or 0) <= 0:
-                return {"error": "Product is out of stock", "session_id": sid}
+                raise HTTPException(status_code=409, detail="Product is out of stock")
 
             existing = await db.execute(
                 text(
@@ -151,7 +160,7 @@ async def add_to_cart(payload: dict, request: Request):
 
         business_metrics.record_cart_addition(category=str(product.get("category") or ""))
         push_log("INFO", "Cart updated", **{"cart.session_id": sid, "cart.product_id": product_id})
-        return {"status": "added", "session_id": sid}
+        return {"status": "added", "success": True, "session_id": sid}
 
 
 @router.delete("/cart/{item_id}")

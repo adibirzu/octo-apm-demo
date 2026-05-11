@@ -29,7 +29,9 @@ from server.observability.otel_setup import get_tracer
 from server.store_service import (
     ensure_customer,
     fetch_cart_items,
+    normalize_customer_email,
     normalize_checkout_idempotency_key,
+    normalize_storefront_session_id,
     place_order,
     resolve_direct_items,
     update_order_payment_state,
@@ -227,7 +229,11 @@ async def checkout(payload: dict, request: Request):
             "db.target": cfg.database_target_label,
             "db.connection_name": cfg.oracle_dsn,
         })
-        session_id = payload.get("session_id") or request.cookies.get("session_id", "") or str(uuid.uuid4())
+        raw_session_id = payload.get("session_id") or request.cookies.get("session_id", "") or str(uuid.uuid4())
+        try:
+            session_id = normalize_storefront_session_id(raw_session_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         try:
             checkout_idempotency_key = normalize_checkout_idempotency_key(
                 payload.get("checkout_idempotency_key")
@@ -257,7 +263,12 @@ async def checkout(payload: dict, request: Request):
                 span.set_attribute("auth.role", str(checkout_user["role"]))
             default_email = str(checkout_user["email"]) if checkout_user else "buyer@octo.local"
             default_name = str(checkout_user["username"]) if checkout_user else "OCTO Buyer"
-            customer_email = str(payload.get("customer_email") or default_email)
+            try:
+                customer_email = normalize_customer_email(
+                    payload.get("customer_email") or (default_email if checkout_user else ""),
+                )
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
             customer_name = str(payload.get("customer_name") or default_name)
             customer = await ensure_customer(
                 db,

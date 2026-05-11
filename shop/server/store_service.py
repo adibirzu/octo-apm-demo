@@ -11,6 +11,8 @@ from sqlalchemy.exc import IntegrityError
 
 
 _CHECKOUT_IDEMPOTENCY_KEY_RE = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
+_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,64}$")
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def normalize_checkout_idempotency_key(value: object) -> str:
@@ -21,6 +23,30 @@ def normalize_checkout_idempotency_key(value: object) -> str:
     if not _CHECKOUT_IDEMPOTENCY_KEY_RE.fullmatch(key):
         raise ValueError("checkout idempotency key must be 8-128 URL-safe characters")
     return key
+
+
+def normalize_storefront_session_id(value: object, *, allow_empty: bool = False) -> str:
+    """Validate browser cart session identifiers before they reach the DB."""
+    session_id = str(value or "").strip()
+    if not session_id:
+        if allow_empty:
+            return ""
+        raise ValueError("session_id is required")
+    if not _SESSION_ID_RE.fullmatch(session_id):
+        raise ValueError("session_id must be 1-64 URL-safe characters")
+    return session_id
+
+
+def normalize_customer_email(value: object, *, allow_empty: bool = False) -> str:
+    """Validate checkout email addresses at the public request boundary."""
+    email = str(value or "").strip().lower()
+    if not email:
+        if allow_empty:
+            return ""
+        raise ValueError("customer_email is required")
+    if len(email) > 200 or not _EMAIL_RE.fullmatch(email):
+        raise ValueError("customer_email must be a valid email address")
+    return email
 
 
 async def fetch_cart_items(db, session_id: str) -> list[dict[str, Any]]:
