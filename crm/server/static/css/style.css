@@ -486,6 +486,86 @@ a {
     outline: none;
 }
 
+.coordinator-panel {
+    background: linear-gradient(180deg, rgba(117, 217, 227, 0.09), rgba(4, 14, 23, 0.68));
+    border: 1px solid rgba(117, 217, 227, 0.2);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+}
+
+.coordinator-head,
+.coordinator-form,
+.coordinator-sources {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+}
+
+.coordinator-head {
+    justify-content: space-between;
+}
+
+.coordinator-head h2 {
+    font-size: 1.25rem;
+}
+
+.coordinator-form {
+    align-items: stretch;
+}
+
+.coordinator-input {
+    max-width: none;
+    min-height: 92px;
+    resize: vertical;
+}
+
+.coordinator-answer {
+    background: rgba(4, 14, 23, 0.46);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    color: var(--text-secondary);
+    display: none;
+    line-height: 1.55;
+    padding: 14px;
+}
+
+.coordinator-answer.is-allowed,
+.coordinator-answer.is-blocked {
+    display: grid;
+    gap: 12px;
+}
+
+.coordinator-answer.is-allowed {
+    border-color: rgba(101, 212, 168, 0.22);
+}
+
+.coordinator-answer.is-blocked {
+    border-color: rgba(255, 116, 116, 0.24);
+}
+
+.coordinator-sources {
+    flex-wrap: wrap;
+}
+
+.coordinator-source {
+    background: rgba(117, 217, 227, 0.09);
+    border: 1px solid rgba(117, 217, 227, 0.2);
+    border-radius: 999px;
+    color: var(--accent-strong);
+    font-size: 0.78rem;
+    padding: 0.3rem 0.68rem;
+}
+
+.coordinator-actions {
+    color: var(--text-secondary);
+    display: grid;
+    gap: 6px;
+    list-style-position: inside;
+}
+
 .btn {
     align-items: center;
     border: 1px solid transparent;
@@ -1027,6 +1107,12 @@ pre {
 @media (max-width: 640px) {
     .content-header {
         gap: 14px;
+        flex-direction: column;
+    }
+
+    .coordinator-form,
+    .coordinator-head {
+        align-items: stretch;
         flex-direction: column;
     }
 

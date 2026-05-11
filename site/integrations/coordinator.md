@@ -2,6 +2,43 @@
 
 The OCI Coordinator's Remediation Agent v2 consumes telemetry from both services and executes automated remediations via MCP tools.
 
+## Admin Surface and Scope Guard
+
+For the `emdemo` OCTO deployment, the interactive Coordinator is exposed only
+inside the CRM Admin page:
+
+| Surface | Route | Guard |
+|---|---|---|
+| `admin.octodemo.cloud` | `/admin` UI panel | CRM admin session required |
+| CRM API | `POST /api/admin/coordinator/query` | CRM admin session + admin host required |
+| CRM API | `GET /api/admin/coordinator/scope` | CRM admin session + admin host required |
+
+The Coordinator is not rendered in the drone shop storefront, global CRM
+navigation, or non-admin pages. The API rejects non-admin hosts and refuses
+questions that ask for generic tenancy, unrelated domains, unrelated projects,
+or all-compartment/all-resource inventory.
+
+Allowed answer scope is limited to OCTO APM Demo resources and admin pages:
+
+- `admin.octodemo.cloud` CRM admin, users, sessions, audit logs, and runtime config.
+- `drones.octodemo.cloud` shop dependency, catalog sync, payment simulation, and order sync.
+- OCTO ATP (`octoatp_low`), SQL_ID enrichment, Select AI/admin DB workflows.
+- OCI APM, RUM, OCI Logging, Log Analytics, security detections, and workflow traces for this project.
+- OCTO Demo Langfuse telemetry (`lf.octodemo.cloud` / `langfuse.octodemo.cloud`) only when tied to the drones project data.
+
+Coordinator decisions are visible in APM and logs through:
+
+| Field | Purpose |
+|---|---|
+| `admin.coordinator.query` | Span for each admin question |
+| `admin.coordinator.scope` | Span for scope metadata reads |
+| `coordinator.surface` | Always `admin` |
+| `coordinator.host` | Request host that reached the endpoint |
+| `coordinator.scope` | Always `octo-apm-demo` |
+| `coordinator.allowed` | Whether the question was answered |
+| `coordinator.topic` | Matched admin/OCTO topic |
+| `coordinator.refusal_reason` | Reason when a question is refused |
+
 ## Architecture
 
 ```mermaid

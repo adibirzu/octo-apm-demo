@@ -52,6 +52,7 @@ from server.modules.analytics import router as analytics_router
 from server.modules.integrations import router as integrations_router
 from server.modules.observability_frontend import router as observability_router
 from server.modules.observability_dashboard import router as observability_dashboard_router
+from server.modules.coordinator import router as coordinator_router
 
 logger = logging.getLogger(__name__)
 cfg.validate()
@@ -209,6 +210,7 @@ app.include_router(analytics_router)
 app.include_router(integrations_router)
 app.include_router(observability_router)
 app.include_router(observability_dashboard_router)
+app.include_router(coordinator_router)
 
 # Chaos control surface (CRM only — shop has no write endpoints).
 from server.chaos.admin import router as chaos_admin_router, page_router as chaos_admin_page_router
