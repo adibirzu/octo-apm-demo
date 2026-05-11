@@ -7,7 +7,13 @@ from typing import Any
 
 import pytest
 
-from server.store_service import normalize_checkout_idempotency_key, place_order, update_order_payment_state
+from server.store_service import (
+    normalize_checkout_idempotency_key,
+    normalize_customer_email,
+    normalize_storefront_session_id,
+    place_order,
+    update_order_payment_state,
+)
 
 
 class _Mappings:
@@ -116,6 +122,28 @@ class _FakeDb:
 def test_checkout_idempotency_key_validation_rejects_unsafe_values(key: str) -> None:
     with pytest.raises(ValueError):
         normalize_checkout_idempotency_key(key)
+
+
+@pytest.mark.parametrize("session_id", ["cart-1", "abc.DEF_123:456", "x" * 64])
+def test_storefront_session_id_accepts_url_safe_values(session_id: str) -> None:
+    assert normalize_storefront_session_id(session_id) == session_id
+
+
+@pytest.mark.parametrize("session_id", ["", "has space", "x" * 65, "../unsafe"])
+def test_storefront_session_id_rejects_values_that_can_break_db(session_id: str) -> None:
+    with pytest.raises(ValueError):
+        normalize_storefront_session_id(session_id)
+
+
+@pytest.mark.parametrize("email", ["buyer@example.test", "SHOPPER@OCTO.LOCAL"])
+def test_customer_email_validation_accepts_email_addresses(email: str) -> None:
+    assert normalize_customer_email(email) == email.lower()
+
+
+@pytest.mark.parametrize("email", ["", "not-an-email", "missing-domain@", "x" * 201 + "@example.test"])
+def test_customer_email_validation_rejects_unsafe_values(email: str) -> None:
+    with pytest.raises(ValueError):
+        normalize_customer_email(email)
 
 
 def test_place_order_reuses_existing_order_for_same_checkout_key() -> None:
