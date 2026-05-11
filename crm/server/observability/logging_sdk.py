@@ -99,6 +99,12 @@ _SPAN_EVENT_KEYS = (
     "security.attack.type",
     "security.attack.severity",
     "security.severity",
+    "coordinator.surface",
+    "coordinator.host",
+    "coordinator.scope",
+    "coordinator.allowed",
+    "coordinator.topic",
+    "coordinator.refusal_reason",
 )
 
 

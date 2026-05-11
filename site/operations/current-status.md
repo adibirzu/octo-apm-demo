@@ -9,6 +9,27 @@ deployment surface tracked by this repo. It is a runtime snapshot, not a
 guarantee that the shared environment will remain healthy without checking
 the validation commands below.
 
+May 11, 2026 update: the `emdemo` CRM compute host was updated and
+`octo-compute.service` was restarted. Public readiness through the live
+load balancer is healthy for both `admin.octodemo.cloud` and
+`drones.octodemo.cloud`. The OCI Coordinator is now exposed only in the
+CRM Admin page (`/admin`) and only through the admin API
+`/api/admin/coordinator/query`. Its answer scope is fixed to
+`octo-apm-demo`; authenticated live validation confirmed OCTO-scoped
+user/order/database trace questions are answered, the same authenticated
+request with `Host: drones.octodemo.cloud` returns HTTP 403, and app logs
+emit `coordinator.surface`, `coordinator.host`, `coordinator.scope`,
+`coordinator.allowed`, `coordinator.topic`, `trace_id`, and
+`oracleApmTraceId` for APM and Log Analytics drilldown.
+
+Later on May 11, the CRM frontend was aligned with OCI APM RUM W3C trace
+propagation. Same-origin browser calls now use the instrumented fetch path
+with `headers: ["W3C"]`, while the native fetch handle remains only as a
+fallback. The login form emits sanitized RUM actions (`auth.login.submit`
+and `auth.login.result`) without usernames or passwords, so login and admin
+actions can be followed from RUM to backend spans, ATP queries, and
+`oracleApmTraceId` logs.
+
 May 4, 2026 update: the private two-instance Compute Resource Manager
 stack has been applied in the `<OCI_PROFILE>` profile as a new deployment for
 `shop.example.test` and `crm.example.test`. It is separate from

@@ -1,6 +1,9 @@
 /* OCTO CRM APM frontend helpers */
-/* Restore native fetch — APM RUM agent patches fetch/XHR and can break API calls */
-const _fetch = window.__nativeFetch || window.fetch.bind(window);
+const _fetch = (...args) => {
+    const fetcher = window.octoFetch || window.fetch.bind(window);
+    return fetcher(...args);
+};
+window._fetch = _fetch;
 
 function _uuid() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
