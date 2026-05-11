@@ -1,0 +1,799 @@
+# Low-footprint Langfuse v3 stack for OCTO-DEMO OKE.
+#
+# Rendered by deploy/oke/deploy-langfuse.sh:
+#   envsubst < deploy/k8s/oke/langfuse/langfuse.yaml | kubectl apply -f -
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${LANGFUSE_NAMESPACE}
+  labels:
+    app.kubernetes.io/name: langfuse
+    app.kubernetes.io/part-of: octo-demo-observability
+    app.kubernetes.io/component: llmetry
+    octo.oracle.com/tier: test
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: langfuse-config
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app.kubernetes.io/name: langfuse
+    app.kubernetes.io/part-of: octo-demo-observability
+data:
+  NODE_ENV: "production"
+  NODE_OPTIONS: "--max-old-space-size=512"
+  NEXTAUTH_URL: "${LANGFUSE_PUBLIC_URL}"
+  TELEMETRY_ENABLED: "false"
+  CLICKHOUSE_DB: "langfuse"
+  CLICKHOUSE_USER: "langfuse"
+  CLICKHOUSE_CLUSTER_ENABLED: "false"
+  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: "langfuse-events"
+  LANGFUSE_S3_BATCH_EXPORT_ENABLED: "true"
+  LANGFUSE_S3_BATCH_EXPORT_BUCKET: "langfuse-exports"
+  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: "langfuse-media"
+  LANGFUSE_S3_EVENT_UPLOAD_REGION: "us-east-1"
+  LANGFUSE_S3_BATCH_EXPORT_REGION: "us-east-1"
+  LANGFUSE_S3_MEDIA_UPLOAD_REGION: "us-east-1"
+  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: "http://langfuse-minio:9000"
+  LANGFUSE_S3_BATCH_EXPORT_ENDPOINT: "http://langfuse-minio:9000"
+  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: "http://langfuse-minio:9000"
+  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_UPLOAD_ACCESS_KEY_ID: "langfuse"
+  LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: "langfuse"
+  LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID: "langfuse"
+  LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: "langfuse"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: langfuse-postgres
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-postgres
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  type: ClusterIP
+  selector:
+    app: langfuse-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: langfuse-postgres
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-postgres
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  serviceName: langfuse-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: langfuse-postgres
+  template:
+    metadata:
+      labels:
+        app: langfuse-postgres
+        app.kubernetes.io/part-of: octo-demo-observability
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: postgres
+          image: docker.io/library/postgres:16
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "langfuse"
+            - name: POSTGRES_DB
+              value: "langfuse"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: postgres-password
+            - name: TZ
+              value: "UTC"
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "langfuse", "-d", "langfuse"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "langfuse", "-d", "langfuse"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "${LANGFUSE_STORAGE_CLASS}"
+        resources:
+          requests:
+            storage: "${LANGFUSE_POSTGRES_STORAGE}"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: langfuse-clickhouse
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-clickhouse
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  type: ClusterIP
+  selector:
+    app: langfuse-clickhouse
+  ports:
+    - name: http
+      port: 8123
+      targetPort: http
+    - name: native
+      port: 9000
+      targetPort: native
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: langfuse-clickhouse
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-clickhouse
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  serviceName: langfuse-clickhouse
+  replicas: 1
+  selector:
+    matchLabels:
+      app: langfuse-clickhouse
+  template:
+    metadata:
+      labels:
+        app: langfuse-clickhouse
+        app.kubernetes.io/part-of: octo-demo-observability
+    spec:
+      securityContext:
+        fsGroup: 101
+      containers:
+        - name: clickhouse
+          image: docker.io/clickhouse/clickhouse-server:24.8
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8123
+            - name: native
+              containerPort: 9000
+          env:
+            - name: CLICKHOUSE_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: langfuse-config
+                  key: CLICKHOUSE_DB
+            - name: CLICKHOUSE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: langfuse-config
+                  key: CLICKHOUSE_USER
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: clickhouse-password
+            - name: TZ
+              value: "UTC"
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/clickhouse
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "${LANGFUSE_STORAGE_CLASS}"
+        resources:
+          requests:
+            storage: "${LANGFUSE_CLICKHOUSE_STORAGE}"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: langfuse-redis
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-redis
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  type: ClusterIP
+  selector:
+    app: langfuse-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: langfuse-redis
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-redis
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  serviceName: langfuse-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: langfuse-redis
+  template:
+    metadata:
+      labels:
+        app: langfuse-redis
+        app.kubernetes.io/part-of: octo-demo-observability
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: redis
+          image: docker.io/library/redis:7
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args: ["exec redis-server --appendonly yes --requirepass \"$REDIS_AUTH\""]
+          ports:
+            - name: redis
+              containerPort: 6379
+          env:
+            - name: REDIS_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: redis-auth
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "redis-cli -a \"$REDIS_AUTH\" ping | grep -q PONG"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "redis-cli -a \"$REDIS_AUTH\" ping | grep -q PONG"]
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "384Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "${LANGFUSE_STORAGE_CLASS}"
+        resources:
+          requests:
+            storage: "${LANGFUSE_REDIS_STORAGE}"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: langfuse-minio
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-minio
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  type: ClusterIP
+  selector:
+    app: langfuse-minio
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: langfuse-minio
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-minio
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  serviceName: langfuse-minio
+  replicas: 1
+  selector:
+    matchLabels:
+      app: langfuse-minio
+  template:
+    metadata:
+      labels:
+        app: langfuse-minio
+        app.kubernetes.io/part-of: octo-demo-observability
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:latest
+          imagePullPolicy: IfNotPresent
+          command: ["minio", "server", "/data"]
+          ports:
+            - name: api
+              containerPort: 9000
+          env:
+            - name: MINIO_ROOT_USER
+              value: "langfuse"
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: minio-root-password
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "${LANGFUSE_STORAGE_CLASS}"
+        resources:
+          requests:
+            storage: "${LANGFUSE_MINIO_STORAGE}"
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: langfuse-minio-init
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-minio-init
+    app.kubernetes.io/name: minio-init
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app: langfuse-minio-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: quay.io/minio/mc:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              mc alias set local http://langfuse-minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" &&
+              mc mb --ignore-existing local/langfuse-events &&
+              mc mb --ignore-existing local/langfuse-exports &&
+              mc mb --ignore-existing local/langfuse-media
+          env:
+            - name: MINIO_ROOT_USER
+              value: "langfuse"
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: minio-root-password
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langfuse-worker
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-worker
+    app.kubernetes.io/name: langfuse-worker
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: langfuse-worker
+  template:
+    metadata:
+      labels:
+        app: langfuse-worker
+        app.kubernetes.io/part-of: octo-demo-observability
+    spec:
+      containers:
+        - name: worker
+          image: docker.io/langfuse/langfuse-worker:3
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: langfuse-config
+          env:
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: nextauth-secret
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: salt
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: encryption-key
+            - name: POSTGRES_USER
+              value: "langfuse"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: postgres-password
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@langfuse-postgres:5432/langfuse"
+            - name: DIRECT_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@langfuse-postgres:5432/langfuse"
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: clickhouse-password
+            - name: CLICKHOUSE_URL
+              value: "http://langfuse-clickhouse:8123"
+            - name: CLICKHOUSE_MIGRATION_URL
+              value: "clickhouse://langfuse-clickhouse:9000"
+            - name: REDIS_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: redis-auth
+            - name: REDIS_CONNECTION_STRING
+              value: "redis://:$(REDIS_AUTH)@langfuse-redis:6379/0"
+            - name: LANGFUSE_S3_UPLOAD_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: s3-upload-secret-access-key
+            - name: LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: s3-upload-secret-access-key
+            - name: LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: s3-upload-secret-access-key
+            - name: LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: s3-upload-secret-access-key
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langfuse-web
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-web
+    app.kubernetes.io/name: langfuse
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: langfuse-web
+  template:
+    metadata:
+      labels:
+        app: langfuse-web
+        app.kubernetes.io/part-of: octo-demo-observability
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/api/public/health"
+    spec:
+      containers:
+        - name: web
+          image: docker.io/langfuse/langfuse:3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: langfuse-config
+          env:
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: nextauth-secret
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: salt
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: encryption-key
+            - name: POSTGRES_USER
+              value: "langfuse"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: postgres-password
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@langfuse-postgres:5432/langfuse"
+            - name: DIRECT_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@langfuse-postgres:5432/langfuse"
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: clickhouse-password
+            - name: CLICKHOUSE_URL
+              value: "http://langfuse-clickhouse:8123"
+            - name: CLICKHOUSE_MIGRATION_URL
+              value: "clickhouse://langfuse-clickhouse:9000"
+            - name: REDIS_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: redis-auth
+            - name: REDIS_CONNECTION_STRING
+              value: "redis://:$(REDIS_AUTH)@langfuse-redis:6379/0"
+            - name: LANGFUSE_S3_UPLOAD_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: s3-upload-secret-access-key
+            - name: LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: s3-upload-secret-access-key
+            - name: LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: s3-upload-secret-access-key
+            - name: LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse-secrets
+                  key: s3-upload-secret-access-key
+          readinessProbe:
+            httpGet:
+              path: /api/public/health
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 8
+          livenessProbe:
+            httpGet:
+              path: /api/public/health
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: langfuse-web
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-web
+    app.kubernetes.io/name: langfuse
+    app.kubernetes.io/part-of: octo-demo-observability
+spec:
+  type: ClusterIP
+  selector:
+    app: langfuse-web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: langfuse-web-lb
+  namespace: ${LANGFUSE_NAMESPACE}
+  labels:
+    app: langfuse-web
+    app.kubernetes.io/name: langfuse
+    app.kubernetes.io/part-of: octo-demo-observability
+  annotations:
+    service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "${OCI_LB_SHAPE_FLEX_MIN}"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "${OCI_LB_SHAPE_FLEX_MAX}"
+    service.beta.kubernetes.io/oci-load-balancer-subnet1: "${OCI_LB_SUBNET_OCID}"
+    service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode: "None"
+spec:
+  type: LoadBalancer
+  selector:
+    app: langfuse-web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: langfuse-ingress
+  namespace: ${LANGFUSE_NAMESPACE}
+spec:
+  podSelector:
+    matchLabels:
+      app: langfuse-web
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: langfuse-internal
+  namespace: ${LANGFUSE_NAMESPACE}
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - langfuse-postgres
+          - langfuse-clickhouse
+          - langfuse-redis
+          - langfuse-minio
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - langfuse-web
+                  - langfuse-worker
+                  - langfuse-minio-init
