@@ -148,6 +148,25 @@ octo-chaos-audit
 <DEPLOYMENT_PREFIX>-cloudguard-query-results
 ```
 
+May 11, 2026 `emdemo` check:
+
+- OCI Logging is receiving fresh Shop/CRM records with
+  `oracleApmTraceId`, `trace_id`, `span_id`, `service.name`,
+  `http.url.path`, `http.status_code`, and DB target metadata.
+- Log Analytics can execute queries in namespace `<LA_NAMESPACE>`, but
+  `Log Source = octo-shop-app-json` returned `0` rows for the last hour.
+- No custom OCTO source/parser named `octo-*` is currently registered in Log
+  Analytics for this compartment.
+- The shared connector `all-service-logs` targets Log Analytics but does not
+  include the OCTO app log group from the current Compute deployment. Do not
+  mutate that shared connector for OCTO DEMO without explicit operator approval.
+
+Operational conclusion: dashboards in `deploy/oci/log_analytics/` are ready
+as versioned assets, and the apps produce the required fields in OCI Logging.
+Real Log Analytics dashboard data requires either Service Connector quota for a
+new OCTO-owned route or an approved consolidation of an existing OCTO-owned
+connector plus source/parser registration.
+
 The OCI CLI command surface for Log Analytics content is:
 
 - parser create/update: `oci log-analytics parser upsert-parser`

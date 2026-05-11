@@ -300,7 +300,7 @@ async def create_order(payload: dict, request: Request):
 
             if not items:
                 business_metrics.record_checkout(success=False)
-                return {"error": "Cart is empty", "session_id": session_id}
+                raise HTTPException(status_code=400, detail="Cart is empty")
 
             customer = await ensure_customer(
                 db,

@@ -18,6 +18,8 @@ without collisions.
 ## One-shot apply
 
 ```bash
+./deploy/oke/check-small-cluster.sh
+
 DNS_DOMAIN=example.tld \
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \
@@ -35,6 +37,35 @@ SecretProviderClass per namespace when the OCI Secrets Store CSI
 driver is installed.
 
 Full walkthrough: [deploy/oke/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/oke/README.md).
+
+## OCTO DEMO same-VCN preflight
+
+For `emdemo`, keep the OKE test environment inside the OCTO project VCN used
+by the private Compute stack. Do not reuse clusters from the older quickstart
+VCN unless the operator explicitly accepts cross-VCN routing.
+
+The read-only preflight is:
+
+```bash
+OCI_PROFILE=emdemo ./deploy/oke/check-small-cluster.sh
+./deploy/oke/deploy-langfuse.sh --check
+```
+
+May 11, 2026 status:
+
+| Check | Result |
+|---|---|
+| OCTO project VCN | Available: app private subnet `10.42.20.0/24`, LB/API public subnet `10.42.10.0/24` |
+| Existing OKE clusters | ACTIVE clusters exist, but all are in the quickstart VCN, not the OCTO project VCN |
+| Small cluster quota | Sufficient for a two-node VM.Standard.E4/E5.Flex test cluster |
+| Block storage | Sufficient for two 80 GB worker boot volumes |
+| Langfuse OKE check | Blocked until a target-VCN OKE cluster exists |
+| Log Analytics connectors | Blocked for new routes: Service Connector Hub reports `available=0`, `used=7` |
+
+The project can create a small same-VCN OKE test cluster from a quota and
+capacity perspective. Full app install remains a two-step operation: create or
+select that same-VCN cluster first, then run `deploy-oke.sh` for Shop/CRM and
+`deploy-langfuse.sh` for the low-resource Langfuse stack.
 
 ## Langfuse Test Environment
 

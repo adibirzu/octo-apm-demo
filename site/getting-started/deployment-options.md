@@ -23,6 +23,16 @@ WAF, shared Autonomous Database, observability wired via `ensure_apm.sh`
 [new-tenancy.md](new-tenancy.md) and
 [oke-deployment.md](oke-deployment.md).
 
+For the OCTO DEMO `emdemo` tenancy, run
+`OCI_PROFILE=emdemo ./deploy/oke/check-small-cluster.sh` before creating
+anything. The May 11, 2026 preflight shows enough quota for a small same-VCN
+test cluster, but no active cluster exists in the OCTO project VCN yet. The
+existing clusters are in a different quickstart VCN, so the Langfuse OKE
+installer correctly refuses them by default. New Log Analytics connectors are
+also blocked by Service Connector Hub quota (`available=0`), so OKE logs need
+an approved connector consolidation or quota increase before they become Log
+Analytics dashboard input.
+
 ## Two-instance Compute
 
 Production-demo path for teams that want no Kubernetes moving parts but
@@ -120,3 +130,13 @@ All app deployment paths enforce the same integration contract:
 | `idempotency_token` + `source_order_id` dedup | ✅ | ✅ | n/a | ✅ |
 | `/api/integrations/schema` discovery | ✅ | ✅ | n/a | ✅ |
 | APM + RUM + Log Analytics + Stack Monitoring | ✅ | ✅ | ✅ (provisions) | ✅ (consumes) |
+
+## Deployment-Type Architecture
+
+| Layer | OKE | Two-instance Compute | Resource Manager | Unified VM |
+|---|---|---|---|---|
+| Edge | OCI LB Services per app, WAF annotations, optional ingress controller | One public OCI LB with hostname routing to private backends | Creates or validates WAF/APM/Logging surfaces only | Host nginx or direct service ports |
+| App runtime | Kubernetes Deployments for Shop, CRM, Java APM sidecar, Workflow Gateway, and optional platform services | Podman systemd services on private Shop and CRM VMs | n/a | Local systemd/containers on one VM |
+| Data | Shared ATP wallet through K8s Secrets or Vault CSI | Private ATP endpoint and wallet on each VM | Optional ATP/observability provisioning only | Existing ATP wallet mounted locally |
+| Observability | OTel to OCI APM, RUM, OCI Logging, optional OTel gateway, LA after connector/source mapping | OTel to OCI APM, RUM, OCI Logging SDK, Java app-server metrics, LA after connector/source mapping | APM domain, RUM app, logs, WAF, and optional connectors | Same app telemetry, lower HA |
+| Control/automation | `kubectl`, HPA/PDB, browser-runner jobs, load-control/remediator services | SSH/Run Command, systemd restart, local browser/API tests | Terraform plan/apply/import | Shell install and local restart |

@@ -11,6 +11,26 @@ OCI/Kubernetes rights, enforces the target VCN by default, creates platform
 secrets at deploy time, and can optionally update the Shop `octo-llmetry`
 secret after a Langfuse project is created.
 
+Read-only OCTO DEMO capacity check: use
+[`check-small-cluster.sh`](check-small-cluster.sh) before creating any OKE
+resources in `emdemo`. It verifies the target VCN/subnets from the Compute
+outputs, lists existing clusters, checks OKE cluster quota, E4/E5 Flex OCPU
+availability, block-volume headroom, and Service Connector Hub availability.
+It does not create, update, or delete resources.
+
+Current `emdemo` result on May 11, 2026:
+
+- Quota/capacity is sufficient for a small two-node test cluster in the OCTO
+  project compartment: `cluster-count available=3`, E4/E5 Flex OCPUs
+  available in `Njav:PHX-AD-1`, and enough Block Volume capacity.
+- No ACTIVE OKE cluster currently lives in the OCTO project VCN. Existing
+  clusters (`cluster2-basic`, `cluster-n`, `cluster3`) are ACTIVE but belong
+  to the older quickstart VCN, so `deploy-langfuse.sh --check` intentionally
+  refuses to use them.
+- Service Connector Hub quota is exhausted (`available=0`, `used=7`), so a new
+  OCI Logging -> Log Analytics route for OKE app logs is blocked until quota is
+  increased or an approved OCTO-owned connector is consolidated.
+
 ## Names used by this path
 
 | Concern | Value |
@@ -31,6 +51,8 @@ without collisions.
 ## One-shot apply
 
 ```bash
+./deploy/oke/check-small-cluster.sh
+
 DNS_DOMAIN=example.test \
 OCIR_REGION=eu-frankfurt-1 \
 OCIR_TENANCY=<namespace> \

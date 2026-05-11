@@ -265,6 +265,15 @@ install -d -m 0700 /opt/octo/secrets
 install -d -m 0755 /opt/octo/apm-agent
 render_container_env_file
 
+if [[ -d /opt/octo/secrets ]]; then
+    chown "root:${APP_CONTAINER_GID}" /opt/octo/secrets
+    chmod 0750 /opt/octo/secrets
+    find /opt/octo/secrets -mindepth 1 -type d -exec chown "root:${APP_CONTAINER_GID}" {} \;
+    find /opt/octo/secrets -mindepth 1 -type d -exec chmod 0750 {} \;
+    find /opt/octo/secrets -type f -exec chown "${APP_CONTAINER_UID}:${APP_CONTAINER_GID}" {} \;
+    find /opt/octo/secrets -type f -exec chmod 0400 {} \;
+fi
+
 if [[ ! -d "${WALLET_DIR}" ]] || ! ls "${WALLET_DIR}"/*.sso >/dev/null 2>&1; then
     red "ATP wallet not found in ${WALLET_DIR}; expected cwallet.sso/ewallet.p12/tnsnames.ora"
     exit 1

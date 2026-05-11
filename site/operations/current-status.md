@@ -2,6 +2,7 @@
 
 Snapshot date: **April 28, 2026** for the shared `DEFAULT` runtime.
 Private Compute stack validation updated on **May 7, 2026**.
+OCTO DEMO `emdemo` validation updated on **May 11, 2026**.
 
 This page records the latest observed state of the shared `DEFAULT`
 deployment surface tracked by this repo. It is a runtime snapshot, not a
@@ -155,6 +156,103 @@ manual zip upload for this private branch, or publish a real private release
 asset and open `https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=...`.
 If a valid asset still fails, verify Console tenancy/region context and grant
 Resource Manager create/import/job permissions for this compartment.
+
+## OCTO DEMO `emdemo` live validation
+
+Validated on May 11, 2026 against the OCTO DEMO hosts:
+
+- Shop: `https://drones.octodemo.cloud`
+- Admin/CRM: `https://admin.octodemo.cloud`
+- LB IP used for deterministic checks: `<EMDEMO_LB_PUBLIC_IP>`
+- ATP runtime service: `octoatp_low`
+- Runtime path: two-instance private Compute with the Shop Java APM sidecar
+  and Workflow Gateway running on the Shop VM.
+
+Live readiness:
+
+- Shop `/ready` returned HTTP 200 with `ready=true`, ATP connected, APM/RUM
+  configured, Java APM enabled, payment gateway simulation enabled,
+  Workflow Gateway configured, Select AI configured, OCI GenAI configured,
+  Langfuse configured, and Langfuse project `drones.octodemo.cloud`.
+- Admin/CRM `/ready` returned HTTP 200 with `ready=true`, ATP connected,
+  APM configured, RUM configured, and OCI Logging configured.
+- VM-side `octo-compute.service` is active on the Shop host, with
+  `octo-app`, `octo-java-apm`, and `octo-workflow-gateway` containers up.
+
+Checkout hardening deployed on May 11:
+
+- Anonymous `/api/shop/checkout` now validates `customer_email` before CRM/DB
+  work and returns structured HTTP 400 for missing or invalid email.
+- Empty-cart checkout now returns structured HTTP 400 instead of HTTP 200 with
+  an error body.
+- The same empty-cart client error is applied to authenticated
+  `/api/orders` creation.
+- The compute installer now preserves `/opt/octo/secrets` permissions for the
+  non-root app container so Langfuse `*_FILE` secrets remain readable after
+  future installs.
+
+Validation commands run after deployment:
+
+```bash
+python -m pytest shop/tests -q
+python -m pytest crm/tests -q
+python -m pytest tests/test_unified_deploy_surface.py -q
+python -m pytest tests/test_log_analytics_attack_assets.py -q
+python -m pytest services/async-worker/tests -q
+python -m pytest services/cache/tests -q
+PYTHONPATH=services/edge-fuzz/src python -m pytest services/edge-fuzz/tests -q
+PYTHONPATH=services/load-control/src python -m pytest services/load-control/tests -q
+PYTHONPATH=services/object-pipeline/src python -m pytest services/object-pipeline/tests -q
+PYTHONPATH=services/remediator/src python -m pytest services/remediator/tests -q
+bash services/otel-gateway/tests/test_config_validates.sh
+npm --prefix services/browser-runner test
+SHOP_URL=https://drones.octodemo.cloud CRM_URL=https://admin.octodemo.cloud \
+  npx playwright test tests/e2e/availability.spec.ts tests/e2e/health.spec.ts --project=api
+SHOP_URL=https://drones.octodemo.cloud CRM_URL=https://admin.octodemo.cloud \
+  SHOP_E2E_USERNAME=shopper SHOP_E2E_PASSWORD=<test-password> \
+  npx playwright test tests/e2e/shopping-flow.spec.ts tests/e2e/payment-gateway-trace.spec.ts --project=chromium
+```
+
+Observed results:
+
+- Shop tests: `178 passed`.
+- CRM tests: `62 passed`.
+- Deploy surface: `20 passed`.
+- Log Analytics attack assets: `8 passed`.
+- Services: async-worker `12 passed`, cache `6 passed`, edge-fuzz
+  `4 passed`, load-control `37 passed`, object-pipeline `8 passed`,
+  remediator `21 passed`.
+- OTel gateway config: YAML/key validation passed; full
+  `otelcol-contrib validate` was skipped because `otelcol-contrib` is not on
+  PATH.
+- Browser runner: `10 passed`.
+- Live API Playwright suite: `28 passed`.
+- Live browser checkout/payment suite: `12 passed`.
+
+OKE same-VCN assessment:
+
+- `deploy/oke/check-small-cluster.sh` is read-only and reports quota/capacity
+  sufficient for a small two-node OKE test cluster in `emdemo`.
+- Existing OKE clusters in the compartment are ACTIVE, but all are in the
+  quickstart VCN, not the OCTO project VCN.
+- `deploy/oke/deploy-langfuse.sh --check` correctly fails until a cluster
+  exists in the OCTO project VCN or an operator explicitly sets
+  `ALLOW_DIFFERENT_VCN=true` with a selected cluster.
+- Service Connector Hub quota is exhausted (`available=0`, `used=7`), so new
+  OCI Logging -> Log Analytics connectors for OCTO app/OKE logs cannot be
+  created yet.
+
+Log and Coordinator readiness:
+
+- Fresh Shop/CRM records are present in OCI Logging with `oracleApmTraceId`,
+  `trace_id`, `span_id`, `service.name`, route, status, and DB target fields.
+- A Log Analytics query for `Log Source = octo-shop-app-json` returned `0`
+  rows in the last hour because the OCTO Logging log group is not currently
+  routed into a Log Analytics source/parser mapping.
+- An OCI Coordinator deployed on a future same-VCN OKE cluster can ask
+  questions against the live websites and OCI Logging today. Questions that
+  require Log Analytics dashboards or saved-search joins are blocked until
+  connector quota/source binding is resolved.
 
 ## Private Compute reference deployment
 
