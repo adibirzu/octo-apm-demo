@@ -266,6 +266,15 @@
       return;
     }
 
+    // Idempotent: if a panel already exists in the current DOM, reuse it.
+    // Both the DOMContentLoaded handler AND Material's document$.subscribe
+    // can fire on the same page load — without this guard we'd render
+    // two panels stacked on top of each other.
+    if (document.getElementById("placeholder-config-panel")) {
+      applySubstitution();
+      return;
+    }
+
     // Insert panel after the H1 if present, otherwise at the top of <article>
     const article = document.querySelector("article.md-content__inner, article.md-typeset, article");
     if (!article) return;
@@ -283,19 +292,20 @@
     applySubstitution();
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
-
-  // Material for MkDocs uses instant navigation — re-apply on page change.
+  // Material for MkDocs uses instant navigation. When document$ is
+  // available, use it as the SOLE init trigger (it fires on every page
+  // change, including the first load). Otherwise fall back to the
+  // standard DOM lifecycle.
   if (typeof document$ !== "undefined" && document$.subscribe) {
     document$.subscribe(function () {
-      // Remove any existing panel so we can re-insert into the new DOM
+      // Remove any existing panel so the new page gets a freshly built one
       const old = document.getElementById("placeholder-config-panel");
       if (old) old.remove();
       init();
     });
+  } else if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
   }
 })();
