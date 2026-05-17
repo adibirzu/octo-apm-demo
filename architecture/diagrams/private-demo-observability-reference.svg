@@ -126,18 +126,18 @@
 
   <rect x="725" y="432" width="205" height="90" class="node-box yellow"/>
   <text x="748" y="462" class="node-title">Admin CRM VM</text>
-  <text x="748" y="484" class="node">Enterprise CRM portal</text>
-  <text x="748" y="504" class="small">storyboard and simulations</text>
+  <text x="748" y="484" class="node">Coordinator admin-only</text>
+  <text x="748" y="504" class="small">storyboard and Attack Lab</text>
 
   <rect x="725" y="548" width="205" height="78" class="node-box blue"/>
   <text x="748" y="576" class="node-title">Private API Gateway</text>
-  <text x="748" y="598" class="node">component calls</text>
-  <text x="748" y="617" class="small">service auth and tracing</text>
+  <text x="748" y="598" class="node">admin workflow labs</text>
+  <text x="748" y="617" class="small">service auth + traceparent</text>
 
   <rect x="970" y="432" width="160" height="90" class="node-box blue"/>
   <text x="990" y="462" class="node-title">OCI Generative AI</text>
-  <text x="990" y="484" class="node">Drone advisor</text>
-  <text x="990" y="504" class="small">LLM spans</text>
+  <text x="990" y="484" class="node">admin assistant</text>
+  <text x="990" y="504" class="small">scoped LLMetry</text>
 
   <rect x="970" y="548" width="160" height="78" class="node-box blue"/>
   <text x="990" y="576" class="node-title">Jumphost</text>

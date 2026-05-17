@@ -5,17 +5,18 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install." name="description"/>
+<meta content="An OCI APM and Observability reference platform — production-grade end-to-end telemetry across a multi-service drone retail stack" name="description"/>
 <link href="https://adibirzu.github.io/octo-apm-demo/" rel="canonical"/>
 <link href="introduction/" rel="next"/>
 <link href="assets/images/favicon.png" rel="icon"/>
 <meta content="mkdocs-1.6.1, mkdocs-material-9.7.1" name="generator"/>
-<title>OCTO APM Demo — Unified Platform</title>
+<title>OCTO APM Demo Platform - OCTO APM Demo — Unified Platform</title>
 <link href="assets/stylesheets/main.484c7ddc.min.css" rel="stylesheet"/>
 <link href="assets/stylesheets/palette.ab4e12ef.min.css" rel="stylesheet"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
 <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="assets/css/placeholder-config.css" rel="stylesheet"/>
 <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
 </head>
 <body data-md-color-accent="amber" data-md-color-primary="deep-purple" data-md-color-scheme="default" dir="ltr">
@@ -23,7 +24,7 @@
 <input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
 <label class="md-overlay" for="__drawer"></label>
 <div data-md-component="skip">
-<a class="md-skip" href="#octo-cloud-native-platform">
+<a class="md-skip" href="#octo-apm-demo-platform">
           Skip to content
         </a>
 </div>
@@ -47,7 +48,7 @@
 <div class="md-header__topic" data-md-component="header-topic">
 <span class="md-ellipsis">
             
-              Home
+              OCTO APM Demo Platform
             
           </span>
 </div>
@@ -248,7 +249,7 @@
 </nav>
 <main class="md-main" data-md-component="main">
 <div class="md-main__inner md-grid">
-<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden="">
 <div class="md-sidebar__scrollwrap">
 <div class="md-sidebar__inner">
 <nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
@@ -299,37 +300,55 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#what-is-octo">
+<a class="md-nav__link" href="#choose-your-path">
 <span class="md-ellipsis">
       
-        What is OCTO?
+        Choose your path
       
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#recent-architecture-updates">
+<a class="md-nav__link" href="#whats-in-the-platform">
 <span class="md-ellipsis">
       
-        Recent Architecture Updates
+        What's in the platform
       
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#architecture-at-a-glance">
+<a class="md-nav__link" href="#oci-observability-at-a-glance">
 <span class="md-ellipsis">
       
-        Architecture at a Glance
+        OCI Observability at a glance
       
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#key-capabilities">
+<a class="md-nav__link" href="#whats-new">
 <span class="md-ellipsis">
       
-        Key Capabilities
+        What's new
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#workshop-tour">
+<span class="md-ellipsis">
+      
+        Workshop tour
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#reference-architecture">
+<span class="md-ellipsis">
+      
+        Reference architecture
       
     </span>
 </a>
@@ -338,16 +357,16 @@
 <a class="md-nav__link" href="#tenancy-portability">
 <span class="md-ellipsis">
       
-        Tenancy Portability
+        Tenancy portability
       
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#related-components">
+<a class="md-nav__link" href="#status-support">
 <span class="md-ellipsis">
       
-        Related Components
+        Status &amp; support
       
     </span>
 </a>
@@ -1093,6 +1112,18 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="observability-v2/event-generation-guide/">
+<span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="observability-v2/chaos-playbook/">
 <span class="md-ellipsis">
     
@@ -1122,6 +1153,18 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="observability-v2/synthetic-monitoring/">
+<span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -1170,6 +1213,18 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="observability-v2/code-knowledge-map/">
+<span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -1387,6 +1442,18 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="operations/guided-demo-rollout/">
+<span class="md-ellipsis">
+    
+  
+    Guided demo rollout
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="operations/current-status/">
 <span class="md-ellipsis">
     
@@ -1592,7 +1659,7 @@
 </div>
 </div>
 </div>
-<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden="">
 <div class="md-sidebar__scrollwrap">
 <div class="md-sidebar__inner">
 <nav aria-label="Table of contents" class="md-nav md-nav--secondary">
@@ -1602,37 +1669,55 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#what-is-octo">
+<a class="md-nav__link" href="#choose-your-path">
 <span class="md-ellipsis">
       
-        What is OCTO?
+        Choose your path
       
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#recent-architecture-updates">
+<a class="md-nav__link" href="#whats-in-the-platform">
 <span class="md-ellipsis">
       
-        Recent Architecture Updates
+        What's in the platform
       
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#architecture-at-a-glance">
+<a class="md-nav__link" href="#oci-observability-at-a-glance">
 <span class="md-ellipsis">
       
-        Architecture at a Glance
+        OCI Observability at a glance
       
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#key-capabilities">
+<a class="md-nav__link" href="#whats-new">
 <span class="md-ellipsis">
       
-        Key Capabilities
+        What's new
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#workshop-tour">
+<span class="md-ellipsis">
+      
+        Workshop tour
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#reference-architecture">
+<span class="md-ellipsis">
+      
+        Reference architecture
       
     </span>
 </a>
@@ -1641,16 +1726,16 @@
 <a class="md-nav__link" href="#tenancy-portability">
 <span class="md-ellipsis">
       
-        Tenancy Portability
+        Tenancy portability
       
     </span>
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#related-components">
+<a class="md-nav__link" href="#status-support">
 <span class="md-ellipsis">
       
-        Related Components
+        Status &amp; support
       
     </span>
 </a>
@@ -1662,232 +1747,279 @@
 </div>
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
-<h1 id="octo-cloud-native-platform">OCTO Cloud-Native Platform<a class="headerlink" href="#octo-cloud-native-platform" title="Permanent link">¶</a></h1>
-<p><strong>Two-service cloud-native platform with shared Oracle ATP, full OCI observability (MELTS: Metrics, Events, Logs, Traces, SQL), IDCS SSO, cross-service distributed tracing, and automated remediation.</strong></p>
-<p><a class="md-button md-button--primary" href="https://github.com/adibirzu/octo-apm-demo"><span class="twemoji"><svg viewbox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"></path></svg></span> Unified Project</a>
-<a class="md-button" href="https://github.com/adibirzu/octo-drone-shop"><span class="twemoji"><svg viewbox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"></path></svg></span> Drone Shop</a>
-<a class="md-button md-button--primary" href="https://github.com/adibirzu/enterprise-crm-portal"><span class="twemoji"><svg viewbox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"></path></svg></span> CRM Portal</a>
-<a class="md-button md-button--primary" href="getting-started/compute-deployment/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11 20H6.5q-2.28 0-3.89-1.57Q1 16.85 1 14.58q0-1.95 1.17-3.48 1.18-1.53 3.08-1.95.63-2.3 2.5-3.72Q9.63 4 12 4q2.93 0 4.96 2.04Q19 8.07 19 11q1.73.2 2.86 1.5 1.14 1.28 1.14 3 0 1.88-1.31 3.19T18.5 20H13v-7.15l1.6 1.55L16 13l-4-4-4 4 1.4 1.4 1.6-1.55Z"></path></svg></span> Private Compute Stack</a>
-<a class="md-button" href="operations/current-status/#public-dns-status"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 15h-2v2h2m0-6h-2v2h2m2 6h-8v-2h2v-2h-2v-2h2v-2h-2V9h8M10 7H8V5h2m0 6H8V9h2m0 6H8v-2h2m0 6H8v-2h2M6 7H4V5h2m0 6H4V9h2m0 6H4v-2h2m0 6H4v-2h2m6-10V3H2v18h20V7z"></path></svg></span> DNS Cutover</a>
-<a class="md-button" href="operations/current-status/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 9H7V7h10m0 6H7v-2h10m-3 6H7v-2h7M12 3a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m7 0h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2"></path></svg></span> Current Status</a>
-<a class="md-button" href="assets/demo/octo-end-user-demo-guide.pdf"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-9.5 8.5c0 .8-.7 1.5-1.5 1.5H7v2H5.5V9H8c.8 0 1.5.7 1.5 1.5zm5 2c0 .8-.7 1.5-1.5 1.5h-2.5V9H13c.8 0 1.5.7 1.5 1.5zm4-3H17v1h1.5V13H17v2h-1.5V9h3zm-6.5 0h1v3h-1zm-5 0h1v1H7z"></path></svg></span> End-User Demo PDF</a></p>
+<h1 id="octo-apm-demo-platform">OCTO APM Demo Platform<a class="headerlink" href="#octo-apm-demo-platform" title="Permanent link">¶</a></h1>
+<p>An end-to-end OCI Observability reference: distributed tracing, real-user
+monitoring, log analytics, custom metrics, and database telemetry — wired
+together so every browser click can be followed all the way to an Oracle
+Autonomous Database query.</p>
+<p><a class="md-button md-button--primary" href="getting-started/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m13.13 22.19-1.63-3.83c1.57-.58 3.04-1.36 4.4-2.27zM5.64 12.5l-3.83-1.63 6.1-2.77C7 9.46 6.22 10.93 5.64 12.5M21.61 2.39S16.66.269 11 5.93c-2.19 2.19-3.5 4.6-4.35 6.71-.28.75-.09 1.57.46 2.13l2.13 2.12c.55.56 1.37.74 2.12.46A19.1 19.1 0 0 0 18.07 13c5.66-5.66 3.54-10.61 3.54-10.61m-7.07 7.07c-.78-.78-.78-2.05 0-2.83s2.05-.78 2.83 0c.77.78.78 2.05 0 2.83s-2.05.78-2.83 0m-5.66 7.07-1.41-1.41zM6.24 22l3.64-3.64c-.34-.09-.67-.24-.97-.45L4.83 22zM2 22h1.41l4.77-4.76-1.42-1.41L2 20.59zm0-2.83 4.09-4.08c-.21-.3-.36-.62-.45-.97L2 17.76z"></path></svg></span> Get Started</a>
+<a class="md-button" href="architecture/platform-overview/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h6v2h8V2h6v6h-2v8h2v6h-6v-2H8v2H2v-6h2V8H2zm14 6V6H8v2H6v8h2v2h8v-2h2V8zM4 4v2h2V4zm14 0v2h2V4zM4 18v2h2v-2zm14 0v2h2v-2z"></path></svg></span> View Architecture</a>
+<a class="md-button" href="https://github.com/adibirzu/octo-apm-demo"><span class="twemoji"><svg viewbox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"></path></svg></span> Source on GitHub</a></p>
 <hr/>
-<h2 id="what-is-octo">What is OCTO?<a class="headerlink" href="#what-is-octo" title="Permanent link">¶</a></h2>
-<p>Current <code>&lt;OCI_PROFILE&gt;</code> target hostnames are <code>shop.example.test</code> for the
-Shop and <code>admin.example.test</code> for the Admin/CRM app. DNS is managed in
-the separate external DNS tenancy; use placeholder-safe IPs and hostnames in
-public docs, and preserve the manual HTTPS <code>443</code> listener, SSL certificate,
-and host-routing rules outside normal app delivery. The
-older <code>DEFAULT</code> target hostnames <code>shop.example.test</code> and
-<code>crm.example.test</code> are still documented as a historical operational
-snapshot. See <a href="operations/current-status/">Current Status</a> for
-shared-environment evidence. Private operator install plans are excluded from
-the public GitHub Pages build.</p>
-<p>The OCTO Cloud-Native Platform is a <strong>two-service architecture</strong> built on Oracle Cloud Infrastructure, demonstrating how enterprise workloads integrate with OCI's observability, security, and AI services.</p>
-<table>
-<thead>
-<tr>
-<th>Service</th>
-<th>Purpose</th>
-<th>Routes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong><a href="drone-shop/">OCTO Drone Shop</a></strong></td>
-<td>E-commerce with AI assistant, MELTS observability (Metrics, Events, Logs, Traces, SQL), security controls</td>
-<td>98</td>
-</tr>
-<tr>
-<td><strong><a href="crm/">Enterprise CRM Portal</a></strong></td>
-<td>CRM with OWASP security training, simulation lab, order sync</td>
-<td>~80</td>
-</tr>
-</tbody>
-</table>
-<p>Both services share a <strong>single Oracle ATP database</strong>, enabling cross-service data correlation and distributed tracing visible in OCI APM Topology.</p>
-<h2 id="recent-architecture-updates">Recent Architecture Updates<a class="headerlink" href="#recent-architecture-updates" title="Permanent link">¶</a></h2>
-<ul>
-<li><strong>CRM owns catalog and storefront administration</strong> — products, stock, pricing, category changes, shop assignment, and storefront metadata are now managed from the CRM control plane.</li>
-<li><strong>Shop stays customer-facing</strong> — the public storefront remains focused on browse, cart, checkout, and shipment flows; operational edits are intentionally removed from the customer frontend.</li>
-<li><strong>Public and private CRM URLs are split</strong> — browser-visible links use <code>https://crm.example.test</code>, while backend service-to-service calls may continue to use a private service endpoint.</li>
-<li><strong>Frontend hardening is live</strong> — CRM page rendering, observability beacon ingestion, CSP-safe scripts, and favicon handling were updated to remove recent runtime errors.</li>
-<li><strong>Enhancement roadmap is published</strong> — the docs now define the rollout path for complex flows, OCI APM, OCI Logging, Log Analytics, drilldowns, and DB tooling.</li>
-<li><strong>Deployment status is now published</strong> — the docs include dated OCI, runtime, APM, Logging, Log Analytics, Cloud Guard, Availability Monitoring, payment gateway observability, and Resource Manager troubleshooting snapshots for the private Compute <code>&lt;OCI_PROFILE&gt;</code> deployment and the legacy <code>DEFAULT</code> environment.</li>
-</ul>
+<h2 id="choose-your-path">Choose your path<a class="headerlink" href="#choose-your-path" title="Permanent link">¶</a></h2>
 <div class="grid cards">
 <ul>
 <li>
-<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m21.9 8.9-1.7 1-4-6.9 1.7-1zm-12.1-1 3 5.2 6.1-3.5-3-5.2zm1.6 4.8-2-3.5-4.3 2.5 2 3.5zm-9.3 1.9 1 1.7 2.6-1.5-1-1.7zm10-.6-.3-.4-4.3 2.5.3.4c.2.3.5.6.8.8L7 22h2l1.4-4.3h.1L12 22h2l-1.9-5.6c.5-.7.5-1.6 0-2.4"></path></svg></span> <strong>Modular OCI Observability</strong></p>
+<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 9a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3m0-4.5c5 0 9.27 3.11 11 7.5-1.73 4.39-6 7.5-11 7.5S2.73 16.39 1 12c1.73-4.39 6-7.5 11-7.5M3.18 12a9.821 9.821 0 0 0 17.64 0 9.821 9.821 0 0 0-17.64 0"></path></svg></span> <strong>I want to see the demo</strong></p>
 <hr/>
-<p>APM, RUM, Logging, Log Analytics, Stack Monitoring, DB Management, Ops Insights — each activatable independently as add-ons.</p>
-<p><a href="observability/addons/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Add-Ons Guide</a></p>
+<p>Walk through the storyboard: a customer checkout, a failure injection, and
+the full trace + log + metric pivot inside the OCI console.</p>
+<p><a href="observability-v2/demo-storyboard-attack-lab/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Demo Storyboard</a></p>
 </li>
 <li>
-<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 12c2.5 0 4.5 2 4.5 4.5 0 .88-.25 1.71-.69 2.4l3.08 3.1L21 23.39l-3.12-3.07c-.69.43-1.51.68-2.38.68-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5m0 2a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5M14 6.11 8 4v11.89l1 .35v.26c0 .64.09 1.26.26 1.84L8 17.9l-5.34 2.07-.16.03a.5.5 0 0 1-.5-.5V4.38c0-.23.15-.41.36-.48L8 2l6 2.1L19.34 2h.16a.5.5 0 0 1 .5.5v9.31A6.48 6.48 0 0 0 15.5 10c-.5 0-1 .06-1.5.17z"></path></svg></span> <strong>Enhancement Roadmap</strong></p>
+<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 19h1a1 1 0 0 1 1 1h7v2h-7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1H2v-2h7a1 1 0 0 1 1-1h1v-2H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-7zM4 3h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1m5 4h1V5H9zm0 8h1v-2H9zM5 5v2h2V5zm0 8v2h2v-2z"></path></svg></span> <strong>I want to deploy it</strong></p>
 <hr/>
-<p>Sequential plan for complex-call demos, APM visibility, log routing, drilldowns, and database investigation tooling.</p>
-<p><a href="observability/enhancement-plan/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Enhancement Plan</a></p>
+<p>Compute single-VM, OKE with Helm, or local Docker Compose — pick the
+footprint that matches your tenancy and time budget.</p>
+<p><a href="getting-started/deployment-options/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Deployment Options</a></p>
 </li>
 <li>
-<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m10 17-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9m-6-8L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5z"></path></svg></span> <strong>Security-First Design</strong></p>
+<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m16 11.78 4.24-7.33 1.73 1-5.23 9.05-6.51-3.75L5.46 19H22v2H2V3h2v14.54L9.5 8z"></path></svg></span> <strong>I want to understand the observability story</strong></p>
 <hr/>
-<p>19 MITRE ATT&amp;CK security span types, WAF protection rules, OCI Cloud Guard, Vault integration, and PII masking.</p>
-<p><a href="observability/security/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Security</a></p>
+<p>Metrics, Events, Logs, Traces, plus Security (MELT-S) — how every signal
+is captured, correlated, and routed through OCI Observability.</p>
+<p><a href="observability/melts/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> MELT-S Overview</a></p>
 </li>
 <li>
-<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.5 11H19V7a2 2 0 0 0-2-2h-4V3.5A2.5 2.5 0 0 0 10.5 1 2.5 2.5 0 0 0 8 3.5V5H4a2 2 0 0 0-2 2v3.8h1.5c1.5 0 2.7 1.2 2.7 2.7S5 16.2 3.5 16.2H2V20a2 2 0 0 0 2 2h3.8v-1.5c0-1.5 1.2-2.7 2.7-2.7s2.7 1.2 2.7 2.7V22H17a2 2 0 0 0 2-2v-4h1.5a2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"></path></svg></span> <strong>Framework Architecture</strong></p>
+<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8 3a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H3v2h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h2v-2H8v-5a2 2 0 0 0-2-2 2 2 0 0 0 2-2V5h2V3m6 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3z"></path></svg></span> <strong>I want to extend the codebase</strong></p>
 <hr/>
-<p>Modular design with 13 independent modules. Add new features without breaking existing capabilities.</p>
-<p><a href="architecture/framework/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Framework</a></p>
-</li>
-<li>
-<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21.4 7.5c.8.8.8 2.1 0 2.8l-2.8 2.8-7.8-7.8 2.8-2.8c.8-.8 2.1-.8 2.8 0l1.8 1.8 3-3 1.4 1.4-3 3zm-5.8 5.8-1.4-1.4-2.8 2.8-2.1-2.1 2.8-2.8-1.4-1.4-2.8 2.8-1.5-1.4-2.8 2.8c-.8.8-.8 2.1 0 2.8l1.8 1.8-4 4 1.4 1.4 4-4 1.8 1.8c.8.8 2.1.8 2.8 0l2.8-2.8-1.4-1.4z"></path></svg></span> <strong>Cross-Service Integration</strong></p>
-<hr/>
-<p>W3C traceparent-propagated distributed traces between Drone Shop, CRM Portal, and shared Oracle ATP.</p>
-<p><a href="integrations/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Integrations</a></p>
-</li>
-<li>
-<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"></path></svg></span> <strong>Shared Oracle ATP</strong></p>
-<hr/>
-<p>Single database instance with session tagging, SQL_ID bridging to OPSI, and cross-service data correlation.</p>
-<p><a href="architecture/database-integration/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Database Integration</a></p>
-</li>
-<li>
-<p><span class="twemoji lg middle"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 22a3 3 0 0 1-3-3c0-.6.18-1.16.5-1.63L9 7.81V6a1 1 0 0 1-1-1V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1v1.81l5.5 9.56c.32.47.5 1.03.5 1.63a3 3 0 0 1-3 3zm-1-3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1c0-.21-.07-.41-.18-.57l-2.29-3.96L14 17l-5.07-5.07-3.75 6.5c-.11.16-.18.36-.18.57m8-9a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"></path></svg></span> <strong>Simulation Lab</strong></p>
-<hr/>
-<p>15+ chaos injection endpoints, cross-service proxy, data generation. Optional security testing add-on for OWASP training.</p>
-<p><a href="crm/simulation/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Simulation</a></p>
+<p>Service inventory, data model, correlation contract, and the layered
+architecture diagrams that explain how the pieces fit together.</p>
+<p><a href="architecture/platform-overview/"><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"></path></svg></span> Architecture</a></p>
 </li>
 </ul>
 </div>
-<h2 id="architecture-at-a-glance">Architecture at a Glance<a class="headerlink" href="#architecture-at-a-glance" title="Permanent link">¶</a></h2>
-<p><img alt="Private Demo OCTO APM Demo architecture" src="architecture/diagrams/private-demo-observability-reference.svg?v=20260509-sanitized"/></p>
+<hr/>
+<h2 id="whats-in-the-platform">What's in the platform<a class="headerlink" href="#whats-in-the-platform" title="Permanent link">¶</a></h2>
+<p>A small constellation of services, each instrumented end-to-end and connected
+through one shared trace context:</p>
+<ul>
+<li><strong>Drone Shop storefront</strong> — FastAPI (Python) customer storefront with browse,
+  cart, checkout, AI assistant, and RUM-instrumented browser sessions.</li>
+<li><strong>Java payment sidecar</strong> — Spring Boot service that adds OCI APM App Servers
+  visibility and gateway authorization spans to every checkout trace.</li>
+<li><strong>Enterprise CRM Portal</strong> — FastAPI (Python) operations portal for catalog,
+  order, customer, simulation, and security-training workflows.</li>
+<li><strong>Workflow Gateway</strong> — Admin labs proxy fronting Select AI and operator-only
+  workflow surfaces.</li>
+<li><strong>Support services</strong> — <code>async-worker</code>, <code>load-control</code>, <code>object-pipeline</code>,
+  <code>remediator</code>, <code>edge-fuzz</code>, and <code>auto-remediator</code> for chaos, signal injection,
+  and remediation demos.</li>
+<li><strong>Shared Oracle Autonomous Database (ATP)</strong> — single instance with session
+  tagging, SQL_ID bridging, and an idempotency contract for cross-service
+  correlation.</li>
+<li><strong>End-to-end trace context</strong> — browser RUM → FastAPI → Java sidecar → ATP,
+  with W3C <code>traceparent</code> propagation at every hop.</li>
+<li><strong>Full OCI Observability surface</strong> — APM, APM RUM, Logging, Logging Analytics,
+  Monitoring, Stack Monitoring, and Service Connector Hub.</li>
+</ul>
+<hr/>
+<h2 id="oci-observability-at-a-glance">OCI Observability at a glance<a class="headerlink" href="#oci-observability-at-a-glance" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>OCI Service</th>
+<th>What you see</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Distributed traces</td>
+<td><strong>APM</strong></td>
+<td>Span search, trace explorer, dependency map, App Servers view</td>
+</tr>
+<tr>
+<td>Browser sessions</td>
+<td><strong>APM RUM</strong></td>
+<td>Page loads, custom actions, fetch trace propagation</td>
+</tr>
+<tr>
+<td>Structured logs</td>
+<td><strong>Logging → Logging Analytics</strong></td>
+<td>Searchable correlated logs with <code>oracleApmTraceId</code></td>
+</tr>
+<tr>
+<td>Custom metrics</td>
+<td><strong>Monitoring</strong></td>
+<td>Payment success rate, login failures, business KPIs</td>
+</tr>
+<tr>
+<td>Database health</td>
+<td><strong>Stack Monitoring</strong></td>
+<td>ATP performance, capacity, and SQL pivots</td>
+</tr>
+<tr>
+<td>Log routing</td>
+<td><strong>Service Connector Hub</strong></td>
+<td>OCI Logging → Log Analytics pipeline</td>
+</tr>
+<tr>
+<td>Security events</td>
+<td><strong>Cloud Guard + Log Analytics</strong></td>
+<td>Detection rules, attack-lab pivots, WAF evidence</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">The correlation promise</p>
+<p>Every browser click, FastAPI request, Java method, ATP query, log row, and
+APM span shares the same trace context. Any view in any OCI Observability
+surface can drill into any other view in one click.</p>
+</div>
+<hr/>
+<h2 id="whats-new">What's new<a class="headerlink" href="#whats-new" title="Permanent link">¶</a></h2>
+<p>Recent platform additions worth a look:</p>
+<div class="grid cards">
+<ul>
+<li>
+<p><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 19c0-.34.04-.67.09-1H3v-6h16v1c.7 0 1.37.13 2 .35V6c0-1.11-.89-2-2-2H3c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h10.09c-.05-.33-.09-.66-.09-1M3 6h16v2H3zm14.75 16L15 19l1.16-1.16 1.59 1.59 3.59-3.59 1.16 1.41z"></path></svg></span> <strong>Token-safe payment telemetry</strong></p>
+<p>Multi-gateway component labels and verification spans without raw PAN,
+CVV, wallet, or cryptogram material.</p>
+</li>
+<li>
+<p><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 13v6h-1l-2-2h-8V9H5l-2 2H2V5h1l2 2h8v8h6l2-2Z"></path></svg></span> <strong>Java sidecar trace propagation</strong></p>
+<p>W3C <code>traceparent</code> and custom-header propagation across the Spring Boot
+payment sidecar and the Python checkout path.</p>
+</li>
+<li>
+<p><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m21.1 12.5 1.4 1.41-6.53 6.59L12.5 17l1.4-1.41 2.07 2.08zM11 4a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4m0 2a2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-2-2m0 7c.68 0 1.5.09 2.41.26l-1.67 1.67-.74-.03c-2.97 0-6.1 1.46-6.1 2.1v1.1h6.2L13 20H3v-3c0-2.66 5.33-4 8-4"></path></svg></span> <strong>Login observability</strong></p>
+<p>Success/failure spans, audit rows, and metric pivots tied to the same
+user session and trace context.</p>
+</li>
+<li>
+<p><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 9a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3m5.86 10.31C16.23 21.22 14.28 22.45 12 23c-2.56-.61-4.7-2.07-6.42-4.37C3.86 16.34 3 13.8 3 11V5l9-4 9 4v6c0 2.39-.64 4.61-1.92 6.67l-2.91-2.91c.52-.79.83-1.76.83-2.76a5 5 0 0 0-5-5 5 5 0 0 0-5 5 5 5 0 0 0 5 5c1 0 1.97-.31 2.76-.83z"></path></svg></span> <strong>Log Analytics dry-run pipeline</strong></p>
+<p>Offline-safe rendering for saved searches and detection rules so you can
+review queries before they hit a tenancy.</p>
+</li>
+<li>
+<p><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.95 13.5h-.23c-.18.11-.26.32-.18.5l.86 2.11c.83-.53 1.46-1.32 1.79-2.25l-2.23-.36zm-3.45.29a.415.415 0 0 0-.38-.29h-.08l-2.22.37c.33.92.96 1.7 1.79 2.23l.85-2.07V14c.04-.05.04-.14.04-.21m1.83.81a.38.38 0 0 0-.51-.15c-.07.05-.12.08-.15.15h-.01l-1.09 1.97c.78.26 1.62.31 2.43.12.14-.03.29-.07.43-.12l-1.09-1.97zm3.45-4.57L14.1 11.5l.01.03a.37.37 0 0 0-.04.53q.075.09.18.12l.01.01 2.17.62c.07-.97-.14-1.95-.65-2.78m-3.11.16c.01.21.18.37.39.36.08 0 .15-.02.21-.05h.01l1.83-1.31a4.45 4.45 0 0 0-2.57-1.24zm-1.94.31c.17.11.4.08.52-.09.05-.06.07-.13.08-.21h.01l.12-2.25c-.15.02-.3.05-.46.08-.8.18-1.54.58-2.12 1.16l1.84 1.31zm-.99 1.69c.2-.05.32-.26.26-.46 0-.08-.05-.14-.11-.19v-.01L8.21 10c-.52.86-.74 1.84-.63 2.82l2.16-.62zm1.64.66.62.3.62-.3.15-.67-.43-.53h-.69l-.43.53zm10.89 1.32L20.5 6.5c-.09-.42-.37-.76-.74-.94l-7.17-3.43c-.37-.17-.81-.17-1.19 0L4.24 5.56c-.37.18-.65.52-.74.94l-1.77 7.67c-.05.2-.05.4 0 .59.01.06.03.12.05.18.03.09.08.19.13.27.03.04.05.08.09.11l4.95 6.18c.02 0 .05.04.05.06.1.09.19.16.28.22.12.08.26.14.4.17.11.05.23.05.32.05h8.12c.07 0 .14-.03.2-.05.05-.01.1-.03.14-.04.04-.02.07-.03.11-.05.05-.02.1-.05.15-.08.12-.08.23-.18.33-.28l.15-.2 4.8-5.98c.1-.12.17-.25.22-.38.02-.06.04-.12.05-.18.05-.19.05-.4 0-.59m-7.43 2.99c.02.06.04.12.07.17-.04.08-.06.17-.03.26.12.24.23.46.38.68.08.11.16.23.24.34 0 .03.03.08.04.12.12.2.06.46-.15.59s-.47.05-.59-.15c-.01-.03-.02-.05-.03-.08-.02-.03-.04-.09-.06-.09-.05-.15-.09-.28-.12-.41-.09-.25-.17-.49-.3-.72a.38.38 0 0 0-.21-.14l-.08-.16c-1.29.48-2.7.48-3.97-.01l-.1.18c-.07.01-.14.04-.19.09-.14.24-.24.49-.33.77-.03.13-.07.26-.12.4-.02 0-.04.07-.06.1a.43.43 0 0 1-.81-.29c.01-.03.03-.05.04-.08.04-.03.04-.08.04-.11.09-.12.16-.23.24-.35.16-.21.29-.45.39-.69a.54.54 0 0 0-.03-.25l.07-.18a5.6 5.6 0 0 1-2.47-3.09l-.2.03a.4.4 0 0 0-.23-.09c-.27.05-.51.13-.77.22-.11.06-.24.11-.37.15-.03.01-.07.02-.13.03a.44.44 0 0 1-.54-.27c-.07-.23.04-.47.28-.55.02 0 .05-.01.08-.01v-.01h.01l.11-.02c.14-.04.28-.04.41-.04.26 0 .52-.06.77-.12.08-.05.14-.11.19-.19l.19-.05c-.21-1.36.1-2.73.86-3.87l-.14-.12c0-.09-.03-.18-.08-.25-.2-.17-.41-.32-.64-.45q-.18-.09-.36-.21c-.02-.02-.06-.05-.08-.07l-.01-.01c-.2-.16-.25-.42-.11-.63.09-.1.21-.15.35-.15q.165.015.3.12l.09.07c.1.09.19.2.28.3.18.19.37.37.58.52.08.04.17.05.26.03l.15.11c.75-.8 1.73-1.36 2.8-1.6.25-.06.52-.1.78-.12l.01-.18a.45.45 0 0 0 .14-.23c.01-.26-.01-.52-.05-.77-.03-.13-.05-.27-.06-.41V5.1c-.02-.24.15-.45.39-.48s.44.15.47.38v.22c-.01.14-.03.28-.06.41-.04.25-.06.51-.05.77.02.1.07.17.14.22l.01.19c1.36.12 2.62.73 3.56 1.72l.16-.12c.09.02.18.01.26-.03.21-.15.41-.33.58-.52.09-.1.18-.2.28-.3.03-.02.07-.06.1-.06.17-.18.44-.18.59 0 .19.16.18.43 0 .6 0 .02-.03.04-.06.06a2.495 2.495 0 0 1-.44.28c-.23.13-.45.28-.64.45-.06.07-.09.15-.08.24l-.16.14a5.44 5.44 0 0 1 .88 3.86l.19.05c.04.08.11.14.19.18.25.07.51.11.77.14h.41c.03.03.08.04.12.05.24.03.4.25.37.49-.05.23-.24.4-.48.37-.03-.01-.07-.01-.07-.02v-.01c-.06 0-.1-.01-.14-.02q-.195-.06-.36-.15c-.26-.1-.5-.17-.77-.21-.09 0-.17 0-.23.08-.07-.01-.13-.02-.19-.03-.41 1.31-1.31 2.41-2.47 3.11"></path></svg></span> <strong>Helm chart parity</strong></p>
+<p>Helm chart now matches the raw OKE manifests one-for-one, including
+secrets, network policies, and Service Connector Hub wiring.</p>
+</li>
+<li>
+<p><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm0 2.18 7 3.12v4.92c0 1.7-.5 3.43-1.35 4.95C16 14.94 13.26 14.5 12 14.5s-4 .44-5.65 1.67C5.5 14.65 5 12.92 5 11.22V6.3zM12 6a3.5 3.5 0 0 0-3.5 3.5A3.5 3.5 0 0 0 12 13a3.5 3.5 0 0 0 3.5-3.5A3.5 3.5 0 0 0 12 6m0 2a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8m0 8.5c1.57 0 3.64.61 4.53 1.34C15.29 19.38 13.7 20.55 12 21c-1.7-.45-3.29-1.62-4.53-3.16.9-.73 2.96-1.34 4.53-1.34"></path></svg></span> <strong>OCTO admin-scope guardrails</strong></p>
+<p>Coordinator endpoints are guarded by an admin-only scope check to keep
+operator surfaces off the public storefront.</p>
+</li>
+<li>
+<p><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h6v2h8V2h6v6h-2v8h2v6h-6v-2H8v2H2v-6h2V8H2zm14 6V6H8v2H6v8h2v2h8v-2h2V8zM4 4v2h2V4zm14 0v2h2V4zM4 18v2h2v-2zm14 0v2h2v-2z"></path></svg></span> <strong>Layered architecture diagrams</strong></p>
+<p>Public SVG previews plus committed DrawIO sources for the platform,
+compute reference, and observability flow.</p>
+</li>
+<li>
+<p><span class="twemoji"><svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m20.5 3-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5a.5.5 0 0 0 .5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5a.5.5 0 0 0-.5-.5M10 5.47l4 1.4v11.66l-4-1.4zm-5 .99 3-1.01v11.7l-3 1.16zm14 11.08-3 1.01V6.86l3-1.16z"></path></svg></span> <strong>Code Knowledge Map</strong></p>
+<p>Generated map of services, modules, and integration points to accelerate
+codebase exploration.</p>
+</li>
+</ul>
+</div>
+<hr/>
+<h2 id="workshop-tour">Workshop tour<a class="headerlink" href="#workshop-tour" title="Permanent link">¶</a></h2>
+<p>Ten hands-on labs walk through the observability story end-to-end:</p>
+<table>
+<thead>
+<tr>
+<th>Lab</th>
+<th>Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="workshop/lab-01-first-trace/">Lab 01</a></td>
+<td>Capture your first APM trace from a checkout request</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-02-trace-log-correlation/">Lab 02</a></td>
+<td>Pivot from an APM trace to the correlated log line</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-03-slow-sql-drill-down/">Lab 03</a></td>
+<td>Drill from a slow span down to the offending SQL_ID on ATP</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-04-rum-outage-detection/">Lab 04</a></td>
+<td>Detect an outage from RUM session metrics</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-05-metric-and-alarm/">Lab 05</a></td>
+<td>Wire a custom metric to an OCI Monitoring alarm</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-06-waf-event-investigation/">Lab 06</a></td>
+<td>Investigate a WAF event with Log Analytics</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-07-saved-search/">Lab 07</a></td>
+<td>Build a saved search and a Log Analytics dashboard</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-08-stack-monitoring-atp/">Lab 08</a></td>
+<td>Monitor Autonomous Database with Stack Monitoring</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-09-chaos-drill/">Lab 09</a></td>
+<td>Run a chaos drill and watch every signal react</td>
+</tr>
+<tr>
+<td><a href="workshop/lab-10-failed-checkout/">Lab 10</a></td>
+<td>Diagnose a failed checkout across all five signals</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2 id="reference-architecture">Reference architecture<a class="headerlink" href="#reference-architecture" title="Permanent link">¶</a></h2>
+<p><img alt="Platform Architecture" src="architecture/diagrams/platform-overview.svg"/></p>
+<p>Layered platform view with the customer journey, service topology, shared
+ATP, and the OCI Observability surfaces that each service emits to.
+DrawIO sources are committed alongside every SVG.</p>
 <pre class="mermaid"><code>flowchart TD
-    Customer(["Customer (Browser + RUM)"])
-    IDCS["OCI IAM Identity Domain"]
+    Customer(["Customer browser&lt;br/&gt;RUM"])
+    Operator(["Operator browser&lt;br/&gt;SSO"])
+    Edge["OCI Load Balancer / WAF / API Gateway"]
+    Shop["Drone Shop&lt;br/&gt;customer storefront"]
+    CRM["Enterprise CRM&lt;br/&gt;operations portal"]
+    Java["Java payment sidecar&lt;br/&gt;App Servers"]
+    WGW["Workflow Gateway&lt;br/&gt;Select AI"]
+    ATP[(Oracle ATP&lt;br/&gt;shared)]
+    GenAI["OCI GenAI&lt;br/&gt;assistant"]
+    Obs["OCI Observability&lt;br/&gt;APM + Logging + Log Analytics + Monitoring"]
 
-    subgraph OKE ["OCI OKE Cluster"]
-        subgraph NS1 ["octo-drone-shop"]
-            DroneShop["OCTO Drone Shop&lt;br/&gt;FastAPI · 98 routes"]
-            WGW["Workflow Gateway&lt;br/&gt;Go · Select AI"]
-        end
-        subgraph NS2 ["enterprise-crm"]
-            CRM["Enterprise CRM Portal&lt;br/&gt;FastAPI · ~80 routes"]
-        end
-    end
-
-    subgraph OCI ["OCI Observability"]
-        APM["OCI APM"]
-        Logging["OCI Logging"]
-        Monitoring["OCI Monitoring"]
-        WAF["OCI WAF"]
-        CloudGuard["Cloud Guard"]
-    end
-
-    DB[(Oracle ATP&lt;br/&gt;shared)]
-
-    Customer --&gt;|HTTPS| WAF --&gt; DroneShop
-    Customer --&gt;|HTTPS| CRM
-    Customer -.-&gt;|SSO| IDCS
-    DroneShop &lt;--&gt;|"W3C traceparent&lt;br/&gt;orders + customer enrichment"| CRM
-    DroneShop --&gt; WGW
-    DroneShop --&gt; DB
-    CRM --&gt; DB
-    WGW --&gt; DB
-    DroneShop -.-&gt; APM
-    CRM -.-&gt; APM
-    DroneShop -.-&gt; Logging
-    CRM -.-&gt; Logging
-    DroneShop -.-&gt; Monitoring</code></pre>
-<h2 id="key-capabilities">Key Capabilities<a class="headerlink" href="#key-capabilities" title="Permanent link">¶</a></h2>
-<table>
-<thead>
-<tr>
-<th>Capability</th>
-<th>Drone Shop</th>
-<th>CRM Portal</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Primary role</strong></td>
-<td>Customer storefront + checkout</td>
-<td>Operations console + catalog admin</td>
-</tr>
-<tr>
-<td><strong>Database</strong></td>
-<td>Oracle ATP (shared)</td>
-<td>Oracle ATP (shared)</td>
-</tr>
-<tr>
-<td><strong>Authentication</strong></td>
-<td>IDCS OIDC + PKCE</td>
-<td>IDCS OIDC + PKCE</td>
-</tr>
-<tr>
-<td><strong>Traces</strong></td>
-<td>50+ custom spans</td>
-<td>8+ spans/request</td>
-</tr>
-<tr>
-<td><strong>Security</strong></td>
-<td>19 MITRE ATT&amp;CK types</td>
-<td>24 MITRE ATT&amp;CK types</td>
-</tr>
-<tr>
-<td><strong>Catalog ownership</strong></td>
-<td>Reads synced catalog data</td>
-<td>Source of truth for products + shops</td>
-</tr>
-<tr>
-<td><strong>Operational edits</strong></td>
-<td>Cart, checkout, order origination</td>
-<td>Customers, orders, invoices, products, shops</td>
-</tr>
-<tr>
-<td><strong>Special</strong></td>
-<td>AI assistant, WAF, Vault</td>
-<td>Storefront Operations, order sync, simulation lab</td>
-</tr>
-</tbody>
-</table>
-<h2 id="tenancy-portability">Tenancy Portability<a class="headerlink" href="#tenancy-portability" title="Permanent link">¶</a></h2>
+    Customer --&gt;|HTTPS| Edge --&gt; Shop
+    Operator --&gt;|HTTPS| Edge --&gt; CRM
+    Shop &lt;--&gt;|traceparent| CRM
+    Shop --&gt; Java
+    Shop --&gt; WGW
+    Shop --&gt; ATP
+    CRM --&gt; ATP
+    Java --&gt; ATP
+    Shop --&gt; GenAI
+    Customer -.-&gt; Obs
+    Shop -.-&gt; Obs
+    CRM -.-&gt; Obs
+    Java -.-&gt; Obs
+    WGW -.-&gt; Obs</code></pre>
+<hr/>
+<h2 id="tenancy-portability">Tenancy portability<a class="headerlink" href="#tenancy-portability" title="Permanent link">¶</a></h2>
 <p>Set <strong>one variable</strong> and everything derives:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="nb">export</span><span class="w"> </span><span class="nv">DNS_DOMAIN</span><span class="o">=</span><span class="s2">"&lt;your-domain&gt;"</span>
-</span><span id="__span-0-2"><span class="c1"># → shop.&lt;your-domain&gt; (shop URL, CORS, SSO callback)</span>
-</span><span id="__span-0-3"><span class="c1"># → crm.&lt;your-domain&gt; (CRM URL, customer sync)</span>
-</span><span id="__span-0-4"><span class="c1"># → All IDCS redirect URIs auto-derived</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="nb">export</span><span class="w"> </span><span class="nv">DNS_DOMAIN</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="__span-0-2"><span class="c1"># shop.${DNS_DOMAIN} or your chosen SHOP_PUBLIC_URL</span>
+</span><span id="__span-0-3"><span class="c1"># crm.${DNS_DOMAIN}  or your chosen CRM_PUBLIC_URL</span>
+</span><span id="__span-0-4"><span class="c1"># IDCS redirect URIs, CORS origins, and browser links derive from variables</span>
 </span></code></pre></div>
-<p>No tenancy OCIDs, regions, or hostnames are hardcoded in the codebase.</p>
-<h2 id="related-components">Related Components<a class="headerlink" href="#related-components" title="Permanent link">¶</a></h2>
-<table>
-<thead>
-<tr>
-<th>ID</th>
-<th>Component</th>
-<th>Repository</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Unified deploy</strong></td>
-<td>OCTO APM Demo deployment, docs, and Resource Manager stacks</td>
-<td><a href="https://github.com/adibirzu/octo-apm-demo">octo-apm-demo</a></td>
-</tr>
-<tr>
-<td><strong>Shop service</strong></td>
-<td>Drone Shop Portal (OKE)</td>
-<td><a href="https://github.com/adibirzu/octo-drone-shop">octo-drone-shop</a></td>
-</tr>
-<tr>
-<td><strong>CRM service</strong></td>
-<td>Enterprise CRM Portal (OKE)</td>
-<td><a href="https://github.com/adibirzu/enterprise-crm-portal">enterprise-crm-portal</a></td>
-</tr>
-</tbody>
-</table>
-<p>Often deployed alongside an ops portal and OCI Coordinator, but this repository remains standalone and tenancy-portable.</p>
+<p>No tenancy OCIDs, live public IPs, private IPs, regions, or resolved hostnames
+belong in public docs or diagrams. Use variables in scripts and placeholders
+(<code>${DNS_DOMAIN}</code>, <code>&lt;COMPARTMENT_OCID&gt;</code>, <code>&lt;github-username&gt;</code>) in published
+material.</p>
+<hr/>
+<h2 id="status-support">Status &amp; support<a class="headerlink" href="#status-support" title="Permanent link">¶</a></h2>
+<ul>
+<li>Open-source project, <strong>MIT license</strong></li>
+<li>Issues and discussions on <a href="https://github.com/adibirzu/octo-apm-demo">GitHub</a></li>
+<li>Companion repositories: <a href="https://github.com/adibirzu/octo-drone-shop">Drone Shop</a> · <a href="https://github.com/adibirzu/enterprise-crm-portal">CRM Portal</a></li>
+<li>Often deployed alongside an ops portal and OCI Coordinator, but this
+  repository remains standalone and tenancy-portable.</li>
+</ul>
 </article>
 </div>
 <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
@@ -1938,5 +2070,6 @@ the public GitHub Pages build.</p>
 </div>
 <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
 <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+<script src="assets/js/placeholder-config.js"></script>
 </body>
 </html>

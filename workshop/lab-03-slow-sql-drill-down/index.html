@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install.">
+        <meta name="description" content="Start from a slow APM span, extract the Oracle SQL_ID, and drill into ATP DB Management to see the database session that executed it. The trace→SQL bridge.">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>Lab 03 — Slow SQL drill-down - OCTO APM Demo — Unified Platform</title>
+        <title>Lab 03 — Find a slow SQL from an APM span - OCTO APM Demo — Unified Platform</title>
       
     
     
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Lab 03 — Slow SQL drill-down
+              Lab 03 — Find a slow SQL from an APM span
             
           </span>
         </div>
@@ -2320,6 +2322,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2409,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2473,6 +2509,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2585,6 +2649,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3044,6 +3136,8 @@
       
         
       
+        
+      
     
     
     
@@ -3113,6 +3207,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3475,6 +3597,17 @@
     <span class="md-ellipsis">
       
         Time budget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-youll-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you'll learn
       
     </span>
   </a>
@@ -3869,6 +4002,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-youll-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you'll learn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4019,9 +4163,17 @@
 <h2 id="objective">Objective<a class="headerlink" href="#objective" title="Permanent link">&para;</a></h2>
 <p>Start at an APM span that crosses 500 ms, identify the SQL it
 executed, and pivot into OCI DB Management to inspect the database
-session that ran it.</p>
+session that ran it. This is the trace ↔ SQL ↔ session bridge that
+turns a vague "the storefront is slow" complaint into a concrete fix.</p>
 <h2 id="time-budget">Time budget<a class="headerlink" href="#time-budget" title="Permanent link">&para;</a></h2>
 <p>30 minutes.</p>
+<h2 id="what-youll-learn">What you'll learn<a class="headerlink" href="#what-youll-learn" title="Permanent link">&para;</a></h2>
+<ul>
+<li>How SQLAlchemy spans tag themselves with <code>db.statement</code> and <code>db.sql_id</code></li>
+<li>The Oracle <code>SQL_ID</code> derivation (matches V$SQL.SQL_ID and AWR exactly)</li>
+<li>The Console pivot path from APM span → DB Management → SQL Explorer</li>
+<li>How to read the AWR / Top Activity view at the moment the slow span fired</li>
+</ul>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Labs 01-02 complete.</li>
@@ -4048,7 +4200,13 @@ SQLAlchemy instrumentation tags the resulting span with the SQL text.</p>
 <h3 id="2-open-the-trace-in-apm">2. Open the trace in APM<a class="headerlink" href="#2-open-the-trace-in-apm" title="Permanent link">&para;</a></h3>
 <p>Console → APM → Trace Explorer → <code>TraceId = '&lt;TRACE_ID&gt;'</code>.</p>
 <p>In the flame chart you should see a span like
-<code>SELECT FROM products WHERE category = ?</code> with <strong>Duration &gt; 500 ms</strong>.</p>
+<code>SELECT FROM products WHERE category = ?</code> with <strong>Duration &gt; 500 ms</strong>:</p>
+<p><img alt="Flame chart with slow SQL span" src="../../assets/screenshots/oci/apm-02-flame-chart.png" /></p>
+<p>The DB span will be visually wider than its siblings because it
+dominates total wall-clock time. Click that span specifically — the
+right-hand panel exposes the <code>db.statement</code> (the SQL text) and the
+<code>db.sql_id</code> (Oracle's 13-character <code>V$SQL.SQL_ID</code>):</p>
+<p><img alt="Span attribute panel — db.statement + db.sql_id" src="../../assets/screenshots/oci/apm-03-span-attributes.png" /></p>
 <h3 id="3-read-the-sql-and-the-dboraclesqlid">3. Read the SQL and the DbOracleSqlId<a class="headerlink" href="#3-read-the-sql-and-the-dboraclesqlid" title="Permanent link">&para;</a></h3>
 <p>Click the slow span. In the right pane, look at attributes:</p>
 <ul>
@@ -4136,6 +4294,9 @@ routes.</p>
 
 
 
+
+  
+  
 
 
 
@@ -4247,6 +4408,8 @@ routes.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

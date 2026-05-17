@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://adibirzu.github.io/octo-apm-demo/operations/current-status/">
       
       
-        <link rel="prev" href="../deployment/">
+        <link rel="prev" href="../guided-demo-rollout/">
       
       
         <link rel="next" href="../deploy-readiness/">
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -2320,6 +2322,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2409,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2473,6 +2509,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2585,6 +2649,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3046,6 +3138,8 @@
       
         
       
+        
+      
     
     
     
@@ -3118,6 +3212,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3894,12 +4016,182 @@
 
 
 <h1 id="current-status">Current Status<a class="headerlink" href="#current-status" title="Permanent link">&para;</a></h1>
-<p>Snapshot date: <strong>April 28, 2026</strong> for the shared <code>DEFAULT</code> runtime.
-Private Compute stack validation updated on <strong>May 7, 2026</strong>.</p>
+<p>Snapshot date: <strong>May 14, 2026</strong> for the private OCTO deployment.
+Private Compute and OKE validation updated on <strong>May 14, 2026</strong>.</p>
 <p>This page records the latest observed state of the shared <code>DEFAULT</code>
 deployment surface tracked by this repo. It is a runtime snapshot, not a
 guarantee that the shared environment will remain healthy without checking
 the validation commands below.</p>
+<p>May 14, 2026 deployment update: Shop, Admin/CRM, the Java payment gateway,
+and the Workflow Gateway are deployed on VM and OKE with immutable image tag
+<code>obs-20260514203801</code>.
+Shop and Admin expose
+<code>/api/observability/melts</code>, and the checkout success view now shows copyable
+evidence for Trace ID, Order ID, Payment Gateway Request ID, payment status,
+payment rail components, gateway steps, APM saved query, Log Analytics search,
+and security triage search. The Shop and Admin OCI Monitoring publishers now
+use the shared <code>octo_apm_demo</code> namespace and resolve the Monitoring ingestion
+region from <code>OCI_MONITORING_REGION</code>, then the APM endpoint, then
+<code>OCI_REGION</code>/<code>OCI_REGION_ID</code>, falling back to Phoenix for the private
+deployment. This keeps the OKE cluster and OCIR in Frankfurt while custom
+metrics continue to land in the Phoenix Monitoring namespace used by the
+private APM domain. OKE and VM deployment templates set <code>OCI_REGION</code>,
+<code>OCI_COMPARTMENT_ID</code>, and <code>OCI_MONITORING_NAMESPACE</code> so custom metrics can
+populate OCI Monitoring alongside APM traces and Log Analytics logs. A new Log
+Analytics saved search,
+<code>melts-collection-completeness.sql</code>, checks structured app logs,
+connector-fed OCI Unified Schema logs, and OKE Kubernetes container logs in one
+place.</p>
+<p>May 14, 2026 live promotion check: the active OCI Load Balancer still uses the
+same host routing and round-robin backend sets across the original VM backend
+and both OKE NodePort backends. <code>shop</code>, <code>crm</code>, <code>oke_shop_nodeport</code>, and
+<code>oke_admin_nodeport</code> all reported <code>OK</code> with no warning, critical, or unknown
+backends after the <code>obs-20260514203801</code> rollout. Public readiness through
+<code>drones.${DNS_DOMAIN}</code> and <code>admin.${DNS_DOMAIN}</code> returned <code>ready=true</code>,
+ATP connected to <code>octoatp_low</code>, APM configured, RUM configured, and logging
+configured. OKE Deployments were running the same immutable tag for
+<code>octo-drone-shop</code>, <code>enterprise-crm-portal</code>, <code>octo-apm-java-demo</code>, and
+<code>octo-workflow-gateway</code>; the VM Podman containers were also restarted on the
+same tag.</p>
+<p>May 14, 2026 cross-product correlation check: a public load-balanced Google
+Pay checkout created order <code>72841</code> with trace
+<code>b9a9dd874c5e9c80dd7df12a8b05c391</code> and gateway request
+<code>pgw-72841-b1f699ba876b5edb</code>. APM returned 60 spans across
+<code>octo-drone-shop-oke</code>, <code>enterprise-crm-portal-oke</code>, and
+<code>octo-java-app-server-oke</code>, including Shop checkout, cart, order persistence,
+Google Pay gateway steps, Java payment verify/authorize, CRM sync, and DB
+spans. Log Analytics returned the same trace/order/gateway identifiers across
+Shop, CRM, and Java rows in the checkout workflow. A direct VM credit-card
+smoke checkout created order <code>72843</code> with trace
+<code>ea45ecc34bd39158c0c31e00c7034eeb</code> and gateway request
+<code>pgw-72843-f466bbdd8a43a71f</code>; APM returned 53 spans across
+<code>octo-drone-shop</code>, <code>enterprise-crm-portal</code>, and <code>octo-java-app-server</code>,
+including Visa card tokenization, antifraud verification, Java processor
+authorization, CRM order sync, and DB work. OCI Monitoring <code>app.health</code>
+samples were present for the VM and OKE Shop/Admin service names in the
+<code>octo_apm_demo</code> namespace, and Log Analytics showed recent checkout, login,
+cart, browse, CRM, and admin workflow rows for both VM and OKE service names.</p>
+<p>May 14, 2026 Log Analytics update: the Shop and Admin stdout formatters now
+emit parser-friendly aliases beside the dotted OpenTelemetry-style fields, so
+OKE stdout can promote <code>Order ID</code>, <code>Payment Gateway Request ID</code>, workflow,
+payment gateway step, processor response, Java sidecar, and payment rail fields
+through the same <code>SOC Application Logs</code> source as the workshop data. The
+private demo SOC parser/source refresh reused the existing namespace fields and
+promoted the contract through 138 field maps without creating duplicate Log
+Analytics fields. <code>melts-collection-completeness.sql</code> now counts promoted OKE
+order and gateway fields, and <code>oke-checkout-payment-correlation.sql</code> provides a
+focused OKE checkout timeline for Shop -&gt; Java payment gateway -&gt; CRM sync.
+Post-deploy validation generated fresh Google Pay, declined Visa card, and
+Apple Pay checkouts through the public load balancer. Log Analytics shows
+promoted OKE order and payment gateway request fields across
+<code>octo-drone-shop-oke</code>, <code>octo-java-app-server-oke</code>, and
+<code>enterprise-crm-portal-oke</code>, and recent OKE processor rows use
+<code>Downstream Component = octo-java-app-server-oke</code>.</p>
+<p>May 13, 2026 update: the <code>&lt;OCI_PROFILE&gt;</code> OKE parallel deployment is live beside
+the VM runtime. Cluster <code>octo-apm-demo-oke</code> has two private
+<code>VM.Standard.E5.Flex</code> workers (<code>&lt;OKE_NODE_PRIVATE_IP_1&gt;</code>, <code>&lt;OKE_NODE_PRIVATE_IP_2&gt;</code>) for
+<code>4 OCPU / 32 GiB</code> requested capacity. Image tag
+<code>oke-20260513122023-shop-downstream</code> is deployed for Shop,
+<code>oke-20260513103616-aecfbae</code> remains deployed for Admin/CRM, and the Java
+payment gateway is on <code>oke-20260513112855-java-json</code> to add structured
+stdout events for Log Analytics correlation. Each OKE app Deployment now runs 2 replicas with HPA
+minimum 2, PDB <code>minAvailable: 1</code>, and runtime UID <code>10001</code>.
+OKE service names are <code>octo-drone-shop-oke</code>,
+<code>enterprise-crm-portal-oke</code>, and <code>octo-java-app-server-oke</code>, all sending
+traces to the existing <code>octo-apm-demo</code> APM domain. The public OCI LB has
+healthy staged backend sets <code>oke_shop_nodeport</code> and <code>oke_admin_nodeport</code>.
+The active <code>shop</code> and <code>crm</code> backend sets now use <code>ROUND_ROBIN</code> across the
+original VM backend and both OKE NodePort backends. Host routing still points
+to <code>shop</code> and <code>crm</code>, so no listener, certificate, or routing-policy cutover
+was made.
+OCI Kubernetes Monitoring is deployed in <code>oci-onm</code>; the Log Analytics
+DaemonSets, tcpconnect DaemonSets, discovery CronJob, and Management
+Agent are running. CSI topology labels were repaired on both nodes, and
+the ONM installer defaults to <code>emptyDir</code> Management Agent state for this
+low-resource test cluster. The live ONM release is revision 4 with
+Resource Manager service-log automation disabled. ONM sends Kubernetes
+container and tcpconnect logs directly to Log Analytics through its
+Fluentd Log Analytics output, so it does not consume Service Connector Hub
+capacity. The private demo Service Connector Hub quota remains exhausted
+(<code>used=7</code>, <code>available=0</code>), which still blocks additional OCI Logging -&gt;
+Log Analytics connectors. The live app-log route reuses an existing approved
+Connector Hub path from the OCTO OCI Logging group into the
+private demo Log Analytics group; those connector-fed rows appear as
+<code>OCI Unified Schema Logs</code> and are validated with
+<code>connector-live-log-coverage.sql</code>. ONM metrics are configured under
+<code>mgmtagent_kubernetes_metrics</code> with cluster name <code>octo-apm-demo-oke</code>; the
+legacy Log Analytics entity name is reused by cloud-resource-id because
+entity rename is not supported. <code>octo-llmetry</code> is populated in both OKE
+namespaces, and Shop readiness reports <code>langfuse_configured=true</code>. Focused Playwright
+E2E validation passed for Google Pay, Apple Pay, and declined Visa card
+flows against OKE. APM Trace Explorer returns OKE spans for
+<code>octo-drone-shop-oke</code> and <code>octo-java-app-server-oke</code>, including payment
+gateway, Java verify/authorize, processor response, and network-routing
+spans. Log Analytics shows Kubernetes Container Generic Logs for
+<code>octo-drone-shop</code>, <code>enterprise-crm</code>, and Java payment gateway pods.</p>
+<p>Follow-up validation on May 13, 2026 confirmed the active VM+OKE backend
+sets, staged OKE backend sets, ONM collectors, OKE app pods, and VM
+<code>octo-compute.service</code> units are healthy. OKE app pods are annotated with
+<code>oracle.com/oci_la_log_source_name="SOC Application Logs"</code> and
+<code>oracle.com/oci_la_log_set="octo-apm-demo"</code>, so Log Analytics now promotes
+OKE stdout into the existing <code>Trace ID</code>, <code>Span ID</code>, <code>Service Name</code>, and
+<code>Service Namespace</code> fields. The Java payment gateway now emits explicit
+JSON events for <code>java_payment_verify</code>, <code>java_payment_authorize</code>, and
+controlled Java demo errors so Log Analytics can correlate gateway records
+with APM traces. Shop logs now emit <code>java_apm.service.name</code> and
+<code>payment.processor.name</code>; Log Analytics saved searches expose those values
+through the existing <code>Downstream Component</code> field so VM and OKE checkout
+records can pivot cleanly to <code>octo-java-app-server</code> or
+<code>octo-java-app-server-oke</code>. The Workflow Command Center includes OKE ONM
+ingestion health, OKE trace correlation, and service-health widgets. New
+scheduled detection rules publish <code>OkeOnmLogSamples</code> and
+<code>OkeCollectorErrorEvents</code> metrics. The OKE ONM saved searches now require
+<code>Kubernetes Cluster Name = octo-apm-demo-oke</code>; namespace-only fallbacks are
+intentionally avoided because other retained clusters can also emit <code>oci-onm</code>
+namespace records in the shared Log Analytics namespace. The service-health saved search excludes
+expected demo and attack-lab events (<code>demo.scenario</code>, <code>error.expected</code>,
+security severity, and attack workflows), while the threat-hunting searches
+still retain those events.</p>
+<p>The Compute VMs were rebuilt from the same source and restarted after the OKE
+rollout. Both VM app containers now run as UID/GID <code>10001</code>; <code>install.sh</code>
+sets <code>/opt/octo/wallet</code> and <code>/opt/octo/secrets</code> ownership/modes for that UID
+so wallet and Langfuse secret files remain readable by non-root containers
+without making them world-readable. The VM Java sidecar runs with Podman
+<code>json-file</code> logging so its <code>ctr.log</code> is compatible with the existing
+container-log tail pattern, but <code>enable_unified_agent_log_collection=false</code>
+and the private demo Service Connector Hub quota is exhausted, so VM Java direct
+stdout is not a Log Analytics source today. VM checkout correlation is
+provided by the Shop OCI Logging SDK events carrying <code>Downstream Component</code>.</p>
+<p>May 11, 2026 update: the <code>&lt;OCI_PROFILE&gt;</code> CRM compute host was updated and
+<code>octo-compute.service</code> was restarted. Public readiness through the live
+load balancer is healthy for both <code>admin.example.test</code> and
+<code>shop.example.test</code>. The OCI Coordinator is now exposed only in the
+CRM Admin page (<code>/admin</code>) and only through the admin API
+<code>/api/admin/coordinator/query</code>. Its answer scope is fixed to
+<code>octo-apm-demo</code>; authenticated live validation confirmed OCTO-scoped
+user/order/database trace questions are answered, the same authenticated
+request with <code>Host: shop.example.test</code> returns HTTP 403, and app logs
+emit <code>coordinator.surface</code>, <code>coordinator.host</code>, <code>coordinator.scope</code>,
+<code>coordinator.allowed</code>, <code>coordinator.topic</code>, <code>trace_id</code>, and
+<code>oracleApmTraceId</code> for APM and Log Analytics drilldown.</p>
+<p>May 12, 2026 update: the <code>&lt;OCI_PROFILE&gt;</code> runtime maturity check is green through the
+preserved HTTPS load balancer. Both <code>shop.example.test</code> and
+<code>admin.example.test</code> return <code>ready=true</code>, ATP connected to <code>octoatp_low</code>,
+APM configured, RUM configured, and logging configured. Log Analytics now has
+the repo-owned Octo APM saved searches, <code>Workflow Command Center</code>,
+<code>Attack Lab Command Center</code>, and five active <code>SAVED_SEARCH</code> detection rules
+for API Gateway threat, compromised VM, Java payment error, payment
+interception, and payment redirect. APM now has eight active provider saved
+queries for checkout, payment Java sidecar, DB slow spans, login/auth,
+assistant GenAI LLMetry, service errors, platform workflows, and trace
+drilldown, each tagged with the matching Log Analytics pivots.</p>
+<p>Later on May 11, the CRM frontend was aligned with OCI APM RUM W3C trace
+propagation. Same-origin browser calls now use the instrumented fetch path
+with <code>headers: ["W3C"]</code>, while the native fetch handle remains only as a
+fallback. The login form emits sanitized RUM actions (<code>auth.login.submit</code>
+and <code>auth.login.result</code>) without usernames or passwords, so login and admin
+actions can be followed from RUM to backend spans, ATP queries, and
+<code>oracleApmTraceId</code> logs.</p>
 <p>May 4, 2026 update: the private two-instance Compute Resource Manager
 stack has been applied in the <code>&lt;OCI_PROFILE&gt;</code> profile as a new deployment for
 <code>shop.example.test</code> and <code>crm.example.test</code>. It is separate from
@@ -3959,7 +4251,7 @@ listening ports, unexpected users, startup items, crontab, sudoers, and
 kernel modules. Ad-hoc OSQuery execution was run against the shop and CRM
 instances; three runs completed and two failed in-region. Completed
 results were normalized into OCI Logging (<code>&lt;DEPLOYMENT_PREFIX&gt;-os</code>) with
-<code>ATTACK_ID=attack-851e80f8751b</code>, producing 246 OSQuery log entries. Those
+<code>ATTACK_ID=&lt;ATTACK_ID&gt;</code>, producing 246 OSQuery log entries. Those
 records are in OCI Logging now; they will not appear in Log Analytics
 until Service Connector Hub quota is available or an approved shared
 connector is updated.</p>
@@ -4065,8 +4357,11 @@ Resource Manager create/import/job permissions for this compartment.</p>
   lifecycle/backend health, WAF, APM, ATP, DB Management, Operations
   Insights, Log Analytics connectors, Management Agents, and Stack
   Monitoring HOST auto-promote state.</li>
-<li>A Log Analytics query over the last 30 minutes returned 212 records in
-  <code>OCI Unified Schema Logs</code> after the connectors were created.</li>
+<li>A Log Analytics query over the live <code>test</code> Service Connector path returned
+  recent OCTO app records in <code>OCI Unified Schema Logs</code>. This is expected for
+  Service Connector Hub sources of kind <code>logging</code>; the connector target keeps
+  <code>logSourceIdentifier=null</code> and dashboards use
+  <code>connector-live-log-coverage.sql</code> to parse the JSON envelope from <code>Message</code>.</li>
 <li>ATP reports <code>database-management-status=ENABLED</code> and
   <code>operations-insights-status=ENABLED</code>.</li>
 </ul>
@@ -4204,7 +4499,7 @@ to <code>POST /api/auth/login</code> with the reference value was validated with
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../deployment/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Deployment">
+          <a href="../guided-demo-rollout/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Guided demo rollout">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4214,7 +4509,7 @@ to <code>POST /api/auth/login</code> with the reference value was validated with
                 Previous
               </span>
               <div class="md-ellipsis">
-                Deployment
+                Guided demo rollout
               </div>
             </div>
           </a>
@@ -4284,6 +4579,8 @@ to <code>POST /api/auth/login</code> with the reference value was validated with
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

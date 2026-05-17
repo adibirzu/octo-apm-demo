@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install.">
+        <meta name="description" content="Investigate a WAF detection from end-to-end — what triggered it, what the attacker actually tried, and what the application did with the request. Includes a tour of the deliberate attack-surface endpoints baked into the CRM service.">
       
       
       
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -2320,6 +2322,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2409,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2473,6 +2509,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2585,6 +2649,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3044,6 +3136,8 @@
       
         
       
+        
+      
     
     
     
@@ -3113,6 +3207,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3566,6 +3688,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-youll-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you'll learn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-attack-surface-intentional-demo-vulnerabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The attack surface (intentional demo vulnerabilities)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3869,6 +4013,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-youll-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you'll learn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-attack-surface-intentional-demo-vulnerabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The attack surface (intentional demo vulnerabilities)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4018,9 +4184,64 @@
 <h1 id="lab-06-waf-event-investigation">Lab 06 — WAF event investigation<a class="headerlink" href="#lab-06-waf-event-investigation" title="Permanent link">&para;</a></h1>
 <h2 id="objective">Objective<a class="headerlink" href="#objective" title="Permanent link">&para;</a></h2>
 <p>Investigate a WAF event from end to end: what triggered it, was it
-malicious, what did the user actually try to do.</p>
+malicious, what did the user actually try to do. The CRM service ships
+with <strong>deliberate vulnerability surfaces</strong> so detection rules and
+WAF policies have something realistic to fire on.</p>
 <h2 id="time-budget">Time budget<a class="headerlink" href="#time-budget" title="Permanent link">&para;</a></h2>
 <p>30 minutes.</p>
+<h2 id="what-youll-learn">What you'll learn<a class="headerlink" href="#what-youll-learn" title="Permanent link">&para;</a></h2>
+<ul>
+<li>How OCI WAF DETECTION mode logs events without blocking traffic</li>
+<li>How to correlate a WAF record with the downstream application span</li>
+<li>The three intentional CRM demo vulnerabilities (insecure
+  deserialization, server-side template injection, weak API-key
+  generation) — and how they appear in detection rules</li>
+</ul>
+<h2 id="the-attack-surface-intentional-demo-vulnerabilities">The attack surface (intentional demo vulnerabilities)<a class="headerlink" href="#the-attack-surface-intentional-demo-vulnerabilities" title="Permanent link">&para;</a></h2>
+<p>The CRM service deliberately exposes the following vulnerable endpoints
+so the workshop has realistic attack patterns to investigate. All three
+are annotated <code># nosec</code> + <code># VULN</code> in source so security scanners
+recognize them as intentional demo surface:</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Source</th>
+<th>Vulnerability class</th>
+<th>Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/reports/import</code></td>
+<td><code>crm/server/modules/reports.py:119</code></td>
+<td>Insecure deserialization (<code>pickle.loads</code>)</td>
+<td>CRITICAL (CWE-502)</td>
+</tr>
+<tr>
+<td><code>/api/reports/render</code></td>
+<td><code>crm/server/modules/reports.py:150</code></td>
+<td>OS command injection (<code>subprocess shell=True</code>)</td>
+<td>HIGH (CWE-78)</td>
+</tr>
+<tr>
+<td><code>/api/invoices/preview</code></td>
+<td><code>crm/server/modules/invoices.py:128</code></td>
+<td>Server-side template injection (Jinja2 no-autoescape)</td>
+<td>HIGH (CWE-94)</td>
+</tr>
+<tr>
+<td><code>/api/keys/generate</code></td>
+<td><code>crm/server/modules/api_keys.py:40</code></td>
+<td>Weak credential generation (MD5 of timestamp+username)</td>
+<td>HIGH (CWE-330)</td>
+</tr>
+</tbody>
+</table>
+<p>The corresponding Logging Analytics detection rules — visible in the
+list below — pattern-match the traces emitted by exploitation of these
+surfaces:</p>
+<p><img alt="Detection rules list" src="../../assets/screenshots/oci/loganalytics-04-detection-rules.png" /></p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Lab 01.</li>
@@ -4134,6 +4355,9 @@ lever is.</p>
 
 
 
+  
+  
+
 
 
 
@@ -4244,6 +4468,8 @@ lever is.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

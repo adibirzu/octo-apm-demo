@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install.">
+        <meta name="description" content="Deploy the OCTO APM Demo platform into any OCI tenancy in 5-10 minutes.">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>Quick Start - OCTO APM Demo — Unified Platform</title>
+        <title>Quickstart - OCTO APM Demo — Unified Platform</title>
       
     
     
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -78,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#quick-start" class="md-skip">
+        <a href="#quickstart-deploy-in-any-oci-tenancy" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Quick Start
+              Quickstart
             
           </span>
         </div>
@@ -759,10 +761,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#clone-the-unified-repo" class="md-nav__link">
+  <a href="#prerequisites-common-to-all-paths" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Clone the Unified Repo
+        Prerequisites — common to all paths
       
     </span>
   </a>
@@ -770,10 +772,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verify-the-repo-surface" class="md-nav__link">
+  <a href="#path-a-one-click-resource-manager-stack" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verify the Repo Surface
+        Path A — One-click (Resource Manager stack)
       
     </span>
   </a>
@@ -781,10 +783,104 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bootstrap-a-fresh-tenancy" class="md-nav__link">
+  <a href="#path-b-make-recommended-for-hands-on-operators" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bootstrap a Fresh Tenancy
+        Path B — Make (recommended for hands-on operators)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Path B — Make (recommended for hands-on operators)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-configure-your-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Configure your environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-run-preflight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Run preflight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-bootstrap-the-tenancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Bootstrap the tenancy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-deploy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Deploy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-point-dns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Point DNS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-smoke-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Smoke-check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-open-the-storefront" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Open the storefront
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-c-local-stack-no-oci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Path C — Local stack (no OCI)
       
     </span>
   </a>
@@ -792,10 +888,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#roll-forward-after-bootstrap" class="md-nav__link">
+  <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Roll Forward After Bootstrap
+        Troubleshooting
       
     </span>
   </a>
@@ -803,10 +899,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hand-off-to-e2e" class="md-nav__link">
+  <a href="#after-deployment-recommended-next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hand Off to E2E
+        After deployment — recommended next steps
       
     </span>
   </a>
@@ -2427,6 +2523,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2516,6 +2618,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2580,6 +2710,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2692,6 +2850,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3151,6 +3337,8 @@
       
         
       
+        
+      
     
     
     
@@ -3220,6 +3408,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3753,10 +3969,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#clone-the-unified-repo" class="md-nav__link">
+  <a href="#prerequisites-common-to-all-paths" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Clone the Unified Repo
+        Prerequisites — common to all paths
       
     </span>
   </a>
@@ -3764,10 +3980,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verify-the-repo-surface" class="md-nav__link">
+  <a href="#path-a-one-click-resource-manager-stack" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verify the Repo Surface
+        Path A — One-click (Resource Manager stack)
       
     </span>
   </a>
@@ -3775,10 +3991,104 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bootstrap-a-fresh-tenancy" class="md-nav__link">
+  <a href="#path-b-make-recommended-for-hands-on-operators" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bootstrap a Fresh Tenancy
+        Path B — Make (recommended for hands-on operators)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Path B — Make (recommended for hands-on operators)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-configure-your-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Configure your environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-run-preflight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Run preflight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-bootstrap-the-tenancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Bootstrap the tenancy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-deploy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Deploy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-point-dns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Point DNS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-smoke-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Smoke-check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-open-the-storefront" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Open the storefront
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-c-local-stack-no-oci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Path C — Local stack (no OCI)
       
     </span>
   </a>
@@ -3786,10 +4096,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#roll-forward-after-bootstrap" class="md-nav__link">
+  <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Roll Forward After Bootstrap
+        Troubleshooting
       
     </span>
   </a>
@@ -3797,10 +4107,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hand-off-to-e2e" class="md-nav__link">
+  <a href="#after-deployment-recommended-next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hand Off to E2E
+        After deployment — recommended next steps
       
     </span>
   </a>
@@ -3827,47 +4137,215 @@
   
 
 
-<h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<h2 id="clone-the-unified-repo">Clone the Unified Repo<a class="headerlink" href="#clone-the-unified-repo" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">git<span class="w"> </span>clone<span class="w"> </span>https://github.com/adibirzu/octo-apm-demo.git
-</span><span id="__span-0-2"><span class="nb">cd</span><span class="w"> </span>octo-apm-demo
+<h1 id="quickstart-deploy-in-any-oci-tenancy">Quickstart — Deploy in any OCI tenancy<a class="headerlink" href="#quickstart-deploy-in-any-oci-tenancy" title="Permanent link">&para;</a></h1>
+<p>This guide gets the OCTO APM Demo running in <strong>your</strong> OCI tenancy. Three
+deployment paths, all starting from <code>make doctor</code>:</p>
+<ul>
+<li><strong>Path A: One-click</strong> (Resource Manager stack zip) — fastest, no local
+  tooling needed</li>
+<li><strong>Path B: Make</strong> (recommended for evaluators) — <code>make tenancy-init &amp;&amp;
+  make deploy &amp;&amp; make smoke</code></li>
+<li><strong>Path C: Local stack</strong> (no OCI) — <code>make local-up</code>, browse to
+  <code>http://localhost:18080</code></li>
+</ul>
+<hr />
+<h2 id="prerequisites-common-to-all-paths">Prerequisites — common to all paths<a class="headerlink" href="#prerequisites-common-to-all-paths" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>How to check</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OCI tenancy</td>
+<td><code>oci iam region list</code></td>
+<td>Free Tier works</td>
+</tr>
+<tr>
+<td>Access to a target compartment</td>
+<td><code>oci iam compartment list</code></td>
+<td>A clean compartment is recommended</td>
+</tr>
+<tr>
+<td>OCI policy: APM, Logging, Log Analytics, Monitoring, ATP read+write</td>
+<td><code>oci iam policy list</code></td>
+<td>Sample policy in <code>deploy/oci/policies/</code></td>
+</tr>
+<tr>
+<td><code>oci</code> CLI 3.40+</td>
+<td><code>oci --version</code></td>
+<td><code>pip install oci-cli</code></td>
+</tr>
+<tr>
+<td><code>jq</code>, <code>curl</code>, <code>bash</code> 5+</td>
+<td><code>which jq curl bash</code></td>
+<td>Standard tooling</td>
+</tr>
+</tbody>
+</table>
+<p>For Paths B/C you also need:</p>
+<ul>
+<li><code>docker</code> or <code>colima</code> (for <code>make local-up</code> and building images)</li>
+<li><code>kubectl</code> (for OKE deploys)</li>
+<li><code>helm</code> (optional, for <code>make deploy-helm</code>)</li>
+<li><code>terraform</code> 1.5+ (for IaC paths)</li>
+</ul>
+<p>Quick environment check:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">make<span class="w"> </span>doctor
 </span></code></pre></div>
-<h2 id="verify-the-repo-surface">Verify the Repo Surface<a class="headerlink" href="#verify-the-repo-surface" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1">python3<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>tests/test_unified_deploy_surface.py
-</span><span id="__span-1-2">bash<span class="w"> </span>deploy/verify.sh
+<hr />
+<h2 id="path-a-one-click-resource-manager-stack">Path A — One-click (Resource Manager stack)<a class="headerlink" href="#path-a-one-click-resource-manager-stack" title="Permanent link">&para;</a></h2>
+<p>Best for evaluators who want to see the platform running in 5 minutes
+without local tooling.</p>
+<ol>
+<li>Click the <strong>Deploy to Oracle Cloud</strong> badge:</li>
+</ol>
+<p><a href="https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260517/octo-compute-stack.zip"><img alt="Deploy to Oracle Cloud" src="https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg" /></a>
+2. OCI Console opens at <strong>Resource Manager → Create stack</strong>, with the
+   zip URL pre-filled.
+3. Fill the stack variables:
+   - <strong>Compartment</strong> — target compartment
+   - <strong>DNS domain</strong> — your public DNS zone (e.g. <code>demo.acme.io</code>)
+   - <strong>Resource prefix</strong> — short prefix for all resources (default <code>octo</code>)
+4. Click <strong>Plan → Apply</strong>. Provisioning takes 25-40 minutes.
+5. Once apply completes, point your DNS A records:
+   <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">drones.&lt;your-dns&gt;     A    &lt;LB-IP from stack output&gt;
+</span><span id="__span-1-2">admin.&lt;your-dns&gt;      A    &lt;LB-IP from stack output&gt;
 </span></code></pre></div>
-<p>This validates the deploy scripts, manifests, Helm chart, docs build,
-and the core Python test suites without touching a tenancy.</p>
-<h2 id="bootstrap-a-fresh-tenancy">Bootstrap a Fresh Tenancy<a class="headerlink" href="#bootstrap-a-fresh-tenancy" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="nv">OCI_PROFILE</span><span class="o">=</span>DEFAULT<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-2"><span class="nv">OCI_COMPARTMENT_ID</span><span class="o">=</span>ocid1.compartment.oc1..xxxx<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><span class="nv">DNS_BASE_DOMAIN</span><span class="o">=</span>example.test<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-4"><span class="nv">REMOTE_BUILD_HOST</span><span class="o">=</span>control-plane-oci<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-5">./deploy/bootstrap.sh
+6. Wait for DNS propagation (~5 min), then validate:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="nv">DNS_DOMAIN</span><span class="o">=</span>&lt;your-dns&gt;<span class="w"> </span>./deploy/validate-deployment.sh
+</span></code></pre></div></p>
+<p>The stack provisions: VCN, OKE cluster, ATP, OCI APM domain, RUM Web
+Application, Log Analytics, Monitoring, Stack Monitoring, WAF policies,
+Load Balancers, OCIR repositories.</p>
+<hr />
+<h2 id="path-b-make-recommended-for-hands-on-operators">Path B — Make (recommended for hands-on operators)<a class="headerlink" href="#path-b-make-recommended-for-hands-on-operators" title="Permanent link">&para;</a></h2>
+<p>Best for engineers who want to inspect and customize the deployment.</p>
+<h3 id="1-configure-your-environment">1. Configure your environment<a class="headerlink" href="#1-configure-your-environment" title="Permanent link">&para;</a></h3>
+<p>Create <code>.env</code> in the repo root (or export the variables):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">cat<span class="w"> </span>&gt;<span class="w"> </span>.env<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+</span><span id="__span-3-2"><span class="s">OCI_PROFILE=DEFAULT</span>
+</span><span id="__span-3-3"><span class="s">OCI_COMPARTMENT_ID=&lt;COMPARTMENT_OCID&gt;</span>
+</span><span id="__span-3-4"><span class="s">OCIR_REGION=&lt;OCIR_REGION&gt;</span>
+</span><span id="__span-3-5"><span class="s">OCIR_TENANCY=&lt;OCIR_TENANCY&gt;</span>
+</span><span id="__span-3-6"><span class="s">DNS_DOMAIN=&lt;your-dns-zone&gt;</span>
+</span><span id="__span-3-7"><span class="s">EOF</span>
 </span></code></pre></div>
-<p>For a non-<code>DEFAULT</code> tenancy, replace <code>example.test</code> with your own base
-domain and point <code>OCI_PROFILE</code> at the correct OCI config profile.</p>
-<h2 id="roll-forward-after-bootstrap">Roll Forward After Bootstrap<a class="headerlink" href="#roll-forward-after-bootstrap" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><span class="nv">OCIR_REGION</span><span class="o">=</span>&lt;region&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-2"><span class="nv">OCIR_TENANCY</span><span class="o">=</span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-3"><span class="nv">DNS_DOMAIN</span><span class="o">=</span>&lt;your-domain&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-4">./deploy/deploy.sh
+<h3 id="2-run-preflight">2. Run preflight<a class="headerlink" href="#2-run-preflight" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">make<span class="w"> </span>doctor
 </span></code></pre></div>
-<h2 id="hand-off-to-e2e">Hand Off to E2E<a class="headerlink" href="#hand-off-to-e2e" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><span class="nv">SHOP_BASE_URL</span><span class="o">=</span>https://shop.&lt;your-domain&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-2"><span class="nv">CRM_BASE_URL</span><span class="o">=</span>https://crm.&lt;your-domain&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-3"><span class="nv">INTERNAL_SERVICE_KEY</span><span class="o">=</span>&lt;shared-secret&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-4"><span class="nv">CROSS_SERVICE_E2E_ENABLED</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-5">npx<span class="w"> </span>playwright<span class="w"> </span><span class="nb">test</span><span class="w"> </span>tests/e2e/cross-service-smoke.spec.ts
+<p>Should report ✓ on <code>oci</code>, <code>kubectl</code>, <code>docker</code>, <code>jq</code>, and a successful OCI
+profile auth. Fix anything ✗ before continuing.</p>
+<h3 id="3-bootstrap-the-tenancy">3. Bootstrap the tenancy<a class="headerlink" href="#3-bootstrap-the-tenancy" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1">make<span class="w"> </span>tenancy-init
 </span></code></pre></div>
-<p>Add <code>SSO_E2E_ENABLED=1</code> plus test-user credentials only after the
-Identity Domain app and <code>octo-sso</code> secret are in place.</p>
+<p>This creates: OCIR repositories, Kubernetes namespaces, bootstrap secrets
+(internal-service-key, apm-tokens placeholder, logging-config
+placeholder). Idempotent — re-runs are safe.</p>
+<h3 id="4-deploy">4. Deploy<a class="headerlink" href="#4-deploy" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1">make<span class="w"> </span>deploy
+</span></code></pre></div>
+<p>Builds shop + crm + Java sidecar images (~5 min on a remote x86_64
+builder, longer with local QEMU), pushes them to OCIR, applies the
+Kubernetes manifests, waits for rollout, prints the public LB IPs.</p>
+<p>For per-service deploys:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1">make<span class="w"> </span>deploy-shop
+</span><span id="__span-7-2">make<span class="w"> </span>deploy-crm
+</span><span id="__span-7-3">make<span class="w"> </span>deploy-java-apm
+</span></code></pre></div>
+<p>For the Helm chart instead of raw manifests:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1">make<span class="w"> </span>deploy-helm
+</span></code></pre></div>
+<h3 id="5-point-dns">5. Point DNS<a class="headerlink" href="#5-point-dns" title="Permanent link">&para;</a></h3>
+<p>The deploy output prints the LB IPs. Create A records:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1">drones.${DNS_DOMAIN}    A    &lt;shop LB IP&gt;
+</span><span id="__span-9-2">admin.${DNS_DOMAIN}     A    &lt;crm LB IP&gt;
+</span></code></pre></div>
+<h3 id="6-smoke-check">6. Smoke-check<a class="headerlink" href="#6-smoke-check" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1">make<span class="w"> </span>smoke
+</span></code></pre></div>
+<p>Probes every observable surface (storefront HTML, <code>/ready</code> JSON fields
+for APM/RUM/Logging/Workflow Gateway/Select AI/GenAI/Java sidecar,
+admin reachability). All checks should print green ✓ within 60 seconds
+of DNS propagation.</p>
+<h3 id="7-open-the-storefront">7. Open the storefront<a class="headerlink" href="#7-open-the-storefront" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1">https://drones.${DNS_DOMAIN}
+</span><span id="__span-11-2">https://admin.${DNS_DOMAIN}
+</span></code></pre></div>
+<p>You're done. Continue with the <a href="../../workshop/">workshop labs</a>
+to learn what each observability surface captures.</p>
+<hr />
+<h2 id="path-c-local-stack-no-oci">Path C — Local stack (no OCI)<a class="headerlink" href="#path-c-local-stack-no-oci" title="Permanent link">&para;</a></h2>
+<p>Best for first-time evaluators and developers extending the codebase.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1">make<span class="w"> </span>local-up
+</span></code></pre></div>
+<p>The docker-compose stack brings up shop, crm, Java sidecar, redis,
+postgres. After ~30 seconds:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1">http://localhost:18080   # shop
+</span><span id="__span-13-2">http://localhost:18090   # crm
+</span><span id="__span-13-3">http://localhost:18091   # java sidecar /actuator
+</span></code></pre></div>
+<p>Local stack uses postgres (not ATP) and emits OTel telemetry to a
+console exporter (not OCI APM). Most workshop labs are <strong>OCI-dependent</strong>
+and won't work locally — but the storefront UX, code paths, and
+contract tests all run.</p>
+<p>Tear down:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1">make<span class="w"> </span>local-down
+</span></code></pre></div>
+<hr />
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<details class="warning">
+<summary>make doctor reports OCI auth failure</summary>
+<p>Check that your OCI config has the named profile and that the API
+signing key is uploaded to that user. The standard fix:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1">oci<span class="w"> </span>setup<span class="w"> </span>config
+</span><span id="__span-15-2">oci<span class="w"> </span>iam<span class="w"> </span>region<span class="w"> </span>list<span class="w">   </span><span class="c1"># should print regions</span>
+</span></code></pre></div>
+</details>
+<details class="warning">
+<summary>make deploy hangs at image build</summary>
+<p>Image builds happen on a remote x86_64 builder by default (set
+<code>BUILD_HOST=&lt;ssh-target&gt;</code> to use yours). Without a builder, Docker
+falls back to QEMU on ARM Macs which is slow but works. Set
+<code>BUILD_LOCALLY=1</code> if you have x86_64 Docker locally.</p>
+</details>
+<details class="warning">
+<summary>smoke reports APM/RUM/Logging 'false'</summary>
+<p>The shop pods are running but missing OCI env vars. Check the
+secrets:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1">kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>octo-apm<span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-16-2">kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>octo-logging<span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>-o<span class="w"> </span>yaml
+</span></code></pre></div>
+<p>See <code>docs/CONFIGURATION.md</code> in the repo for the full env var list for the full env var list.</p>
+</details>
+<details class="warning">
+<summary>Load Balancer IP not visible in 'make deploy' output</summary>
+<p>OCI LB provisioning takes ~3-5 minutes. Poll:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1">kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>-w
+</span></code></pre></div>
+<p>Look for the EXTERNAL-IP column to populate.</p>
+</details>
+<hr />
+<h2 id="after-deployment-recommended-next-steps">After deployment — recommended next steps<a class="headerlink" href="#after-deployment-recommended-next-steps" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Run the workshop</strong> — start at <a href="../../workshop/lab-01-first-trace/">Workshop / Lab 01</a>.</li>
+<li><strong>Apply Log Analytics saved searches</strong> — <code>bash tools/la-saved-searches/apply.sh</code></li>
+<li><strong>Enable the traffic generator</strong> — <code>kubectl apply -f tools/traffic-generator/k8s/</code> so APM and RUM have continuous signal.</li>
+<li><strong>Review the architecture map</strong> — <a href="../../architecture/platform-overview/">ARCHITECTURE.md</a> explains every service and observability surface in detail.</li>
+<li><strong>Tear down when done</strong> — <code>make destroy</code> (asks for confirmation).</li>
+</ol>
 
 
 
 
 
 
+
+  
+  
 
 
 
@@ -3979,6 +4457,8 @@ Identity Domain app and <code>octo-sso</code> secret are in place.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

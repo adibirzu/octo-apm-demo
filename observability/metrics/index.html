@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2416,6 +2418,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2505,6 +2513,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2569,6 +2605,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2681,6 +2745,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3140,6 +3232,8 @@
       
         
       
+        
+      
     
     
     
@@ -3209,6 +3303,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3886,7 +4008,7 @@
 </tbody>
 </table>
 <h2 id="oci-monitoring-custom-metrics">OCI Monitoring Custom Metrics<a class="headerlink" href="#oci-monitoring-custom-metrics" title="Permanent link">&para;</a></h2>
-<p>Published every 60 seconds to OCI Monitoring namespace <code>octo_drone_shop</code>:</p>
+<p>Published every 60 seconds to OCI Monitoring namespace <code>octo_apm_demo</code>:</p>
 <table>
 <thead>
 <tr>
@@ -3935,6 +4057,31 @@
 <td><code>app.crm.sync_age_s</code></td>
 <td>seconds</td>
 <td>Seconds since last CRM sync</td>
+</tr>
+<tr>
+<td><code>app.auth.success.count</code></td>
+<td>count</td>
+<td>Admin successful logins per interval</td>
+</tr>
+<tr>
+<td><code>app.auth.failure.count</code></td>
+<td>count</td>
+<td>Admin failed logins per interval</td>
+</tr>
+<tr>
+<td><code>app.security.events.count</code></td>
+<td>count</td>
+<td>Admin security events per interval</td>
+</tr>
+<tr>
+<td><code>app.dashboard.loads.count</code></td>
+<td>count</td>
+<td>Admin dashboard loads per interval</td>
+</tr>
+<tr>
+<td><code>app.order_sync.count</code></td>
+<td>count</td>
+<td>Admin order sync operations per interval</td>
 </tr>
 <tr>
 <td><code>app.inventory.low_stock_products</code></td>
@@ -4065,6 +4212,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2325,6 +2327,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2414,6 +2422,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2478,6 +2514,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2590,6 +2654,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3049,6 +3141,8 @@
       
         
       
+        
+      
     
     
     
@@ -3118,6 +3212,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3651,10 +3773,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#melts-correlation-matrix" class="md-nav__link">
+  <a href="#current-overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MELTS Correlation Matrix
+        Current Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#correlation-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correlation Matrix
       
     </span>
   </a>
@@ -3666,6 +3799,17 @@
     <span class="md-ellipsis">
       
         360 Observability Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#latest-demo-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Latest Demo Assets
       
     </span>
   </a>
@@ -3704,64 +3848,119 @@
 
 
 <h1 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h1>
-<p>The OCTO Drone Shop implements <strong>MELTS</strong> — a complete observability stack covering Metrics, Events, Logs, Traces, and SQL. All pillars are correlated through shared trace IDs and <code>oracleApmTraceId</code> for end-to-end visibility.</p>
-<h2 id="melts-correlation-matrix">MELTS Correlation Matrix<a class="headerlink" href="#melts-correlation-matrix" title="Permanent link">&para;</a></h2>
-<p>Every pillar links to every other pillar through shared identifiers:</p>
+<p>OCTO APM Demo is a demo project for showcasing OCI Observability service
+capabilities in a customer-friendly commerce scenario. The latest walkthroughs
+live in <a href="../observability-v2/">Observability v2</a>; this section keeps
+the foundational MELTS pages and implementation references.</p>
+<h2 id="current-overview">Current Overview<a class="headerlink" href="#current-overview" title="Permanent link">&para;</a></h2>
+<p>The platform emits <strong>MELTS</strong> signals: Metrics, Events, Logs, Traces, and SQL.
+The current demo joins those signals across browser RUM, Drone Shop, Enterprise
+CRM, the Java payment/app-server sidecar, Oracle ATP, OCI GenAI assistant
+flows, OCI APM, OCI Logging, Log Analytics, OCI Monitoring, and Stack
+Monitoring / database tooling.</p>
 <table>
 <thead>
 <tr>
-<th>From → To</th>
-<th>Correlation Key</th>
+<th>Pillar</th>
+<th>Current demo surface</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Traces → Logs</td>
-<td><code>oracleApmTraceId</code> in every log entry</td>
+<td>Metrics</td>
+<td>OCI Monitoring custom metrics, runtime health, business counters, and alarm-ready query examples.</td>
 </tr>
 <tr>
-<td>Traces → Metrics</td>
-<td>Request counting increments business counters</td>
+<td>Events</td>
+<td>Checkout, payment, load-control, remediation, WAF/API Gateway, Cloud Guard, and attack-lab events.</td>
 </tr>
 <tr>
-<td>Traces → SQL</td>
-<td><code>DbOracleSqlId</code> span attribute → DB Management Performance Hub</td>
+<td>Logs</td>
+<td>Structured application logs with <code>oracleApmTraceId</code>, token-safe payment fields, assistant LLMetry fields, and parser-ready JSON.</td>
 </tr>
 <tr>
-<td>SQL → Traces</td>
-<td>Oracle <code>CLIENT_IDENTIFIER=trace_id</code> in V$SESSION</td>
+<td>Traces</td>
+<td>OCI APM service traces, browser RUM sessions, Java App Servers data, checkout spans, login spans, assistant spans, and service-error drill-downs.</td>
 </tr>
 <tr>
-<td>Logs → SQL</td>
-<td>Log entries include <code>db.connection_name</code> and <code>db.target</code></td>
+<td>SQL</td>
+<td>Sanitized SQL span metadata, <code>DbOracleSqlId</code>, ATP service names, DB Management / Stack Monitoring pivots, and Log Analytics slow-query searches.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="correlation-matrix">Correlation Matrix<a class="headerlink" href="#correlation-matrix" title="Permanent link">&para;</a></h2>
+<p>Every pillar links to the others through stable, reusable identifiers:</p>
+<table>
+<thead>
+<tr>
+<th>From to</th>
+<th>Correlation key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RUM to traces</td>
+<td><code>trace_id</code>, RUM page action, session id</td>
 </tr>
 <tr>
-<td>Metrics → Alarms</td>
-<td>OCI Monitoring MQL queries trigger notifications</td>
+<td>Traces to logs</td>
+<td><code>TraceId</code>, <code>trace_id</code>, <code>oracleApmTraceId</code></td>
+</tr>
+<tr>
+<td>Traces to SQL</td>
+<td><code>DbOracleSqlId</code>, sanitized DB statement metadata</td>
+</tr>
+<tr>
+<td>Logs to payment</td>
+<td><code>Payment Gateway Request ID</code>, <code>Transaction ID</code>, <code>Order ID</code></td>
+</tr>
+<tr>
+<td>Logs to assistant</td>
+<td><code>Assistant Session ID</code>, <code>Application Hash</code>, <code>gen_ai.*</code></td>
+</tr>
+<tr>
+<td>Metrics to alarms</td>
+<td>OCI Monitoring MQL and Log Analytics scheduled-rule metrics</td>
 </tr>
 </tbody>
 </table>
 <h2 id="360-observability-dashboard">360 Observability Dashboard<a class="headerlink" href="#360-observability-dashboard" title="Permanent link">&para;</a></h2>
-<p>The <code>/api/observability/360</code> endpoint provides a single-pane-of-glass view:</p>
+<p>The <code>/api/observability/360</code> endpoint remains the app-facing health summary for
+demo operators. It should expose readiness and signal configuration status, not
+secret values, live IP addresses, or tenancy-specific identifiers.</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><span class="p">{</span>
 </span><span id="__span-0-2"><span class="w">  </span><span class="nt">&quot;pillars&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-3"><span class="w">    </span><span class="nt">&quot;apm&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;rum_configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
 </span><span id="__span-0-4"><span class="w">    </span><span class="nt">&quot;logging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
 </span><span id="__span-0-5"><span class="w">    </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;prometheus&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;otlp_export&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
 </span><span id="__span-0-6"><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-0-7"><span class="w">  </span><span class="nt">&quot;vulnerability_scanning&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
-</span><span id="__span-0-8"><span class="w">  </span><span class="nt">&quot;circuit_breakers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-9"><span class="w">    </span><span class="nt">&quot;crm&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;closed&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;failure_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="p">},</span>
-</span><span id="__span-0-10"><span class="w">    </span><span class="nt">&quot;workflow_gateway&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;closed&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;failure_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-0-11"><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-0-12"><span class="p">}</span>
+</span><span id="__span-0-7"><span class="w">  </span><span class="nt">&quot;circuit_breakers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-8"><span class="w">    </span><span class="nt">&quot;crm&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;closed&quot;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-0-9"><span class="w">    </span><span class="nt">&quot;workflow_gateway&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;closed&quot;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-0-10"><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-0-11"><span class="p">}</span>
 </span></code></pre></div>
+<h2 id="latest-demo-assets">Latest Demo Assets<a class="headerlink" href="#latest-demo-assets" title="Permanent link">&para;</a></h2>
+<ul>
+<li>APM saved-query descriptors live under <code>deploy/oci/apm/saved-queries/</code> and
+  cover checkout, Java payment sidecar, DB slow spans, login, assistant
+  LLMetry, service errors, platform workflows, and one-trace drill-down.</li>
+<li>Log Analytics fields, parsers, saved searches, dashboards, and scheduled-rule
+  helpers live under <code>deploy/oci/log_analytics/</code>.</li>
+<li>The Java sidecar emits OCI APM App Servers data and token-safe payment rail
+  spans for verification, authorization, wallet, processor, and network
+  outcomes.</li>
+<li>Public docs and diagrams must stay sanitized: use <code>&lt;OCI_PROFILE&gt;</code>,
+  <code>&lt;COMPARTMENT_OCID&gt;</code>, <code>&lt;APM_DOMAIN_OCID&gt;</code>, <code>&lt;LA_NAMESPACE&gt;</code>, and placeholder
+  hostnames instead of resolved infrastructure values.</li>
+</ul>
 <h2 id="sections">Sections<a class="headerlink" href="#sections" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../observability-v2/">Observability v2</a> — current customer demo overview and guided workflows</li>
 <li><a href="enhancement-plan/">Enhancement Plan</a> — rollout sequence for golden flows, APM, Logging, Log Analytics, drilldowns, and DB tooling</li>
 <li><a href="oci-360-development-plan/">OCI 360 Development Plan</a> — phased platform expansion with new services, edge visibility, load control, and runtime coverage</li>
-<li><a href="melts/">MELTS Overview</a> — Complete stack with verification paths</li>
-<li><a href="traces/">Traces (APM)</a> — 50+ custom spans, distributed tracing, topology</li>
+<li><a href="melts/">MELTS Overview</a> — complete stack with verification paths</li>
+<li><a href="traces/">Traces (APM)</a> — custom spans, distributed tracing, topology</li>
 <li><a href="metrics/">Metrics</a> — Prometheus, OCI Monitoring, business KPIs</li>
 <li><a href="logs/">Logs</a> — OCI Logging SDK, Splunk HEC, trace correlation</li>
 <li><a href="security/">Security Events</a> — MITRE ATT&amp;CK, OWASP, WAF, Cloud Guard</li>
@@ -3884,6 +4083,8 @@
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../assets/js/placeholder-config.js"></script>
       
     
   </body>

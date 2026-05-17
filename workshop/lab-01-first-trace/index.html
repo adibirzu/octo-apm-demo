@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install.">
+        <meta name="description" content="Generate one HTTP request, find its trace in OCI APM, and read what it contains. The foundation lab — every later lab assumes you can do this.">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>Lab 01 — First trace - OCTO APM Demo — Unified Platform</title>
+        <title>Lab 01 — Your first trace - OCTO APM Demo — Unified Platform</title>
       
     
     
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Lab 01 — First trace
+              Lab 01 — Your first trace
             
           </span>
         </div>
@@ -2320,6 +2322,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2409,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2473,6 +2509,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2585,6 +2649,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3044,6 +3136,8 @@
       
         
       
+        
+      
     
     
     
@@ -3113,6 +3207,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3430,6 +3552,17 @@
     <span class="md-ellipsis">
       
         Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-youll-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you'll learn
       
     </span>
   </a>
@@ -3858,6 +3991,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-youll-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you'll learn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3974,45 +4118,97 @@
 <h1 id="lab-01-your-first-trace">Lab 01 — Your first trace<a class="headerlink" href="#lab-01-your-first-trace" title="Permanent link">&para;</a></h1>
 <h2 id="objective">Objective<a class="headerlink" href="#objective" title="Permanent link">&para;</a></h2>
 <p>Generate one HTTP request, find its trace in OCI APM, and read what it
-contains.</p>
+contains. This is the foundation lab — every later lab assumes you can
+follow a request from the browser into APM, find it, and explain what
+each span represents.</p>
 <h2 id="time-budget">Time budget<a class="headerlink" href="#time-budget" title="Permanent link">&para;</a></h2>
-<p>20 minutes.</p>
+<p>20 minutes (first time). 5 minutes once you've done it once.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Platform deployed and reachable (see <a href="../#prerequisites-checklist">workshop intro</a>).</li>
+<li>The pre-flight <code>/ready</code> check returned <code>apm_configured: true</code> on both
+  shop and admin endpoints.</li>
+<li>You know your APM Domain OCID — find it in <em>OCI Console → Observability
+  &amp; Management → APM → Administration → Domain Details</em>.</li>
+</ul>
+<h2 id="what-youll-learn">What you'll learn<a class="headerlink" href="#what-youll-learn" title="Permanent link">&para;</a></h2>
+<ul>
+<li>How W3C trace context (<code>traceparent</code> header) flows from any HTTP client
+  into the FastAPI server and out to downstream services.</li>
+<li>How to find a specific trace in OCI APM Trace Explorer.</li>
+<li>How to read a flame chart: parent/child relationships, span duration,
+  span attributes.</li>
+<li>The naming convention this platform uses for span attributes
+  (<code>service.name</code>, <code>service.namespace</code>, <code>service.instance.id</code>).</li>
 </ul>
 <h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Personalize the commands</p>
+<p>The <strong>Configure your deployment</strong> panel at the top of this page lets
+you replace <code>example.tld</code>, <code>${DNS_DOMAIN}</code>, and <code>&lt;COMPARTMENT_OCID&gt;</code>
+with your real values everywhere on this page. Open it once and the
+<code>curl</code> commands below become directly copy-pasteable.</p>
+</div>
 <h3 id="1-generate-a-request">1. Generate a request<a class="headerlink" href="#1-generate-a-request" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="nv">TRACEPARENT</span><span class="o">=</span><span class="s2">&quot;00-</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">16</span><span class="k">)</span><span class="s2">-</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">8</span><span class="k">)</span><span class="s2">-01&quot;</span>
-</span><span id="__span-0-2"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;traceparent we&#39;ll inject: </span><span class="nv">$TRACEPARENT</span><span class="s2">&quot;</span>
-</span><span id="__span-0-3">
-</span><span id="__span-0-4">curl<span class="w"> </span>-sS<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-5"><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;traceparent: </span><span class="nv">$TRACEPARENT</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-6"><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;X-Workflow-Id: workshop-lab-01&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-7"><span class="w">    </span>https://shop.example.tld/api/products<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[0]&#39;</span>
+<p>We'll mint our own W3C <code>traceparent</code> header so we know the exact 32-hex
+trace ID to look for later. This makes the lab deterministic — no
+guessing which trace was yours among the hundreds the traffic generator
+produces.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="c1"># Mint a fresh traceparent: version-traceId-spanId-flags</span>
+</span><span id="__span-0-2"><span class="nv">TRACEPARENT</span><span class="o">=</span><span class="s2">&quot;00-</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">16</span><span class="k">)</span><span class="s2">-</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">8</span><span class="k">)</span><span class="s2">-01&quot;</span>
+</span><span id="__span-0-3"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;traceparent we&#39;ll inject: </span><span class="nv">$TRACEPARENT</span><span class="s2">&quot;</span>
+</span><span id="__span-0-4">
+</span><span id="__span-0-5">curl<span class="w"> </span>-sS<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-6"><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;traceparent: </span><span class="nv">$TRACEPARENT</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-7"><span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;X-Workflow-Id: workshop-lab-01&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-8"><span class="w">    </span>https://drones.example.tld/api/products<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[0]&#39;</span>
 </span></code></pre></div>
+<p><strong>Expected response shape:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><span class="p">{</span>
+</span><span id="__span-1-2"><span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;drone-xyz&quot;</span><span class="p">,</span>
+</span><span id="__span-1-3"><span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Carbon Fiber Recon&quot;</span><span class="p">,</span>
+</span><span id="__span-1-4"><span class="w">  </span><span class="nt">&quot;price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1299.0</span><span class="p">,</span>
+</span><span id="__span-1-5"><span class="w">  </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tactical&quot;</span><span class="p">,</span>
+</span><span id="__span-1-6"><span class="w">  </span><span class="nt">&quot;in_stock&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-1-7"><span class="p">}</span>
+</span></code></pre></div>
+<p>If you got HTTP 200 + a JSON product object, the request succeeded and
+APM has begun ingesting your span. ✓</p>
 <p>The <code>traceparent</code> header is the W3C standard the shop's OTel SDK reads.
 By generating it ourselves, we know the exact 32-hex <code>trace_id</code> to
 search for. Extract it:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><span class="nv">TRACE_ID</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TRACEPARENT</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d-<span class="w"> </span>-f2<span class="k">)</span>
-</span><span id="__span-1-2"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;trace_id: </span><span class="nv">$TRACE_ID</span><span class="s2">&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="nv">TRACE_ID</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TRACEPARENT</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d-<span class="w"> </span>-f2<span class="k">)</span>
+</span><span id="__span-2-2"><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;trace_id: </span><span class="nv">$TRACE_ID</span><span class="s2">&quot;</span>
 </span></code></pre></div>
 <h3 id="2-find-the-trace-in-oci-apm-console">2. Find the trace in OCI APM (Console)<a class="headerlink" href="#2-find-the-trace-in-oci-apm-console" title="Permanent link">&para;</a></h3>
 <ol>
-<li>Open OCI Console → <strong>Observability &amp; Management → Application
+<li>Open <strong>OCI Console → Observability &amp; Management → Application
    Performance Monitoring → Trace Explorer</strong>.</li>
-<li>Pick the APM Domain (<code>octo-apm</code>).</li>
-<li>In the search bar, paste:
-    <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1">TraceId = &#39;&lt;your trace_id&gt;&#39;
+<li>Pick your APM Domain (typically <code>&lt;DEPLOYMENT_PREFIX&gt;-apm-domain</code>).</li>
+<li>In the query bar, paste:
+   <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1">TraceId = &#39;&lt;your trace_id&gt;&#39;
 </span></code></pre></div></li>
-<li>Click <strong>Run query</strong>. The trace appears within ~30 s of the request.</li>
+<li>Click <strong>Run query</strong>. The trace appears within ~30 seconds of the
+   request (OCI APM ingestion SLA is 1–2 minutes).</li>
 </ol>
+<p><strong>What you should see</strong> — a Trace Explorer screen similar to this (top
+nav blurred + tenancy chips redacted to keep the image publishable):</p>
+<p><img alt="Trace Explorer with a single trace result" src="../../assets/screenshots/oci/apm-01-trace-explorer-result.png" /></p>
+<p>The single matched row should show:</p>
+<ul>
+<li><strong>Operation</strong>: <code>GET /api/products</code></li>
+<li><strong>Service</strong>: <code>octo-drone-shop</code></li>
+<li><strong>Status</strong>: HTTP 200</li>
+<li><strong>Duration</strong>: 20-150 ms (varies with cold-start)</li>
+<li><strong>Span count</strong>: 3-5 (FastAPI server span + SQLAlchemy spans + maybe a
+  cache lookup)</li>
+</ul>
 <h3 id="3-find-the-trace-in-oci-apm-cli">3. Find the trace in OCI APM (CLI)<a class="headerlink" href="#3-find-the-trace-in-oci-apm-cli" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">oci<span class="w"> </span>apm-traces<span class="w"> </span>trace<span class="w"> </span>get<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-2"><span class="w">    </span>--apm-domain-id<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCI_APM_DOMAIN_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-3"><span class="w">    </span>--trace-key<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TRACE_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-4"><span class="w">    </span>--query<span class="w"> </span><span class="s1">&#39;data.{spans: spans[*].operationName, duration: &quot;duration-in-ms&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-5"><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">oci<span class="w"> </span>apm-traces<span class="w"> </span>trace<span class="w"> </span>get<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><span class="w">    </span>--apm-domain-id<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCI_APM_DOMAIN_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><span class="w">    </span>--trace-key<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TRACE_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-4"><span class="w">    </span>--query<span class="w"> </span><span class="s1">&#39;data.{spans: spans[*].operationName, duration: &quot;duration-in-ms&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-5"><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq
 </span></code></pre></div>
 <p>You should see at least three spans:</p>
 <ul>
@@ -4024,25 +4220,100 @@ search for. Extract it:</p>
 <h3 id="4-read-the-trace">4. Read the trace<a class="headerlink" href="#4-read-the-trace" title="Permanent link">&para;</a></h3>
 <p>In the Console UI, click the trace row to open the <strong>flame chart</strong>.</p>
 <ul>
-<li>The root span shows total wall-clock time.</li>
-<li>Child spans are nested by parent-id; widths show their share of the
-  total.</li>
-<li>Click any span to see its <strong>attributes</strong>: <code>service.name</code>, <code>http.method</code>,
-  <code>http.route</code>, <code>db.system</code>, <code>db.statement</code>.</li>
+<li>The <strong>root span</strong> shows total wall-clock time end-to-end</li>
+<li>Child spans are nested by parent ID; widths show their share of the total</li>
+<li>Click any span to see its <strong>attributes</strong> in the right-hand panel</li>
 </ul>
-<p>The <code>service.name</code> should be <code>octo-drone-shop</code>. The
-<code>http.route</code> should be <code>/api/products</code>. If the trace has a <code>peer.service</code>
-attribute pointing at <code>enterprise-crm-portal</code>, you generated a request
-that crossed the cross-service boundary — useful for the next lab.</p>
+<p><strong>Key attributes on the root span:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Expected value</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>service.name</code></td>
+<td><code>octo-drone-shop</code></td>
+<td>Identifies which service produced the span</td>
+</tr>
+<tr>
+<td><code>service.namespace</code></td>
+<td><code>octo</code></td>
+<td>Logical grouping for cross-service search</td>
+</tr>
+<tr>
+<td><code>service.instance.id</code></td>
+<td>pod/container/VM identifier</td>
+<td>Lets you pivot to that instance's logs</td>
+</tr>
+<tr>
+<td><code>http.method</code></td>
+<td><code>GET</code></td>
+<td>HTTP verb</td>
+</tr>
+<tr>
+<td><code>http.route</code></td>
+<td><code>/api/products</code></td>
+<td>FastAPI route template (not the full URL)</td>
+</tr>
+<tr>
+<td><code>http.status_code</code></td>
+<td><code>200</code></td>
+<td>Response status</td>
+</tr>
+</tbody>
+</table>
+<p><strong>On the database child span (SQLAlchemy):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Expected value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>db.system</code></td>
+<td><code>oracle</code> (or <code>postgresql</code> on local stack)</td>
+</tr>
+<tr>
+<td><code>db.statement</code></td>
+<td><code>SELECT ... FROM products WHERE ...</code></td>
+</tr>
+<tr>
+<td><code>db.sql_id</code></td>
+<td>Oracle SQL_ID hash (only on ATP)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The platform's correlation contract</strong> says every log record emitted
+during this request will share the same <code>oracleApmTraceId</code> value as the
+trace's root <code>trace_id</code>. We'll exercise that in Lab 02.</p>
+<p><strong>Flame chart view:</strong> click the matched trace and the per-trace flame
+chart opens, showing the FastAPI server span as the root and nested
+SQLAlchemy / Java sidecar spans as children:</p>
+<p><img alt="Flame chart for one trace" src="../../assets/screenshots/oci/apm-02-flame-chart.png" /></p>
+<p><strong>Span attributes:</strong> click any span in the flame chart to open the
+right-hand attributes panel. The attributes panel reveals
+<code>service.name</code>, <code>service.namespace</code>, <code>http.route</code>, <code>db.statement</code>,
+<code>oracleApmTraceId</code>, and the other fields documented in the architecture
+correlation contract:</p>
+<p><img alt="Span attribute detail panel" src="../../assets/screenshots/oci/apm-03-span-attributes.png" /></p>
+<p>If the trace has a <code>peer.service</code> attribute pointing at
+<code>enterprise-crm-portal</code>, you generated a request that crossed the
+cross-service boundary — useful for the next lab.</p>
 <h2 id="verify">Verify<a class="headerlink" href="#verify" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">./tools/workshop/verify-01.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TRACE_ID</span><span class="s2">&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1">./tools/workshop/verify-01.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TRACE_ID</span><span class="s2">&quot;</span>
 </span></code></pre></div>
 <p>Expected output:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1">✓ trace_id format valid (32 hex)
-</span><span id="__span-5-2">✓ trace appears in APM (HTTP 200)
-</span><span id="__span-5-3">✓ at least one span has service.name=octo-drone-shop
-</span><span id="__span-5-4">✓ at least one span has http.route=/api/products
-</span><span id="__span-5-5">PASS — Lab 01 complete
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1">✓ trace_id format valid (32 hex)
+</span><span id="__span-6-2">✓ trace appears in APM (HTTP 200)
+</span><span id="__span-6-3">✓ at least one span has service.name=octo-drone-shop
+</span><span id="__span-6-4">✓ at least one span has http.route=/api/products
+</span><span id="__span-6-5">PASS — Lab 01 complete
 </span></code></pre></div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <table>
@@ -4086,6 +4357,9 @@ that crossed the cross-service boundary — useful for the next lab.</p>
 
 
 
+  
+  
+
 
 
 
@@ -4116,7 +4390,7 @@ that crossed the cross-service boundary — useful for the next lab.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: OCI Observability Onboarding Workshop">
+          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: OCI Observability Workshop">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4126,7 +4400,7 @@ that crossed the cross-service boundary — useful for the next lab.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                OCI Observability Onboarding Workshop
+                OCI Observability Workshop
               </div>
             </div>
           </a>
@@ -4196,6 +4470,8 @@ that crossed the cross-service boundary — useful for the next lab.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

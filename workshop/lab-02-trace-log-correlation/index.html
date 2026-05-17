@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install.">
+        <meta name="description" content="Pivot from a single APM trace to every log record emitted during that request, using oracleApmTraceId as the join key. The bread-and-butter operator workflow.">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>Lab 02 — Trace ↔ Log - OCTO APM Demo — Unified Platform</title>
+        <title>Lab 02 — Trace ↔ Log correlation - OCTO APM Demo — Unified Platform</title>
       
     
     
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Lab 02 — Trace ↔ Log
+              Lab 02 — Trace ↔ Log correlation
             
           </span>
         </div>
@@ -2320,6 +2322,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2409,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2473,6 +2509,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2585,6 +2649,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3044,6 +3136,8 @@
       
         
       
+        
+      
     
     
     
@@ -3113,6 +3207,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3454,6 +3576,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-youll-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you'll learn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3525,6 +3658,17 @@
     <span class="md-ellipsis">
       
         5. Try a richer query
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-detection-rules-use-the-same-correlation-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Detection rules use the same correlation contract
       
     </span>
   </a>
@@ -3858,6 +4002,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-youll-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you'll learn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3935,6 +4090,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#6-detection-rules-use-the-same-correlation-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Detection rules use the same correlation contract
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3996,14 +4162,26 @@
 <h1 id="lab-02-trace-log-correlation">Lab 02 — Trace ↔ Log correlation<a class="headerlink" href="#lab-02-trace-log-correlation" title="Permanent link">&para;</a></h1>
 <h2 id="objective">Objective<a class="headerlink" href="#objective" title="Permanent link">&para;</a></h2>
 <p>Take an APM trace_id, find the matching log records in Log Analytics,
-and learn the round-trip click path operators use during incidents.</p>
+and learn the round-trip click path operators use during incidents.
+This is the bread-and-butter workflow — every later lab assumes you
+can move between APM spans and Log Analytics rows in one click.</p>
 <h2 id="time-budget">Time budget<a class="headerlink" href="#time-budget" title="Permanent link">&para;</a></h2>
 <p>30 minutes.</p>
+<h2 id="what-youll-learn">What you'll learn<a class="headerlink" href="#what-youll-learn" title="Permanent link">&para;</a></h2>
+<ul>
+<li>How <code>oracleApmTraceId</code> ties APM spans to Log Analytics rows</li>
+<li>The Log Analytics search syntax for cross-referencing traces</li>
+<li>The platform's pre-shipped saved searches for common correlation
+  scenarios (auth, payment, workflow, connector coverage)</li>
+<li>How detection rules consume the same correlation contract</li>
+</ul>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Lab 01 complete.</li>
-<li>Log Analytics source <code>octo-shop-app-json</code> registered (one-time;
-  <code>tools/create_la_source.py --apply</code>).</li>
+<li>Lab 01 complete (you know how to find a trace in APM Trace Explorer).</li>
+<li>Log Analytics source <code>SOC Application Logs</code> registered for direct/OKE app
+  rows. In the private demo profile, Connector Hub rows from OCI Logging
+  appear as <code>OCI Unified Schema Logs</code>; use <code>connector-live-log-coverage.sql</code>
+  for that path.</li>
 <li>Saved searches deployed (<code>tools/la-saved-searches/apply.sh</code>).</li>
 </ul>
 <h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
@@ -4023,18 +4201,28 @@ and learn the round-trip click path operators use during incidents.</p>
 lands within 60 s.</p>
 <ol>
 <li>Open <strong>OCI Console → Observability &amp; Management → Logging
-   Analytics → Search</strong>.</li>
+   Analytics → Search</strong> (also called Log Explorer).</li>
 <li>Run the saved search you deployed:
-    <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">&#39;Log Source&#39; = &#39;octo-shop-app-json&#39; | where oracleApmTraceId = &#39;&lt;TRACE_ID&gt;&#39;
+    <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">&#39;Log Source&#39; = &#39;SOC Application Logs&#39; and &#39;Trace ID&#39; = &#39;&lt;TRACE_ID&gt;&#39;
 </span></code></pre></div></li>
 <li>You should see one row per log record the shop emitted while
    processing your request. The <code>oracleApmTraceId</code> column is the join
    key; click any row to open its full JSON payload.</li>
 </ol>
+<p><strong>Where this lands in APM Trace Explorer first</strong> — the same <code>trace_id</code>
+returns a single row that looks like:</p>
+<p><img alt="Trace Explorer with one result" src="../../assets/screenshots/oci/apm-01-trace-explorer-result.png" /></p>
+<p><strong>The flame chart</strong> shows you exactly how many spans are involved.
+Every span in this flame chart will produce 1+ log records in Log
+Analytics — that's what step 2 above retrieves:</p>
+<p><img alt="Flame chart" src="../../assets/screenshots/oci/apm-02-flame-chart.png" /></p>
+<p><strong>Each span exposes its <code>oracleApmTraceId</code> in the attributes panel</strong>.
+This is the field that joins APM ↔ Log Analytics:</p>
+<p><img alt="Span attribute panel showing oracleApmTraceId" src="../../assets/screenshots/oci/apm-03-span-attributes.png" /></p>
 <h3 id="3-query-log-analytics-from-the-cli">3. Query Log Analytics from the CLI<a class="headerlink" href="#3-query-log-analytics-from-the-cli" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1">oci<span class="w"> </span>log-analytics<span class="w"> </span>query<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-2"><span class="w">    </span>--namespace-name<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$LA_NAMESPACE</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><span class="w">    </span>--query-string<span class="w"> </span><span class="s2">&quot;&#39;Log Source&#39; = &#39;octo-shop-app-json&#39; | where oracleApmTraceId = &#39;</span><span class="nv">$TRACE_ID</span><span class="s2">&#39; | head limit = 10&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><span class="w">    </span>--query-string<span class="w"> </span><span class="s2">&quot;&#39;Log Source&#39; = &#39;SOC Application Logs&#39; and &#39;Trace ID&#39; = &#39;</span><span class="nv">$TRACE_ID</span><span class="s2">&#39; | head limit = 10&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-4"><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.data.results[] | {ts:.&quot;Time&quot;, level, message}&#39;</span>
 </span></code></pre></div>
 <h3 id="4-click-back-to-apm-from-a-log-record">4. Click back to APM from a log record<a class="headerlink" href="#4-click-back-to-apm-from-a-log-record" title="Permanent link">&para;</a></h3>
@@ -4049,13 +4237,25 @@ lands within 60 s.</p>
 <p>That's the round trip: APM → LA → APM, in two clicks.</p>
 <h3 id="5-try-a-richer-query">5. Try a richer query<a class="headerlink" href="#5-try-a-richer-query" title="Permanent link">&para;</a></h3>
 <p>The same saved search supports advanced filtering. Try:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1">&#39;Log Source&#39; = &#39;octo-shop-app-json&#39;
-</span><span id="__span-3-2">  | where oracleApmTraceId = &#39;&lt;TRACE_ID&gt;&#39;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1">&#39;Log Source&#39; = &#39;SOC Application Logs&#39;
+</span><span id="__span-3-2">  and &#39;Trace ID&#39; = &#39;&lt;TRACE_ID&gt;&#39;
 </span><span id="__span-3-3">  | stats count() by level
 </span></code></pre></div>
 <p>If your request only emitted <code>INFO</code> logs, you'll see one row. If a
 <code>WARN</code> or <code>ERROR</code> slipped in (failure-injection traffic, perhaps), the
 breakdown shows up.</p>
+<h3 id="6-detection-rules-use-the-same-correlation-contract">6. Detection rules use the same correlation contract<a class="headerlink" href="#6-detection-rules-use-the-same-correlation-contract" title="Permanent link">&para;</a></h3>
+<p>The platform ships <strong>Logging Analytics detection rules</strong> that fire when
+specific patterns (auth anomalies, payment-rail timeouts, attack-lab
+signatures) appear in log streams. Because every detection consumes the
+same field schema you just queried, you can trace from a fired
+detection back to the originating spans in two clicks.</p>
+<p>Navigate to: <strong>Logging Analytics → Detection Rules</strong>:</p>
+<p><img alt="Detection rules list" src="../../assets/screenshots/oci/loganalytics-04-detection-rules.png" /></p>
+<p>Click a rule (e.g. <code>auth-login-burst</code>) to see its query, its evaluation
+schedule, and the dimensions it groups by. Every detection rule's query
+is reproducible from the source SQL committed in
+<code>deploy/oci/log_analytics/searches/</code>.</p>
 <h2 id="verify">Verify<a class="headerlink" href="#verify" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">./tools/workshop/verify-02.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TRACE_ID</span><span class="s2">&quot;</span>
 </span></code></pre></div>
@@ -4078,8 +4278,8 @@ breakdown shows up.</p>
 <tbody>
 <tr>
 <td>LA query returns 0 rows after 3 min</td>
-<td>Service Connector not running</td>
-<td>Check Console → Logging → Service Connectors → <code>la-pipeline-octo-shop-app</code> (created by <code>deploy/terraform/main.tf::la_pipeline_app_logs</code>)</td>
+<td>Wrong ingestion path or connector issue</td>
+<td>For OKE/direct app rows, run <code>service-trace-log-coverage.sql</code>. For OCI Logging connector rows, run <code>connector-live-log-coverage.sql</code> and check <code>OCI Unified Schema Logs</code>.</td>
 </tr>
 <tr>
 <td><code>oracleApmTraceId</code> is empty in records</td>
@@ -4109,6 +4309,9 @@ breakdown shows up.</p>
 
 
 
+
+  
+  
 
 
 
@@ -4220,6 +4423,8 @@ breakdown shows up.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

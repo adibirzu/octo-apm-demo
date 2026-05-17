@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2427,6 +2429,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2516,6 +2524,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2580,6 +2616,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2692,6 +2756,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3151,6 +3243,8 @@
       
         
       
+        
+      
     
     
     
@@ -3220,6 +3314,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3875,9 +3997,14 @@ and the same Oracle Autonomous Database integration contract.</p>
 </tbody>
 </table>
 <h2 id="oke-kubernetes">OKE (Kubernetes)<a class="headerlink" href="#oke-kubernetes" title="Permanent link">&para;</a></h2>
-<p>Reference path. Two separate Deployments (shop + CRM) behind OCI LB +
-WAF, shared Autonomous Database, observability wired via <code>ensure_apm.sh</code>
-/ <code>ensure_stack_monitoring.sh</code>. See
+<p>Kubernetes path for production-style demos, workshops, autoscaling, and staged
+VM-to-OKE cutovers. The OKE runtime deploys the same Shop, CRM, Java
+app-server, and Workflow Gateway images behind OCI LB/WAF/API Gateway routing,
+uses the same shared Autonomous Database and APM domain contract, and preserves the same
+event-generation and Captured Data Center UX as the VM runtime.</p>
+<p>Two or more Deployments run behind OCI LB + WAF, with observability wired via
+<code>ensure_apm.sh</code>, OKE manifests/Helm, OCI Kubernetes Monitoring, and the same Log
+Analytics field/search/dashboard assets. See
 <a href="../new-tenancy/">new-tenancy.md</a> and
 <a href="../oke-deployment/">oke-deployment.md</a>.</p>
 <h2 id="two-instance-compute">Two-instance Compute<a class="headerlink" href="#two-instance-compute" title="Permanent link">&para;</a></h2>
@@ -3887,6 +4014,10 @@ Balancer with WAF, two private Compute instances, a dedicated private ATP
 endpoint, NAT and Service Gateway routes, OCI APM, OCI Logging custom
 logs, optional Log Analytics pipelines, Stack Monitoring Standard, and
 the instance-principal policies needed for app and OS telemetry.</p>
+<p>This path remains the simplest private reference for showing the complete live
+journey: Shop checkout, Admin Simulation Lab, Demo Storyboard, Attack Lab,
+Java App Servers, OCI APM, OCI Logging, Log Analytics, ATP SQL drilldown, and
+the <code>/captured-data</code> operator pivot page.</p>
 <p>Private branch note: build <code>deploy/compute/build/octo-compute-stack.zip</code>
 locally and upload it in Resource Manager. The placeholder GitHub release URL
 previously used by the deploy button returns HTTP 404 until a real private
@@ -3937,9 +4068,10 @@ zip and upload it manually, or publish a real private release asset before
 using a deploy button.</p>
 <p>Full details: <a href="https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/resource-manager/README.md">deploy/resource-manager/README.md</a>.</p>
 <h2 id="unified-single-vm">Unified single VM<a class="headerlink" href="#unified-single-vm" title="Permanent link">&para;</a></h2>
-<p>One OCI Compute instance runs both apps behind nginx, talking to your
-existing Autonomous Database over the wallet. Useful for workshops,
-local reproductions, or air-gapped deployments.</p>
+<p>One OCI Compute instance runs Shop, Admin/CRM, Java payment gateway, and
+Workflow Gateway behind nginx, talking to your existing Autonomous Database
+over the wallet. Useful for workshops, local reproductions, or air-gapped
+deployments.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="nb">cd</span><span class="w"> </span>deploy/vm
 </span><span id="__span-2-2">cp<span class="w"> </span>.env.template<span class="w"> </span>.env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="si">${</span><span class="nv">EDITOR</span><span class="k">:-</span><span class="nv">vi</span><span class="si">}</span><span class="w"> </span>.env
 </span><span id="__span-2-3">unzip<span class="w"> </span>/path/to/Wallet_&lt;DB&gt;.zip<span class="w"> </span>-d<span class="w"> </span>wallet
@@ -3949,15 +4081,18 @@ local reproductions, or air-gapped deployments.</p>
 OCI Console Compute create form for a one-shot bootstrap. Full
 walkthrough: <a href="https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/README.md">deploy/vm/README.md</a>.</p>
 <h2 id="matrix-of-cross-service-contract-parity">Matrix of cross-service contract parity<a class="headerlink" href="#matrix-of-cross-service-contract-parity" title="Permanent link">&para;</a></h2>
-<p>All app deployment paths enforce the same integration contract:</p>
+<p>All app deployment paths enforce the same integration contract. The local
+container stack is intentionally OCI-disabled and uses Postgres, so Oracle-only
+Select AI/workflow execution is profile-gated there; VM, two-instance Compute,
+and OKE run the production Oracle path.</p>
 <table>
 <thead>
 <tr>
-<th></th>
+<th>Capability</th>
 <th>OKE</th>
 <th>Two-instance Compute</th>
-<th>Resource Manager</th>
 <th>Unified VM</th>
+<th>Local containers</th>
 </tr>
 </thead>
 <tbody>
@@ -3965,36 +4100,71 @@ walkthrough: <a href="https://github.com/adibirzu/octo-apm-demo/blob/main/deploy
 <td><code>SERVICE_CRM_URL</code> / <code>SERVICE_SHOP_URL</code></td>
 <td>✅</td>
 <td>✅ (private IP)</td>
-<td>n/a</td>
-<td>✅ (loopback)</td>
+<td>✅ (bridge)</td>
+<td>✅ (bridge)</td>
 </tr>
 <tr>
 <td><code>INTERNAL_SERVICE_KEY</code> header on cross-service POSTs</td>
 <td>✅</td>
 <td>✅</td>
-<td>n/a</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><code>idempotency_token</code> + <code>source_order_id</code> dedup</td>
 <td>✅</td>
 <td>✅</td>
-<td>n/a</td>
+<td>✅</td>
 <td>✅</td>
 </tr>
 <tr>
 <td><code>/api/integrations/schema</code> discovery</td>
 <td>✅</td>
 <td>✅</td>
-<td>n/a</td>
 <td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Java payment gateway simulation</td>
+<td>✅ <code>octo-java-app-server-oke</code></td>
+<td>✅ <code>octo-java-app-server</code></td>
+<td>✅ <code>octo-java-app-server</code></td>
+<td>✅ <code>octo-java-app-server-local</code></td>
+</tr>
+<tr>
+<td>Workflow Gateway / Select AI</td>
+<td>✅ <code>octo-workflow-gateway-oke</code></td>
+<td>✅ <code>octo-workflow-gateway</code></td>
+<td>✅ <code>octo-workflow-gateway</code></td>
+<td>⚠️ Oracle path disabled by default</td>
+</tr>
+<tr>
+<td>GenAI LLMetry + optional Langfuse export</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ local/no export</td>
 </tr>
 <tr>
 <td>APM + RUM + Log Analytics + Stack Monitoring</td>
 <td>✅</td>
 <td>✅</td>
-<td>✅ (provisions)</td>
-<td>✅ (consumes)</td>
+<td>✅ consumes existing resources</td>
+<td>⚠️ exporters disabled</td>
+</tr>
+<tr>
+<td>Guided event generation + <code>/captured-data</code> pivots</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Resource Manager</td>
+<td>provisions infra and can bootstrap OKE dependencies</td>
+<td>provisions private Compute path</td>
+<td>n/a</td>
+<td>n/a</td>
 </tr>
 </tbody>
 </table>
@@ -4115,6 +4285,8 @@ walkthrough: <a href="https://github.com/adibirzu/octo-apm-demo/blob/main/deploy
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

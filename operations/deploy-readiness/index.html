@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2320,6 +2322,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2409,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2473,6 +2509,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2585,6 +2649,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3046,6 +3138,8 @@
       
         
       
+        
+      
     
     
     
@@ -3118,6 +3212,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3230,6 +3352,17 @@
     <span class="md-ellipsis">
       
         Repo-level verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-destructive-rollout-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-destructive rollout checks
       
     </span>
   </a>
@@ -3764,6 +3897,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#non-destructive-rollout-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-destructive rollout checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#manual-steps-still-outside-terraform" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3848,12 +3992,63 @@ tenancy.</p>
 <li>root deploy tests, provisioning-wizard tests, and shop/crm/tool pytest suites</li>
 <li>lightweight template-render smoke for both apps</li>
 </ul>
-<p>Supplementary targeted checks:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1">python3<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>tests/test_unified_deploy_surface.py
-</span><span id="__span-1-2">python3<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>services/load-control/tests/test_profiles.py<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-3"><span class="w">  </span>services/load-control/tests/test_api.py<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-4"><span class="w">  </span>services/load-control/tests/test_runs.py
+<p>Latest local release gate, May 14, 2026:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">VERIFY PASSED — 0 warning(s)
 </span></code></pre></div>
+<p>That run included full Shop and CRM pytest groups, strict MkDocs, Helm
+render/lint, Terraform validation, Docker compose config, Kubernetes client
+dry-run for rendered Helm, and template smoke checks.</p>
+<p>The latest shared private rollout validated by this gate is immutable image
+tag <code>obs-20260514203801</code>. Post-rollout smoke checks covered the public
+round-robin load-balanced Shop/Admin routes, direct VM checkout, OKE checkout,
+APM trace lookup, Log Analytics trace/order/payment-gateway correlation, and
+OCI Monitoring custom metrics for the VM and OKE service names.</p>
+<p>Supplementary targeted checks:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1">python3<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>tests/test_unified_deploy_surface.py
+</span><span id="__span-2-2">bash<span class="w"> </span>deploy/compute/validate.sh
+</span><span id="__span-2-3">python3<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>services/load-control/tests/test_profiles.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-4"><span class="w">  </span>services/load-control/tests/test_api.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-5"><span class="w">  </span>services/load-control/tests/test_runs.py
+</span></code></pre></div>
+<h2 id="non-destructive-rollout-checks">Non-destructive rollout checks<a class="headerlink" href="#non-destructive-rollout-checks" title="Permanent link">&para;</a></h2>
+<p>Run these before touching a shared demo route. They validate the same
+deployment contract used by the VM and OKE paths without changing the
+public Load Balancer routing policy.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">bash<span class="w"> </span>deploy/verify.sh
+</span><span id="__span-3-2">bash<span class="w"> </span>deploy/compute/validate.sh
+</span><span id="__span-3-3">
+</span><span id="__span-3-4"><span class="nv">DNS_DOMAIN</span><span class="o">=</span>&lt;domain&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-5"><span class="nv">OCIR_REGION</span><span class="o">=</span>&lt;region&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-6"><span class="nv">OCIR_TENANCY</span><span class="o">=</span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-7"><span class="nv">IMAGE_TAG</span><span class="o">=</span>&lt;immutable-tag&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-8"><span class="nv">OKE_CLUSTER_NAME</span><span class="o">=</span>octo-apm-demo-oke<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-9"><span class="nv">SERVER_DRY_RUN</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-10"><span class="nv">APPLY</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-11">bash<span class="w"> </span>deploy/oke/deploy-oke.sh
+</span><span id="__span-3-12">
+</span><span id="__span-3-13"><span class="nv">APPLY</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span>bash<span class="w"> </span>deploy/oke/install-oci-kubernetes-monitoring.sh
+</span></code></pre></div>
+<p>Live promotion stays separate from validation:</p>
+<ul>
+<li><code>deploy/oke/wire-existing-lb-backends.sh --round-robin-active --apply</code>
+  only after VM and OKE direct smoke tests pass.</li>
+<li><code>deploy/oke/wire-existing-lb-backends.sh --rollback-active-vm</code> returns
+  the active backend sets to VM-only if the OKE path regresses.</li>
+<li>Playwright E2E should cover login, cart, checkout, payment rail, order
+  view, and admin order visibility against both public routes during the
+  round-robin period.</li>
+<li>APM Trace Explorer must show the browser/user action, Shop, Java payment
+  gateway, Admin/CRM, and database spans for a successful purchase.</li>
+<li>Log Analytics saved searches must return matching records for the same
+  trace ID, workflow ID, order ID, payment gateway request ID, and service
+  names before the deployment is promoted.</li>
+<li>Deployment parity checks must show the same capability contract across
+  OKE raw manifests, Helm, two-instance Compute, unified VM, and local
+  containers: service namespace/instance IDs, Java payment gateway,
+  Workflow Gateway/Select AI where Oracle ATP is available, LLMetry/Langfuse
+  flags, payment simulation flags, and Log Analytics <code>SOC Application Logs</code>
+  annotations.</li>
+</ul>
 <h2 id="manual-steps-still-outside-terraform">Manual steps still outside Terraform<a class="headerlink" href="#manual-steps-still-outside-terraform" title="Permanent link">&para;</a></h2>
 <p>Two OCI integrations still require operator follow-through:</p>
 <table>
@@ -4067,6 +4262,8 @@ tenancy.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

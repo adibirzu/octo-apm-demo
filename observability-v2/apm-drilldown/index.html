@@ -16,7 +16,7 @@
         <link rel="prev" href="../log-analytics-dashboards/">
       
       
-        <link rel="next" href="../demo-storyboard-attack-lab/">
+        <link rel="next" href="../synthetic-monitoring/">
       
       
         
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -2322,6 +2324,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2394,6 +2402,34 @@
     
   
     Golden workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
   
 
     
@@ -2574,6 +2610,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#saved-trace-explorer-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saved Trace Explorer Queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#copy-paste-trace-url" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2665,6 +2712,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2769,6 +2844,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3228,6 +3331,8 @@
       
         
       
+        
+      
     
     
     
@@ -3297,6 +3402,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3874,6 +4007,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#saved-trace-explorer-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saved Trace Explorer Queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#copy-paste-trace-url" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4032,6 +4176,11 @@ apps. Current coverage:</p>
 <li>Payment simulation spans include <code>payment.provider</code>, <code>payment.status</code>,
   <code>payment.risk_score</code>, <code>payment.amount_bucket</code>,
   <code>payment.decision_source</code>, and <code>payment.java_app_server.status</code>.</li>
+<li>Payment gateway traces include Python gateway spans and Java sidecar
+  span events for Google Pay tokenization, Apple Pay merchant validation,
+  Visa Secure, Mastercard Identity Check, AVS/CVV results, processor
+  response codes, and synthetic card-network transaction ids. All payment
+  telemetry uses token hashes and card last4 only.</li>
 <li>Assistant spans include <code>gen_ai.*</code>, <code>llm.*</code>, <code>assistant.*</code>, and
   <code>langfuse.*</code> attributes so OCI APM traces, OCI Logging rows, ATP
   <code>llmetry_events</code>, and optional Langfuse observations can be compared by
@@ -4040,8 +4189,11 @@ apps. Current coverage:</p>
   Attack Lab emits <code>security.attack.kill_chain</code> plus MITRE stage spans
   and Log Analytics correlation fields.</li>
 </ul>
-<p>Recommended next enhancement: add a post-deploy synthetic journey that
-asserts checkout and CRM sync traces contain browser, app, and ATP spans
+<p>Post-deploy synthetic coverage is now handled by
+<code>shop/tools/apm/octo-apm-demo-synthetic.spec.ts</code>. The recurring monitor path
+asserts browser checkout for 12 fictional buyers buying 2-3 drones each,
+token-safe payment gateway metadata, antifraud decision fields,
+support-ticket creation, admin login, Java health, and attack-lab traces
 before demo handoff.</p>
 <h2 id="operator-goals">Operator goals<a class="headerlink" href="#operator-goals" title="Permanent link">&para;</a></h2>
 <p>Drilldowns should let an operator start from any one of these entry points and
@@ -4063,8 +4215,78 @@ keep context:</p>
 </ul>
 <p>These widgets should be the top-level navigation surface before an operator
 opens Trace Explorer.</p>
+<h2 id="saved-trace-explorer-queries">Saved Trace Explorer Queries<a class="headerlink" href="#saved-trace-explorer-queries" title="Permanent link">&para;</a></h2>
+<p>The project ships versioned Trace Explorer saved-query descriptors in
+<code>deploy/oci/apm/saved-queries/</code>. Apply them with
+<code>deploy/oci/apm/apply_saved_queries.sh --dry-run</code> first, then <code>--apply</code> after
+confirming <code>management-saved-search</code> IAM permissions and the APM provider id in
+the target region.</p>
+<p>Before any live OCI import, run the local source gate:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1">python3<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>tests/test_observability_asset_contract.py<span class="w"> </span>tests/test_log_analytics_attack_assets.py
+</span></code></pre></div>
+<p>That gate checks the eight required descriptors: <code>assistant-genai-llmetry</code>,
+<code>checkout-end-to-end</code>, <code>db-slow-spans</code>, <code>login-auth-flow</code>,
+<code>payment-java-sidecar</code>, <code>platform-workflows</code>, <code>service-errors</code>, and
+<code>trace-drilldown</code>. It does not create OCI resources or run Terraform apply.</p>
+<p>Updated on <strong>May 12, 2026</strong> for <code>&lt;OCI_PROFILE&gt;</code>: eight APM provider saved queries are
+active. Each saved query stores its Log Analytics pivot targets in
+<code>drilldownConfig</code> and <code>freeformTags.log_analytics_pivots</code>.</p>
+<p>The <code>&lt;OCI_PROFILE&gt;</code> provider id/name is <code>APM</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><span class="nv">OCI_CLI_PROFILE</span><span class="o">=</span>&lt;OCI_PROFILE&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><span class="nv">COMPARTMENT_ID</span><span class="o">=</span>&lt;COMPARTMENT_OCID&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><span class="nv">APM_DOMAIN_ID</span><span class="o">=</span>&lt;APM_DOMAIN_OCID&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-4"><span class="nv">APM_SAVED_QUERY_PROVIDER_ID</span><span class="o">=</span>APM<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-5"><span class="nv">APM_SAVED_QUERY_PROVIDER_NAME</span><span class="o">=</span>APM<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-6">./deploy/oci/apm/apply_saved_queries.sh<span class="w"> </span>--apply
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>saved query</th>
+<th>use first when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OCTO APM - checkout end-to-end</code></td>
+<td>an order, CRM sync, or checkout latency issue is reported</td>
+</tr>
+<tr>
+<td><code>OCTO APM - payment Java sidecar</code></td>
+<td>card, Google Pay, Apple Pay, or Java app-server payment spans are slow or failed</td>
+</tr>
+<tr>
+<td><code>OCTO APM - DB slow spans</code></td>
+<td>Trace Explorer shows SQL/connect spans above the latency threshold</td>
+</tr>
+<tr>
+<td><code>OCTO APM - login/auth flow</code></td>
+<td>a user cannot sign in or session persistence is suspect</td>
+</tr>
+<tr>
+<td><code>OCTO APM - assistant GenAI LLMetry</code></td>
+<td>assistant, Select AI, OCI GenAI, Langfuse, or token usage needs investigation</td>
+</tr>
+<tr>
+<td><code>OCTO APM - service errors</code></td>
+<td>the app has 5xx, Java, assistant, gateway, or attack-lab errors</td>
+</tr>
+<tr>
+<td><code>OCTO APM - platform workflows</code></td>
+<td>load-control, browser-runner, async-worker, cache, object-pipeline, or remediator behavior needs inspection</td>
+</tr>
+<tr>
+<td><code>OCTO APM - trace drilldown</code></td>
+<td>a <code>Trace ID</code> was copied from Log Analytics, RUM, or an app response</td>
+</tr>
+</tbody>
+</table>
+<p>Each saved query records its matching Log Analytics pivot. The standard flow is
+APM <code>TraceId</code> -&gt; Log Analytics <code>Trace ID</code> -&gt; specialized field such as
+<code>Payment Gateway Request ID</code>, <code>Order ID</code>, <code>Session ID</code>, <code>Application Hash</code>,
+<code>Request ID</code>, or <code>Attack ID</code>.</p>
 <h2 id="copy-paste-trace-url">Copy-paste trace URL<a class="headerlink" href="#copy-paste-trace-url" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">https://cloud.oracle.com/apm-traces/trace-explorer?region=${OCI_REGION}&amp;apmDomainId=${OCI_APM_DOMAIN_OCID}&amp;traceId=&lt;TRACE_ID&gt;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1">https://cloud.oracle.com/apm-traces/trace-explorer?region=${OCI_REGION}&amp;apmDomainId=${OCI_APM_DOMAIN_OCID}&amp;traceId=&lt;TRACE_ID&gt;
 </span></code></pre></div>
 <h2 id="suggested-trace-filters">Suggested trace filters<a class="headerlink" href="#suggested-trace-filters" title="Permanent link">&para;</a></h2>
 <p>Use repeatable filters for the main demo flows:</p>
@@ -4119,8 +4341,8 @@ merchant authorization result, CRM order sync, and ATP write spans.</p>
 <code>processor_authorization_response</code>, <code>network_authorization_routing</code>, and
 <code>merchant_authorization_result</code>.</p>
 <p>The operator API returns the stored gateway step timeline:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1">GET /api/observability/payment-gateway/events?gateway_request_id=&lt;PGW_REQUEST_ID&gt;
-</span><span id="__span-2-2">GET /api/observability/payment-gateway/events?trace_id=&lt;TRACE_ID&gt;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1">GET /api/observability/payment-gateway/events?gateway_request_id=&lt;PGW_REQUEST_ID&gt;
+</span><span id="__span-4-2">GET /api/observability/payment-gateway/events?trace_id=&lt;TRACE_ID&gt;
 </span></code></pre></div>
 <p>Use the returned <code>gateway_request_id</code>, <code>trace_id</code>, <code>order_id</code>, <code>method</code>,
 <code>provider</code>, <code>network</code>, <code>status</code>, <code>risk_score</code>, and step names as pivots into
@@ -4212,11 +4434,11 @@ and Log Analytics. Every app log row should carry these fields:</p>
 </tbody>
 </table>
 <p>When building app or dashboard links, generate both directions:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1">APM trace:
-</span><span id="__span-3-2">https://cloud.oracle.com/apm-traces/trace-explorer?region=${OCI_REGION}&amp;apmDomainId=${OCI_APM_DOMAIN_OCID}&amp;traceId=${TRACE_ID}
-</span><span id="__span-3-3">
-</span><span id="__span-3-4">Log Analytics search:
-</span><span id="__span-3-5">Log Explorer query where oracleApmTraceId = &#39;${TRACE_ID}&#39; over the OCTO Log Analytics log group
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1">APM trace:
+</span><span id="__span-5-2">https://cloud.oracle.com/apm-traces/trace-explorer?region=${OCI_REGION}&amp;apmDomainId=${OCI_APM_DOMAIN_OCID}&amp;traceId=${TRACE_ID}
+</span><span id="__span-5-3">
+</span><span id="__span-5-4">Log Analytics search:
+</span><span id="__span-5-5">Log Explorer query where oracleApmTraceId = &#39;${TRACE_ID}&#39; over the OCTO Log Analytics log group
 </span></code></pre></div>
 <p>In private demo, APM span details can show <code>app.log</code> span events even before
 the durable Logging -&gt; Service Connector -&gt; Log Analytics route is active.
@@ -4309,13 +4531,13 @@ e-mail addresses are not copied into custom action payloads or app logs.</p>
         
         
           
-          <a href="../demo-storyboard-attack-lab/" class="md-footer__link md-footer__link--next" aria-label="Next: Demo Storyboard and Attack Lab">
+          <a href="../synthetic-monitoring/" class="md-footer__link md-footer__link--next" aria-label="Next: Synthetic monitoring">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Demo Storyboard and Attack Lab
+                Synthetic monitoring
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -4372,6 +4594,8 @@ e-mail addresses are not copied into custom action payloads or app logs.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

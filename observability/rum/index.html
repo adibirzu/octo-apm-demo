@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2416,6 +2418,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2505,6 +2513,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2569,6 +2605,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2681,6 +2745,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3140,6 +3232,8 @@
       
         
       
+        
+      
     
     
     
@@ -3209,6 +3303,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3806,7 +3928,10 @@
 
 
 <h1 id="real-user-monitoring-rum">Real User Monitoring (RUM)<a class="headerlink" href="#real-user-monitoring-rum" title="Permanent link">&para;</a></h1>
-<p>OCI APM RUM agent is injected into the browser via <code>base.html</code> when <code>rum_configured=True</code>.</p>
+<p>OCI APM RUM agent is injected into the browser via <code>base.html</code> when <code>rum_configured=True</code>.
+The CRM and Shop pages both propagate same-origin browser calls with W3C trace
+context so APM can connect RUM sessions to backend HTTP spans and ATP SQL
+spans.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <div class="language-javascript highlight"><pre><span></span><code><span id="__span-0-1"><span class="nb">window</span><span class="p">.</span><span class="nx">apmrum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-2"><span class="w">  </span><span class="nx">serviceName</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;octo-drone-shop&quot;</span><span class="p">,</span>
@@ -3814,6 +3939,10 @@
 </span><span id="__span-0-4"><span class="w">  </span><span class="nx">ociDataUploadEndpoint</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&lt;rum-endpoint&gt;&quot;</span><span class="p">,</span>
 </span><span id="__span-0-5"><span class="w">  </span><span class="nx">OracleAPMPublicDataKey</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&lt;public-data-key&gt;&quot;</span>
 </span><span id="__span-0-6"><span class="p">}</span>
+</span><span id="__span-0-7">
+</span><span id="__span-0-8"><span class="nb">window</span><span class="p">.</span><span class="nx">apmrum</span><span class="p">.</span><span class="nx">traceSupportingEndpoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-0-9"><span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">hostPattern</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&lt;current-host&gt;&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">headers</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;W3C&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-0-10"><span class="p">]</span>
 </span></code></pre></div>
 <h2 id="custom-rum-events">Custom RUM Events<a class="headerlink" href="#custom-rum-events" title="Permanent link">&para;</a></h2>
 <table>
@@ -3860,13 +3989,35 @@
 <td>Page load failure</td>
 <td>error_details</td>
 </tr>
+<tr>
+<td><code>auth.login.submit</code></td>
+<td>CRM login submitted</td>
+<td>auth_method</td>
+</tr>
+<tr>
+<td><code>auth.login.result</code></td>
+<td>CRM login completed</td>
+<td>status, role on success</td>
+</tr>
+<tr>
+<td><code>ui.click</code></td>
+<td>CRM admin/control click</td>
+<td>action, control, admin_lab_card</td>
+</tr>
 </tbody>
 </table>
+<p>Login RUM events are deliberately sanitized: they do not include usernames,
+passwords, tokens, or email addresses. User-to-order correlation happens through
+the authenticated backend session, request spans, audit records, and database
+relations.</p>
 <h2 id="session-correlation">Session Correlation<a class="headerlink" href="#session-correlation" title="Permanent link">&para;</a></h2>
 <ul>
 <li>RUM sessions linked to backend traces via <code>trace_id</code></li>
 <li>Session ID stored in <code>localStorage</code> as <code>octo-session-id</code></li>
 <li>Correlation visible in OCI APM → RUM → Session Explorer</li>
+<li>CRM login and admin Coordinator requests can be followed from RUM actions to
+  <code>/api/auth/login</code> or <code>/api/admin/coordinator/query</code>, then to DB spans and
+  structured logs with <code>trace_id</code> / <code>oracleApmTraceId</code>.</li>
 </ul>
 <h2 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
 <ol>
@@ -3991,6 +4142,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

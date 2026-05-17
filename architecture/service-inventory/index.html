@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -1138,6 +1140,17 @@
     <span class="md-ellipsis">
       
         Correlation contract coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apm-to-log-analytics-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        APM to Log Analytics Mapping
       
     </span>
   </a>
@@ -2438,6 +2451,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2527,6 +2546,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2591,6 +2638,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2703,6 +2778,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3162,6 +3265,8 @@
       
         
       
+        
+      
     
     
     
@@ -3231,6 +3336,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3808,6 +3941,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#apm-to-log-analytics-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        APM to Log Analytics Mapping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#event-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3866,20 +4010,32 @@ and which correlation-contract fields it emits.</p>
 <tr>
 <td>Drone Shop</td>
 <td><code>shop/</code></td>
-<td><code>https://shop.${DNS_DOMAIN}</code></td>
+<td><code>https://shop.example.test</code> (<code>https://shop.${DNS_DOMAIN}</code> in portable stacks)</td>
 <td><code>octo-drone-shop</code></td>
 </tr>
 <tr>
 <td>Enterprise CRM Portal</td>
 <td><code>crm/</code></td>
-<td><code>https://crm.${DNS_DOMAIN}</code></td>
+<td><code>https://admin.example.test</code> (<code>https://crm.${DNS_DOMAIN}</code> in portable stacks)</td>
 <td><code>enterprise-crm-portal</code></td>
+</tr>
+<tr>
+<td>Admin Coordinator surface</td>
+<td><code>crm/server/modules/coordinator.py</code></td>
+<td><code>https://admin.example.test/admin</code></td>
+<td><code>enterprise-crm-portal</code></td>
+</tr>
+<tr>
+<td>Java payment/app-server sidecar</td>
+<td><code>services/apm-java-demo/</code></td>
+<td>private loopback endpoint on the Shop host in Compute</td>
+<td><code>octo-java-app-server</code></td>
 </tr>
 <tr>
 <td>Workflow Gateway (Go)</td>
 <td><code>shop/services/workflow-gateway/</code></td>
 <td>internal</td>
-<td><code>octo-workflow-gateway</code></td>
+<td><code>octo-workflow-gateway</code> (<code>octo-workflow-gateway-oke</code> on OKE)</td>
 </tr>
 </tbody>
 </table>
@@ -4009,6 +4165,97 @@ and which correlation-contract fields it emits.</p>
 <li><code>workflow_id</code> on business-flow spans + logs</li>
 <li><code>run_id</code> <strong>when</strong> originated by <code>octo-load-control</code> or <code>octo-remediator</code></li>
 </ul>
+<h2 id="apm-to-log-analytics-mapping">APM to Log Analytics Mapping<a class="headerlink" href="#apm-to-log-analytics-mapping" title="Permanent link">&para;</a></h2>
+<p>Use this matrix when checking whether logs can be mapped back to traces. The
+preferred join is always APM <code>TraceId</code> to Log Analytics <code>Trace ID</code>.</p>
+<table>
+<thead>
+<tr>
+<th>service</th>
+<th>APM service/query coverage</th>
+<th>log mapping</th>
+<th>high-value joins</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>octo-drone-shop</code></td>
+<td><code>checkout-end-to-end</code>, <code>login-auth-flow</code>, <code>assistant-genai-llmetry</code>, <code>service-errors</code></td>
+<td><code>octo-shop-v2</code> parser maps <code>trace_id</code>, <code>oracleApmTraceId</code>, <code>span_id</code>, <code>request_id</code>, <code>workflow_id</code></td>
+<td><code>Order ID</code>, <code>Payment Gateway Request ID</code>, <code>Session ID</code>, <code>Application Hash</code>, <code>User ID</code></td>
+</tr>
+<tr>
+<td><code>enterprise-crm-portal</code></td>
+<td><code>checkout-end-to-end</code>, <code>login-auth-flow</code>, <code>service-errors</code></td>
+<td><code>octo-crm-v2</code> parser maps the same trace/log contract</td>
+<td><code>Source Order ID</code>, <code>Order ID</code>, <code>Request ID</code>, <code>DB Statement</code>, <code>User ID</code></td>
+</tr>
+<tr>
+<td><code>octo-java-app-server</code></td>
+<td><code>payment-java-sidecar</code>, <code>service-errors</code></td>
+<td>Java logs carry MDC <code>trace_id</code>/<code>span_id</code>; Shop logs also map <code>java_apm.*</code> sidecar call results</td>
+<td><code>Payment Gateway Request ID</code>, <code>Transaction ID</code>, <code>Response Code</code>, <code>Java APM Error Type</code></td>
+</tr>
+<tr>
+<td><code>octo-workflow-gateway</code> / <code>octo-workflow-gateway-oke</code></td>
+<td><code>db-slow-spans</code>, <code>platform-workflows</code></td>
+<td>Go telemetry emits JSON logs with <code>oracleApmTraceId</code>, <code>trace_id</code>, <code>service.name</code></td>
+<td><code>Workflow ID</code>, <code>Run ID</code>, <code>DB Statement</code>, <code>Trace ID</code></td>
+</tr>
+<tr>
+<td><code>octo-load-control</code></td>
+<td><code>platform-workflows</code>, <code>service-errors</code></td>
+<td>run ledger and workload dispatch logs should stamp <code>run_id</code>, <code>workflow_id</code>, and service name</td>
+<td><code>Run ID</code>, profile name, target service</td>
+</tr>
+<tr>
+<td><code>octo-browser-runner</code></td>
+<td><code>platform-workflows</code> plus RUM sessions</td>
+<td>pino logs and RUM custom dimensions carry <code>run_id</code> and synthetic user metadata</td>
+<td><code>Run ID</code>, <code>synthetic_user_domain</code>, <code>Trace ID</code> from backend responses</td>
+</tr>
+<tr>
+<td><code>octo-async-worker</code></td>
+<td><code>platform-workflows</code></td>
+<td>Redis stream events carry producer <code>trace_id</code>/<code>span_id</code>; worker spans preserve <code>workflow.id</code> and <code>run_id</code></td>
+<td>stream name, event id, DLQ reason, <code>Trace ID</code></td>
+</tr>
+<tr>
+<td><code>octo-cache</code></td>
+<td><code>platform-workflows</code> when client spans are active</td>
+<td>cache client emits span attributes; app logs keep the upstream trace id</td>
+<td>cache namespace, hit/miss, latency, <code>Trace ID</code></td>
+</tr>
+<tr>
+<td><code>octo-object-pipeline</code></td>
+<td><code>platform-workflows</code>, <code>service-errors</code></td>
+<td>OCI Events envelope must include <code>oracleApmTraceId</code> when an upstream trace exists</td>
+<td>object name, bucket, handler result, <code>Run ID</code></td>
+</tr>
+<tr>
+<td><code>octo-edge-fuzz</code></td>
+<td><code>platform-workflows</code>, <code>service-errors</code></td>
+<td>fuzzer requests set <code>X-Run-Id</code>; API Gateway/app logs carry request and trace fields</td>
+<td><code>Run ID</code>, <code>API Gateway Request ID</code>, <code>Attack ID</code></td>
+</tr>
+<tr>
+<td><code>octo-remediator</code></td>
+<td><code>platform-workflows</code>, <code>service-errors</code></td>
+<td>remediation actions should log alarm/run ids and target resource</td>
+<td><code>Run ID</code>, alarm id, target service, playbook</td>
+</tr>
+<tr>
+<td>WAF/API Gateway/OSQuery/Tetragon</td>
+<td>Log Analytics-only plus APM trace ids from app pivots</td>
+<td>dedicated parsers map edge, host, and eBPF fields</td>
+<td><code>Request ID</code>, <code>API Gateway Request ID</code>, <code>Attack ID</code>, <code>Instance OCID</code>, <code>OSQuery Query</code></td>
+</tr>
+</tbody>
+</table>
+<p>Fast troubleshooting searches live in <code>deploy/oci/log_analytics/searches/</code>:
+<code>service-trace-log-coverage</code>, <code>trace-drilldown</code>, <code>checkout-payment-correlation</code>,
+<code>auth-login-correlation</code>, <code>genai-assistant-llmetry</code>, <code>service-error-triage</code>,
+<code>db-slowness-hotspots</code>, and the attack-lab searches.</p>
 <h2 id="event-namespace">Event namespace<a class="headerlink" href="#event-namespace" title="Permanent link">&para;</a></h2>
 <p>OCI Events emitted by the platform follow
 <code>com.octodemo.&lt;service&gt;.&lt;noun&gt;.&lt;verb&gt;</code>:</p>
@@ -4051,6 +4298,10 @@ and which correlation-contract fields it emits.</p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><code>python3 -m pytest -q tests/test_signal_contract_inventory.py</code></td>
+<td>Source-level signal contract inventory for APM, Log Analytics, and Monitoring drift</td>
+</tr>
 <tr>
 <td><code>python3 -m pytest -q tests/test_unified_deploy_surface.py</code></td>
 <td>Deploy/docs invariants for the unified repo</td>
@@ -4186,6 +4437,8 @@ and which correlation-contract fields it emits.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

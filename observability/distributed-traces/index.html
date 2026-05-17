@@ -17,6 +17,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
 <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../../assets/css/placeholder-config.css" rel="stylesheet"/>
 <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
 </head>
 <body data-md-color-accent="amber" data-md-color-primary="deep-purple" data-md-color-scheme="default" dir="ltr">
@@ -965,6 +966,15 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#python-otel-coverage">
+<span class="md-ellipsis">
+      
+        Python OTEL Coverage
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#apm-topology">
 <span class="md-ellipsis">
       
@@ -1010,6 +1020,15 @@
     </span>
 </a>
 </li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#4-crm-login-and-admin-coordinator">
+<span class="md-ellipsis">
+      
+        4. CRM Login and Admin Coordinator
+      
+    </span>
+</a>
+</li>
 </ul>
 </nav>
 </li>
@@ -1018,6 +1037,15 @@
 <span class="md-ellipsis">
       
         Verification in OCI Console
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#saved-queries">
+<span class="md-ellipsis">
+      
+        Saved Queries
       
     </span>
 </a>
@@ -1116,6 +1144,18 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/event-generation-guide/">
+<span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="../../observability-v2/chaos-playbook/">
 <span class="md-ellipsis">
     
@@ -1145,6 +1185,18 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/synthetic-monitoring/">
+<span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -1193,6 +1245,18 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/code-knowledge-map/">
+<span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -1403,6 +1467,18 @@
     
   
     Deployment
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../operations/guided-demo-rollout/">
+<span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -1643,6 +1719,15 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#python-otel-coverage">
+<span class="md-ellipsis">
+      
+        Python OTEL Coverage
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#apm-topology">
 <span class="md-ellipsis">
       
@@ -1688,6 +1773,15 @@
     </span>
 </a>
 </li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#4-crm-login-and-admin-coordinator">
+<span class="md-ellipsis">
+      
+        4. CRM Login and Admin Coordinator
+      
+    </span>
+</a>
+</li>
 </ul>
 </nav>
 </li>
@@ -1700,6 +1794,15 @@
     </span>
 </a>
 </li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#saved-queries">
+<span class="md-ellipsis">
+      
+        Saved Queries
+      
+    </span>
+</a>
+</li>
 </ul>
 </nav>
 </div>
@@ -1708,7 +1811,11 @@
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
 <h1 id="cross-service-distributed-tracing">Cross-Service Distributed Tracing<a class="headerlink" href="#cross-service-distributed-tracing" title="Permanent link">¶</a></h1>
-<p>Both services propagate W3C <code>traceparent</code> headers on every cross-service call, creating distributed traces visible in OCI APM Topology.</p>
+<p>Backend services propagate W3C <code>traceparent</code> headers on service-to-service
+calls. Browser JavaScript does not synthesize <code>traceparent</code>; it sends
+<code>X-Correlation-Id</code>, <code>X-OCTO-Journey-Id</code>, and checkout/user-action headers, and
+OCI APM RUM is the browser-side source of trace context. This avoids backend
+spans being attached to a parent span that was never exported.</p>
 <h2 id="trace-flow">Trace Flow<a class="headerlink" href="#trace-flow" title="Permanent link">¶</a></h2>
 <pre class="mermaid"><code>flowchart LR
     Browser["Browser&lt;br/&gt;(RUM session)"]
@@ -1716,7 +1823,8 @@
     CRM["CRM Portal&lt;br/&gt;span: orders.sync"]
     ATP["Oracle ATP&lt;br/&gt;SQL_ID spans"]
 
-    Browser --&gt;|"traceparent: 00-abc...01"| Shop
+    Browser --&gt;|"RUM trace context + OCTO correlation headers"| Shop
+    Browser --&gt;|"RUM trace context + OCTO correlation headers"| CRM
     Shop --&gt;|"traceparent: 00-abc...01"| CRM
     Shop --&gt;|"CLIENT_IDENTIFIER=abc"| ATP
     CRM --&gt;|"CLIENT_IDENTIFIER=abc"| ATP</code></pre>
@@ -1732,7 +1840,7 @@
 <tbody>
 <tr>
 <td><code>traceparent</code></td>
-<td>W3C standard (HTTPXClientInstrumentor)</td>
+<td>W3C standard (RUM + HTTPXClientInstrumentor)</td>
 <td>APM Trace Explorer</td>
 </tr>
 <tr>
@@ -1767,6 +1875,61 @@
 </tr>
 </tbody>
 </table>
+<h2 id="python-otel-coverage">Python OTEL Coverage<a class="headerlink" href="#python-otel-coverage" title="Permanent link">¶</a></h2>
+<p>All Python FastAPI entry points use <code>FastAPIInstrumentor.instrument_app()</code> with
+OCTO request hooks, health/static exclusions, and sanitized header capture.
+The same OTLP conventions are used by CLI/worker scripts so they appear in the
+same OCI APM domain:</p>
+<table>
+<thead>
+<tr>
+<th>Service/script</th>
+<th>Service name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Drone Shop FastAPI</td>
+<td><code>octo-drone-shop</code> / <code>octo-drone-shop-oke</code></td>
+</tr>
+<tr>
+<td>Enterprise CRM FastAPI</td>
+<td><code>enterprise-crm-portal</code> / <code>enterprise-crm-portal-oke</code></td>
+</tr>
+<tr>
+<td>Traffic generator</td>
+<td><code>octo-traffic-generator</code></td>
+</tr>
+<tr>
+<td>Load control API</td>
+<td><code>octo-load-control</code></td>
+</tr>
+<tr>
+<td>Async worker</td>
+<td><code>octo-async-worker</code></td>
+</tr>
+<tr>
+<td>Remediator API</td>
+<td><code>octo-remediator</code></td>
+</tr>
+<tr>
+<td>Object pipeline API</td>
+<td><code>octo-object-pipeline</code></td>
+</tr>
+<tr>
+<td>Edge fuzz command</td>
+<td><code>octo-edge-fuzz</code></td>
+</tr>
+<tr>
+<td>Auto-remediator OCI Function</td>
+<td><code>octo-auto-remediator</code></td>
+</tr>
+</tbody>
+</table>
+<p>For direct OCI APM export, set <code>OCI_APM_ENDPOINT</code> and
+<code>OCI_APM_PRIVATE_DATAKEY</code>; for OKE collector mode, set
+<code>OTEL_EXPORTER_OTLP_ENDPOINT=http://gateway.octo-otel.svc.cluster.local:4318</code>.
+Both forms normalize to the proper OTLP trace endpoint.</p>
 <h2 id="apm-topology">APM Topology<a class="headerlink" href="#apm-topology" title="Permanent link">¶</a></h2>
 <p>When both services run, OCI APM Topology shows the full service graph:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1">Browser (RUM) → Drone Shop → Oracle ATP
@@ -1780,12 +1943,19 @@
 </span><span id="__span-1-2">  ├── db.query: INSERT orders (shop ATP)
 </span><span id="__span-1-3">  ├── db.query: INSERT order_items (shop ATP)
 </span><span id="__span-1-4">  ├── db.query: INSERT shipments (shop ATP)
-</span><span id="__span-1-5">  └── integration.crm.sync_order
-</span><span id="__span-1-6">       ├── HTTP POST crm/api/orders (traceparent injected)
-</span><span id="__span-1-7">       └── CRM: orders.create
-</span><span id="__span-1-8">            ├── db.query: SELECT customer (CRM ATP — same instance)
-</span><span id="__span-1-9">            └── db.query: INSERT order (CRM ATP)
+</span><span id="__span-1-5">  ├── payment_gateway.emulator.authorize
+</span><span id="__span-1-6">  │    ├── java_app_server.post.api.java-apm.payment.verify
+</span><span id="__span-1-7">  │    └── java_app_server.post.api.java-apm.payment.authorize
+</span><span id="__span-1-8">  └── integration.crm.sync_order
+</span><span id="__span-1-9">       ├── HTTP POST crm/api/orders (traceparent injected)
+</span><span id="__span-1-10">       └── CRM: orders.create
+</span><span id="__span-1-11">            ├── db.query: SELECT customer (CRM ATP — same instance)
+</span><span id="__span-1-12">            └── db.query: INSERT order (CRM ATP)
 </span></code></pre></div>
+<p>The Java payment spans add token-safe wallet/card attributes and events
+for Google Pay, Apple Pay, Visa, and Mastercard rails. The shared
+<code>payment.gateway.request_id</code> joins Browser RUM, Shop spans, Java spans,
+<code>payment_gateway_events</code>, CRM order state, and Log Analytics rows.</p>
 <h3 id="2-customer-sync">2. Customer Sync<a class="headerlink" href="#2-customer-sync" title="Permanent link">¶</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1">Shop storefront load → integration.crm.sync_customers
 </span><span id="__span-2-2">  ├── HTTP GET crm/api/customers (traceparent injected)
@@ -1799,6 +1969,18 @@
 </span><span id="__span-3-3">  └── Shop: simulation.set
 </span><span id="__span-3-4">       └── ChaosMiddleware state updated
 </span></code></pre></div>
+<h3 id="4-crm-login-and-admin-coordinator">4. CRM Login and Admin Coordinator<a class="headerlink" href="#4-crm-login-and-admin-coordinator" title="Permanent link">¶</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1">Browser RUM action: auth.login.submit
+</span><span id="__span-4-2">  └── CRM: auth.login
+</span><span id="__span-4-3">       ├── db.user_lookup
+</span><span id="__span-4-4">       ├── auth.password_verify
+</span><span id="__span-4-5">       └── INSERT user_sessions
+</span><span id="__span-4-6">
+</span><span id="__span-4-7">Browser RUM action: ui.click / admin coordinator
+</span><span id="__span-4-8">  └── CRM: admin.coordinator.query
+</span><span id="__span-4-9">       ├── coordinator.scope=octo-apm-demo
+</span><span id="__span-4-10">       └── structured log: coordinator.allowed / coordinator.topic
+</span></code></pre></div>
 <h2 id="verification-in-oci-console">Verification in OCI Console<a class="headerlink" href="#verification-in-oci-console" title="Permanent link">¶</a></h2>
 <ol>
 <li><strong>APM</strong> → Trace Explorer → filter <code>serviceName=octo-drone-shop</code></li>
@@ -1808,6 +1990,55 @@
 <li>Click a SQL span → <code>DbOracleSqlId</code> → jump to DB Management Performance Hub</li>
 <li><strong>Log Analytics</strong> → search <code>oracleApmTraceId=&lt;trace_id&gt;</code> → see logs from BOTH services</li>
 </ol>
+<h2 id="saved-queries">Saved Queries<a class="headerlink" href="#saved-queries" title="Permanent link">¶</a></h2>
+<p>Use the versioned APM saved queries in <code>deploy/oci/apm/saved-queries/</code> as the
+starting point for common investigations:</p>
+<table>
+<thead>
+<tr>
+<th>issue</th>
+<th>APM query</th>
+<th>Log Analytics query</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Checkout/order/payment failure</td>
+<td><code>checkout-end-to-end</code></td>
+<td><code>checkout-payment-correlation</code></td>
+</tr>
+<tr>
+<td>Java payment rail issue</td>
+<td><code>payment-java-sidecar</code></td>
+<td><code>checkout-payment-correlation</code> or <code>service-error-triage</code></td>
+</tr>
+<tr>
+<td>Login/session issue</td>
+<td><code>login-auth-flow</code></td>
+<td><code>auth-login-correlation</code></td>
+</tr>
+<tr>
+<td>Assistant/Select AI/GenAI issue</td>
+<td><code>assistant-genai-llmetry</code></td>
+<td><code>genai-assistant-llmetry</code></td>
+</tr>
+<tr>
+<td>Slow DB call</td>
+<td><code>db-slow-spans</code></td>
+<td><code>db-slowness-hotspots</code></td>
+</tr>
+<tr>
+<td>Unknown app error</td>
+<td><code>service-errors</code></td>
+<td><code>service-error-triage</code></td>
+</tr>
+<tr>
+<td>One copied trace id</td>
+<td><code>trace-drilldown</code></td>
+<td><code>trace-drilldown</code></td>
+</tr>
+</tbody>
+</table>
 </article>
 </div>
 <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
@@ -1871,5 +2102,6 @@
 </div>
 <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
 <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+<script src="../../assets/js/placeholder-config.js"></script>
 </body>
 </html>

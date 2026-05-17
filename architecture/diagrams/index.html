@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -1257,6 +1259,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#layer-authoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer authoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authoring-gotchas" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2427,6 +2440,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2516,6 +2535,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2580,6 +2627,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2692,6 +2767,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3151,6 +3254,8 @@
       
         
       
+        
+      
     
     
     
@@ -3220,6 +3325,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3797,6 +3930,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#layer-authoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer authoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authoring-gotchas" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3845,7 +3989,7 @@ of them at <a href="https://app.diagrams.net">app.diagrams.net</a> → <em>File<
 </tr>
 <tr>
 <td><a href="platform-overview.drawio"><code>platform-overview.drawio</code></a></td>
-<td>Full topology — users → WAF → OKE → data + observability plane, every service + every OCI backend</td>
+<td>Full topology - users, edge controls, private Compute reference, OKE support path, data plane, Java sidecar, and OCI observability services</td>
 </tr>
 <tr>
 <td><a href="observability-flow.drawio"><code>observability-flow.drawio</code></a></td>
@@ -3892,6 +4036,40 @@ tenancy names, or operator allowlists; use local files matching the
 </ul>
 <p>Arrows with <strong>solid</strong> strokes = synchronous request path. <strong>Dashed</strong>
 strokes = asynchronous, event-driven, or configuration flow.</p>
+<h2 id="layer-authoring">Layer authoring<a class="headerlink" href="#layer-authoring" title="Permanent link">&para;</a></h2>
+<p>Each <code>.drawio</code> source is split into editable layers so presenters can turn
+sections on and off without moving individual shapes:</p>
+<table>
+<thead>
+<tr>
+<th>Diagram</th>
+<th>Main layers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>platform-overview.drawio</code></td>
+<td>notes/flows, users and edge controls, application runtime, data plane, observability services, security/identity/platform, delivery/IaC</td>
+</tr>
+<tr>
+<td><code>observability-flow.drawio</code></td>
+<td>notes/flows, app instrumentation and correlation, collection/routing, OCI observability destinations, MELTS legend</td>
+</tr>
+<tr>
+<td><code>deploy-topology.drawio</code></td>
+<td>notes/flows, build and validation, registry/image tags, OKE target, VM/Compute targets, local regression target, Terraform/shared OCI services</td>
+</tr>
+<tr>
+<td><code>private-demo-observability-reference.drawio</code></td>
+<td>notes/flows, external entry and edge, private app compute, data and AI services, code delivery, observability/security plane, operator access</td>
+</tr>
+</tbody>
+</table>
+<p>Keep connector arrows on the notes/flow layer. For flow movement in a
+presentation, animate or highlight only that layer while the component layers
+remain fixed. When adding a new capability, place the node on the owning layer
+and add a short edge label instead of duplicating the same component in
+multiple layers.</p>
 <h2 id="authoring-gotchas">Authoring gotchas<a class="headerlink" href="#authoring-gotchas" title="Permanent link">&para;</a></h2>
 <p>drawio silently rejects a whole diagram if any <code>mxCell value="…"</code>
 attribute contains constructs its parser does not handle. Avoid:</p>
@@ -4041,6 +4219,8 @@ plain ASCII + <code>&amp;#10;</code> line breaks fixed it.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

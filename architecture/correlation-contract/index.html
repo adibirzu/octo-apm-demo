@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -1123,6 +1125,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#synthetic-browser-field-dictionary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synthetic browser field dictionary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#field-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1272,10 +1285,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#where-this-gets-enforced" class="md-nav__link">
+  <a href="#signal-contract-enforcement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where this gets enforced
+        Signal contract enforcement
       
     </span>
   </a>
@@ -2582,6 +2595,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2671,6 +2690,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2735,6 +2782,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2847,6 +2922,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3306,6 +3409,8 @@
       
         
       
+        
+      
     
     
     
@@ -3375,6 +3480,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3958,6 +4091,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#synthetic-browser-field-dictionary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synthetic browser field dictionary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#field-semantics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4107,10 +4251,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#where-this-gets-enforced" class="md-nav__link">
+  <a href="#signal-contract-enforcement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where this gets enforced
+        Signal contract enforcement
       
     </span>
   </a>
@@ -4299,11 +4443,81 @@ MUST include the following fields when a payment attempt exists:</p>
 <td><code>payment.risk_score</code></td>
 <td>Synthetic normalized risk score used for demo filtering</td>
 </tr>
+<tr>
+<td><code>payment.wallet.token_hash</code></td>
+<td>Hash of the wallet token payload; never the raw token</td>
+</tr>
+<tr>
+<td><code>payment.card_brand</code> / <code>payment.card_last4</code></td>
+<td>Safe card identity fields for operator filtering</td>
+</tr>
+<tr>
+<td><code>payment.card.avs.result</code> / <code>payment.card.cvv.result</code></td>
+<td>Synthetic AVS/CVV authorization evidence</td>
+</tr>
+<tr>
+<td><code>payment.3ds.program</code> / <code>payment.3ds.eci</code></td>
+<td>Simulated Visa Secure or Mastercard Identity Check evidence</td>
+</tr>
+<tr>
+<td><code>payment.processor.response_code</code></td>
+<td>Synthetic processor response code, for example <code>00</code>, <code>05</code>, or <code>91</code></td>
+</tr>
+<tr>
+<td><code>payment.network.transaction_id</code></td>
+<td>Synthetic network transaction id for trace/log joins</td>
+</tr>
+<tr>
+<td><code>orders.order_id</code> / <code>order_id</code></td>
+<td>Safe order identifier used by Shop, CRM, payment gateway events, invoices, and shipping joins</td>
+</tr>
+<tr>
+<td><code>source_order_id</code></td>
+<td>CRM-side upstream order id; preserves retry-safe relation to the Shop order</td>
+</tr>
 </tbody>
 </table>
 <p>Payment metadata MUST be tokenized or synthetic. Raw PAN, CVV, wallet
 tokens, cryptograms, or customer secrets must not be stored in spans, logs,
 CRM rows, or <code>payment_gateway_events</code>.</p>
+<p>The Java sidecar MUST receive the same token-safe payment correlation
+fields from the Python gateway. It MUST enrich the active Java span with
+the gateway request id, method, network, wallet/card safe fields, processor
+decision, and Java payment span events, while preserving the no-raw-token
+rule above.</p>
+<h2 id="synthetic-browser-field-dictionary">Synthetic browser field dictionary<a class="headerlink" href="#synthetic-browser-field-dictionary" title="Permanent link">&para;</a></h2>
+<p>Recurring APM synthetic runs and workshop browser runs SHOULD include these
+fields when present:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>synthetic_user_enabled</code></td>
+<td>Distinguishes synthetic RUM sessions from normal browser sessions</td>
+</tr>
+<tr>
+<td><code>synthetic_user_domain</code></td>
+<td>Groups fictional synthetic users without exposing real operator identities</td>
+</tr>
+<tr>
+<td><code>payment.gateway.request_id</code></td>
+<td>Joins the synthetic checkout to payment gateway spans, logs, and persisted gateway events</td>
+</tr>
+<tr>
+<td><code>payment.gateway.verification.decision</code></td>
+<td>Confirms the antifraud app decision is visible in the buying trace</td>
+</tr>
+</tbody>
+</table>
+<p>OCI APM synthetic script parameters use <code>OCTO_APM_DEMO_MODE=monitor</code> for the
+short recurring path and <code>OCTO_APM_DEMO_MODE=full</code> for workshop paths. Do not
+commit live URLs, passwords, Vault OCIDs, or internal service keys with those
+parameters.</p>
 <h2 id="field-semantics">Field semantics<a class="headerlink" href="#field-semantics" title="Permanent link">&para;</a></h2>
 <h3 id="trace_id"><code>trace_id</code><a class="headerlink" href="#trace_id" title="Permanent link">&para;</a></h3>
 <ul>
@@ -4376,8 +4590,10 @@ CRM rows, or <code>payment_gateway_events</code>.</p>
 </span><span id="__span-0-17"><span class="w">  </span><span class="nt">&quot;...&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;arbitrary structured context&quot;</span>
 </span><span id="__span-0-18"><span class="p">}</span>
 </span></code></pre></div>
-<p>Field names are case-sensitive; the Log Analytics parser
-<code>octo-shop-app-json</code> is pinned to these exact spellings.</p>
+<p>Field names are case-sensitive. Log Analytics parsers should reuse existing
+namespace fields when the display name matches exactly; otherwise create the
+missing field or update every saved search, widget, dashboard, and detection
+rule to the reused display name in the same change.</p>
 <h2 id="propagation-headers">Propagation headers<a class="headerlink" href="#propagation-headers" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -4481,8 +4697,18 @@ assistant path is executed:</p>
 <td><code>langfuse.trace.name</code> / <code>langfuse.session.id</code></td>
 <td>Optional Langfuse OTLP mapping fields</td>
 </tr>
+<tr>
+<td><code>llmetry.latency_ms</code> / <code>llmetry.error_type</code></td>
+<td>LLMetry health fields used by Log Analytics fast troubleshooting</td>
+</tr>
 </tbody>
 </table>
+<p>In Log Analytics, these raw fields are mapped through the reuse-first namespace
+field map instead of creating new global fields. The main pivots are
+<code>assistant.session_id</code> -&gt; <code>Session ID</code>, <code>llm.prompt.hash</code> -&gt; <code>Application Hash</code>,
+<code>llm.response.hash</code> -&gt; <code>Current Hash</code>, <code>gen_ai.usage.input_tokens</code> -&gt;
+<code>Content Size In</code>, <code>gen_ai.usage.output_tokens</code> -&gt; <code>Content Size Out</code>, and
+<code>langfuse.session.id</code> -&gt; <code>Session</code>.</p>
 <p>Raw prompt and response text MUST NOT be emitted to spans or logs unless
 <code>LLMETRY_CAPTURE_CONTENT=true</code>, and even then only redacted previews are
 allowed. The default path stores hashes, lengths, token counts, provider,
@@ -4536,18 +4762,35 @@ changing a format) require:</p>
 <li>[ ] Appears in the <code>/api/observability/360</code> inventory (once that
       endpoint is generalized — see OCI 360 Phase 0 deliverables).</li>
 </ul>
-<h2 id="where-this-gets-enforced">Where this gets enforced<a class="headerlink" href="#where-this-gets-enforced" title="Permanent link">&para;</a></h2>
+<h2 id="signal-contract-enforcement">Signal contract enforcement<a class="headerlink" href="#signal-contract-enforcement" title="Permanent link">&para;</a></h2>
+<p>The source-level guard for this contract is:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">python3<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>tests/test_signal_contract_inventory.py
+</span></code></pre></div>
+<p>That test intentionally reads the application, Java sidecar, support-service,
+APM saved-query, Log Analytics field-map, and Monitoring publisher sources. It
+fails when a required join field or operator drilldown asset is removed without
+an explicit contract update.</p>
+<p>Enforcement points:</p>
 <ul>
-<li><code>shop/server/observability/correlation.py</code> and
-  <code>crm/server/observability/correlation.py</code> — Python helpers.</li>
-<li><code>shop/services/workflow-gateway/internal/observability/</code> — Go
-  equivalent.</li>
-<li><code>octo-otel-gateway</code> (planned) — enriches spans with missing fields
-  as a safety net.</li>
-<li><code>octo-load-control</code> (planned) — injects <code>run_id</code> on every workload
-  profile launch.</li>
-<li>CI check: <code>pytest tests/contract/test_correlation_fields.py</code> (to be
-  added as part of Phase V — Deployment verification).</li>
+<li><code>shop/server/observability/logging_sdk.py</code> and
+  <code>crm/server/observability/logging_sdk.py</code> stamp <code>push_log</code> payloads with
+  <code>trace_id</code>, <code>span_id</code>, <code>oracleApmTraceId</code>, <code>oracleApmSpanId</code>, <code>request_id</code>,
+  <code>workflow_id</code>, <code>workflow_step</code>, and the service resource identity from
+  <code>service_metadata()</code>.</li>
+<li><code>services/apm-java-demo/src/main/java/com/octo/apmdemo/App.java</code> emits stdout
+  JSON for the Java payment gateway. Those events are parser input for Log
+  Analytics and must keep the Java trace ids, service aliases, and
+  <code>payment_gateway_request_id</code>.</li>
+<li><code>services/*/src/*/telemetry.py</code> helpers must create OTel resources with
+  <code>service.name</code>, <code>service.namespace</code>, <code>deployment.environment</code>,
+  <code>cloud.provider</code>, and <code>oci.demo.stack</code>.</li>
+<li><code>deploy/oci/apm/saved-queries/*.json</code> keeps Trace Explorer drilldowns aligned
+  with the Log Analytics searches named in <code>logAnalyticsPivots</code>.</li>
+<li><code>deploy/oci/log_analytics/fields/octo-apm-field-reuse-map.json</code> records the
+  reuse-first field names that parsers and saved searches depend on.</li>
+<li><code>shop/server/observability/oci_monitoring.py</code> and
+  <code>crm/server/observability/oci_monitoring.py</code> publish custom metrics in the
+  <code>octo_apm_demo</code> namespace through the <code>telemetry-ingestion</code> endpoint.</li>
 </ul>
 
 
@@ -4666,6 +4909,8 @@ changing a format) require:</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://adibirzu.github.io/octo-apm-demo/observability-v2/demo-script/">
       
       
-        <link rel="prev" href="../autoremediation-flow/">
+        <link rel="prev" href="../code-knowledge-map/">
       
       
         <link rel="next" href="../../integrations/">
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -2322,6 +2324,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2414,6 +2422,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../chaos-playbook/" class="md-nav__link">
         
   
@@ -2478,6 +2514,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2590,6 +2654,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3272,6 +3364,8 @@
       
         
       
+        
+      
     
     
     
@@ -3341,6 +3435,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -4076,7 +4198,8 @@ the real endpoints from ignored deployment files or shell variables:</p>
 <p><a class="md-button md-button--primary" href="../../assets/demo/octo-end-user-demo-guide.pdf"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-9.5 8.5c0 .8-.7 1.5-1.5 1.5H7v2H5.5V9H8c.8 0 1.5.7 1.5 1.5zm5 2c0 .8-.7 1.5-1.5 1.5h-2.5V9H13c.8 0 1.5.7 1.5 1.5zm4-3H17v1h1.5V13H17v2h-1.5V9h3zm-6.5 0h1v3h-1zm-5 0h1v1H7z"/></svg></span> Download the end-user PDF guide</a></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="nb">export</span><span class="w"> </span><span class="nv">OCTO_LIVE_SHOP_URL</span><span class="o">=</span><span class="s2">&quot;https://shop.example.test&quot;</span>
 </span><span id="__span-0-2"><span class="nb">export</span><span class="w"> </span><span class="nv">OCTO_LIVE_ADMIN_URL</span><span class="o">=</span><span class="s2">&quot;https://admin.example.test&quot;</span>
-</span><span id="__span-0-3"><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>credentials/&lt;profile&gt;/app-secrets.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+</span><span id="__span-0-3"><span class="nb">export</span><span class="w"> </span><span class="nv">OCTO_OPERATOR_ENV</span><span class="o">=</span><span class="s2">&quot;&lt;IGNORED_OPERATOR_ENV_FILE&gt;&quot;</span>
+</span><span id="__span-0-4"><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCTO_OPERATOR_ENV</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
 </span></code></pre></div>
 <p>Do not commit real tenancy names, live domains, public IP addresses, OCIDs,
 wallet paths, passwords, or console account-header screenshots.</p>
@@ -4172,11 +4295,11 @@ browser agent loads.</p>
 <tbody>
 <tr>
 <td>Username</td>
-<td><code>BOOTSTRAP_ADMIN_USERNAME</code> from <code>credentials/&lt;profile&gt;/app-secrets.env</code>; default is <code>admin</code></td>
+<td><code>BOOTSTRAP_ADMIN_USERNAME</code> from the ignored operator env file; default is <code>admin</code></td>
 </tr>
 <tr>
 <td>Password</td>
-<td><code>BOOTSTRAP_ADMIN_PASSWORD</code> from <code>credentials/&lt;profile&gt;/app-secrets.env</code></td>
+<td><code>BOOTSTRAP_ADMIN_PASSWORD</code> from the ignored operator env file</td>
 </tr>
 </tbody>
 </table>
@@ -4298,7 +4421,7 @@ Use one browser tab or profile per user when you want clean RUM sessions.</p>
 <ol>
 <li>Open <code>${OCTO_LIVE_ADMIN_URL}/login</code>.</li>
 <li>Sign in with the generated local admin account from
-   <code>credentials/&lt;profile&gt;/app-secrets.env</code>.</li>
+   the ignored operator env file.</li>
 <li>Open <code>${OCTO_LIVE_ADMIN_URL}/settings</code>.</li>
 <li>Run <strong>Java Health</strong> to validate the Java app-server APM path.</li>
 <li>Run <strong>Demo Storyboard</strong> to create a linked shop, payment, support, Java,
@@ -4505,16 +4628,21 @@ path for the same browser session.</p>
 </ol>
 <p>To create a scripted browser monitor for the same user path:</p>
 <ol>
-<li>Open <strong>Scripts</strong> in Availability Monitoring.</li>
-<li>Create a script of type <strong>Playwright</strong>.</li>
-<li>Upload <code>tools/demo-guide/octo-availability-monitor.playwright.ts</code>.</li>
-<li>Validate the script from a non-production test target first.</li>
-<li>Create a <strong>Scripted Browser</strong> monitor from that script.</li>
-<li>Select the APM domain, interval, timeout, SSL validation, and global vantage
-   points.</li>
-<li>Enable screenshots and HAR collection for troubleshooting.</li>
-<li>Add the monitor to the runbook dashboard and tag it with the deployment
-   prefix.</li>
+<li>Use <code>deploy/oci/ensure_availability_monitors.sh --scripted-browser</code>
+   to upload <code>shop/tools/apm/octo-apm-demo-synthetic.spec.ts</code> and create or
+   update the Scripted Browser monitor.</li>
+<li>Set non-secret URL parameters at deploy time:
+   <code>OCTO_LIVE_SHOP_URL</code>, <code>OCTO_LIVE_ADMIN_URL</code>, and
+   <code>OCTO_APM_DEMO_MODE=monitor</code>.</li>
+<li>Set <code>OCTO_ADMIN_PASSWORD</code> as a secret monitor parameter or provide
+   <code>OCTO_ADMIN_PASSWORD_SECRET_OCID</code> and
+   <code>OCTO_ADMIN_PASSWORD_SECRET_REGION</code> from the operator environment.</li>
+<li>Optionally set <code>OCTO_INTERNAL_SERVICE_KEY</code> as a secret parameter to make
+   the script verify <code>/api/observability/payment-gateway/events</code> rows.</li>
+<li>Keep the Scripted Browser defaults at <code>repeat=600</code>, <code>timeout=300</code>, and
+   <code>isFailureRetried=false</code> for the recurring monitor.</li>
+<li>Validate the script from a non-production target first, then add it to the
+   runbook dashboard and tag it with the deployment prefix.</li>
 </ol>
 <h2 id="11-log-analytics-drilldown">11. Log Analytics Drilldown<a class="headerlink" href="#11-log-analytics-drilldown" title="Permanent link">&para;</a></h2>
 <p>Console path:</p>
@@ -4535,7 +4663,7 @@ path for the same browser session.</p>
 <li><code>Payment Gateway Request ID</code></li>
 <li><code>MITRE Technique ID</code></li>
 <li><code>OSQuery Finding</code></li>
-<li><code>Original Log Content</code></li>
+<li><code>msg</code></li>
 <li>Open an app log row and use the trace id to return to APM Trace Explorer.</li>
 <li>For the attack story, run:</li>
 <li><code>attack-lab-trace-timeline.sql</code></li>
@@ -4587,10 +4715,14 @@ docs; use ignored private runbooks or environment variables for live delivery.</
    health for the same time window.</li>
 </ol>
 <h2 id="supporting-scripts">Supporting Scripts<a class="headerlink" href="#supporting-scripts" title="Permanent link">&para;</a></h2>
-<p>The frontend-only Playwright script for Availability Monitoring and local
-browser validation is:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1">tools/demo-guide/octo-availability-monitor.playwright.ts
+<p>The canonical Playwright script for Availability Monitoring and local browser
+validation is:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1">shop/tools/apm/octo-apm-demo-synthetic.spec.ts
 </span></code></pre></div>
+<p>See <a href="../synthetic-monitoring/">Synthetic monitoring</a> for the full safe
+parameter and deployment flow. The facilitator script
+<code>tools/demo-guide/octo-availability-monitor.playwright.ts</code> is kept as a
+lightweight compatibility path.</p>
 <p>The existing local browser runner remains useful for private traffic
 generation:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><span class="nb">cd</span><span class="w"> </span>services/browser-runner
@@ -4658,7 +4790,7 @@ generation:</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../autoremediation-flow/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Auto-remediation flow">
+          <a href="../code-knowledge-map/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Code Knowledge Map">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4668,7 +4800,7 @@ generation:</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Auto-remediation flow
+                Code Knowledge Map
               </div>
             </div>
           </a>
@@ -4738,6 +4870,8 @@ generation:</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

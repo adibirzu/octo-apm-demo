@@ -17,6 +17,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
 <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../../assets/css/placeholder-config.css" rel="stylesheet"/>
 <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
 </head>
 <body data-md-color-accent="amber" data-md-color-primary="deep-purple" data-md-color-scheme="default" dir="ltr">
@@ -1020,6 +1021,18 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/event-generation-guide/">
+<span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="../../observability-v2/chaos-playbook/">
 <span class="md-ellipsis">
     
@@ -1049,6 +1062,18 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/synthetic-monitoring/">
+<span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -1097,6 +1122,18 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/code-knowledge-map/">
+<span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -1211,6 +1248,24 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
+<a class="md-nav__link" href="#admin-surface-and-scope-guard">
+<span class="md-ellipsis">
+      
+        Admin Surface and Scope Guard
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#admin-surface-and-scope-guard_1">
+<span class="md-ellipsis">
+      
+        Admin Surface and Scope Guard
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#architecture">
 <span class="md-ellipsis">
       
@@ -1224,6 +1279,15 @@
 <span class="md-ellipsis">
       
         Telemetry Signals Consumed
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#octo-demo-oke-coordinator-readiness">
+<span class="md-ellipsis">
+      
+        OCTO DEMO OKE Coordinator Readiness
       
     </span>
 </a>
@@ -1412,6 +1476,18 @@
     
   
     Deployment
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../operations/guided-demo-rollout/">
+<span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -1634,6 +1710,24 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
+<a class="md-nav__link" href="#admin-surface-and-scope-guard">
+<span class="md-ellipsis">
+      
+        Admin Surface and Scope Guard
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#admin-surface-and-scope-guard_1">
+<span class="md-ellipsis">
+      
+        Admin Surface and Scope Guard
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#architecture">
 <span class="md-ellipsis">
       
@@ -1647,6 +1741,15 @@
 <span class="md-ellipsis">
       
         Telemetry Signals Consumed
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#octo-demo-oke-coordinator-readiness">
+<span class="md-ellipsis">
+      
+        OCTO DEMO OKE Coordinator Readiness
       
     </span>
 </a>
@@ -1726,7 +1829,195 @@
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
 <h1 id="oci-coordinator-integration">OCI Coordinator Integration<a class="headerlink" href="#oci-coordinator-integration" title="Permanent link">¶</a></h1>
-<p>The OCI Coordinator's Remediation Agent v2 consumes telemetry from both services and executes automated remediations via MCP tools.</p>
+<p>The OCI Coordinator's Remediation Agent v2 consumes OCTO APM Demo telemetry
+from the admin surface and prepares operator actions through MCP-capable
+runbooks. The interactive endpoint is admin-only; the customer storefront does
+not expose Coordinator controls, Query Lab, or Select AI.</p>
+<h2 id="admin-surface-and-scope-guard">Admin Surface and Scope Guard<a class="headerlink" href="#admin-surface-and-scope-guard" title="Permanent link">¶</a></h2>
+<p>For the <code>&lt;OCI_PROFILE&gt;</code> OCTO deployment, the interactive Coordinator is exposed only
+inside the CRM Admin page:</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Route</th>
+<th>Guard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>admin.example.test</code></td>
+<td><code>/admin</code> UI panel</td>
+<td>CRM admin session required</td>
+</tr>
+<tr>
+<td>CRM API</td>
+<td><code>POST /api/admin/coordinator/query</code></td>
+<td>CRM admin session + admin host required</td>
+</tr>
+<tr>
+<td>CRM API</td>
+<td><code>GET /api/admin/coordinator/scope</code></td>
+<td>CRM admin session + admin host required</td>
+</tr>
+</tbody>
+</table>
+<p>The Coordinator is not rendered in the drone shop storefront, global CRM
+navigation, or non-admin pages. The API rejects non-admin hosts and refuses
+questions that ask for generic tenancy, unrelated domains, unrelated projects,
+or all-compartment/all-resource inventory.</p>
+<p>Allowed answer scope is limited to OCTO APM Demo resources and admin pages:</p>
+<ul>
+<li><code>admin.example.test</code> CRM admin, users, sessions, audit logs, and runtime config.</li>
+<li><code>shop.example.test</code> shop dependency, catalog sync, payment simulation, and order sync.</li>
+<li>OCTO ATP (<code>octoatp_low</code>), SQL_ID enrichment, Select AI/admin DB workflows.</li>
+<li>OCI APM, RUM, OCI Logging, Log Analytics, security detections, and workflow traces for this project.</li>
+<li>OCTO Demo Langfuse telemetry (<code>lf.example.test</code> / <code>langfuse.example.test</code>) only when tied to the drones project data.</li>
+</ul>
+<p>Coordinator decisions are visible in APM and logs through:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>admin.coordinator.query</code></td>
+<td>Span for each admin question</td>
+</tr>
+<tr>
+<td><code>admin.coordinator.scope</code></td>
+<td>Span for scope metadata reads</td>
+</tr>
+<tr>
+<td><code>coordinator.surface</code></td>
+<td>Always <code>admin</code></td>
+</tr>
+<tr>
+<td><code>coordinator.host</code></td>
+<td>Request host that reached the endpoint</td>
+</tr>
+<tr>
+<td><code>coordinator.scope</code></td>
+<td>Always <code>octo-apm-demo</code></td>
+</tr>
+<tr>
+<td><code>coordinator.allowed</code></td>
+<td>Whether the question was answered</td>
+</tr>
+<tr>
+<td><code>coordinator.topic</code></td>
+<td>Matched admin/OCTO topic</td>
+</tr>
+<tr>
+<td><code>coordinator.refusal_reason</code></td>
+<td>Reason when a question is refused</td>
+</tr>
+<tr>
+<td><code>coordinator.scope.enforced</code></td>
+<td>Always true for accepted Admin Coordinator responses</td>
+</tr>
+<tr>
+<td><code>coordinator.auth.mode</code></td>
+<td>Admin session, internal service, or refused caller mode</td>
+</tr>
+<tr>
+<td><code>oci.auth.mode</code></td>
+<td>OCI SDK auth mode, normally instance principal in OCI</td>
+</tr>
+</tbody>
+</table>
+<p>Responses also include a <code>guardrails</code> object with <code>admin_only=true</code>,
+<code>scope_enforced=true</code>, <code>allowed_scope=octo-apm-demo</code>,
+<code>raw_prompt_logged=false</code>, and the resolved admin allowed hosts. These fields
+are intentionally safe to log and can be used by APM saved queries and Log
+Analytics detection searches.</p>
+<h2 id="admin-surface-and-scope-guard_1">Admin Surface and Scope Guard<a class="headerlink" href="#admin-surface-and-scope-guard_1" title="Permanent link">¶</a></h2>
+<p>For the <code>&lt;DEPLOYMENT_PREFIX&gt;</code> OCTO deployment, the interactive Coordinator is exposed only
+inside the CRM Admin page:</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Route</th>
+<th>Guard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>admin.${DNS_DOMAIN}</code></td>
+<td><code>/admin</code> UI panel</td>
+<td>CRM admin session required</td>
+</tr>
+<tr>
+<td>CRM API</td>
+<td><code>POST /api/admin/coordinator/query</code></td>
+<td>CRM admin session + admin host required</td>
+</tr>
+<tr>
+<td>CRM API</td>
+<td><code>GET /api/admin/coordinator/scope</code></td>
+<td>CRM admin session + admin host required</td>
+</tr>
+</tbody>
+</table>
+<p>The Coordinator is not rendered in the drone shop storefront, global CRM
+navigation, or non-admin pages. The API rejects non-admin hosts and refuses
+questions that ask for generic tenancy, unrelated domains, unrelated projects,
+or all-compartment/all-resource inventory.</p>
+<p>Allowed answer scope is limited to OCTO APM Demo resources and admin pages:</p>
+<ul>
+<li><code>admin.${DNS_DOMAIN}</code> CRM admin, users, sessions, audit logs, and runtime config.</li>
+<li><code>drones.${DNS_DOMAIN}</code> shop dependency, catalog sync, payment simulation, and order sync.</li>
+<li>OCTO ATP (<code>octoatp_low</code>), SQL_ID enrichment, Select AI/admin DB workflows.</li>
+<li>OCI APM, RUM, OCI Logging, Log Analytics, security detections, and workflow traces for this project.</li>
+<li>OCTO Demo Langfuse telemetry (<code>lf.${DNS_DOMAIN}</code> / <code>langfuse.${DNS_DOMAIN}</code>) only when tied to the drones project data.</li>
+</ul>
+<p>Coordinator decisions are visible in APM and logs through:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>admin.coordinator.query</code></td>
+<td>Span for each admin question</td>
+</tr>
+<tr>
+<td><code>admin.coordinator.scope</code></td>
+<td>Span for scope metadata reads</td>
+</tr>
+<tr>
+<td><code>coordinator.surface</code></td>
+<td>Always <code>admin</code></td>
+</tr>
+<tr>
+<td><code>coordinator.host</code></td>
+<td>Request host that reached the endpoint</td>
+</tr>
+<tr>
+<td><code>coordinator.scope</code></td>
+<td>Always <code>octo-apm-demo</code></td>
+</tr>
+<tr>
+<td><code>coordinator.allowed</code></td>
+<td>Whether the question was answered</td>
+</tr>
+<tr>
+<td><code>coordinator.topic</code></td>
+<td>Matched admin/OCTO topic</td>
+</tr>
+<tr>
+<td><code>coordinator.refusal_reason</code></td>
+<td>Reason when a question is refused</td>
+</tr>
+</tbody>
+</table>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">¶</a></h2>
 <pre class="mermaid"><code>flowchart TD
     subgraph Apps ["Monitored Applications"]
@@ -1760,6 +2051,7 @@
     Shop -.-&gt; Monitoring
     CRM -.-&gt; APM
     CRM -.-&gt; Logging
+    CRM --&gt;|Admin only| Coordinator
 
     APM --&gt; Detect
     Logging --&gt; Detect
@@ -1769,7 +2061,7 @@
 
     Detect --&gt; Correlate --&gt; Diagnose --&gt; Runbook --&gt; Approve --&gt; Execute --&gt; Verify
 
-    Execute --&gt;|kubectl| Shop
+    Execute --&gt;|approved runbook| CRM
     Execute --&gt;|HTTP| CRM
     Execute --&gt;|MCP| CloudGuard</code></pre>
 <h2 id="telemetry-signals-consumed">Telemetry Signals Consumed<a class="headerlink" href="#telemetry-signals-consumed" title="Permanent link">¶</a></h2>
@@ -1821,6 +2113,89 @@
 <td><strong>DB Performance</strong></td>
 <td>DB Management / OPSI</td>
 <td>SQL root cause</td>
+</tr>
+</tbody>
+</table>
+<h2 id="octo-demo-oke-coordinator-readiness">OCTO DEMO OKE Coordinator Readiness<a class="headerlink" href="#octo-demo-oke-coordinator-readiness" title="Permanent link">¶</a></h2>
+<p>May 11, 2026 <code>&lt;DEPLOYMENT_PREFIX&gt;</code> status:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Current State</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ask the live websites</td>
+<td>Ready</td>
+<td><code>drones.${DNS_DOMAIN}</code> and <code>admin.${DNS_DOMAIN}</code> <code>/ready</code> return HTTP 200 through the preserved OCI Load Balancer.</td>
+</tr>
+<tr>
+<td>Ask OCI APM</td>
+<td>Ready from app side</td>
+<td>Shop/CRM emit OTel traces, RUM is configured, and the Java APM sidecar is enabled on the Shop VM.</td>
+</tr>
+<tr>
+<td>Ask OCI Logging</td>
+<td>Ready</td>
+<td>Fresh app records carry <code>oracleApmTraceId</code>, <code>trace_id</code>, route, status, service, DB target, and deployment metadata.</td>
+</tr>
+<tr>
+<td>Ask Log Analytics</td>
+<td>Partially blocked</td>
+<td>The Log Analytics namespace/log group exist, but no OCTO app source/parser rows are present because Service Connector Hub quota is exhausted for new routes.</td>
+</tr>
+<tr>
+<td>Install Coordinator on OKE</td>
+<td>Blocked on target cluster</td>
+<td>Existing OKE clusters are in the quickstart VCN; no ACTIVE OKE cluster exists in the OCTO project VCN yet.</td>
+</tr>
+</tbody>
+</table>
+<p>For an OKE-hosted Coordinator, use instance principal or workload identity for
+OCI API authentication and keep the dynamic group/policy scoped to the OCTO
+DEMO compartment. The minimum read path is:</p>
+<ul>
+<li>read APM domains and traces for the OCTO APM domain</li>
+<li>read Logging log groups/logs for the OCTO app log group</li>
+<li>read Log Analytics queries once the OCTO source/parser/connector path is
+  active</li>
+<li>read Monitoring alarms and metrics for the OCTO namespaces</li>
+<li>read OKE cluster/node/pod state for the selected same-VCN cluster</li>
+</ul>
+<p>Until Log Analytics routing is unblocked, Coordinator question answering should
+prefer OCI Logging queries by <code>oracleApmTraceId</code> and use Log Analytics only for
+shared/non-OCTO sources that are already routed.</p>
+<p>Example Coordinator questions that are supported once deployed:</p>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Required data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"Which user login led to this order?"</td>
+<td>APM trace, app logs, <code>auth.user_id</code>, order fields, DB audit rows</td>
+</tr>
+<tr>
+<td>"Why did this checkout fail?"</td>
+<td><code>payment.gateway.request_id</code>, payment simulation spans/logs, order payment state</td>
+</tr>
+<tr>
+<td>"What backend calls made this page slow?"</td>
+<td>APM trace spans, DB span attributes, Workflow Gateway spans</td>
+</tr>
+<tr>
+<td>"Which guardrail blocked this request?"</td>
+<td>security span/log fields and checkout security saved searches</td>
+</tr>
+<tr>
+<td>"Did this incident reach the database?"</td>
+<td><code>trace_id</code>/<code>oracleApmTraceId</code> plus DB statement/sql-id span attributes</td>
 </tr>
 </tbody>
 </table>
@@ -2035,5 +2410,6 @@
 </div>
 <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
 <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+<script src="../../assets/js/placeholder-config.js"></script>
 </body>
 </html>

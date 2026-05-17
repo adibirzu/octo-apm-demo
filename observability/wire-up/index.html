@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2438,6 +2440,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2527,6 +2535,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2591,6 +2627,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2703,6 +2767,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3162,6 +3254,8 @@
       
         
       
+        
+      
     
     
     
@@ -3231,6 +3325,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3879,8 +4001,8 @@ does <code>&lt;signal&gt;</code> from <code>&lt;service&gt;</code> land?"</p>
 <tr>
 <td>Application logs (JSON)</td>
 <td>shop, crm</td>
-<td><code>oci.loggingingestion</code> SDK → <code>OCI_LOG_ID</code></td>
-<td>OCI Logging → Service Connector → OCI Log Analytics source <code>octo-shop-app-json</code></td>
+<td><code>oci.loggingingestion</code> SDK → <code>OCI_LOG_ID</code>; OKE stdout via ONM annotations</td>
+<td>OCI Logging → Service Connector → Log Analytics as <code>OCI Unified Schema Logs</code>; OKE annotated stdout → <code>SOC Application Logs</code></td>
 </tr>
 <tr>
 <td>Edge access logs</td>
@@ -3896,9 +4018,9 @@ does <code>&lt;signal&gt;</code> from <code>&lt;service&gt;</code> land?"</p>
 </tr>
 <tr>
 <td>Custom metrics</td>
-<td>shop (shop.checkout.count, shop.http.errors_5xx, …), load-control run counts</td>
+<td>shop and crm app health, request/error counts, checkout/order counts, auth outcomes, security events, dashboard loads, DB latency, inventory health</td>
 <td>OCI Monitoring SDK</td>
-<td>OCI Monitoring namespace <code>octo_drone_shop</code></td>
+<td>OCI Monitoring namespace <code>octo_apm_demo</code></td>
 </tr>
 <tr>
 <td>Stream metrics (queue depth, cache hit ratio)</td>
@@ -3982,7 +4104,7 @@ does <code>&lt;signal&gt;</code> from <code>&lt;service&gt;</code> land?"</p>
 <tr>
 <td><code>octo-oci-config</code></td>
 <td><code>compartment-id</code></td>
-<td>shop (GenAI + Monitoring)</td>
+<td>shop, crm (GenAI + Monitoring)</td>
 </tr>
 <tr>
 <td><code>octo-events</code></td>
@@ -4022,7 +4144,7 @@ one request → APM trace visible within 60s → LA search on
 </tr>
 <tr>
 <td>APM trace but no LA row</td>
-<td>Service Connector <code>la-pipeline-octo-shop-app</code> running; <code>oci log-analytics source get --namespace-name … --source-name octo-shop-app-json</code> shows the source</td>
+<td>For OCI Logging connector rows, run <code>connector-live-log-coverage.sql</code> and check <code>OCI Unified Schema Logs</code>. For OKE stdout rows, run <code>oke-kubernetes-trace-correlation.sql</code> and verify <code>Kubernetes Cluster Name = octo-apm-demo-oke</code>.</td>
 </tr>
 <tr>
 <td>LA row but no <code>oracleApmTraceId</code></td>
@@ -4048,7 +4170,7 @@ one request → APM trace visible within 60s → LA search on
 <p>Alarms we recommend enabling (most defined in
 <code>deploy/terraform/modules/api_gateway/alarms.tf</code> + <code>deploy/oci/ensure_monitoring.sh</code>):</p>
 <ul>
-<li><code>shop.http.errors_5xx</code> &gt; 0 per minute (WARNING)</li>
+<li><code>app.errors.rate</code> &gt; 0 per minute for <code>serviceName = "octo-drone-shop"</code> (WARNING)</li>
 <li><code>api_gateway 5xx</code> burst &gt; 50 in 5m (CRITICAL) — KG-029</li>
 <li>ATP CPU &gt; 80% sustained (CRITICAL)</li>
 <li>Container pod <code>OOMKilled</code> &gt; 0 (WARNING)</li>
@@ -4184,6 +4306,8 @@ one request → APM trace visible within 60s → LA search on
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

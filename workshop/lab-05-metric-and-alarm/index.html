@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2320,6 +2322,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2409,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2473,6 +2509,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2585,6 +2649,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3044,6 +3136,8 @@
       
         
       
+        
+      
     
     
     
@@ -3113,6 +3207,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -4035,8 +4157,8 @@ conditions are met.</p>
 arriving:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">oci<span class="w"> </span>monitoring<span class="w"> </span>metric-data<span class="w"> </span>summarize-metrics-data<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-2"><span class="w">    </span>--compartment-id<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCI_COMPARTMENT_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><span class="w">    </span>--namespace<span class="w"> </span>octo_drone_shop<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-4"><span class="w">    </span>--query-text<span class="w"> </span><span class="s1">&#39;shop.checkout.count[1m].sum()&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><span class="w">    </span>--namespace<span class="w"> </span>octo_apm_demo<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-4"><span class="w">    </span>--query-text<span class="w"> </span><span class="s1">&#39;app.checkout.count[1m].sum()&#39;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-5"><span class="w">    </span>--start-time<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>date<span class="w"> </span>-u<span class="w"> </span>-v-1H<span class="w"> </span>+%Y-%m-%dT%H:%M:%SZ<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-6"><span class="w">    </span>--end-time<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>date<span class="w"> </span>-u<span class="w"> </span>+%Y-%m-%dT%H:%M:%SZ<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-7"><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.data[].aggregated-datapoints[-3:]&#39;</span>
@@ -4071,11 +4193,11 @@ arriving:</p>
 </tr>
 <tr>
 <td>Metric Namespace</td>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
 </tr>
 <tr>
 <td>Metric Name</td>
-<td><code>shop.http.errors_5xx</code></td>
+<td><code>app.errors.rate</code></td>
 </tr>
 <tr>
 <td>Interval</td>
@@ -4109,8 +4231,8 @@ arriving:</p>
 </span><span id="__span-2-2"><span class="w">    </span>--compartment-id<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCI_COMPARTMENT_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-3"><span class="w">    </span>--display-name<span class="w"> </span><span class="s2">&quot;octo-shop-error-rate-lab05&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-4"><span class="w">    </span>--metric-compartment-id<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OCI_COMPARTMENT_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-5"><span class="w">    </span>--namespace<span class="w"> </span><span class="s2">&quot;octo_drone_shop&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-6"><span class="w">    </span>--query-text<span class="w"> </span><span class="s2">&quot;shop.http.errors_5xx[1m].sum() &gt; 0&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-5"><span class="w">    </span>--namespace<span class="w"> </span><span class="s2">&quot;octo_apm_demo&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-6"><span class="w">    </span>--query-text<span class="w"> </span><span class="s2">&quot;app.errors.rate[1m].sum() &gt; 0&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-7"><span class="w">    </span>--severity<span class="w"> </span><span class="s2">&quot;WARNING&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-8"><span class="w">    </span>--body<span class="w"> </span><span class="s2">&quot;Shop is emitting 5xx errors. Run-id: {annotation.run_id}. Trace exemplar: {annotation.trace_exemplar}.&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-2-9"><span class="w">    </span>--destinations<span class="w"> </span><span class="s2">&quot;[\&quot;</span><span class="nv">$NOTIFICATIONS_TOPIC_OCID</span><span class="s2">\&quot;]&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -4141,7 +4263,7 @@ auto-resolves to <code>OK</code>.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">./tools/workshop/verify-05.sh
 </span></code></pre></div>
 <p>Expected:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1">✓ custom namespace octo_drone_shop has metrics in the last hour
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1">✓ custom namespace octo_apm_demo has metrics in the last hour
 </span><span id="__span-5-2">✓ alarm &#39;octo-shop-error-rate-lab05&#39; exists
 </span><span id="__span-5-3">✓ alarm body references annotation contract (run_id, trace_exemplar)
 </span><span id="__span-5-4">PASS — Lab 05 complete
@@ -4300,6 +4422,8 @@ auto-resolves to <code>OK</code>.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

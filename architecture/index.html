@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2325,6 +2327,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2414,6 +2422,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2478,6 +2514,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2590,6 +2654,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3049,6 +3141,8 @@
       
         
       
+        
+      
     
     
     
@@ -3118,6 +3212,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3662,10 +3784,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#component-overview" class="md-nav__link">
+  <a href="#current-component-overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Component Overview
+        Current Component Overview
       
     </span>
   </a>
@@ -3715,22 +3837,32 @@
 
 
 <h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
-<p>The OCTO Drone Shop uses a <strong>modular, framework-based architecture</strong> that enables new features to be added without breaking existing capabilities.</p>
+<p>OCTO APM Demo is a modular demo platform for showcasing OCI Observability
+capabilities. The current public documentation uses a private Compute reference
+deployment, while the same services can also run on OKE, a single VM, or a
+local-stack target for workshops.</p>
 <h2 id="design-principles">Design Principles<a class="headerlink" href="#design-principles" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Module Independence</strong> — Each of the 13 modules (shop, orders, auth, analytics, etc.) is a self-contained FastAPI router with its own spans, metrics, and error handling</li>
-<li><strong>Observability by Default</strong> — Every module automatically gets tracing, logging, and metrics through shared middleware and helpers</li>
-<li><strong>Tenancy Portability</strong> — Single <code>DNS_DOMAIN</code> variable derives all URLs, CORS origins, and SSO redirects</li>
-<li><strong>Shared Data Layer</strong> — All modules share Oracle ATP through SQLAlchemy with automatic instrumentation</li>
-<li><strong>Cross-Service Isolation</strong> — CRM integration uses circuit breakers to prevent cascading failures</li>
+<li><strong>Customer flow first</strong> — the public storefront stays focused on browsing,
+   cart, checkout, assistant, and order tracking; operational controls live in
+   the CRM and admin surfaces.</li>
+<li><strong>Observability by default</strong> — browser, Shop, CRM, Java sidecar, workflow,
+   payment, SQL, and assistant flows emit shared trace/log/metric fields.</li>
+<li><strong>Tenancy portability</strong> — docs and scripts use variables such as
+   <code>&lt;OCI_PROFILE&gt;</code>, <code>&lt;COMPARTMENT_OCID&gt;</code>, <code>&lt;APM_DOMAIN_OCID&gt;</code>,
+   <code>&lt;LA_NAMESPACE&gt;</code>, and <code>&lt;DNS_DOMAIN&gt;</code>.</li>
+<li><strong>Sanitized public architecture</strong> — published diagrams must not contain live
+   public IP addresses, private IP addresses, OCIDs, credential paths, or
+   operator allowlists.</li>
+<li><strong>Independent deployment paths</strong> — Compute is the current reference, OKE
+   remains supported, and the deployment topology documents both.</li>
 </ol>
-<h2 id="component-overview">Component Overview<a class="headerlink" href="#component-overview" title="Permanent link">&para;</a></h2>
+<h2 id="current-component-overview">Current Component Overview<a class="headerlink" href="#current-component-overview" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Component</th>
 <th>Tech</th>
-<th>Routes</th>
 <th>Purpose</th>
 </tr>
 </thead>
@@ -3738,87 +3870,92 @@
 <tr>
 <td>Drone Shop</td>
 <td>Python/FastAPI</td>
-<td>114</td>
-<td>Commerce, SSO, chaos, observability, CRM sync, payment webhooks, partner/public APIs, platform status</td>
-</tr>
-<tr>
-<td>Workflow Gateway</td>
-<td>Go</td>
-<td>~15</td>
-<td>Select AI, query lab, ATP sweeps, component health</td>
+<td>Customer storefront, checkout, AI assistant, RUM/APM/log/metric emission, payment gateway telemetry, CRM sync.</td>
 </tr>
 <tr>
 <td>Enterprise CRM</td>
 <td>Python/FastAPI</td>
-<td>132</td>
-<td>CRM, simulation proxy, distributed traces, chaos admin, cross-service contract</td>
+<td>Operations portal, catalog and storefront administration, order/customer workflows, simulation and security training surfaces.</td>
 </tr>
 <tr>
-<td>OTel Gateway</td>
-<td>OTel Collector</td>
-<td>—</td>
-<td>Central OTLP ingress → OCI APM + Prometheus + file</td>
+<td>Java payment/app-server sidecar</td>
+<td>Spring Boot</td>
+<td>Token-safe payment verification/authorization, Java APM App Servers visibility, JVM request/GC/CPU/error demo spans.</td>
 </tr>
 <tr>
-<td>Async Worker</td>
-<td>Python</td>
-<td>—</td>
-<td>Redis-Streams consumer for order fan-out + XCLAIM recovery</td>
+<td>Workflow Gateway</td>
+<td>Go</td>
+<td>Select AI, query lab, ATP workflow checks, and component health surfaces.</td>
 </tr>
 <tr>
-<td>Remediator</td>
-<td>Python</td>
-<td>—</td>
-<td>Alarm-driven playbooks (LOW/MEDIUM/HIGH tier gating)</td>
+<td>Oracle ATP</td>
+<td>OCI Autonomous Database</td>
+<td>Shared persistence, SQL visibility, cross-service correlation, assistant/event storage.</td>
 </tr>
 <tr>
-<td>Browser Runner</td>
-<td>Playwright + TS</td>
-<td>—</td>
-<td>Synthetic journey executor</td>
+<td>OCI Load Balancer / WAF / API Gateway</td>
+<td>OCI edge services</td>
+<td>Public entry, route policy, threat controls, request ids, access logs, and trace-header preservation.</td>
 </tr>
 <tr>
-<td>Load Control</td>
-<td>Python</td>
-<td>—</td>
-<td>Named-profile traffic orchestrator</td>
+<td>OCI Observability stack</td>
+<td>OCI APM, RUM, Logging, Log Analytics, Monitoring, Stack Monitoring</td>
+<td>End-to-end MELTS view, saved queries, dashboards, alarms, and drill-downs.</td>
 </tr>
 <tr>
-<td>Cache</td>
-<td>Redis + client</td>
-<td>—</td>
-<td>OTel-instrumented cache with span enrichment</td>
-</tr>
-<tr>
-<td>Edge Gateway</td>
-<td>TypeScript</td>
-<td>—</td>
-<td>Edge-fuzz + request shaping</td>
-</tr>
-<tr>
-<td>Object Pipeline</td>
-<td>Python</td>
-<td>—</td>
-<td>Object Storage drainer + upload</td>
+<td>Optional platform services</td>
+<td>OTel Collector, load-control, browser-runner, remediator, async worker, cache, object pipeline</td>
+<td>Workshop expansion services for synthetic traffic, remediation, async flows, and broader OCI 360 demos.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="diagrams">Diagrams<a class="headerlink" href="#diagrams" title="Permanent link">&para;</a></h2>
 <p>Drawio sources live in <a href="diagrams/"><code>diagrams/</code></a> and open at
-<a href="https://app.diagrams.net">app.diagrams.net</a>:</p>
-<ul>
-<li><strong>Private Demo Observability Reference</strong> — <a href="diagrams/private-demo-observability-reference.drawio"><code>diagrams/private-demo-observability-reference.drawio</code></a>. Current private Compute deployment for <code>shop.example.test</code> and <code>admin.example.test</code>, including manual LB HTTPS preservation, Java app-server APM, OCI Logging, Service Connector, Log Analytics, Cloud Guard OSQuery, Availability Monitoring, and Stack Monitoring pivots.</li>
-<li><strong>Platform Overview</strong> — <a href="diagrams/platform-overview.drawio"><code>diagrams/platform-overview.drawio</code></a>. Users → WAF → OKE → data + observability plane, every service + every OCI backend.</li>
-<li><strong>Observability Flow</strong> — <a href="diagrams/observability-flow.drawio"><code>diagrams/observability-flow.drawio</code></a>. MELTS signal flow: traces / logs / metrics / events / SQL-perf routed to OCI APM / Logging / Log Analytics / Stack Monitoring / Events.</li>
-<li><strong>Deploy Topology</strong> — <a href="diagrams/deploy-topology.drawio"><code>diagrams/deploy-topology.drawio</code></a>. Build path + OCIR + three deploy targets (OKE, single-VM, local-stack).</li>
-</ul>
+<a href="https://app.diagrams.net">app.diagrams.net</a>. Use the rendered SVG previews for
+the docs site and the <code>.drawio</code> files when editing.</p>
+<table>
+<thead>
+<tr>
+<th>Diagram</th>
+<th>Preview</th>
+<th>Editable source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Private Demo Observability Reference</td>
+<td><a href="diagrams/private-demo-observability-reference.svg?v=20260509-sanitized"><code>private-demo-observability-reference.svg</code></a></td>
+<td><a href="diagrams/private-demo-observability-reference.drawio"><code>private-demo-observability-reference.drawio</code></a></td>
+</tr>
+<tr>
+<td>Platform Overview</td>
+<td><a href="diagrams/platform-overview.svg?v=20260511-contrast"><code>platform-overview.svg</code></a></td>
+<td><a href="diagrams/platform-overview.drawio"><code>platform-overview.drawio</code></a></td>
+</tr>
+<tr>
+<td>Observability Flow</td>
+<td>drawio source only</td>
+<td><a href="diagrams/observability-flow.drawio"><code>observability-flow.drawio</code></a></td>
+</tr>
+<tr>
+<td>Deploy Topology</td>
+<td>drawio source only</td>
+<td><a href="diagrams/deploy-topology.drawio"><code>deploy-topology.drawio</code></a></td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Platform Overview OCTO APM Demo architecture" src="diagrams/platform-overview.svg?v=20260511-contrast" /></p>
 <p><img alt="Private Demo OCTO APM Demo architecture" src="diagrams/private-demo-observability-reference.svg?v=20260509-sanitized" /></p>
-<p>See the <a href="diagrams/">diagrams README</a> for the shape / colour legend and CLI re-render commands.</p>
+<p>See the <a href="diagrams/">diagrams README</a> for the shape and colour legend,
+download links, sanitization rules, and CLI re-render commands.</p>
 <h2 id="sections">Sections<a class="headerlink" href="#sections" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="system-design/">System Design</a> — Runtime topology, cross-service flows, SSO architecture</li>
-<li><a href="data-model/">Data Model</a> — Database schema, entity relationships, table organization</li>
-<li><a href="framework/">Framework Approach</a> — How to add new modules without breaking existing ones</li>
+<li><a href="platform-overview/">Platform Overview</a> — current Compute reference, OKE support path, and OCI service boundaries</li>
+<li><a href="system-design/">System Design</a> — runtime topology, cross-service flows, SSO, assistant, and APM topology</li>
+<li><a href="correlation-contract/">Correlation Contract</a> — field names used to pivot between APM, logs, Log Analytics, SQL, payment, and assistant telemetry</li>
+<li><a href="service-inventory/">Service Inventory</a> — shipped services and the signals they emit</li>
+<li><a href="data-model/">Data Model</a> — database schema, entity relationships, table organization</li>
+<li><a href="framework/">Framework Approach</a> — how to add modules without breaking existing capabilities</li>
 </ul>
 
 
@@ -3937,6 +4074,8 @@
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../assets/js/placeholder-config.js"></script>
       
     
   </body>

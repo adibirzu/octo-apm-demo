@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2493,6 +2495,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2582,6 +2590,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2646,6 +2682,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2758,6 +2822,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3217,6 +3309,8 @@
       
         
       
+        
+      
     
     
     
@@ -3286,6 +3380,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3984,47 +4106,57 @@ the live <code>shop.example.tld</code> + <code>crm.example.tld</code> deployment
 </thead>
 <tbody>
 <tr>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
 <td><code>app.health</code></td>
 <td>Rolling 0/1 heartbeat</td>
 </tr>
 <tr>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
 <td><code>app.requests.rate</code></td>
 <td>Req/60s published by the pod</td>
 </tr>
 <tr>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
 <td><code>app.errors.rate</code></td>
 <td>5xx/60s</td>
 </tr>
 <tr>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
 <td><code>app.checkout.count</code></td>
 <td>Checkouts/min</td>
 </tr>
 <tr>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
 <td><code>app.orders.count</code></td>
 <td>Order creations/min</td>
 </tr>
 <tr>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
 <td><code>app.db.latency_ms</code></td>
 <td>ATP round-trip on <code>/ready</code></td>
 </tr>
 <tr>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
 <td><code>app.crm.sync_age_s</code></td>
 <td>Seconds since last CRM sync</td>
 </tr>
 <tr>
-<td><code>octo_drone_shop</code></td>
-<td><code>app.sessions.active</code></td>
-<td>Active session gauge</td>
+<td><code>octo_apm_demo</code></td>
+<td><code>app.auth.success.count</code></td>
+<td>Admin successful logins/min</td>
 </tr>
 <tr>
-<td><code>octo_drone_shop</code></td>
+<td><code>octo_apm_demo</code></td>
+<td><code>app.auth.failure.count</code></td>
+<td>Admin failed logins/min</td>
+</tr>
+<tr>
+<td><code>octo_apm_demo</code></td>
+<td><code>app.security.events.count</code></td>
+<td>Security events/min</td>
+</tr>
+<tr>
+<td><code>octo_apm_demo</code></td>
 <td><code>app.inventory.low_stock_products</code></td>
 <td>Products with stock &lt; 10</td>
 </tr>
@@ -4046,7 +4178,7 @@ the live <code>shop.example.tld</code> + <code>crm.example.tld</code> deployment
 </tbody>
 </table>
 <p>Query template:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">octo_drone_shop/app.requests.rate[5m].mean()
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">octo_apm_demo/app.requests.rate[5m].mean()
 </span></code></pre></div>
 Build an alarm on <code>app.errors.rate[5m].sum() &gt; 5</code> → Notifications topic →
 <code>octo-remediator</code> playbook (tier-gated auto-fix).</p>
@@ -4147,8 +4279,10 @@ application is a one-time OCI Console step — see
 </ul>
 <p><strong>Trace → logs</strong> correlation:
 1. Copy the <code>oracleApmTraceId</code> from an APM span.
-2. In Log Analytics, search <code>'oracleApmTraceId' = '&lt;id&gt;'</code> against source
-   <code>octo-shop-app-json</code>.
+2. In Log Analytics, search by <code>Trace ID</code> against <code>SOC Application Logs</code>
+   for direct/OKE app rows. For Connector Hub rows from OCI Logging, open
+   <code>connector-live-log-coverage.sql</code>; those records appear as
+   <code>OCI Unified Schema Logs</code> and carry the trace id inside <code>Message</code>.
 3. Every log line produced during that request appears.</p>
 <p><strong>Saved searches</strong> (in <code>tools/la-saved-searches/</code>):
 - <code>slow-checkout-spans.json</code> — checkout &gt; p95 + their correlated logs
@@ -4357,6 +4491,8 @@ magic moment — one click spans three services.</p>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

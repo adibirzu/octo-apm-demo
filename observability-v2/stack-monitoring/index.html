@@ -53,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -2322,6 +2324,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2414,6 +2422,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../chaos-playbook/" class="md-nav__link">
         
   
@@ -2478,6 +2514,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2725,6 +2789,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3184,6 +3276,8 @@
       
         
       
+        
+      
     
     
     
@@ -3253,6 +3347,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3975,14 +4097,14 @@ host easier to join with Log Analytics.</p>
 </ul>
 <h2 id="onboarding-the-atp">Onboarding the ATP<a class="headerlink" href="#onboarding-the-atp" title="Permanent link">&para;</a></h2>
 <p>Use the helper script:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><span class="nv">COMPARTMENT_ID</span><span class="o">=</span>ocid1.compartment.oc1..xxx<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-2"><span class="nv">AUTONOMOUS_DATABASE_ID</span><span class="o">=</span>ocid1.autonomousdatabase.oc1..xxx<span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><span class="nv">COMPARTMENT_ID</span><span class="o">=</span>&lt;COMPARTMENT_OCID&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><span class="nv">AUTONOMOUS_DATABASE_ID</span><span class="o">=</span>&lt;AUTONOMOUS_DATABASE_OCID&gt;<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-3"><span class="nv">SM_RESOURCE_NAME</span><span class="o">=</span>octo-atp<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-4">./deploy/oci/ensure_stack_monitoring.sh<span class="w">          </span><span class="c1"># dry run (default)</span>
 </span><span id="__span-3-5">
 </span><span id="__span-3-6"><span class="nv">DRY_RUN</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-7"><span class="nv">COMPARTMENT_ID</span><span class="o">=</span>ocid1.compartment.oc1..xxx<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-8"><span class="nv">AUTONOMOUS_DATABASE_ID</span><span class="o">=</span>ocid1.autonomousdatabase.oc1..xxx<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-7"><span class="nv">COMPARTMENT_ID</span><span class="o">=</span>&lt;COMPARTMENT_OCID&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-8"><span class="nv">AUTONOMOUS_DATABASE_ID</span><span class="o">=</span>&lt;AUTONOMOUS_DATABASE_OCID&gt;<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-9">./deploy/oci/ensure_stack_monitoring.sh<span class="w">          </span><span class="c1"># actually register</span>
 </span></code></pre></div>
 <p>The script is idempotent — re-runs short-circuit when a MonitoredResource
@@ -4131,6 +4253,8 @@ can migrate to Terraform later — the module boundary in
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>

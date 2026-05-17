@@ -17,6 +17,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
 <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../../assets/css/placeholder-config.css" rel="stylesheet"/>
 <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
 </head>
 <body data-md-color-accent="amber" data-md-color-primary="deep-purple" data-md-color-scheme="default" dir="ltr">
@@ -1085,6 +1086,18 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/event-generation-guide/">
+<span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="../../observability-v2/chaos-playbook/">
 <span class="md-ellipsis">
     
@@ -1114,6 +1127,18 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/synthetic-monitoring/">
+<span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -1162,6 +1187,18 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/code-knowledge-map/">
+<span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -1372,6 +1409,18 @@
     
   
     Deployment
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../operations/guided-demo-rollout/">
+<span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -1661,16 +1710,18 @@ Langfuse.</p>
 </ol>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">¶</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><span class="nv">OCI_GENAI_ENDPOINT</span><span class="o">=</span><span class="s2">"https://inference.generativeai.&lt;region&gt;.oci.oraclecloud.com"</span>
-</span><span id="__span-0-2"><span class="nv">OCI_GENAI_MODEL_ID</span><span class="o">=</span><span class="s2">"cohere.command-r-plus"</span>
+</span><span id="__span-0-2"><span class="nv">OCI_GENAI_MODEL_ID</span><span class="o">=</span><span class="s2">"cohere.command-r-08-2024"</span>
 </span><span id="__span-0-3"><span class="nv">OCI_COMPARTMENT_ID</span><span class="o">=</span><span class="s2">"&lt;compartment-ocid&gt;"</span>
-</span><span id="__span-0-4"><span class="nv">LLMETRY_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-0-5"><span class="nv">LLMETRY_STORE_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-</span><span id="__span-0-6"><span class="nv">LLMETRY_CAPTURE_CONTENT</span><span class="o">=</span><span class="nb">false</span>
-</span><span id="__span-0-7"><span class="nv">LANGFUSE_ENABLED</span><span class="o">=</span><span class="nb">false</span>
-</span><span id="__span-0-8"><span class="nv">LANGFUSE_HOST</span><span class="o">=</span><span class="s2">"https://langfuse.example.test"</span>
-</span><span id="__span-0-9"><span class="nv">LANGFUSE_PUBLIC_KEY</span><span class="o">=</span><span class="s2">"&lt;project-public-key&gt;"</span>
-</span><span id="__span-0-10"><span class="nv">LANGFUSE_SECRET_KEY</span><span class="o">=</span><span class="s2">"&lt;project-secret-key&gt;"</span>
-</span><span id="__span-0-11"><span class="nv">LANGFUSE_OTEL_EXPORT_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-0-4"><span class="nv">OCI_AUTH_MODE</span><span class="o">=</span>instance_principal
+</span><span id="__span-0-5"><span class="nv">LLMETRY_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-0-6"><span class="nv">LLMETRY_STORE_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-0-7"><span class="nv">LLMETRY_CAPTURE_CONTENT</span><span class="o">=</span><span class="nb">false</span>
+</span><span id="__span-0-8"><span class="nv">LANGFUSE_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+</span><span id="__span-0-9"><span class="nv">LANGFUSE_HOST</span><span class="o">=</span><span class="s2">"https://langfuse.example.test"</span>
+</span><span id="__span-0-10"><span class="nv">LANGFUSE_PROJECT_NAME</span><span class="o">=</span><span class="s2">"drones.</span><span class="si">${</span><span class="nv">DNS_DOMAIN</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="__span-0-11"><span class="nv">LANGFUSE_PUBLIC_KEY</span><span class="o">=</span><span class="s2">"&lt;project-public-key&gt;"</span>
+</span><span id="__span-0-12"><span class="nv">LANGFUSE_SECRET_KEY</span><span class="o">=</span><span class="s2">"&lt;project-secret-key&gt;"</span>
+</span><span id="__span-0-13"><span class="nv">LANGFUSE_OTEL_EXPORT_ENABLED</span><span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <p>Falls back to local product-matching logic if GenAI is not configured.
 Langfuse export is disabled until <code>LANGFUSE_ENABLED=true</code> plus host and project
@@ -1688,11 +1739,13 @@ keys are supplied through env vars or <code>*_FILE</code> secret mounts.</p>
 <ul>
 <li>Span: <code>shop.assistant.query</code> + <code>shop.assistant.genai</code></li>
 <li>Attributes:</li>
+<li><code>assistant.project.name</code>, <code>assistant.public_host</code>, <code>llmetry.project.name</code></li>
 <li><code>assistant.provider</code>, <code>assistant.model_id</code>, <code>assistant.documents_grounded</code></li>
 <li><code>assistant.guardrail.allowed</code>, <code>assistant.guardrail.reason</code>, <code>assistant.outcome</code></li>
 <li><code>llm.prompt.hash</code>, <code>llm.response.hash</code>, <code>llm.prompt.length</code>, <code>llm.response.length</code></li>
+<li><code>oci.auth.mode</code>, <code>oci.genai.endpoint_host</code></li>
 <li><code>gen_ai.request.model</code>, <code>gen_ai.response.model</code>, <code>gen_ai.usage.input_tokens</code>, <code>gen_ai.usage.output_tokens</code></li>
-<li><code>langfuse.trace.name</code>, <code>langfuse.session.id</code>, <code>langfuse.observation.type</code></li>
+<li><code>langfuse.project.name</code>, <code>langfuse.trace.name</code>, <code>langfuse.session.id</code>, <code>langfuse.observation.type</code></li>
 <li>Metrics: <code>shop.business.assistant.queries</code>, <code>shop.business.assistant.latency</code>, <code>shop.business.assistant.tokens</code>, <code>shop.business.assistant.errors</code></li>
 <li>Logs: <code>Assistant LLMetry observation</code> records include <code>oracleApmTraceId</code>, token counts, hashes, provider, model, session, and guardrail fields.</li>
 <li>ATP rows: <code>assistant_sessions</code>, <code>assistant_messages</code>, and <code>llmetry_events</code> let operators join the conversation record to APM/Logging by <code>trace_id</code>.</li>
@@ -1782,5 +1835,6 @@ PII-redacted before export.</p>
 </div>
 <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
 <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+<script src="../../assets/js/placeholder-config.js"></script>
 </body>
 </html>

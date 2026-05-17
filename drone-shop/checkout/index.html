@@ -17,6 +17,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
 <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../../assets/css/placeholder-config.css" rel="stylesheet"/>
 <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
 </head>
 <body data-md-color-accent="amber" data-md-color-primary="deep-purple" data-md-color-scheme="default" dir="ltr">
@@ -639,6 +640,15 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#payment-rail-simulation">
+<span class="md-ellipsis">
+      
+        Payment Rail Simulation
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#security-checks">
 <span class="md-ellipsis">
       
@@ -1085,6 +1095,18 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/event-generation-guide/">
+<span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="../../observability-v2/chaos-playbook/">
 <span class="md-ellipsis">
     
@@ -1114,6 +1136,18 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/synthetic-monitoring/">
+<span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -1162,6 +1196,18 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/code-knowledge-map/">
+<span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -1372,6 +1418,18 @@
     
   
     Deployment
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../operations/guided-demo-rollout/">
+<span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -1630,6 +1688,15 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#payment-rail-simulation">
+<span class="md-ellipsis">
+      
+        Payment Rail Simulation
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#security-checks">
 <span class="md-ellipsis">
       
@@ -1648,7 +1715,6 @@
 <h1 id="checkout-flow">Checkout Flow<a class="headerlink" href="#checkout-flow" title="Permanent link">¶</a></h1>
 <p>End-to-end order lifecycle from cart to shipment, with full observability at every step.</p>
 <h2 id="flow">Flow<a class="headerlink" href="#flow" title="Permanent link">¶</a></h2>
-<p><img alt="Checkout payment flow" src="../../architecture/diagrams/checkout-payment-flow.svg?v=20260509-flow"/></p>
 <pre class="mermaid"><code>sequenceDiagram
     participant Browser
     participant Shop as Drone Shop
@@ -1664,7 +1730,7 @@
     Shop--&gt;&gt;Browser: {status: "added"}
     Browser-&gt;&gt;APM: RUM: shop.add_to_cart
 
-    Browser-&gt;&gt;Shop: POST /api/shop/checkout (checkout_idempotency_key, payment_details)
+    Browser-&gt;&gt;Shop: POST /api/shop/checkout
     Shop-&gt;&gt;APM: span: shop.checkout
     Shop-&gt;&gt;ATP: SELECT cart_items + products
     Shop-&gt;&gt;ATP: UPSERT customer
@@ -1672,29 +1738,13 @@
     Shop-&gt;&gt;ATP: UPDATE products SET stock -= quantity
     Shop-&gt;&gt;ATP: INSERT shipment
     Shop-&gt;&gt;ATP: INSERT audit_log
-    Shop-&gt;&gt;PGW: payment.simulated.authorize (PCI-safe context)
-    PGW-&gt;&gt;APM: span: payment_gateway.emulator.authorize
-    alt credit_card
-        PGW-&gt;&gt;APM: gateway_payment_received
-        PGW-&gt;&gt;APM: card_data_received
-        PGW-&gt;&gt;APM: gateway_card_tokenization
-        PGW-&gt;&gt;APM: internal_antifraud_screening
-        PGW-&gt;&gt;APM: card_network_routing
-    else apple_pay / google_pay
-        PGW-&gt;&gt;APM: gateway_payment_received
-        PGW-&gt;&gt;APM: wallet_token_received
-        PGW-&gt;&gt;APM: gateway_token_decryption
-        PGW-&gt;&gt;APM: network_token_cryptogram_validation
-        PGW-&gt;&gt;APM: internal_antifraud_screening
-    end
-    PGW-&gt;&gt;Java: verification_antifraud_request
-    Java--&gt;&gt;PGW: verification_antifraud_response
-    PGW-&gt;&gt;Java: processor_authorization_request
-    Java--&gt;&gt;PGW: processor_authorization_response
-    PGW-&gt;&gt;APM: network_authorization_routing
-    PGW-&gt;&gt;APM: merchant_authorization_result
+    Shop-&gt;&gt;PGW: authorize Visa/Mastercard/Apple Pay/Google Pay
+    PGW-&gt;&gt;APM: spans: wallet/card token, antifraud, routing
+    PGW-&gt;&gt;Java: /payment/verify token-safe antifraud context
+    Java-&gt;&gt;APM: span events: wallet token, AVS/CVV, 3DS, network auth
+    PGW-&gt;&gt;Java: /payment/authorize processor/network authorization
+    PGW-&gt;&gt;ATP: INSERT payment_gateway_events
     Shop-&gt;&gt;ATP: INSERT payment_transactions
-    Shop-&gt;&gt;ATP: INSERT payment_gateway_events
     Shop-&gt;&gt;ATP: DELETE cart_items (session cleanup)
     Shop-&gt;&gt;CRM: POST /api/orders (sync via traceparent)
     Shop--&gt;&gt;Browser: {order_id, tracking_number, total}
@@ -1745,13 +1795,13 @@ of inserting another order.</p>
 <td>Wallet/card token</td>
 <td><code>payment_gateway.&lt;method&gt;.*</code></td>
 <td>-</td>
-<td><code>gateway_payment_received</code>, <code>card_data_received</code>, <code>gateway_card_tokenization</code>, <code>wallet_token_received</code>, <code>gateway_token_decryption</code>, <code>network_token_cryptogram_validation</code></td>
+<td>Google Pay <code>PaymentData</code>, Apple Pay token, card tokenization logs</td>
 </tr>
 <tr>
-<td>Antifraud verification</td>
-<td><code>payment_gateway.&lt;method&gt;.verification_*</code></td>
-<td>-</td>
-<td>Java verification request/response with <code>payment.verification.decision</code></td>
+<td>Verification hop</td>
+<td><code>java_app_server.post.api.java-apm.payment.verify</code></td>
+<td><code>java_app_server</code></td>
+<td>"Java app-server sidecar call completed"</td>
 </tr>
 <tr>
 <td>Processor hop</td>
@@ -1760,10 +1810,10 @@ of inserting another order.</p>
 <td>"Java app-server sidecar call completed"</td>
 </tr>
 <tr>
-<td>Gateway result</td>
-<td><code>payment_gateway.&lt;method&gt;.merchant_authorization_result</code></td>
+<td>Java payment events</td>
+<td><code>java.payment.*</code> span events</td>
 <td>-</td>
-<td><code>payment.gateway.request_id</code>, status, risk score, and decision source</td>
+<td>Wallet validation, 3DS, AVS/CVV, response code, network id</td>
 </tr>
 <tr>
 <td>Stock update</td>
@@ -1787,7 +1837,52 @@ of inserting another order.</p>
 </table>
 <p>Payment gateway events are persisted in <code>payment_gateway_events</code> with
 <code>trace_id</code>, <code>span_id</code>, <code>gateway_request_id</code>, method, network, step name, and
-safe metadata. Raw PAN, CVV, and wallet tokens are not logged or persisted.
+safe metadata. Raw PAN, CVV, cryptograms, and wallet tokens are not logged or
+persisted.</p>
+<h2 id="payment-rail-simulation">Payment Rail Simulation<a class="headerlink" href="#payment-rail-simulation" title="Permanent link">¶</a></h2>
+<p>The implementation now matches the architecture diagram: checkout calls a
+Python gateway emulator, the gateway calls the Java sidecar for antifraud
+verification and processor authorization, and both components stamp the same
+<code>payment.gateway.request_id</code> so APM, Log Analytics, ATP rows, CRM orders, and
+browser RUM events can be joined.</p>
+<table>
+<thead>
+<tr>
+<th>Rail</th>
+<th>Simulated workflow evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Google Pay</td>
+<td><code>PaymentData.paymentMethodData.type=CARD</code>, <code>tokenizationData.type=PAYMENT_GATEWAY</code>, gateway merchant hash, token hash, card network, cryptogram validation</td>
+</tr>
+<tr>
+<td>Apple Pay</td>
+<td>merchant validation, payment token envelope, <code>paymentData.version=EC_v1</code>, header transaction id hash, payment method network</td>
+</tr>
+<tr>
+<td>Visa</td>
+<td>e-commerce tokenization, Visa Secure 3DS <code>eci=05</code>, AVS/CVV result, processor response code, synthetic network transaction id</td>
+</tr>
+<tr>
+<td>Mastercard</td>
+<td>e-commerce tokenization, Mastercard Identity Check 3DS <code>eci=02</code>, AVS/CVV result, processor response code, synthetic network transaction id</td>
+</tr>
+</tbody>
+</table>
+<p>Only token-safe fields cross into Java: gateway request id, method,
+network, gateway provider, wallet token hash, card brand/last4,
+card fingerprint, billing postal-code presence, CVV presence, risk
+reasons, and idempotency hash. The Shop Java client also sends
+<code>X-Request-Id</code>, <code>X-Workflow-Id=checkout</code>, and a payment-specific
+<code>X-Workflow-Step</code> header so Java server spans, Java stdout JSON, Shop
+sidecar logs, and APM traces share the same workflow pivots.</p>
+<p>Gateway step API responses expose <code>component</code>, <code>component_label</code>, and
+<code>peer_service</code> for each safe step. Operators should see labels such as
+Google Pay Gateway, Apple Pay Gateway, VISA Payment Network, Mastercard
+Payment Network, OCTO Java Payment Processor, and OCTO Antifraud
+Verification App without exposing payment secrets.
 Operators can inspect the stored gateway timeline through:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">GET /api/observability/payment-gateway/events?gateway_request_id=&lt;PGW_REQUEST_ID&gt;
 </span><span id="__span-1-2">GET /api/observability/payment-gateway/events?trace_id=&lt;TRACE_ID&gt;
@@ -1798,6 +1893,11 @@ admin observability pages, or <code>X-Internal-Service-Key</code> for trusted in
 automation. Responses include the persisted step sequence so the payment
 view can be correlated with APM spans, application logs, CRM order state, and
 Oracle rows.</p>
+<p>Login and checkout database evidence share the same user/order relationship:
+<code>auth.login</code> emits success/failure logs and successful logins insert an
+<code>audit_logs</code> row with the authenticated <code>user_id</code>; checkout-created audit rows
+also use the authenticated user id when present. This lets Log Analytics and
+ATP queries map login activity to the later order and payment rows.</p>
 <p>Orders carry the payment state needed for CRM and support workflows:</p>
 <table>
 <thead>
@@ -1835,53 +1935,31 @@ gateway event sequence without reading raw payment details.</p>
 <th>Check</th>
 <th>Trigger</th>
 <th>Security Span</th>
-<th>Log Analytics pivots</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Invalid <code>product_id</code></td>
+<td>Invalid product_id</td>
 <td>Non-integer</td>
 <td><code>ATTACK:MASS_ASSIGN</code></td>
-<td><code>Security Check=mass_assign</code>, <code>Security Endpoint=/api/cart/add</code>, <code>Cart Session ID</code>, <code>Trace ID</code></td>
 </tr>
 <tr>
 <td>Quantity &gt; 20</td>
 <td>Rate limit</td>
 <td><code>ATTACK:RATE_LIMIT</code></td>
-<td><code>Security Check=rate_limit</code>, <code>Cart Product ID</code>, <code>Cart Quantity</code>, <code>Client IP</code></td>
 </tr>
 <tr>
 <td>Missing/inactive product</td>
 <td>IDOR attempt</td>
 <td><code>ATTACK:IDOR</code></td>
-<td><code>Security Check=idor</code>, <code>Cart Product ID</code>, <code>OWASP Category=A01:2021</code>, <code>MITRE Technique ID=T1078</code></td>
 </tr>
 <tr>
 <td>Invalid quantity</td>
 <td>Non-integer</td>
 <td><code>ATTACK:MASS_ASSIGN</code></td>
-<td><code>Security Check=mass_assign</code>, <code>Security Product ID</code>, <code>Security Session ID</code>, <code>Trace ID</code></td>
 </tr>
 </tbody>
 </table>
-<p>Each guardrail emits an APM <code>ATTACK:*</code> child span, a structured app log with
-<code>oracleApmTraceId</code>, and a row in <code>security_events</code>. The Log Analytics saved
-search <code>checkout-security-checks.sql</code> groups these real events by check,
-endpoint, source IP, product, session, OWASP category, and MITRE technique.</p>
-<p>Payment dashboards use real gateway logs and persisted gateway events:</p>
-<ul>
-<li><code>payment-gateway-timeline.sql</code> reconstructs the ordered gateway step
-  sequence for a <code>Payment Gateway Request ID</code>, trace id, or order id.</li>
-<li><code>payment-risk-decisions.sql</code> groups authorization outcomes by payment
-  method, network, wallet/card metadata, verification decision, processor
-  decision, and risk score.</li>
-<li><code>user-order-action-correlation.sql</code> joins password-login, checkout, order,
-  payment, and guardrail records by authenticated user id, order id, and trace.</li>
-<li><code>payment-security-command-center.json</code> combines payment timeline, payment
-  risk, checkout security checks, user/order correlation, and trace drilldown
-  widgets.</li>
-</ul>
 </article>
 </div>
 <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
@@ -1945,5 +2023,6 @@ endpoint, source IP, product, session, OWASP category, and MITRE technique.</p>
 </div>
 <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
 <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+<script src="../../assets/js/placeholder-config.js"></script>
 </body>
 </html>

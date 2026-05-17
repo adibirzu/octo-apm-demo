@@ -17,6 +17,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
 <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../../assets/css/placeholder-config.css" rel="stylesheet"/>
 <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
 </head>
 <body data-md-color-accent="amber" data-md-color-primary="deep-purple" data-md-color-scheme="default" dir="ltr">
@@ -465,10 +466,19 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#platform-components">
+<a class="md-nav__link" href="#published-architecture">
 <span class="md-ellipsis">
       
-        Platform Components
+        Published Architecture
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#runtime-topology">
+<span class="md-ellipsis">
+      
+        Runtime Topology
       
     </span>
 </a>
@@ -501,10 +511,28 @@
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#design-principles">
+<a class="md-nav__link" href="#supported-deployment-paths">
 <span class="md-ellipsis">
       
-        Design Principles
+        Supported Deployment Paths
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#runtime-contract-vm-and-oke">
+<span class="md-ellipsis">
+      
+        Runtime Contract: VM and OKE
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#public-documentation-rules">
+<span class="md-ellipsis">
+      
+        Public Documentation Rules
       
     </span>
 </a>
@@ -1085,6 +1113,18 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/event-generation-guide/">
+<span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="../../observability-v2/chaos-playbook/">
 <span class="md-ellipsis">
     
@@ -1114,6 +1154,18 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/synthetic-monitoring/">
+<span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -1162,6 +1214,18 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../observability-v2/code-knowledge-map/">
+<span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -1372,6 +1436,18 @@
     
   
     Deployment
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../operations/guided-demo-rollout/">
+<span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -1594,10 +1670,19 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#platform-components">
+<a class="md-nav__link" href="#published-architecture">
 <span class="md-ellipsis">
       
-        Platform Components
+        Published Architecture
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#runtime-topology">
+<span class="md-ellipsis">
+      
+        Runtime Topology
       
     </span>
 </a>
@@ -1630,10 +1715,28 @@
 </a>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#design-principles">
+<a class="md-nav__link" href="#supported-deployment-paths">
 <span class="md-ellipsis">
       
-        Design Principles
+        Supported Deployment Paths
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#runtime-contract-vm-and-oke">
+<span class="md-ellipsis">
+      
+        Runtime Contract: VM and OKE
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#public-documentation-rules">
+<span class="md-ellipsis">
+      
+        Public Documentation Rules
       
     </span>
 </a>
@@ -1646,59 +1749,104 @@
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
 <h1 id="platform-overview">Platform Overview<a class="headerlink" href="#platform-overview" title="Permanent link">¶</a></h1>
-<p>The OCTO Cloud-Native Platform consists of two application services sharing a single Oracle ATP database, with full OCI observability stack and cross-service distributed tracing. The current production model uses the shop as the <strong>customer storefront</strong> and the CRM as the <strong>operations control plane</strong> for catalog and storefront changes.</p>
-<h2 id="platform-components">Platform Components<a class="headerlink" href="#platform-components" title="Permanent link">¶</a></h2>
+<p>OCTO APM Demo consists of a customer storefront, an operations CRM, a Java
+payment/app-server sidecar, shared Oracle ATP, and OCI Observability services.
+It is a demo project for showing how OCI APM, RUM, Logging, Log Analytics,
+Monitoring, Stack Monitoring, WAF, API Gateway, and database tooling connect
+around a single business journey.</p>
+<p>The current public architecture covers two active runtime targets:</p>
+<ul>
+<li><strong>Private VM/Compute reference</strong> — private Shop and CRM hosts behind OCI Load
+  Balancer/WAF/API Gateway, with a Java sidecar on the app tier.</li>
+<li><strong>OKE runtime</strong> — the same Shop, CRM, and Java app-server containers running
+  as Kubernetes Deployments with Kubernetes observability collectors.</li>
+</ul>
+<p>Both runtimes preserve the same signal contract: APM traces/RUM, structured
+OCI Logging rows, Log Analytics fields/searches/dashboards, ATP SQL evidence,
+and token-safe payment/security pivots. Public docs use placeholders only;
+keep tenancy names, OCIDs, private/public IPs, secret paths, and allowlists in
+ignored operator notes.</p>
+<h2 id="published-architecture">Published Architecture<a class="headerlink" href="#published-architecture" title="Permanent link">¶</a></h2>
+<p><a href="../diagrams/platform-overview.drawio">Download editable Platform Overview drawio source</a></p>
+<p><img alt="Platform Overview OCTO APM Demo architecture" src="../diagrams/platform-overview.svg?v=20260511-contrast"/></p>
+<p><a href="../diagrams/private-demo-observability-reference.drawio">Download editable Private Compute drawio source</a></p>
+<p><img alt="Private Demo OCTO APM Demo architecture" src="../diagrams/private-demo-observability-reference.svg?v=20260509-sanitized"/></p>
+<p>The published diagrams are sanitized. Keep resolved public IPs, private IPs,
+OCIDs, secret paths, and operator allowlists in local-only files that match the
+ignored <code>*with-ips*</code>, <code>*resolved*</code>, or <code>*.local.*</code> patterns.</p>
+<h2 id="runtime-topology">Runtime Topology<a class="headerlink" href="#runtime-topology" title="Permanent link">¶</a></h2>
 <pre class="mermaid"><code>flowchart TD
-    subgraph Clients ["Clients"]
-        Browser(["Browser + RUM"])
-        K6(["k6 Load Tests"])
+    Browser(["Customer browser&lt;br/&gt;RUM enabled"])
+    Operator(["Operator browser&lt;br/&gt;SSO enabled"])
+    Edge["OCI Load Balancer / WAF"]
+    Gateway["OCI API Gateway&lt;br/&gt;route policy + request ids"]
+
+    subgraph VMRuntime ["Runtime target A: private VM/Compute"]
+        Shop["Drone Shop&lt;br/&gt;customer storefront"]
+        CRM["Enterprise CRM&lt;br/&gt;operations portal"]
+        Java["Java payment sidecar&lt;br/&gt;App Servers + payment rails"]
+        WGW["Workflow Gateway&lt;br/&gt;Select AI + query lab"]
     end
 
-    IDCS["OCI IAM Identity Domain&lt;br/&gt;(OIDC + PKCE)"]
-
-    subgraph OKE ["OCI OKE Cluster"]
-        subgraph NS1 ["namespace: octo-drone-shop"]
-            Shop["OCTO Drone Shop&lt;br/&gt;FastAPI · customer storefront"]
-            WGW["Workflow Gateway&lt;br/&gt;Go · Select AI"]
-        end
-        subgraph NS2 ["namespace: enterprise-crm"]
-            CRM["Enterprise CRM Portal&lt;br/&gt;FastAPI · operations control plane"]
-        end
+    subgraph OKERuntime ["Runtime target B: OKE"]
+        KShop["Shop Deployment&lt;br/&gt;2+ replicas"]
+        KCRM["CRM Deployment&lt;br/&gt;2+ replicas"]
+        KJava["Java App Server Deployment&lt;br/&gt;App Servers + payment rails"]
+        ONM["OCI Kubernetes Monitoring&lt;br/&gt;collectors + agents"]
     end
 
-    subgraph OCI ["OCI Services"]
-        APM["OCI APM"]
+    ATP[(Oracle ATP&lt;br/&gt;shared database)]
+    IDCS["OCI IAM Identity Domain&lt;br/&gt;OIDC + PKCE"]
+    GenAI["OCI GenAI&lt;br/&gt;admin assistant + LLMetry"]
+
+    subgraph Observability ["OCI Observability"]
+        APM["OCI APM&lt;br/&gt;traces, topology, RUM"]
         Logging["OCI Logging"]
+        LA["Log Analytics&lt;br/&gt;dashboards + rules"]
         Monitoring["OCI Monitoring"]
-        WAF["OCI WAF"]
-        CloudGuard["Cloud Guard"]
-        Vault["OCI Vault"]
+        Stack["Stack Monitoring / DB tools"]
     end
 
-    DB[(Oracle ATP&lt;br/&gt;shared instance)]
-    DBMgmt["DB Management"]
-    OPSI["Operations Insights"]
+    Browser --&gt;|HTTPS| Edge --&gt; Gateway --&gt; Shop
+    Operator --&gt;|HTTPS| Edge --&gt; Gateway --&gt; CRM
+    Gateway -.-&gt;|staged or active host routing| KShop
+    Gateway -.-&gt;|staged or active host routing| KCRM
+    Browser -.-&gt;|SSO when enabled| IDCS
+    Operator -.-&gt;|SSO| IDCS
 
-    Browser --&gt;|HTTPS| WAF --&gt; Shop
-    Browser --&gt;|HTTPS| CRM
-    Browser -.-&gt;|SSO| IDCS
-    K6 --&gt; Shop
-    K6 --&gt; CRM
+    Shop &lt;--&gt;|W3C traceparent| CRM
+    Shop --&gt; Java
+    CRM --&gt;|admin Query Lab + Select AI| WGW
+    Shop --&gt; ATP
+    CRM --&gt; ATP
+    Java --&gt; ATP
+    WGW --&gt; ATP
+    CRM --&gt;|Coordinator admin-only| GenAI
+    KShop --&gt; KJava
+    KShop &lt;--&gt;|traceparent| KCRM
+    KShop --&gt; ATP
+    KCRM --&gt; ATP
+    KJava --&gt; ATP
 
-    Shop &lt;--&gt;|"W3C traceparent&lt;br/&gt;customer enrichment + order sync"| CRM
-    Shop --&gt; WGW
-    Shop --&gt; DB
-    CRM --&gt; DB
-    WGW --&gt; DB
-
-    DB --&gt; DBMgmt
-    DB --&gt; OPSI
-
+    Browser -.-&gt; APM
     Shop -.-&gt; APM
     CRM -.-&gt; APM
+    Java -.-&gt; APM
+    WGW -.-&gt; APM
+    KShop -.-&gt; APM
+    KCRM -.-&gt; APM
+    KJava -.-&gt; APM
     Shop -.-&gt; Logging
     CRM -.-&gt; Logging
-    Shop -.-&gt; Monitoring</code></pre>
+    Java -.-&gt; Logging
+    KShop -.-&gt; Logging
+    KCRM -.-&gt; Logging
+    KJava -.-&gt; Logging
+    ONM -.-&gt; LA
+    Logging --&gt; LA
+    Shop -.-&gt; Monitoring
+    CRM -.-&gt; Monitoring
+    ATP -.-&gt; Stack</code></pre>
 <h2 id="repositories">Repositories<a class="headerlink" href="#repositories" title="Permanent link">¶</a></h2>
 <table>
 <thead>
@@ -1711,16 +1859,22 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="https://github.com/adibirzu/octo-apm-demo/tree/main/shop">octo-drone-shop</a></td>
-<td>Drone Shop + Workflow Gateway</td>
-<td>Python/FastAPI + Go</td>
-<td>Customer storefront, observability, AI assistant, workflow/query surfaces</td>
+<td><a href="https://github.com/adibirzu/octo-apm-demo">octo-apm-demo</a></td>
+<td>Unified deploy, docs, architecture, OCI assets</td>
+<td>Terraform, scripts, MkDocs, OCI CLI helpers</td>
+<td>Reusable demo wrapper, public docs, diagrams, APM saved queries, Log Analytics assets.</td>
 </tr>
 <tr>
-<td><a href="https://github.com/adibirzu/octo-apm-demo/tree/main/crm">enterprise-crm-portal</a></td>
+<td><a href="https://github.com/adibirzu/octo-drone-shop">octo-drone-shop</a></td>
+<td>Drone Shop + Workflow Gateway</td>
+<td>Python/FastAPI + Go</td>
+<td>Customer storefront, checkout, AI assistant, payment telemetry, observability, query surfaces.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibirzu/enterprise-crm-portal">enterprise-crm-portal</a></td>
 <td>Enterprise CRM Portal</td>
 <td>Python/FastAPI</td>
-<td>CRM operations, storefront management, catalog editing, simulation lab</td>
+<td>CRM operations, storefront/catalog administration, order/customer workflows, simulation lab.</td>
 </tr>
 </tbody>
 </table>
@@ -1729,35 +1883,40 @@
 <thead>
 <tr>
 <th>Resource</th>
-<th>Shared By</th>
+<th>Shared by</th>
 <th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Oracle ATP</td>
-<td>Both services</td>
-<td>Single database instance, wallet-based mTLS</td>
+<td>Shop, CRM, Java sidecar, Workflow Gateway</td>
+<td>Shared data, SQL visibility, cross-service trace correlation.</td>
 </tr>
 <tr>
 <td>OCI APM Domain</td>
-<td>Both services</td>
-<td>Traces, topology, RUM</td>
+<td>Browser, Shop, CRM, Java sidecar, Workflow Gateway</td>
+<td>Traces, topology, RUM, App Servers, and saved-query drill-downs.</td>
+</tr>
+<tr>
+<td>OCI Logging and Log Analytics</td>
+<td>Application, edge, WAF, OS, and security logs</td>
+<td>Parser-backed fields, dashboards, saved searches, scheduled detection rules.</td>
 </tr>
 <tr>
 <td>OCI IAM Identity Domain</td>
-<td>Both services</td>
-<td>OIDC SSO (PKCE + JWKS)</td>
+<td>Shop and CRM</td>
+<td>OIDC SSO with PKCE and JWKS validation.</td>
 </tr>
 <tr>
-<td>OCI Logging</td>
-<td>Both services</td>
-<td>Structured logs with <code>oracleApmTraceId</code></td>
+<td>OCI Monitoring</td>
+<td>App hosts and custom app metrics</td>
+<td>Health, business metrics, and alarm-ready measurements.</td>
 </tr>
 <tr>
-<td>DNS Domain</td>
-<td>Both services</td>
-<td><code>shop.{domain}</code> + <code>crm.{domain}</code></td>
+<td>OCI WAF / API Gateway</td>
+<td>Public and private request paths</td>
+<td>Threat controls, route policy, request ids, access logs, and trace-header preservation.</td>
 </tr>
 </tbody>
 </table>
@@ -1766,46 +1925,131 @@
 <thead>
 <tr>
 <th>Domain</th>
-<th>System of Record</th>
+<th>System of record</th>
 <th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Product catalog and stock</td>
-<td>CRM</td>
-<td>Operators edit products, stock, pricing, category, and shop assignment in CRM</td>
-</tr>
-<tr>
-<td>Storefront metadata</td>
-<td>CRM</td>
-<td>Shop URLs, CRM public URL linkage, and storefront status are managed from CRM</td>
-</tr>
-<tr>
-<td>Customer browse/cart/checkout</td>
+<td>Customer browse, cart, checkout</td>
 <td>Shop</td>
-<td>Public storefront remains customer-facing only</td>
+<td>Customer-facing UI stays free of backend implementation details.</td>
+</tr>
+<tr>
+<td>Product catalog and storefront administration</td>
+<td>CRM</td>
+<td>Operators manage products, stock, pricing, category, shop assignment, and storefront metadata.</td>
+</tr>
+<tr>
+<td>Admin AI, Query Lab, Select AI, and OCI Coordinator</td>
+<td>CRM/Admin + Workflow Gateway</td>
+<td>Workflow Gateway admin labs require the Admin surface; public storefront hosts are rejected for admin lab browser calls.</td>
+</tr>
+<tr>
+<td>Payment rail simulation</td>
+<td>Shop + Java sidecar</td>
+<td>Shop owns checkout orchestration; Java sidecar adds App Servers and payment rail spans using token-safe fields.</td>
 </tr>
 <tr>
 <td>Orders and customer sync</td>
-<td>Shared ATP + cross-service sync</td>
-<td>Orders originate in shop and are synchronized into CRM workflows</td>
+<td>Shared ATP + CRM workflows</td>
+<td>Orders originate in Shop and synchronize into CRM.</td>
 </tr>
 <tr>
-<td>Browser-visible CRM links</td>
-<td>Public CRM URL</td>
-<td>Internal cluster-local CRM hostnames are kept backend-only</td>
+<td>Observability assets</td>
+<td>Unified repo</td>
+<td>APM saved queries, Log Analytics fields/parsers/searches/dashboards, diagrams, and docs are versioned here.</td>
 </tr>
 </tbody>
 </table>
-<h2 id="design-principles">Design Principles<a class="headerlink" href="#design-principles" title="Permanent link">¶</a></h2>
-<ol>
-<li><strong>Shared Data, Independent Services</strong> — Both services read/write the same ATP tables but run in separate K8s namespaces with independent deployments</li>
-<li><strong>Observability by Default</strong> — Every HTTP request generates traces, logs, and metrics automatically through shared middleware</li>
-<li><strong>Control Plane Separation</strong> — Administrative catalog and storefront changes happen in CRM, not on the public shop frontend</li>
-<li><strong>Tenancy Portable</strong> — Single <code>DNS_DOMAIN</code> variable configures both services while keeping public and internal URLs separate</li>
-<li><strong>Security-Aware</strong> — CRM includes intentional OWASP vulnerabilities for security training; Drone Shop implements production-grade security controls</li>
-</ol>
+<h2 id="supported-deployment-paths">Supported Deployment Paths<a class="headerlink" href="#supported-deployment-paths" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Use case</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Private Compute</td>
+<td>Current reference demo</td>
+<td>Private app hosts behind OCI Load Balancer/WAF/API Gateway with shared ATP and OCI Observability.</td>
+</tr>
+<tr>
+<td>OKE</td>
+<td>Kubernetes workshop or production-style demo</td>
+<td>Same application and signal contract, deployed as Shop/CRM/Java Deployments with OCIR images, Kubernetes monitoring collectors, and staged or active LB routing.</td>
+</tr>
+<tr>
+<td>Single VM</td>
+<td>Lightweight workshop</td>
+<td>Useful for constrained environments where full OKE is unnecessary.</td>
+</tr>
+<tr>
+<td>Local stack</td>
+<td>Development and regression</td>
+<td>Validates docs, tests, and app behavior without publishing tenancy-specific values.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="runtime-contract-vm-and-oke">Runtime Contract: VM and OKE<a class="headerlink" href="#runtime-contract-vm-and-oke" title="Permanent link">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Private VM/Compute</th>
+<th>OKE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Public entry</td>
+<td>OCI Load Balancer + WAF + route policy</td>
+<td>Same LB/WAF/API Gateway pattern, with host routing to Kubernetes backends when promoted</td>
+</tr>
+<tr>
+<td>App runtime</td>
+<td>private Compute hosts running containers</td>
+<td>Kubernetes Deployments and Services in app namespaces</td>
+</tr>
+<tr>
+<td>Java App Servers evidence</td>
+<td>Java sidecar/service on app tier</td>
+<td>Java app-server Deployment, same APM service contract</td>
+</tr>
+<tr>
+<td>Logs</td>
+<td>app JSON, OS/container logs, WAF/API Gateway logs</td>
+<td>app JSON, Kubernetes container logs, WAF/API Gateway logs</td>
+</tr>
+<tr>
+<td>Log Analytics pivots</td>
+<td><code>Trace ID</code>, <code>Order ID</code>, <code>Payment Gateway Request ID</code>, <code>Attack ID</code></td>
+<td>same field contract; Kubernetes source names may differ</td>
+</tr>
+<tr>
+<td>SQL evidence</td>
+<td>shared ATP and <code>DbOracleSqlId</code> span fields</td>
+<td>same ATP and SQL span enrichment</td>
+</tr>
+<tr>
+<td>Guided demo UX</td>
+<td>Admin Simulation Lab + Captured Data Center</td>
+<td>same app pages after OKE image rollout</td>
+</tr>
+</tbody>
+</table>
+<h2 id="public-documentation-rules">Public Documentation Rules<a class="headerlink" href="#public-documentation-rules" title="Permanent link">¶</a></h2>
+<ul>
+<li>Use placeholders and variables for tenancy-specific values.</li>
+<li>Link to sanitized SVG previews and editable <code>.drawio</code> sources.</li>
+<li>Keep live IPs, OCIDs, private hostnames, credential paths, and allowlists out
+  of public docs and public diagram sources.</li>
+<li>Preserve customer-friendly labels in diagrams. Put implementation details in
+  architecture pages, not customer-facing frontend views.</li>
+</ul>
 </article>
 </div>
 <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
@@ -1869,5 +2113,6 @@
 </div>
 <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
 <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+<script src="../../assets/js/placeholder-config.js"></script>
 </body>
 </html>

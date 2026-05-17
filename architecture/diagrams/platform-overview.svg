@@ -58,7 +58,7 @@
   <text class="label" x="170.0" y="341.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">port 8080</text>
   <rect class="node" x="300.0" y="280.0" width="180.0" height="80.0" rx="8" fill="#FEF3C7" stroke="#D97706" stroke-width="2"/>
   <text class="label" x="390.0" y="307.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">enterprise-crm-portal</text>
-  <text class="label" x="390.0" y="324.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">FastAPI + Jinja</text>
+  <text class="label" x="390.0" y="324.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">FastAPI + admin Coordinator</text>
   <text class="label" x="390.0" y="341.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">port 8080</text>
   <rect class="node" x="530.0" y="280.0" width="170.0" height="80.0" rx="8" fill="#D1FAE5" stroke="#059669" stroke-width="2"/>
   <text class="label" x="615.0" y="307.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">octo-otel-gateway</text>
@@ -80,8 +80,9 @@
   <text class="label" x="180.0" y="425.5" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">octo-load-control</text>
   <text class="label" x="180.0" y="442.5" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">named profile orchestrator</text>
   <rect class="node" x="310.0" y="400.0" width="200.0" height="60.0" rx="8" fill="#FEF3C7" stroke="#D97706" stroke-width="2"/>
-  <text class="label" x="410.0" y="425.5" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">octo-workflow-gateway</text>
-  <text class="label" x="410.0" y="442.5" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">Go, HTTP router + OTel</text>
+  <text class="label" x="410.0" y="418.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">admin workflow gateway</text>
+  <text class="label" x="410.0" y="435.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">Select AI + Query Lab</text>
+  <text class="label" x="410.0" y="452.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">host-bound</text>
   <rect class="node" x="540.0" y="400.0" width="220.0" height="60.0" rx="8" fill="#F3E8FF" stroke="#9333EA" stroke-width="2"/>
   <text class="label" x="650.0" y="417.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">octo-cache</text>
   <text class="label" x="650.0" y="434.0" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">Redis client wrapper + OTel</text>
@@ -113,7 +114,7 @@
   <rect class="node" x="210.0" y="690.0" width="130.0" height="70.0" rx="8" fill="#BBF7D0" stroke="#15803D" stroke-width="2"/>
   <text class="label" x="275.0" y="712.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">OCI Monitoring</text>
   <text class="label" x="275.0" y="728.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">custom metrics</text>
-  <text class="label" x="275.0" y="744.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">(octo_drone_shop)</text>
+  <text class="label" x="275.0" y="744.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">(octo_apm_demo)</text>
   <rect class="node" x="360.0" y="690.0" width="170.0" height="70.0" rx="8" fill="#BBF7D0" stroke="#15803D" stroke-width="2"/>
   <text class="label" x="445.0" y="704.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">OCI Logging</text>
   <text class="label" x="445.0" y="720.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">app + chaos-audit +</text>
@@ -121,8 +122,8 @@
   <text class="label" x="445.0" y="752.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">(LoggingIngestionClient)</text>
   <rect class="node" x="550.0" y="690.0" width="200.0" height="70.0" rx="8" fill="#BBF7D0" stroke="#15803D" stroke-width="2"/>
   <text class="label" x="650.0" y="712.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">OCI Log Analytics</text>
-  <text class="label" x="650.0" y="728.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">sources: octo-shop-app-json,</text>
-  <text class="label" x="650.0" y="744.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">octo-waf, chaos-audit</text>
+  <text class="label" x="650.0" y="728.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">SOC Application Logs +</text>
+  <text class="label" x="650.0" y="744.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">OCI Unified Schema</text>
   <rect class="node" x="770.0" y="690.0" width="170.0" height="70.0" rx="8" fill="#BBF7D0" stroke="#15803D" stroke-width="2"/>
   <text class="label" x="855.0" y="712.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">OCI Stack Monitoring</text>
   <text class="label" x="855.0" y="728.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">ATP monitored resource</text>
@@ -141,8 +142,8 @@
   <text class="label" x="180.0" y="831.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">SSO / ID-token (PyJWT)</text>
   <rect class="node" x="320.0" y="790.0" width="200.0" height="60.0" rx="8" fill="#DBEAFE" stroke="#2563EB" stroke-width="2"/>
   <text class="label" x="420.0" y="807.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">OCI Generative AI</text>
-  <text class="label" x="420.0" y="823.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">assistant (retrieval-</text>
-  <text class="label" x="420.0" y="839.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">augmented)</text>
+  <text class="label" x="420.0" y="823.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">admin assistant +</text>
+  <text class="label" x="420.0" y="839.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">LLMetry</text>
   <rect class="node" x="540.0" y="790.0" width="170.0" height="60.0" rx="8" fill="#DBEAFE" stroke="#2563EB" stroke-width="2"/>
   <text class="label" x="625.0" y="815.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">OCI Cloud Guard</text>
   <text class="label" x="625.0" y="831.7" text-anchor="middle" font-size="11" font-weight="700" fill="#111827">posture + detectors</text>

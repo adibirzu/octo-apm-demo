@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Unified deploy for OCTO Drone Shop + Enterprise CRM Portal on OCI — private Compute stack, OKE, full MELTS observability, shared Oracle ATP, IDCS SSO, cross-service trace propagation, Resource Manager stacks, and single-VM install.">
+        <meta name="description" content="A hands-on, ten-lab workshop that teaches the OCI APM + RUM + Logging Analytics + Monitoring + Stack Monitoring chain end-to-end using octo-apm-demo as the playground.">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>OCI Observability Onboarding Workshop - OCTO APM Demo — Unified Platform</title>
+        <title>OCI Observability Workshop - OCTO APM Demo — Unified Platform</title>
       
     
     
@@ -52,6 +52,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../assets/css/placeholder-config.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              OCI Observability Onboarding Workshop
+              OCI Observability Workshop
             
           </span>
         </div>
@@ -2320,6 +2322,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2409,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../observability-v2/event-generation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event generation guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
@@ -2473,6 +2509,34 @@
     
   
     APM drill-down
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability-v2/synthetic-monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synthetic monitoring
   
 
     
@@ -2585,6 +2649,34 @@
     
   
     Auto-remediation flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability-v2/code-knowledge-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Knowledge Map
   
 
     
@@ -3044,6 +3136,8 @@
       
         
       
+        
+      
     
     
     
@@ -3113,6 +3207,34 @@
     
   
     Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/guided-demo-rollout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guided demo rollout
   
 
     
@@ -3651,6 +3773,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#who-this-is-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who this is for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-youll-be-able-to-do-at-the-end" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3662,10 +3795,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#format" class="md-nav__link">
+  <a href="#workshop-format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Format
+        Workshop format
       
     </span>
   </a>
@@ -3692,6 +3825,100 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Prerequisites checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-octo-apm-demo-deployed-in-your-tenancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Octo APM Demo deployed in your tenancy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-local-tooling-on-your-laptop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Local tooling on your laptop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-oci-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. OCI permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-optional-traffic-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Optional: traffic generator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-platform-reachability-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Platform reachability check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-storefront-looks-like-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the storefront looks like locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#explore-the-platform-locally-before-lab-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explore the platform locally before lab 01
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-looks-like-in-oci-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it looks like in OCI Observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3710,6 +3937,17 @@
     <span class="md-ellipsis">
       
         Certification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-common-setup-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting common setup issues
       
     </span>
   </a>
@@ -3748,37 +3986,57 @@
 
 
 <h1 id="oci-observability-onboarding-workshop">OCI Observability Onboarding Workshop<a class="headerlink" href="#oci-observability-onboarding-workshop" title="Permanent link">&para;</a></h1>
-<p>A hands-on workshop that teaches how to operate the OCI observability
-stack using <code>octo-apm-demo</code> as the playground. Ten labs, ~6 hours total
-if done in one sitting; designed to be split across two half-days.</p>
-<div class="admonition abstract">
-<p class="admonition-title">Who this is for</p>
+<p>A hands-on workshop that teaches how to operate the full OCI Observability
+stack — APM, APM RUM, Logging, Log Analytics, Monitoring, Stack Monitoring,
+and Cloud Guard — using <code>octo-apm-demo</code> as the playground. <strong>Ten labs</strong>,
+~6 hours total if done in one sitting; designed to be split across two
+half-days.</p>
+<div class="admonition tip">
+<p class="admonition-title">How to use this workshop</p>
+<p>Every page in the workshop section has a <strong>Configure your deployment</strong>
+panel just below the title (look for the ⚙ icon). Expand it once,
+enter your DNS domain, compartment OCID, and OCIR region, and every
+code block on every page rewrites itself with your real values.</p>
+<p>Values stay in your browser only — they are never sent to any server.
+Click <strong>Reset to placeholders</strong> to clear them.</p>
+</div>
+<h2 id="who-this-is-for">Who this is for<a class="headerlink" href="#who-this-is-for" title="Permanent link">&para;</a></h2>
 <p>Engineers, SREs, and platform operators who:</p>
 <ul>
-<li>know their way around a terminal and a browser console,</li>
-<li>have access to an OCI tenancy with <code>octo-apm-demo</code> deployed,</li>
-<li>want to learn the OCI APM + RUM + Logging + Log Analytics +
-  Stack Monitoring + Monitoring + Cloud Guard chain end-to-end.</li>
+<li>Know their way around a terminal and a browser dev console.</li>
+<li>Have access to an OCI tenancy with <code>octo-apm-demo</code> deployed (or are
+  ready to deploy it in ~30 minutes following one of the
+  <a href="../getting-started/">Getting Started</a> guides).</li>
+<li>Want to learn the OCI Observability surface end-to-end: not just one
+  service in isolation, but how traces, logs, metrics, and events
+  correlate through <code>oracleApmTraceId</code>, W3C trace context, and a shared
+  service-identity contract.</li>
 </ul>
-</div>
 <h2 id="what-youll-be-able-to-do-at-the-end">What you'll be able to do at the end<a class="headerlink" href="#what-youll-be-able-to-do-at-the-end" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Find any HTTP request's full distributed trace across browser, edge,
-  shop, and CRM in under 30 seconds.</li>
-<li>Pivot from a Log Analytics record to its APM trace and back.</li>
-<li>Build a Log Analytics saved search and pin it to a dashboard widget.</li>
-<li>Author an OCI Monitoring alarm with a useful annotation contract.</li>
-<li>Drill from an ATP wait event to the source SQL to the trace that
-  emitted it.</li>
-<li>Investigate a WAF event and decide if it was a real attack or a noisy
-  scanner.</li>
-<li>Run a chaos drill, observe what breaks, and resolve it without losing
-  your audit trail.</li>
-<li>Diagnose a failed checkout from a customer report ("it didn't work")
-  to a one-line fix.</li>
-</ul>
-<h2 id="format">Format<a class="headerlink" href="#format" title="Permanent link">&para;</a></h2>
-<p>Each lab follows the same shape:</p>
+<p>By the end of the ten labs you'll be able to:</p>
+<ol>
+<li><strong>Find any HTTP request's full distributed trace</strong> across browser
+   (APM RUM), edge (load balancer + WAF), application (FastAPI Python +
+   Java sidecar), and database (Oracle ATP) — in under 30 seconds, starting
+   from a user complaint.</li>
+<li><strong>Pivot from a Log Analytics record to its APM trace</strong> and back, using
+   <code>oracleApmTraceId</code> as the bridge.</li>
+<li><strong>Build a Log Analytics saved search</strong> and pin it to a dashboard widget.</li>
+<li><strong>Author an OCI Monitoring alarm</strong> with a useful annotation contract
+   (no "your CPU is high" alerts; alerts that actually point at the trace
+   to investigate).</li>
+<li><strong>Drill from an ATP wait event</strong> (Stack Monitoring) to the source SQL
+   to the trace that emitted it.</li>
+<li><strong>Investigate a WAF event</strong> and decide if it was a real attack or a
+   noisy scanner — using request body, source IP intelligence, and the
+   downstream application response.</li>
+<li><strong>Run a chaos drill</strong>, observe what breaks, and resolve it without
+   losing your audit trail.</li>
+<li><strong>Diagnose a failed checkout</strong> end-to-end: customer report
+   ("checkout didn't work") → trace → log → SQL → fix.</li>
+</ol>
+<h2 id="workshop-format">Workshop format<a class="headerlink" href="#workshop-format" title="Permanent link">&para;</a></h2>
+<p>Each lab follows the same shape so you can scan ahead and plan:</p>
 <table>
 <thead>
 <tr>
@@ -3789,11 +4047,11 @@ if done in one sitting; designed to be split across two half-days.</p>
 <tbody>
 <tr>
 <td><strong>Objective</strong></td>
-<td>One sentence: what you'll learn.</td>
+<td>One sentence — what you'll learn.</td>
 </tr>
 <tr>
 <td><strong>Time budget</strong></td>
-<td>Honest estimate.</td>
+<td>Honest estimate (we tracked our own runs).</td>
 </tr>
 <tr>
 <td><strong>Prerequisites</strong></td>
@@ -3801,19 +4059,23 @@ if done in one sitting; designed to be split across two half-days.</p>
 </tr>
 <tr>
 <td><strong>Steps</strong></td>
-<td>OCI Console + CLI parallel — pick the one you prefer.</td>
+<td>OCI Console + CLI walkthroughs in parallel — pick whichever you prefer.</td>
+</tr>
+<tr>
+<td><strong>What you should see</strong></td>
+<td>Screenshots and example outputs. If your screen looks different, the troubleshooting section probably covers it.</td>
 </tr>
 <tr>
 <td><strong>Verify</strong></td>
-<td>A <code>tools/workshop/verify-NN.sh</code> script you run; pass = lab complete.</td>
+<td>A <code>tools/workshop/verify-NN.sh</code> script you run; exit 0 = lab complete.</td>
 </tr>
 <tr>
 <td><strong>Troubleshooting</strong></td>
-<td>The 3 most common things that go sideways.</td>
+<td>The three most common things that go sideways.</td>
 </tr>
 <tr>
 <td><strong>Read more</strong></td>
-<td>Underlying docs, OCI service references.</td>
+<td>Underlying docs, OCI service references, related code paths.</td>
 </tr>
 </tbody>
 </table>
@@ -3890,58 +4152,294 @@ if done in one sitting; designed to be split across two half-days.</p>
 </tr>
 </tbody>
 </table>
-<p>Total: ~6 h. Recommended split: labs 1-5 day one (~2.5h),
+<p><strong>Total:</strong> ~6 hours. <strong>Recommended split:</strong> labs 1-5 day one (~2.5h),
 labs 6-10 day two (~3.5h).</p>
+<hr />
 <h2 id="prerequisites-checklist">Prerequisites checklist<a class="headerlink" href="#prerequisites-checklist" title="Permanent link">&para;</a></h2>
-<p>Before lab 01:</p>
-<ul>
-<li>[ ] Octo APM Demo deployed in your tenancy. Either path is fine:<ul>
-<li>Unified VM (<a href="../getting-started/new-tenancy/">new-tenancy guide</a>)</li>
-<li>OKE (<a href="../getting-started/oke-deployment/">oke-deployment guide</a>)</li>
-</ul>
-</li>
-<li>[ ] Your laptop has: <code>oci</code> CLI 3.40+, <code>kubectl</code>, <code>jq</code>, <code>curl</code>, a
-      modern browser.</li>
-<li>[ ] You have <code>Read</code> policy on APM domains, log groups, Log Analytics
-      namespace, Monitoring metrics, Stack Monitoring resources, WAF
-      policies in the demo's compartment.</li>
-<li>[ ] Optional but recommended: <code>octo-traffic-generator</code> running so APM
-      and RUM have signal. (<a href="https://github.com/adibirzu/octo-apm-demo/tree/main/tools/traffic-generator">deploy guide</a>)</li>
-<li>[ ] Verified the platform is reachable:
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">curl<span class="w"> </span>-s<span class="w"> </span>https://shop.example.tld/ready<span class="w">   </span><span class="p">|</span><span class="w"> </span>jq
-</span><span id="__span-0-2">curl<span class="w"> </span>-s<span class="w"> </span>https://crm.example.tld/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<p>The labs assume your environment is already set up. Work through this
+checklist before lab 01 — most issues that look like "the lab is broken"
+turn out to be missing prerequisites.</p>
+<h3 id="1-octo-apm-demo-deployed-in-your-tenancy">1. Octo APM Demo deployed in your tenancy<a class="headerlink" href="#1-octo-apm-demo-deployed-in-your-tenancy" title="Permanent link">&para;</a></h3>
+<p>Either deployment path is fine:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Unified VM</label><label for="__tabbed_1_2">OKE (Kubernetes)</label><label for="__tabbed_1_3">Compute Resource Manager Stack</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>A single OCI Compute VM running shop + CRM + Java sidecar + Workflow
+Gateway as Podman containers, behind a public Load Balancer with WAF.</p>
+<p>Follow the <a href="../getting-started/new-tenancy/">new-tenancy guide</a>.
+Typical first-time deploy: 30-45 minutes.</p>
+</div>
+<div class="tabbed-block">
+<p>Two-node OKE cluster with Helm-deployed services. Best for production
+parity testing.</p>
+<p>Follow the <a href="../getting-started/oke-deployment/">OKE deployment guide</a>.
+Typical first-time deploy: 45-60 minutes (cluster provisioning is the
+long part).</p>
+</div>
+<div class="tabbed-block">
+<p>OCI-native Infrastructure-as-Code via Resource Manager. One-click
+deploy, suitable for repeatable demo provisioning.</p>
+<p>Follow the <a href="../getting-started/compute-deployment/">Compute deployment guide</a>.
+Typical first-time deploy: 25-40 minutes.</p>
+</div>
+</div>
+</div>
+<h3 id="2-local-tooling-on-your-laptop">2. Local tooling on your laptop<a class="headerlink" href="#2-local-tooling-on-your-laptop" title="Permanent link">&para;</a></h3>
+<p>You need a recent Bash shell, curl, jq, and the OCI CLI. Quick verification:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">oci<span class="w"> </span>--version<span class="w">           </span><span class="c1"># 3.40 or newer</span>
+</span><span id="__span-0-2">kubectl<span class="w"> </span>version<span class="w"> </span>--client<span class="w"> </span>--short
+</span><span id="__span-0-3">jq<span class="w"> </span>--version
+</span><span id="__span-0-4">curl<span class="w"> </span>--version
+</span><span id="__span-0-5">bash<span class="w"> </span>--version<span class="w">          </span><span class="c1"># macOS users: `brew install bash` for 5.x</span>
 </span></code></pre></div>
-    Both should return <code>database.reachable=true</code>.</li>
+<p>If any are missing, see the <a href="../getting-started/prerequisites/">Prerequisites page</a>
+for install instructions per platform.</p>
+<h3 id="3-oci-permissions">3. OCI permissions<a class="headerlink" href="#3-oci-permissions" title="Permanent link">&para;</a></h3>
+<p>You need <strong>Read</strong> policies on:</p>
+<ul>
+<li>APM domains (<code>Allow group &lt;your-group&gt; to read apm-domains in compartment &lt;COMPARTMENT_OCID&gt;</code>)</li>
+<li>Log groups + Log Analytics namespace</li>
+<li>Monitoring metrics</li>
+<li>Stack Monitoring resources</li>
+<li>WAF policies in the demo's compartment</li>
 </ul>
+<p>The platform's <a href="https://github.com/&lt;github-username&gt;/octo-apm-demo/tree/main/deploy/oci/policies"><code>deploy/oci/policies/</code></a>
+includes a workshop-reader policy template.</p>
+<h3 id="4-optional-traffic-generator">4. Optional: traffic generator<a class="headerlink" href="#4-optional-traffic-generator" title="Permanent link">&para;</a></h3>
+<p>Strongly recommended. Without it, APM and RUM will show empty trace
+explorers — making it hard to follow the labs.</p>
+<p>Deploy the synthetic traffic generator from
+<a href="https://github.com/&lt;github-username&gt;/octo-apm-demo/tree/main/tools/traffic-generator"><code>tools/traffic-generator/</code></a>.</p>
+<p>It runs a low-rate (~1 transaction/minute) loop: opens the storefront,
+adds a drone to the cart, checks out, and refreshes admin views. Enough
+signal to make every lab interactive without spamming your tenancy.</p>
+<h3 id="5-platform-reachability-check">5. Platform reachability check<a class="headerlink" href="#5-platform-reachability-check" title="Permanent link">&para;</a></h3>
+<p>The single most important pre-flight check. <strong>Run this before any lab.</strong>
+Replace the placeholders with your real values (or use the config panel
+above — it rewrites these commands as you type):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><span class="c1"># Storefront reachability (replace example.com with your DNS_DOMAIN)</span>
+</span><span id="__span-1-2">curl<span class="w"> </span>-sS<span class="w"> </span>https://drones.example.com/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</span><span id="__span-1-3">
+</span><span id="__span-1-4"><span class="c1"># Admin reachability</span>
+</span><span id="__span-1-5">curl<span class="w"> </span>-sS<span class="w"> </span>https://admin.example.com/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</span></code></pre></div>
+<p><strong>Expected output for each (production OCI deployment):</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><span class="p">{</span>
+</span><span id="__span-2-2"><span class="w">  </span><span class="nt">&quot;ready&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-2-3"><span class="w">  </span><span class="nt">&quot;database&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;connected&quot;</span><span class="p">,</span>
+</span><span id="__span-2-4"><span class="w">  </span><span class="nt">&quot;apm_configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-2-5"><span class="w">  </span><span class="nt">&quot;rum_configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-2-6"><span class="w">  </span><span class="nt">&quot;logging_configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-2-7"><span class="w">  </span><span class="nt">&quot;java_apm_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-2-8"><span class="w">  </span><span class="nt">&quot;payment_gateway_simulation_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-2-9"><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>What it looks like on a local docker-compose stack</strong> (no OCI tenancy
+attached — useful for first-time exploration):</p>
+<p><img alt="Shop /ready JSON on local stack" src="../assets/screenshots/local/11-shop-ready-json.png" /></p>
+<p>In the local case, <code>apm_configured</code>/<code>rum_configured</code>/<code>logging_configured</code>
+all return <code>false</code> because there's no OCI tenancy attached — that's
+expected for local exploration. For an OCI deployment, every field
+should return <code>true</code>.</p>
+<p>If any field is <code>false</code> on an OCI deployment, see the
+<a href="../operations/deploy-readiness/">Deploy Readiness</a> page — it has a
+per-field troubleshooting matrix.</p>
+<h3 id="what-the-storefront-looks-like-locally">What the storefront looks like locally<a class="headerlink" href="#what-the-storefront-looks-like-locally" title="Permanent link">&para;</a></h3>
+<p>Once <code>/ready</code> returns 200, point a browser at <code>http://localhost:18080</code>
+(local stack) or <code>https://drones.example.com</code> (your OCI deployment). The
+storefront landing page summarizes the demo signals:</p>
+<p><img alt="Shop storefront landing page" src="../assets/screenshots/local/01-shop-landing.png" /></p>
+<p>The page is intentionally minimal at first — synthetic data appears after
+the traffic generator has been running for a few minutes (orders,
+revenue, observability events).</p>
+<h3 id="explore-the-platform-locally-before-lab-01">Explore the platform locally before lab 01<a class="headerlink" href="#explore-the-platform-locally-before-lab-01" title="Permanent link">&para;</a></h3>
+<p>Spend ten minutes clicking through the storefront paths to build intuition.
+What you'll find:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:6"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><input id="__tabbed_2_5" name="__tabbed_2" type="radio" /><input id="__tabbed_2_6" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Drone catalog (<code>/shop</code>)</label><label for="__tabbed_2_2">Login (<code>/login</code>)</label><label for="__tabbed_2_3">Orders (<code>/orders-page</code>)</label><label for="__tabbed_2_4">Observability dashboard (<code>/observability</code>)</label><label for="__tabbed_2_5">Admin (<code>/admin-page</code>)</label><label for="__tabbed_2_6">Java sidecar (<code>:18091/actuator</code>)</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="Shop catalog" src="../assets/screenshots/local/02-shop-products.png" /></p>
+<p>The product listing. Every product card click emits a RUM custom
+action — useful for lab 04. The traffic generator targets these
+routes to fill APM Trace Explorer.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="Login form" src="../assets/screenshots/local/04-shop-login.png" /></p>
+<p>Customer authentication. Successful sign-in emits a structured log
+record + an APM custom event with <code>service.name=octo-drone-shop</code> and
+<code>auth.outcome=success</code> — referenced in lab 02 and lab 10.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="Orders page" src="../assets/screenshots/local/06-shop-orders.png" /></p>
+<p>Cross-service order state — populated after CRM sync. The screenshot
+is empty here because the local stack starts cold; production
+deployments show signed-in users' recent orders.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="Observability dashboard" src="../assets/screenshots/local/08-shop-observability.png" /></p>
+<p>The 360° platform health view — live data, operational views, data
+sources, supplemental signals. Each panel maps to a specific APM
+trace pattern or Log Analytics saved search.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="Admin overview" src="../assets/screenshots/local/10-shop-admin.png" /></p>
+<p>Admin operational records — orders, products, customers, shipments.
+Admin actions emit a separate audit log stream. Lab 09 (chaos drill)
+uses this surface.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="Java actuator health" src="../assets/screenshots/local/14-java-actuator-health.png" /></p>
+<p>The Spring Boot payment sidecar exposes <code>/actuator/health</code>,
+<code>/actuator/info</code>, and <code>/actuator/metrics</code>. OCI Stack Monitoring polls
+these endpoints in production — lab 08 covers it.</p>
+</div>
+</div>
+</div>
+<h3 id="what-it-looks-like-in-oci-observability">What it looks like in OCI Observability<a class="headerlink" href="#what-it-looks-like-in-oci-observability" title="Permanent link">&para;</a></h3>
+<p>When the same storefront runs against a real OCI tenancy, the
+observability surface lights up. Examples (tenancy chips redacted):</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:6"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><input id="__tabbed_3_4" name="__tabbed_3" type="radio" /><input id="__tabbed_3_5" name="__tabbed_3" type="radio" /><input id="__tabbed_3_6" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">APM Trace Explorer</label><label for="__tabbed_3_2">Flame chart</label><label for="__tabbed_3_3">Span attributes</label><label for="__tabbed_3_4">APM Operations</label><label for="__tabbed_3_5">APM RUM</label><label for="__tabbed_3_6">Log Analytics — Detection Rules</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><img alt="APM Trace Explorer" src="../assets/screenshots/oci/apm-01-trace-explorer-result.png" /></p>
+<p>Every storefront request appears as a trace. Filter by service,
+operation, status, latency. Each row drills into a flame chart.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="Flame chart" src="../assets/screenshots/oci/apm-02-flame-chart.png" /></p>
+<p>Parent FastAPI server span with nested SQLAlchemy / Java sidecar
+children. Span widths show their share of total wall-clock time.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="Span attributes" src="../assets/screenshots/oci/apm-03-span-attributes.png" /></p>
+<p>Right-hand panel reveals <code>service.name</code>, <code>http.route</code>,
+<code>oracleApmTraceId</code> and the rest of the correlation contract.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="APM Operations" src="../assets/screenshots/oci/apm-04-operations.png" /></p>
+<p>Service-level operations roll-up: per-route latency, throughput,
+error rate. Useful for spotting regression in a specific endpoint.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="APM RUM dashboard" src="../assets/screenshots/oci/apm-05-rum-overview.png" /></p>
+<p>Real User Monitoring for the browser side: page loads, custom
+actions, geographic distribution, Apdex, response time, error rate.
+Sessions propagate W3C trace context into the FastAPI server spans.</p>
+</div>
+<div class="tabbed-block">
+<p><img alt="Detection rules" src="../assets/screenshots/oci/loganalytics-04-detection-rules.png" /></p>
+<p>Project-shipped detection rules (auth anomalies, payment-rail
+patterns, attack-lab signatures). Each rule has its metric and
+dimension contract documented in the architecture.</p>
+</div>
+</div>
+</div>
+<hr />
 <h2 id="workshop-conventions">Workshop conventions<a class="headerlink" href="#workshop-conventions" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Every shell snippet assumes <code>bash</code> (not zsh-specific syntax). On
-  macOS, <code>bash</code> from Homebrew works the same.</li>
-<li>Every URL uses <code>example.tld</code>. If your tenancy uses a different
-  <code>DNS_DOMAIN</code>, mentally substitute.</li>
-<li>"OCI Console" instructions assume the <a href="https://cloud.oracle.com/?region=eu-frankfurt-1">Frankfurt region UI</a>.
-  If you use another region, the menu paths are identical; only the
-  region selector differs.</li>
-<li>Code blocks marked with <code># verify</code> are the snippets the
+<li><strong>Shell</strong>: every snippet assumes <code>bash</code> (not zsh-specific syntax). On
+  macOS, <code>bash</code> from Homebrew works fine.</li>
+<li><strong>Hostnames</strong>: every URL uses placeholder hostnames like
+  <code>drones.example.com</code> / <code>admin.example.com</code>. If your tenancy uses a
+  different <code>DNS_DOMAIN</code>, enter it in the config panel above and every
+  command on this page rewrites automatically. Tokens substituted:
+  <code>example.com</code>, <code>example.test</code>, <code>example.tld</code>, <code>${DNS_DOMAIN}</code>,
+  <code>&lt;COMPARTMENT_OCID&gt;</code>, <code>&lt;TENANCY_NAMESPACE&gt;</code>, <code>&lt;OCIR_REGION&gt;</code>,
+  <code>&lt;OCIR_TENANCY&gt;</code>, <code>&lt;github-username&gt;</code>, <code>&lt;DEPLOYMENT_PREFIX&gt;</code>.</li>
+<li><strong>OCI Console paths</strong>: instructions show menu paths like
+  <em>Observability &amp; Management → Application Performance Monitoring →
+  Trace Explorer</em>. Path is identical across regions; only the region
+  selector at the top differs.</li>
+<li><strong>Log Analytics source names</strong>: older snippets may mention the legacy
+  <code>octo-shop-app-json</code> source. In current deployments:<ul>
+<li>Direct/OKE app rows use <code>SOC Application Logs</code></li>
+<li>Connector Hub rows from OCI Logging use <code>OCI Unified Schema Logs</code>
+  and should be checked with <code>connector-live-log-coverage.sql</code>.</li>
+</ul>
+</li>
+<li><strong>Verify markers</strong>: code blocks marked <code># verify</code> are the snippets the
   <code>tools/workshop/verify-*.sh</code> scripts execute on your behalf.</li>
 </ul>
 <h2 id="certification">Certification<a class="headerlink" href="#certification" title="Permanent link">&para;</a></h2>
 <p>After lab 10, run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1">./tools/workshop/certify.sh
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">./tools/workshop/certify.sh
 </span></code></pre></div>
 <p>It re-runs every per-lab verifier in sequence and prints a passport
 showing which labs you completed. Save the output — it's evidence you
 can attach to internal training records or PR descriptions.</p>
+<h2 id="troubleshooting-common-setup-issues">Troubleshooting common setup issues<a class="headerlink" href="#troubleshooting-common-setup-issues" title="Permanent link">&para;</a></h2>
+<details class="warning">
+<summary><code>/ready</code> returns 502 from the LB</summary>
+<p>The application pod/container is up but not responding. Check:</p>
+<ul>
+<li><strong>VM path</strong>: <code>ssh opc@&lt;vm&gt; sudo podman ps</code> — all containers should
+  show <code>(healthy)</code>. If <code>octo-drone-shop</code> is restarting, check
+  <code>sudo podman logs --tail 50 octo-drone-shop</code> for ATP wallet load
+  errors or missing env vars.</li>
+<li><strong>OKE path</strong>: <code>kubectl get pods -n octo-drone-shop</code> — all should
+  be <code>Running 1/1 Ready</code>. Common cause: missing <code>octo-atp-wallet</code>
+  secret. See the <a href="../getting-started/deployment-options/">Deployment Options</a>
+  page for the secret bootstrap commands.</li>
+</ul>
+</details>
+<details class="warning">
+<summary>APM Trace Explorer is empty</summary>
+<p>No traces being emitted. Check:</p>
+<ol>
+<li>Is the traffic generator running? <code>kubectl get pods -n octo-traffic-generator</code>
+   or <code>sudo systemctl status octo-traffic-generator</code></li>
+<li>Are the APM env vars set?
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">curl<span class="w"> </span>-sS<span class="w"> </span>https://drones.example.com/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.apm&#39;</span>
+</span></code></pre></div>
+   Should show <code>configured: true</code>. If <code>false</code>: missing
+   <code>OCI_APM_ENDPOINT</code> or <code>OCI_APM_PRIVATE_DATAKEY</code> — see the
+   project-level <code>docs/CONFIGURATION.md</code> for the full variable list.</li>
+<li>Are you looking in the right APM domain? The domain OCID is in
+   your deployment's <code>OCI_APM_ENDPOINT</code>.</li>
+</ol>
+</details>
+<details class="warning">
+<summary>Log Analytics shows zero rows</summary>
+<p>Logs not flowing through. Three possibilities:</p>
+<ol>
+<li><strong>Service Connector Hub quota exhausted</strong> — common. Check
+   <em>OCI Console → Observability &amp; Management → Service Connector Hub</em>.
+   If <code>available=0</code>, you need to free a connector or request a quota
+   increase.</li>
+<li><strong>Connector not yet processing the new log group</strong> — connectors
+   have a 1-2 minute warm-up.</li>
+<li><strong>Parser not extracting</strong> — run the <code>connector-live-log-coverage.sql</code>
+   saved search; if it returns rows, the connector is fine and the
+   parser is the issue.</li>
+</ol>
+</details>
+<details class="warning">
+<summary>RUM dashboard says 'No data'</summary>
+<p>Check:</p>
+<ol>
+<li>Is the <code>OCI_APM_WEB_APPLICATION</code> env var pointing to the right
+   Web Application OCID?</li>
+<li>Did you hard-reload the storefront after deploy? The RUM script
+   loads on page load; cached pages won't emit beacons.</li>
+<li>Are browser ad blockers / DevTools network filters interfering?
+   Look in DevTools Network panel for requests to
+   <code>*.apm-agt.&lt;region&gt;.oci.oraclecloud.com</code>.</li>
+</ol>
+</details>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>Same MIT license as the rest of the repo. Fork, adapt, ship for your
-own tenancy. PRs welcome — especially new labs covering OCI services we
-haven't reached yet (API Gateway, Functions, Streaming, etc.).</p>
+<p>Same MIT license as the rest of the repo. Fork, adapt, ship for your own
+tenancy. Pull requests welcome — especially new labs covering OCI
+services we haven't reached yet (API Gateway, Functions, Streaming,
+Database Management).</p>
 
 
 
 
 
 
+
+  
+  
 
 
 
@@ -4053,6 +4551,8 @@ haven't reached yet (API Gateway, Functions, Streaming, etc.).</p>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../assets/js/placeholder-config.js"></script>
       
     
   </body>
