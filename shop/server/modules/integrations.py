@@ -718,7 +718,7 @@ async def crm_ticket_products(ticket_id: int, request: Request):
                 "ticket_id": ticket_id,
                 "ticket": ticket,
                 "recommended_products": products,
-                "source": "octo-crm-apm",
+                "source": cfg.otel_service_name,
             }
 
         except Exception as e:

@@ -6,6 +6,7 @@ Self-contained docker-compose bringing up:
 |-------------|-----------|---------|
 | `shop`      | 18080     | Drone shop (FastAPI) |
 | `crm`       | 18090     | CRM portal (FastAPI) |
+| `java-apm`  | 18091     | Local Java payment gateway simulator |
 | `redis`     | 16379     | Cache + rate-limit + order stream |
 | `postgres`  | 15432     | ATP stand-in (schema is migration-equivalent) |
 
@@ -54,4 +55,7 @@ docker compose -f docker-compose.test.yml down -v
   the OKE path.
 - OCI observability exporters are disabled (`OCI_AUTH_MODE=disabled`,
   empty OTLP endpoint). Traces surface only in in-process memory exporters.
+- The Java payment simulator is enabled so checkout still exercises wallet
+  and card rails locally. Workflow Gateway / Select AI remains disabled by
+  default because it requires Oracle ATP wallet connectivity.
 - No IDCS SSO — basic auth + local admin bootstrap only.

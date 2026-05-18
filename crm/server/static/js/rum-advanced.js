@@ -24,7 +24,6 @@
       app_name: cleanValue(config.appName || "enterprise-crm-portal"),
       page_path: cleanValue(window.location.pathname),
       admin_lab_enabled: Boolean(config.adminLabEnabled),
-      atp_connection_name: cleanValue(config.atpConnectionName || ""),
       synthetic_user_enabled: Boolean(syntheticUserDomain()),
       synthetic_user_domain: cleanValue(syntheticUserDomain()),
     };

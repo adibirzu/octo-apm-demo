@@ -1,8 +1,8 @@
 # Unified VM deployment
 
-Single-VM alternative to the OKE path. Drone Shop + Enterprise CRM
-Portal run as two containers behind nginx on one OCI Compute instance,
-pointing at an existing OCI Autonomous Database (ATP).
+Single-VM alternative to the OKE path. Drone Shop, Enterprise CRM Portal,
+the Java payment gateway, and the Workflow Gateway run behind nginx on one
+OCI Compute instance, pointing at an existing OCI Autonomous Database (ATP).
 
 Use this when:
 
@@ -23,8 +23,9 @@ rollouts, or WAF-as-code matter.
                       │  E5.Flex  2 OCPU / 16 GB)           │
                       │                                     │
     https://shop. ───►│  nginx  ──► shop  (uvicorn :8080)   │
-          DOMAIN      │        └──► crm   (uvicorn :8080)   │
-    https://crm.  ───►│                                     │
+          DOMAIN      │        ├──► crm   (uvicorn :8080)   │
+    https://crm.  ───►│        ├──► java-apm (:8080)        │
+          DOMAIN      │        └──► workflow (:8090)        │
           DOMAIN      │  bridge network: octo               │
                       │  wallet mount: /opt/oracle/wallet   │
                       └────────────┬────────────────────────┘
@@ -39,6 +40,10 @@ rollouts, or WAF-as-code matter.
 Cross-service calls stay on the container network:
 `SERVICE_CRM_URL=http://crm:8080`, `SERVICE_SHOP_URL=http://shop:8080`.
 `INTERNAL_SERVICE_KEY` is the same shared secret used by the OKE deploy.
+The Shop container uses `JAVA_APM_SERVICE_URL=http://java-apm:8080` for
+Apple Pay, Google Pay, Visa, and Mastercard simulation spans, and
+`WORKFLOW_API_BASE_URL=http://workflow-gateway:8090` for the same
+admin-scoped Select AI/workflow path used by OKE.
 
 ## Quick start
 
@@ -102,10 +107,11 @@ directory + env file on every boot.
 ## Observability on VM
 
 APM + RUM + Log Analytics all work identically to the OKE deploy:
-populate the same `OCI_APM_*` and `OCI_LOG_*` variables in `.env`. The
-VM's instance principal must have policies granting `USE` on APM
-domains and `use` on the target log group — otherwise the app runs
-fine but OTLP/SDK pushes silently no-op.
+populate the same `OCI_APM_*`, `OCI_LOG_*`, `OCI_MONITORING_NAMESPACE`,
+`SERVICE_NAMESPACE`, `DEMO_STACK_NAME`, `LLMETRY_*`, and optional
+`LANGFUSE_*` variables in `.env`. The VM's instance principal must have
+policies granting `USE` on APM domains and `use` on the target log group
+— otherwise the app runs fine but OTLP/SDK pushes silently no-op.
 
 ## Multi-VM
 

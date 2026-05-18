@@ -297,11 +297,11 @@ async def generate_orders(request: Request):
                 if not prod:
                     return {"status": "error", "reason": "no products in database"}
                 pid, price = prod if not product_id else (product_id, prod[1])
-                qty = random.randint(1, body.get("max_quantity", 5))
+                qty = random.randint(1, body.get("max_quantity", 5))  # noqa: S311
 
                 if high_value:
-                    price = random.uniform(10000, 30000)
-                    qty = random.randint(2, 5)
+                    price = random.uniform(10000, 30000)  # noqa: S311
+                    qty = random.randint(2, 5)  # noqa: S311
 
                 order_total = round(price * qty, 2)
                 total_value += order_total
@@ -366,10 +366,10 @@ async def generate_backlog(request: Request):
                 if not cid or not prod:
                     continue
                 pid, price = prod
-                qty = random.randint(1, 3)
+                qty = random.randint(1, 3)  # noqa: S311
                 total = round(price * qty, 2)
                 sid = f"sim-backlog-{uuid4().hex[:8]}"
-                stale_time = datetime.utcnow() - timedelta(hours=random.randint(2, 48))
+                stale_time = datetime.utcnow() - timedelta(hours=random.randint(2, 48))  # noqa: S311
 
                 await session.execute(
                     text(
@@ -419,7 +419,7 @@ async def high_value_order(request: Request):
             return {"status": "error", "reason": "no products in database"}
         pid, _ = prod
 
-        total = round(random.uniform(55000, 150000), 2)
+        total = round(random.uniform(55000, 150000), 2)  # noqa: S311
         sid = f"sim-hv-{uuid4().hex[:8]}"
 
         async with async_session_factory() as session:
@@ -465,8 +465,8 @@ async def add_random_customer(request: Request):
     tracer = tracer_fn()
 
     with tracer.start_as_current_span("simulation.add_customer"):
-        company, industry, revenue = random.choice(_FAKE_COMPANIES)
-        contact = random.choice(_FAKE_CONTACTS)
+        company, industry, revenue = random.choice(_FAKE_COMPANIES)  # noqa: S311
+        contact = random.choice(_FAKE_CONTACTS)  # noqa: S311
         email = f"sim.{uuid4().hex[:6]}@{company.lower().replace(' ', '')}.demo"
 
         async with async_session_factory() as session:

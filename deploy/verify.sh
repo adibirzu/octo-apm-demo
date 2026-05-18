@@ -53,6 +53,12 @@ ok()   { green "  PASS  "; echo " $*"; }
 warn() { yellow "  WARN  "; echo " $*"; warnings=$((warnings + 1)); }
 fail() { red   "  FAIL  "; echo " $*"; errors=$((errors + 1)); }
 
+is_network_dependency_error() {
+    grep -Eiq \
+        "Failed to install provider|Failed to query available provider packages|could not connect to registry\\.terraform\\.io|context deadline exceeded|operation timed out|Client\\.Timeout|Cannot check URL|no Internet access|network is unreachable|dial tcp" \
+        "$@"
+}
+
 # ── Shell syntax ──────────────────────────────────────────────────────
 section "Shell syntax (bash -n)"
 while IFS= read -r script; do
@@ -138,6 +144,10 @@ if command -v terraform >/dev/null 2>&1 && [[ -f "${rm_stack_zip}" ]]; then
         terraform -chdir="${rm_stack_tmp}" init -backend=false -input=false -no-color >"${rm_stack_init_log}" 2>&1 && \
         terraform -chdir="${rm_stack_tmp}" validate -no-color >"${rm_stack_validate_log}" 2>&1; then
         ok "deploy/resource-manager package terraform validate"
+    elif is_network_dependency_error "${rm_stack_init_log}" "${rm_stack_validate_log}"; then
+        warn "deploy/resource-manager package terraform validate skipped — provider registry unavailable"
+        sed 's/^/         /' "${rm_stack_init_log}" | tail -8
+        sed 's/^/         /' "${rm_stack_validate_log}" | tail -8
     else
         fail "deploy/resource-manager package terraform validate"
         sed 's/^/         /' "${rm_stack_init_log}" | tail -20
@@ -191,11 +201,11 @@ if command -v helm >/dev/null 2>&1; then
     fi
     if [[ -s "${helm_render}" ]]; then
         if command -v kubectl >/dev/null 2>&1; then
-            if kubectl apply --dry-run=client --validate=false -f "${helm_render}" >/dev/null 2>&1; then
+            if kubectl create --dry-run=client --validate=false -f "${helm_render}" >/dev/null 2>&1; then
                 ok "deploy/helm/octo-apm-demo passes kubectl client dry-run"
             else
                 fail "deploy/helm/octo-apm-demo passes kubectl client dry-run"
-                kubectl apply --dry-run=client --validate=false -f "${helm_render}" 2>&1 | sed 's/^/         /' | head -10
+                kubectl create --dry-run=client --validate=false -f "${helm_render}" 2>&1 | sed 's/^/         /' | head -10
             fi
         else
             warn "kubectl not installed — skipped Helm client dry-run"
@@ -279,12 +289,19 @@ if command -v terraform >/dev/null 2>&1; then
     else
         warn "deploy/terraform/* fmt drift (run terraform fmt -recursive)"
     fi
-    if (cd "${REPO_ROOT}/deploy/terraform" && terraform validate >/dev/null 2>&1); then
+    tf_init_log="$(mktemp)"
+    tf_validate_log="$(mktemp)"
+    if terraform -chdir="${REPO_ROOT}/deploy/terraform" init -backend=false -input=false -no-color >"${tf_init_log}" 2>&1 && \
+       terraform -chdir="${REPO_ROOT}/deploy/terraform" validate -no-color >"${tf_validate_log}" 2>&1; then
         ok "deploy/terraform validate"
+    elif is_network_dependency_error "${tf_init_log}" "${tf_validate_log}"; then
+        warn "deploy/terraform validate skipped — provider registry unavailable"
+        cat "${tf_init_log}" "${tf_validate_log}" | tail -16 | sed 's/^/         /'
     else
         fail "deploy/terraform validate"
-        (cd "${REPO_ROOT}/deploy/terraform" && terraform validate 2>&1 | tail -20 | sed 's/^/         /')
+        cat "${tf_init_log}" "${tf_validate_log}" | tail -40 | sed 's/^/         /'
     fi
+    rm -f "${tf_init_log}" "${tf_validate_log}"
     rm_tf_files=()
     while IFS= read -r tf_file; do
         rm_tf_files+=("${tf_file}")
@@ -369,12 +386,17 @@ done
 # ── MkDocs strict ─────────────────────────────────────────────────────
 section "MkDocs strict build"
 if command -v mkdocs >/dev/null 2>&1; then
-    if (cd "${REPO_ROOT}" && mkdocs build --strict >/dev/null 2>&1); then
+    mkdocs_log="$(mktemp)"
+    if (cd "${REPO_ROOT}" && mkdocs build --strict >"${mkdocs_log}" 2>&1); then
         ok "mkdocs --strict"
+    elif is_network_dependency_error "${mkdocs_log}"; then
+        warn "mkdocs --strict skipped — documentation CDN check unavailable"
+        grep -E "WARNING|ERROR" "${mkdocs_log}" | head -5 | sed 's/^/         /'
     else
         fail "mkdocs --strict"
-        (cd "${REPO_ROOT}" && mkdocs build --strict 2>&1 | grep -E "WARNING|ERROR" | head -5 | sed 's/^/         /')
+        grep -E "WARNING|ERROR" "${mkdocs_log}" | head -5 | sed 's/^/         /'
     fi
+    rm -f "${mkdocs_log}"
 else
     warn "mkdocs not installed — skipped"
 fi

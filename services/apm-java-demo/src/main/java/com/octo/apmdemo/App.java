@@ -18,10 +18,17 @@
  */
 package com.octo.apmdemo;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -58,6 +65,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RestController
 public class App {
     private static final Logger LOG = LoggerFactory.getLogger(App.class);
+    private static final ObjectMapper JSON = new ObjectMapper();
     private static final String SERVICE_NAME = "octo-java-app-server";
     private static final String ROLE = "droneshop-app-server";
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
@@ -65,6 +73,7 @@ public class App {
         .build();
 
     public static void main(String[] args) {
+        OtelSupport.initialize();
         SpringApplication.run(App.class, args);
     }
 
@@ -79,28 +88,114 @@ public class App {
                 FilterChain filterChain
             ) throws ServletException, IOException {
                 String traceparent = request.getHeader("traceparent");
-                if (traceparent != null) {
-                    String[] parts = traceparent.split("-");
-                    if (parts.length >= 4) {
-                        MDC.put("trace_id", parts[1]);
-                        MDC.put("span_id", parts[2]);
-                    }
-                }
                 String correlationId = request.getHeader("X-Correlation-Id");
                 if (correlationId != null && !correlationId.isBlank()) {
                     MDC.put("correlation_id", correlationId);
                 }
+                copyHeaderToMdc(request, "X-Request-Id", "request_id");
+                copyHeaderToMdc(request, "X-Workflow-Id", "workflow_id");
+                copyHeaderToMdc(request, "X-Workflow-Step", "workflow_step");
+                copyHeaderToMdc(request, "X-Run-Id", "run_id");
+                Context parent = OtelSupport.extract(request);
+                String route = request.getRequestURI() == null ? "/" : request.getRequestURI();
+                Span span = OtelSupport.tracer()
+                    .spanBuilder("HTTP " + request.getMethod() + " " + route)
+                    .setParent(parent)
+                    .setSpanKind(SpanKind.SERVER)
+                    .setAttribute("http.request.method", request.getMethod())
+                    .setAttribute("http.route", route)
+                    .setAttribute("url.path", route)
+                    .setAttribute("app.logical_endpoint", route)
+                    .setAttribute("app.module", "java-payment-gateway")
+                    .setAttribute("service.namespace", "octo")
+                    .setAttribute("oci.demo.stack", "octo-apm-demo")
+                    .startSpan();
+                setSpanAttributeFromMdc(span, "request_id", "request_id");
+                setSpanAttributeFromMdc(span, "workflow_id", "workflow_id");
+                setSpanAttributeFromMdc(span, "workflow.id", "workflow_id");
+                setSpanAttributeFromMdc(span, "workflow_step", "workflow_step");
+                setSpanAttributeFromMdc(span, "workflow.step", "workflow_step");
+                setSpanAttributeFromMdc(span, "run_id", "run_id");
+                boolean expectedDemoError = isExpectedDemoErrorRoute(route);
+                if (expectedDemoError) {
+                    span.setAttribute("demo.scenario", "java-controlled-error");
+                    span.setAttribute("demo.expected", true);
+                    span.setAttribute("error.expected", true);
+                }
                 try {
-                    filterChain.doFilter(request, response);
+                    try (Scope ignored = span.makeCurrent()) {
+                        String traceId = span.getSpanContext().isValid()
+                            ? span.getSpanContext().getTraceId()
+                            : traceIdFromTraceparent(traceparent);
+                        String spanId = span.getSpanContext().isValid()
+                            ? span.getSpanContext().getSpanId()
+                            : spanIdFromTraceparent(traceparent);
+                        if (!traceId.isBlank()) {
+                            MDC.put("trace_id", traceId);
+                        }
+                        if (!spanId.isBlank()) {
+                            MDC.put("span_id", spanId);
+                        }
+                        filterChain.doFilter(request, response);
+                    }
+                    span.setAttribute("http.response.status_code", response.getStatus());
+                    if (response.getStatus() >= 500 && !expectedDemoError) {
+                        span.setStatus(StatusCode.ERROR);
+                    }
+                } catch (Exception exception) {
+                    span.recordException(exception);
+                    if (!expectedDemoError) {
+                        span.setStatus(StatusCode.ERROR, exception.getMessage());
+                    }
+                    throw exception;
                 } finally {
+                    span.end();
                     MDC.remove("trace_id");
                     MDC.remove("span_id");
                     MDC.remove("correlation_id");
+                    MDC.remove("request_id");
+                    MDC.remove("workflow_id");
+                    MDC.remove("workflow_step");
+                    MDC.remove("run_id");
                 }
+            }
+
+            private String traceIdFromTraceparent(String traceparent) {
+                if (traceparent == null) {
+                    return "";
+                }
+                String[] parts = traceparent.split("-");
+                return parts.length >= 4 ? parts[1] : "";
+            }
+
+            private String spanIdFromTraceparent(String traceparent) {
+                if (traceparent == null) {
+                    return "";
+                }
+                String[] parts = traceparent.split("-");
+                return parts.length >= 4 ? parts[2] : "";
             }
         });
         registration.setOrder(1);
         return registration;
+    }
+
+    private static void copyHeaderToMdc(HttpServletRequest request, String headerName, String mdcKey) {
+        String value = request.getHeader(headerName);
+        if (value != null && !value.isBlank()) {
+            MDC.put(mdcKey, value);
+        }
+    }
+
+    private static void setSpanAttributeFromMdc(Span span, String attributeName, String mdcKey) {
+        String value = MDC.get(mdcKey);
+        if (value != null && !value.isBlank()) {
+            span.setAttribute(attributeName, value);
+        }
+    }
+
+    private static boolean isExpectedDemoErrorRoute(String route) {
+        return "/error".equals(route) || "/api/java-apm/simulate/error".equals(route);
     }
 
     @GetMapping("/")
@@ -181,6 +276,7 @@ public class App {
         throws InterruptedException {
         long latency = simulateLatency(40, 250);
         int riskScore = riskScore(request);
+        PaymentRailSimulator.Rail rail = PaymentRailSimulator.rail(request);
         String mode = request.simulation_mode() == null || request.simulation_mode().isBlank()
             ? env("PAYMENT_SIMULATION_MODE", "approve").toLowerCase()
             : request.simulation_mode().toLowerCase();
@@ -196,16 +292,35 @@ public class App {
         String authCode = "approved".equals(decision)
             ? "AUTH-" + request.order_id() + "-" + Integer.toHexString(riskScore * 997)
             : "";
+        Map<String, Object> networkAuthorization = PaymentRailSimulator.networkAuthorization(
+            request, rail, decision, authCode
+        );
+        Map<String, Object> cardFlow = PaymentRailSimulator.cardFlow(request, rail, networkAuthorization);
+        Map<String, Object> walletFlow = PaymentRailSimulator.walletFlow(request, rail);
+        PaymentRailSimulator.enrichPaymentSpan("java.payment.authorize", request, rail, decision, riskScore);
+        PaymentRailSimulator.emitPaymentFlowEvents(request, rail, decision, riskScore, networkAuthorization, false);
         LOG.info(
-            "payment_authorize order_id={} amount_minor={} currency={} decision={} risk_score={} latency_ms={} email_domain={}",
-            request.order_id(), request.amount_minor_units(), request.currency(), decision,
+            "payment_authorize order_id={} gateway_request_id={} amount_minor={} currency={} method={} network={} decision={} risk_score={} latency_ms={} email_domain={}",
+            request.order_id(), rail.gatewayRequestId(), request.amount_minor_units(), request.currency(),
+            rail.method(), rail.network(), decision,
             riskScore, latency, safeDomain(request.customer_email_domain())
         );
         Map<String, Object> payload = new HashMap<>();
         payload.put("payment_provider", "simulated-java-gateway");
+        payload.put("payment_processor_name", "octo-java-app-server");
         payload.put("order_id", request.order_id());
+        payload.put("payment_gateway_request_id", rail.gatewayRequestId());
+        payload.put("gateway_provider", rail.gatewayProvider());
+        payload.put("payment_method", rail.method());
+        payload.put("payment_network", rail.network());
+        payload.put("payment_status", decision);
         payload.put("decision", decision);
         payload.put("authorization_code", authCode);
+        payload.put("network_authorization", networkAuthorization);
+        payload.put("processor_response_code", String.valueOf(networkAuthorization.getOrDefault("response_code", "")));
+        payload.put("network_transaction_id", String.valueOf(networkAuthorization.getOrDefault("network_transaction_id", "")));
+        payload.put("card_flow", cardFlow);
+        payload.put("wallet_flow", walletFlow);
         payload.put("risk_score", riskScore);
         payload.put("latency_ms", latency);
         payload.put("currency", request.currency());
@@ -214,6 +329,8 @@ public class App {
         payload.put("customer_email_domain", safeDomain(request.customer_email_domain()));
         payload.put("idempotency_key_hash", nullToEmpty(request.idempotency_key_hash()));
         payload.put("simulation_mode", mode);
+        payload.put("token_safe", true);
+        emitStructuredEvent("INFO", "java_payment_authorize", payload);
         return payload;
     }
 
@@ -222,6 +339,7 @@ public class App {
         throws InterruptedException {
         long latency = simulateLatency(35, 180);
         int riskScore = verificationRiskScore(request);
+        PaymentRailSimulator.Rail rail = PaymentRailSimulator.rail(request);
         String mode = request.simulation_mode() == null || request.simulation_mode().isBlank()
             ? env("PAYMENT_SIMULATION_MODE", "approve").toLowerCase()
             : request.simulation_mode().toLowerCase();
@@ -246,18 +364,28 @@ public class App {
             case "review" -> "ANTIFRAUD_REVIEW";
             default -> "";
         };
+        Map<String, Object> walletFlow = PaymentRailSimulator.walletFlow(request, rail);
+        Map<String, Object> cardFlow = PaymentRailSimulator.cardFlow(request, rail, Map.of());
+        PaymentRailSimulator.enrichPaymentSpan("java.payment.verify", request, rail, decision, riskScore);
+        PaymentRailSimulator.emitPaymentFlowEvents(request, rail, decision, riskScore, Map.of(), true);
         LOG.info(
-            "payment_verify order_id={} amount_minor={} currency={} method={} network={} decision={} risk_score={} latency_ms={} email_domain={} periodic_review={}",
-            request.order_id(), request.amount_minor_units(), request.currency(), nullToEmpty(request.payment_method()),
-            nullToEmpty(request.payment_network()), decision, riskScore, latency,
+            "payment_verify order_id={} gateway_request_id={} amount_minor={} currency={} method={} network={} decision={} risk_score={} latency_ms={} email_domain={} periodic_review={}",
+            request.order_id(), rail.gatewayRequestId(), request.amount_minor_units(), request.currency(),
+            rail.method(), rail.network(), decision, riskScore, latency,
             safeDomain(request.customer_email_domain()), periodicReview
         );
         Map<String, Object> payload = new HashMap<>();
         payload.put("verification_provider", "octo-antifraud-verification-app");
+        payload.put("payment_processor_name", "octo-java-app-server");
         payload.put("order_id", request.order_id());
+        payload.put("payment_gateway_request_id", rail.gatewayRequestId());
+        payload.put("gateway_provider", rail.gatewayProvider());
+        payload.put("payment_status", decision);
         payload.put("decision", decision);
         payload.put("risk_score", riskScore);
         payload.put("risk_reasons", nullToEmpty(request.risk_reasons()));
+        payload.put("wallet_flow", walletFlow);
+        payload.put("card_flow", cardFlow);
         payload.put("periodic_review", periodicReview);
         payload.put("latency_ms", latency);
         payload.put("currency", request.currency());
@@ -268,6 +396,8 @@ public class App {
         payload.put("customer_email_domain", safeDomain(request.customer_email_domain()));
         payload.put("idempotency_key_hash", nullToEmpty(request.idempotency_key_hash()));
         payload.put("simulation_mode", mode);
+        payload.put("token_safe", true);
+        emitStructuredEvent("INFO", "java_payment_verify", payload);
         return payload;
     }
 
@@ -456,9 +586,12 @@ public class App {
         return total;
     }
 
-    // Controlled error path — counts toward Apdex "frustrated" + server errors.
+    // Controlled error path for demos; tagged so health views can exclude it.
     @GetMapping("/error")
     public Map<String, String> error() {
+        Span.current().setAttribute("demo.scenario", "java-controlled-error");
+        Span.current().setAttribute("demo.expected", true);
+        Span.current().setAttribute("error.expected", true);
         throw new IllegalStateException("intentional demo error");
     }
 
@@ -466,10 +599,19 @@ public class App {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, Object> handleIllegalState(IllegalStateException exception) {
         LOG.error("controlled_java_error message={}", exception.getMessage(), exception);
+        emitStructuredEvent("ERROR", "controlled_java_error", Map.of(
+            "error_type", exception.getClass().getSimpleName(),
+            "error_message", exception.getMessage(),
+            "demo", Map.of("scenario", "java-controlled-error"),
+            "error", Map.of("expected", true),
+            "java_apm", Map.of("error_type", exception.getClass().getSimpleName())
+        ));
         return Map.of(
             "status", "error",
             "error_type", exception.getClass().getSimpleName(),
-            "message", exception.getMessage()
+            "message", exception.getMessage(),
+            "demo_scenario", "java-controlled-error",
+            "error_expected", true
         );
     }
 
@@ -551,7 +693,101 @@ public class App {
         return Math.floorMod(seed.hashCode(), modulus) == 0;
     }
 
-    private String env(String name, String fallback) {
+    private static void emitStructuredEvent(String level, String message, Map<String, Object> fields) {
+        Map<String, Object> event = new HashMap<>(fields);
+        String serviceName = env("OCI_APM_SERVICE_NAME", SERVICE_NAME);
+        String traceId = currentTraceId();
+        String spanId = currentSpanId();
+        event.put("timestamp", Instant.now().toString());
+        event.put("level", level);
+        event.put("message", message);
+        event.put("service", Map.of("name", serviceName, "namespace", "octo"));
+        event.put("service_name", serviceName);
+        event.put("service_namespace", "octo");
+        event.put("service.name", serviceName);
+        event.put("service.namespace", "octo");
+        event.put("deployment", Map.of("environment", env("DEPLOYMENT_ENVIRONMENT", "production")));
+        event.put("deployment.environment", env("DEPLOYMENT_ENVIRONMENT", "production"));
+        event.put("app", Map.of("module", "java-payment-gateway"));
+        event.put("trace_id", traceId);
+        event.put("span_id", spanId);
+        event.put("oracleApmTraceId", traceId);
+        event.put("oracleApmSpanId", spanId);
+        putMdcIfPresent(event, "request_id", "request_id");
+        putMdcIfPresent(event, "workflow_id", "workflow_id");
+        putMdcIfPresent(event, "workflow_step", "workflow_step");
+        putMdcIfPresent(event, "run_id", "run_id");
+        addStructuredAliases(event);
+        try {
+            // Intentional stdout JSON event for OCI Kubernetes Monitoring and Log Analytics parsers.
+            System.out.println(JSON.writeValueAsString(event));
+        } catch (JsonProcessingException exception) {
+            LOG.warn("structured_event_serialization_failed message={}", exception.getMessage());
+        }
+    }
+
+    private static void addStructuredAliases(Map<String, Object> event) {
+        alias(event, "order_id", "orders.order_id");
+        alias(event, "payment_gateway_request_id", "payment.gateway.request_id");
+        alias(event, "payment_provider", "payment.provider");
+        alias(event, "gateway_provider", "payment.gateway.provider");
+        alias(event, "payment_method", "payment.method");
+        alias(event, "payment_network", "payment.network");
+        alias(event, "payment_status", "payment.status");
+        alias(event, "risk_score", "payment.risk_score");
+        alias(event, "token_safe", "payment.token.safe");
+        alias(event, "payment_processor_name", "payment.processor.name");
+        alias(event, "processor_response_code", "payment.processor.response_code");
+        alias(event, "network_transaction_id", "payment.network.transaction_id");
+
+        Object networkAuthorization = event.get("network_authorization");
+        if (networkAuthorization instanceof Map<?, ?> network) {
+            aliasFromMap(event, network, "response_code", "payment.processor.response_code");
+            aliasFromMap(event, network, "network_transaction_id", "payment.network.transaction_id");
+        }
+    }
+
+    private static void alias(Map<String, Object> event, String sourceKey, String aliasKey) {
+        Object value = event.get(sourceKey);
+        if (value != null && !String.valueOf(value).isBlank()) {
+            event.putIfAbsent(aliasKey, value);
+        }
+    }
+
+    private static void aliasFromMap(
+        Map<String, Object> event,
+        Map<?, ?> source,
+        String sourceKey,
+        String aliasKey
+    ) {
+        Object value = source.get(sourceKey);
+        if (value != null && !String.valueOf(value).isBlank()) {
+            event.putIfAbsent(aliasKey, value);
+        }
+    }
+
+    private static void putMdcIfPresent(Map<String, Object> event, String eventKey, String mdcKey) {
+        String value = MDC.get(mdcKey);
+        if (value != null && !value.isBlank()) {
+            event.put(eventKey, value);
+        }
+    }
+
+    private static String currentTraceId() {
+        if (Span.current().getSpanContext().isValid()) {
+            return Span.current().getSpanContext().getTraceId();
+        }
+        return nullToEmpty(MDC.get("trace_id"));
+    }
+
+    private static String currentSpanId() {
+        if (Span.current().getSpanContext().isValid()) {
+            return Span.current().getSpanContext().getSpanId();
+        }
+        return nullToEmpty(MDC.get("span_id"));
+    }
+
+    private static String env(String name, String fallback) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? fallback : value;
     }
@@ -577,7 +813,24 @@ public class App {
         String currency,
         String customer_email_domain,
         String idempotency_key_hash,
-        String simulation_mode
+        String simulation_mode,
+        String payment_method,
+        String payment_network,
+        String payment_gateway_request_id,
+        String gateway_provider,
+        String wallet_type,
+        String wallet_provider,
+        String wallet_tokenization_type,
+        String wallet_token_hash,
+        String card_brand,
+        String card_last4,
+        String card_fingerprint,
+        int card_exp_month,
+        int card_exp_year,
+        String billing_postal_code,
+        boolean card_cvv_present,
+        String verification_decision,
+        String risk_reasons
     ) {}
 
     public record PaymentVerifyRequest(
@@ -590,8 +843,22 @@ public class App {
         String payment_network,
         int context_risk_score,
         String risk_reasons,
-        String simulation_mode
+        String simulation_mode,
+        String payment_gateway_request_id,
+        String gateway_provider,
+        String wallet_type,
+        String wallet_provider,
+        String wallet_tokenization_type,
+        String wallet_token_hash,
+        String card_brand,
+        String card_last4,
+        String card_fingerprint,
+        int card_exp_month,
+        int card_exp_year,
+        String billing_postal_code,
+        boolean card_cvv_present
     ) {}
+
 
     public record SimulationRequest(
         long duration_ms,

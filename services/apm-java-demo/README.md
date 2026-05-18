@@ -11,6 +11,39 @@ agent does — this service attaches the agent via `-javaagent:` and
 reports to the same APM domain. In `private-demo`, the shop app calls this
 service on `127.0.0.1:18080` during simulated payment authorization.
 
+## Payment Gateway Observability
+
+Drone Shop checkout calls this sidecar twice per gateway attempt:
+
+1. `/api/java-apm/payment/verify` receives the token-safe antifraud
+   context from the Python payment gateway emulator.
+2. `/api/java-apm/payment/authorize` simulates the processor and
+   card-network authorization response.
+
+The request body intentionally excludes raw PAN, CVV, wallet token
+payloads, cryptograms, and customer email. It carries only
+`payment_gateway_request_id`, method, network, gateway provider, wallet
+provider, wallet tokenization type, wallet token hash, card brand,
+last4, card fingerprint, billing postal-code presence, CVV presence,
+risk reasons, and idempotency hash.
+
+The Java span is enriched with `payment.*`, `orders.order_id`,
+`app.logical_endpoint`, and token-safety attributes. It also emits span
+events for Google Pay `PaymentData`, Apple Pay merchant validation,
+Visa Secure, Mastercard Identity Check, processor authorization, and
+the simulated card-network response.
+
+The Shop Java client propagates W3C/B3 trace context plus `X-Request-Id`,
+`X-Workflow-Id`, and `X-Workflow-Step`. The Java request filter copies those
+headers into spans and MDC so Java stdout JSON, Shop sidecar logs, APM traces,
+and Log Analytics searches can be joined by trace, request, workflow, order,
+and payment gateway request id.
+
+Responses include `wallet_flow`, `card_flow`, and
+`network_authorization` objects so the Shop API and
+`payment_gateway_events` timeline can be correlated with Java APM spans
+and Log Analytics records.
+
 ## Endpoints
 
 | Path | Purpose |
@@ -20,7 +53,8 @@ service on `127.0.0.1:18080` during simulated payment authorization.
 | `GET /healthz` | Trivial 200 |
 | `GET /api/java-apm/health` | Sidecar health for Drone Shop |
 | `POST /api/java-apm/quote` | Pricing/quote simulation |
-| `POST /api/java-apm/payment/authorize` | Payment gateway simulation |
+| `POST /api/java-apm/payment/verify` | Antifraud verification for token-safe card/wallet context |
+| `POST /api/java-apm/payment/authorize` | Processor, Visa/Mastercard, Apple Pay, and Google Pay authorization simulation |
 | `POST /api/java-apm/simulate/slow` | Slow Java request |
 | `POST /api/java-apm/simulate/gc` | Heap allocation and Young GC pressure |
 | `POST /api/java-apm/simulate/cpu` | CPU burn on request thread |

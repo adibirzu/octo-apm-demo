@@ -17,6 +17,7 @@ from server.observability.logging_sdk import (
 from server.observability.correlation import build_correlation_id, current_trace_context
 from server.observability.security_spans import security_span
 from server.observability.db_session_tagging import set_db_context
+from server.observability.workflow_context import resolve_workflow
 
 
 class TracingMiddleware(BaseHTTPMiddleware):
@@ -32,7 +33,31 @@ class TracingMiddleware(BaseHTTPMiddleware):
         request_span_token = bind_request_span(trace.get_current_span())
         start = time.time()
         client_ip = request.client.host if request.client else "unknown"
-        request_id = request.headers.get("x-correlation-id", "")
+        incoming_request_id = (
+            getattr(request.state, "request_id", "")
+            or request.headers.get("x-request-id", "")
+            or request.headers.get("x-correlation-id", "")
+            or ""
+        ).strip()
+        request.state.request_id = incoming_request_id or build_correlation_id("")
+        request.state.correlation_id = build_correlation_id(
+            request.headers.get("x-correlation-id", "") or request.state.request_id
+        )
+        workflow = getattr(request.state, "workflow", None) or resolve_workflow(request.url.path)
+        request.state.workflow = workflow
+        workflow_fields = {
+            "workflow.id": workflow.workflow_id,
+            "workflow.step": workflow.step,
+            "workflow_id": workflow.workflow_id,
+            "workflow_step": workflow.step,
+        }
+        request_fields = {
+            "request_id": request.state.request_id,
+            "correlation.id": request.state.correlation_id,
+            "http.url.path": request.url.path,
+            "http.method": request.method,
+            **workflow_fields,
+        }
 
         try:
             with tracer.start_as_current_span("middleware.entry") as entry_span:
@@ -41,7 +66,12 @@ class TracingMiddleware(BaseHTTPMiddleware):
                 entry_span.set_attribute("http.user_agent", request.headers.get("user-agent", ""))
                 entry_span.set_attribute("http.url.path", request.url.path)
                 entry_span.set_attribute("http.method", request.method)
-                request.state.correlation_id = build_correlation_id(request_id)
+                entry_span.set_attribute("correlation.id", request.state.correlation_id)
+                entry_span.set_attribute("request_id", request.state.request_id)
+                entry_span.set_attribute("workflow.id", workflow.workflow_id)
+                entry_span.set_attribute("workflow.step", workflow.step)
+                entry_span.set_attribute("workflow_id", workflow.workflow_id)
+                entry_span.set_attribute("workflow_step", workflow.step)
 
                 # Span 2: Auth context extraction
                 with tracer.start_as_current_span("auth.check") as auth_span:
@@ -80,6 +110,8 @@ class TracingMiddleware(BaseHTTPMiddleware):
                                 source_ip=client_ip,
                                 payload=f"waf_score={waf_score}, waf_action={waf_action}",
                                 correlation_id=request.state.correlation_id,
+                                request_id=request.state.request_id,
+                                **workflow_fields,
                             )
 
                 # Tag Oracle DB sessions with request context for OPSI/DB Management correlation
@@ -94,11 +126,9 @@ class TracingMiddleware(BaseHTTPMiddleware):
                     response = await call_next(request)
                 except Exception as exc:
                     push_log("ERROR", "Unhandled request exception", **{
-                        "http.url.path": request.url.path,
-                        "http.method": request.method,
+                        **request_fields,
                         "http.client_ip": client_ip,
                         "error.message": str(exc),
-                        "correlation.id": request.state.correlation_id,
                     })
                     raise
 
@@ -108,11 +138,19 @@ class TracingMiddleware(BaseHTTPMiddleware):
                     resp_span.set_attribute("http.status_code", response.status_code)
                     resp_span.set_attribute("http.response_time_ms", round(duration * 1000, 2))
                     resp_span.set_attribute("correlation.id", request.state.correlation_id)
+                    resp_span.set_attribute("request_id", request.state.request_id)
+                    resp_span.set_attribute("http.url.path", request.url.path)
+                    resp_span.set_attribute("http.method", request.method)
+                    resp_span.set_attribute("workflow.id", workflow.workflow_id)
+                    resp_span.set_attribute("workflow.step", workflow.step)
+                    resp_span.set_attribute("workflow_id", workflow.workflow_id)
+                    resp_span.set_attribute("workflow_step", workflow.step)
 
                     trace_ctx = current_trace_context()
                     request.state.trace_id = trace_ctx["trace_id"]
                     request.state.span_id = trace_ctx["span_id"]
                     response.headers["X-Correlation-Id"] = request.state.correlation_id
+                    response.headers.setdefault("X-Request-Id", request.state.request_id)
                     if trace_ctx["trace_id"]:
                         response.headers["X-Trace-Id"] = trace_ctx["trace_id"]
                     if trace_ctx["span_id"]:
@@ -120,19 +158,17 @@ class TracingMiddleware(BaseHTTPMiddleware):
 
                     if duration > 2.0:
                         push_log("WARNING", "Slow request detected", **{
-                            "http.url.path": request.url.path,
+                            **request_fields,
+                            "http.status_code": response.status_code,
                             "http.response_time_ms": round(duration * 1000, 2),
                             "http.client_ip": client_ip,
                             "performance.slow_request": True,
-                            "correlation.id": request.state.correlation_id,
                         })
                     else:
                         push_log("INFO", "Request completed", **{
-                            "http.url.path": request.url.path,
-                            "http.method": request.method,
+                            **request_fields,
                             "http.status_code": response.status_code,
                             "http.response_time_ms": round(duration * 1000, 2),
-                            "correlation.id": request.state.correlation_id,
                         })
 
                 return response

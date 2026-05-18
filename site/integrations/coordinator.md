@@ -1,15 +1,18 @@
 # OCI Coordinator Integration
 
-The OCI Coordinator's Remediation Agent v2 consumes telemetry from both services and executes automated remediations via MCP tools.
+The OCI Coordinator's Remediation Agent v2 consumes OCTO APM Demo telemetry
+from the admin surface and prepares operator actions through MCP-capable
+runbooks. The interactive endpoint is admin-only; the customer storefront does
+not expose Coordinator controls, Query Lab, or Select AI.
 
 ## Admin Surface and Scope Guard
 
-For the `emdemo` OCTO deployment, the interactive Coordinator is exposed only
+For the `<OCI_PROFILE>` OCTO deployment, the interactive Coordinator is exposed only
 inside the CRM Admin page:
 
 | Surface | Route | Guard |
 |---|---|---|
-| `admin.octodemo.cloud` | `/admin` UI panel | CRM admin session required |
+| `admin.example.test` | `/admin` UI panel | CRM admin session required |
 | CRM API | `POST /api/admin/coordinator/query` | CRM admin session + admin host required |
 | CRM API | `GET /api/admin/coordinator/scope` | CRM admin session + admin host required |
 
@@ -20,11 +23,57 @@ or all-compartment/all-resource inventory.
 
 Allowed answer scope is limited to OCTO APM Demo resources and admin pages:
 
-- `admin.octodemo.cloud` CRM admin, users, sessions, audit logs, and runtime config.
-- `drones.octodemo.cloud` shop dependency, catalog sync, payment simulation, and order sync.
+- `admin.example.test` CRM admin, users, sessions, audit logs, and runtime config.
+- `shop.example.test` shop dependency, catalog sync, payment simulation, and order sync.
 - OCTO ATP (`octoatp_low`), SQL_ID enrichment, Select AI/admin DB workflows.
 - OCI APM, RUM, OCI Logging, Log Analytics, security detections, and workflow traces for this project.
-- OCTO Demo Langfuse telemetry (`lf.octodemo.cloud` / `langfuse.octodemo.cloud`) only when tied to the drones project data.
+- OCTO Demo Langfuse telemetry (`lf.example.test` / `langfuse.example.test`) only when tied to the drones project data.
+
+Coordinator decisions are visible in APM and logs through:
+
+| Field | Purpose |
+|---|---|
+| `admin.coordinator.query` | Span for each admin question |
+| `admin.coordinator.scope` | Span for scope metadata reads |
+| `coordinator.surface` | Always `admin` |
+| `coordinator.host` | Request host that reached the endpoint |
+| `coordinator.scope` | Always `octo-apm-demo` |
+| `coordinator.allowed` | Whether the question was answered |
+| `coordinator.topic` | Matched admin/OCTO topic |
+| `coordinator.refusal_reason` | Reason when a question is refused |
+| `coordinator.scope.enforced` | Always true for accepted Admin Coordinator responses |
+| `coordinator.auth.mode` | Admin session, internal service, or refused caller mode |
+| `oci.auth.mode` | OCI SDK auth mode, normally instance principal in OCI |
+
+Responses also include a `guardrails` object with `admin_only=true`,
+`scope_enforced=true`, `allowed_scope=octo-apm-demo`,
+`raw_prompt_logged=false`, and the resolved admin allowed hosts. These fields
+are intentionally safe to log and can be used by APM saved queries and Log
+Analytics detection searches.
+
+## Admin Surface and Scope Guard
+
+For the `<DEPLOYMENT_PREFIX>` OCTO deployment, the interactive Coordinator is exposed only
+inside the CRM Admin page:
+
+| Surface | Route | Guard |
+|---|---|---|
+| `admin.${DNS_DOMAIN}` | `/admin` UI panel | CRM admin session required |
+| CRM API | `POST /api/admin/coordinator/query` | CRM admin session + admin host required |
+| CRM API | `GET /api/admin/coordinator/scope` | CRM admin session + admin host required |
+
+The Coordinator is not rendered in the drone shop storefront, global CRM
+navigation, or non-admin pages. The API rejects non-admin hosts and refuses
+questions that ask for generic tenancy, unrelated domains, unrelated projects,
+or all-compartment/all-resource inventory.
+
+Allowed answer scope is limited to OCTO APM Demo resources and admin pages:
+
+- `admin.${DNS_DOMAIN}` CRM admin, users, sessions, audit logs, and runtime config.
+- `drones.${DNS_DOMAIN}` shop dependency, catalog sync, payment simulation, and order sync.
+- OCTO ATP (`octoatp_low`), SQL_ID enrichment, Select AI/admin DB workflows.
+- OCI APM, RUM, OCI Logging, Log Analytics, security detections, and workflow traces for this project.
+- OCTO Demo Langfuse telemetry (`lf.${DNS_DOMAIN}` / `langfuse.${DNS_DOMAIN}`) only when tied to the drones project data.
 
 Coordinator decisions are visible in APM and logs through:
 
@@ -74,6 +123,7 @@ flowchart TD
     Shop -.-> Monitoring
     CRM -.-> APM
     CRM -.-> Logging
+    CRM -->|Admin only| Coordinator
 
     APM --> Detect
     Logging --> Detect
@@ -83,7 +133,7 @@ flowchart TD
 
     Detect --> Correlate --> Diagnose --> Runbook --> Approve --> Execute --> Verify
 
-    Execute -->|kubectl| Shop
+    Execute -->|approved runbook| CRM
     Execute -->|HTTP| CRM
     Execute -->|MCP| CloudGuard
 ```
@@ -103,11 +153,11 @@ flowchart TD
 
 ## OCTO DEMO OKE Coordinator Readiness
 
-May 11, 2026 `emdemo` status:
+May 11, 2026 `<DEPLOYMENT_PREFIX>` status:
 
 | Capability | Current State | Notes |
 |---|---|---|
-| Ask the live websites | Ready | `drones.octodemo.cloud` and `admin.octodemo.cloud` `/ready` return HTTP 200 through the preserved OCI Load Balancer. |
+| Ask the live websites | Ready | `drones.${DNS_DOMAIN}` and `admin.${DNS_DOMAIN}` `/ready` return HTTP 200 through the preserved OCI Load Balancer. |
 | Ask OCI APM | Ready from app side | Shop/CRM emit OTel traces, RUM is configured, and the Java APM sidecar is enabled on the Shop VM. |
 | Ask OCI Logging | Ready | Fresh app records carry `oracleApmTraceId`, `trace_id`, route, status, service, DB target, and deployment metadata. |
 | Ask Log Analytics | Partially blocked | The Log Analytics namespace/log group exist, but no OCTO app source/parser rows are present because Service Connector Hub quota is exhausted for new routes. |

@@ -4,7 +4,7 @@
 # Creates (idempotently):
 #   1. OCI Notification Topic for alarm delivery
 #   2. OCI Health Check (HTTP) for the shop's /ready endpoint
-#   3. OCI Alarms for key metrics in the octo_drone_shop namespace
+#   3. OCI Alarms for key metrics in the octo_apm_demo namespace
 #
 # Prerequisites:
 #   - OCI CLI configured (instance_principal or config file)
@@ -33,7 +33,7 @@ esac
 : "${COMPARTMENT_ID:?COMPARTMENT_ID is required}"
 : "${SHOP_PUBLIC_URL:?SHOP_PUBLIC_URL is required (e.g. https://shop.<your-domain>)}"
 ALARM_EMAIL="${ALARM_EMAIL:-}"
-METRIC_NAMESPACE="${OCI_MONITORING_NAMESPACE:-octo_drone_shop}"
+METRIC_NAMESPACE="${OCI_MONITORING_NAMESPACE:-octo_apm_demo}"
 DNS_DOMAIN="${DNS_DOMAIN:-}"
 
 echo "[monitoring] Compartment: ${COMPARTMENT_ID}"

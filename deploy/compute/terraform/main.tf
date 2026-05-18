@@ -49,6 +49,7 @@ locals {
     "systemd/octo-synthetic-users.service",
     "systemd/octo-synthetic-users.timer",
     "systemd/octo-workflow-gateway.service",
+    "systemd/octo-tetragon.service",
   ]
   compute_bootstrap_files = {
     for rel_path in local.compute_bootstrap_file_names :
@@ -1536,6 +1537,7 @@ resource "oci_logging_unified_agent_configuration" "os_logs" {
         "/var/log/cloud-init.log",
         "/var/log/cloud-init-output.log",
         "/var/log/octo/*.log",
+        "/var/log/tetragon/tetragon.log",
       ]
 
       parser {
@@ -1648,4 +1650,14 @@ resource "oci_core_instance" "app" {
   lifecycle {
     ignore_changes = [metadata["user_data"]]
   }
+}
+
+# ── Security Automation (eBPF + Auto-Remediation) ─────────────
+module "security_automation" {
+  source         = "../../terraform/modules/security"
+  compartment_id = var.compartment_id
+  vcn_id         = local.vcn_id
+  subnet_id      = local.app_subnet_id
+  log_group_id   = var.existing_log_analytics_log_group_id != "" ? var.existing_log_analytics_log_group_id : oci_log_analytics_log_analytics_log_group.this[0].id
+  name_prefix    = var.name_prefix
 }

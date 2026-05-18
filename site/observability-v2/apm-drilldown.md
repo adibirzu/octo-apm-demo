@@ -58,6 +58,11 @@ apps. Current coverage:
 - Payment simulation spans include `payment.provider`, `payment.status`,
   `payment.risk_score`, `payment.amount_bucket`,
   `payment.decision_source`, and `payment.java_app_server.status`.
+- Payment gateway traces include Python gateway spans and Java sidecar
+  span events for Google Pay tokenization, Apple Pay merchant validation,
+  Visa Secure, Mastercard Identity Check, AVS/CVV results, processor
+  response codes, and synthetic card-network transaction ids. All payment
+  telemetry uses token hashes and card last4 only.
 - Assistant spans include `gen_ai.*`, `llm.*`, `assistant.*`, and
   `langfuse.*` attributes so OCI APM traces, OCI Logging rows, ATP
   `llmetry_events`, and optional Langfuse observations can be compared by
@@ -66,8 +71,11 @@ apps. Current coverage:
   Attack Lab emits `security.attack.kill_chain` plus MITRE stage spans
   and Log Analytics correlation fields.
 
-Recommended next enhancement: add a post-deploy synthetic journey that
-asserts checkout and CRM sync traces contain browser, app, and ATP spans
+Post-deploy synthetic coverage is now handled by
+`shop/tools/apm/octo-apm-demo-synthetic.spec.ts`. The recurring monitor path
+asserts browser checkout for 12 fictional buyers buying 2-3 drones each,
+token-safe payment gateway metadata, antifraud decision fields,
+support-ticket creation, admin login, Java health, and attack-lab traces
 before demo handoff.
 
 ## Operator goals
@@ -92,6 +100,56 @@ Build query-based APM dashboard widgets around the golden workflows:
 
 These widgets should be the top-level navigation surface before an operator
 opens Trace Explorer.
+
+## Saved Trace Explorer Queries
+
+The project ships versioned Trace Explorer saved-query descriptors in
+`deploy/oci/apm/saved-queries/`. Apply them with
+`deploy/oci/apm/apply_saved_queries.sh --dry-run` first, then `--apply` after
+confirming `management-saved-search` IAM permissions and the APM provider id in
+the target region.
+
+Before any live OCI import, run the local source gate:
+
+```bash
+python3 -m pytest -q tests/test_observability_asset_contract.py tests/test_log_analytics_attack_assets.py
+```
+
+That gate checks the eight required descriptors: `assistant-genai-llmetry`,
+`checkout-end-to-end`, `db-slow-spans`, `login-auth-flow`,
+`payment-java-sidecar`, `platform-workflows`, `service-errors`, and
+`trace-drilldown`. It does not create OCI resources or run Terraform apply.
+
+Updated on **May 12, 2026** for `<OCI_PROFILE>`: eight APM provider saved queries are
+active. Each saved query stores its Log Analytics pivot targets in
+`drilldownConfig` and `freeformTags.log_analytics_pivots`.
+
+The `<OCI_PROFILE>` provider id/name is `APM`:
+
+```bash
+OCI_CLI_PROFILE=<OCI_PROFILE> \
+COMPARTMENT_ID=<COMPARTMENT_OCID> \
+APM_DOMAIN_ID=<APM_DOMAIN_OCID> \
+APM_SAVED_QUERY_PROVIDER_ID=APM \
+APM_SAVED_QUERY_PROVIDER_NAME=APM \
+./deploy/oci/apm/apply_saved_queries.sh --apply
+```
+
+| saved query | use first when |
+| --- | --- |
+| `OCTO APM - checkout end-to-end` | an order, CRM sync, or checkout latency issue is reported |
+| `OCTO APM - payment Java sidecar` | card, Google Pay, Apple Pay, or Java app-server payment spans are slow or failed |
+| `OCTO APM - DB slow spans` | Trace Explorer shows SQL/connect spans above the latency threshold |
+| `OCTO APM - login/auth flow` | a user cannot sign in or session persistence is suspect |
+| `OCTO APM - assistant GenAI LLMetry` | assistant, Select AI, OCI GenAI, Langfuse, or token usage needs investigation |
+| `OCTO APM - service errors` | the app has 5xx, Java, assistant, gateway, or attack-lab errors |
+| `OCTO APM - platform workflows` | load-control, browser-runner, async-worker, cache, object-pipeline, or remediator behavior needs inspection |
+| `OCTO APM - trace drilldown` | a `Trace ID` was copied from Log Analytics, RUM, or an app response |
+
+Each saved query records its matching Log Analytics pivot. The standard flow is
+APM `TraceId` -> Log Analytics `Trace ID` -> specialized field such as
+`Payment Gateway Request ID`, `Order ID`, `Session ID`, `Application Hash`,
+`Request ID`, or `Attack ID`.
 
 ## Copy-paste trace URL
 

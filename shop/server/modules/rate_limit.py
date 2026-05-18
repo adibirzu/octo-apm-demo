@@ -58,7 +58,7 @@ async def check_and_consume(*, key: str, limit: int, window_seconds: int = _WIND
         logger.warning("rate_limit_redis_failed: %s", exc)
         try:
             await redis.aclose()
-        except Exception:
+        except Exception:  # noqa: S110
             pass
         return {"allowed": True, "count": 0, "limit": limit, "retry_after_seconds": 0}
 

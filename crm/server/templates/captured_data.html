@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block header_actions %}
+<a class="btn btn-secondary" href="/settings">Generate More Events</a>
+{% endblock %}
+
+{% block content %}
+<section class="captured-hero card">
+    <p class="eyebrow">Operator evidence center</p>
+    <h2>Captured Data Center</h2>
+    <p>
+        Paste any safe demo key returned by the Shop or Admin Simulation page and build OCI APM,
+        OCI Logging, and Log Analytics pivots. This page does not expose secrets or read private OCI
+        configuration in the browser; it creates copy-paste investigation paths for presenters.
+    </p>
+</section>
+
+<section class="card captured-panel">
+    <h3>Build evidence pivots</h3>
+    <div class="captured-grid">
+        <label>
+            Trace ID
+            <input class="form-input" id="trace-id-input" placeholder="32-character TraceId / oracleApmTraceId">
+        </label>
+        <label>
+            Order ID
+            <input class="form-input" id="order-id-input" placeholder="Order ID from checkout or storyboard">
+        </label>
+        <label>
+            Payment Gateway Request ID
+            <input class="form-input" id="gateway-id-input" placeholder="Payment gateway request id">
+        </label>
+        <label>
+            Attack ID
+            <input class="form-input" id="attack-id-input" placeholder="attack-...">
+        </label>
+        <label>
+            Assistant Session ID
+            <input class="form-input" id="assistant-session-input" placeholder="assistant or Langfuse session id">
+        </label>
+    </div>
+    <div class="captured-actions">
+        <button class="btn btn-primary" type="button" id="build-pivots">Build Pivots</button>
+        <button class="btn btn-secondary" type="button" id="load-capabilities">Load Capability Inventory</button>
+    </div>
+</section>
+
+<section class="captured-layout">
+    <div class="card captured-panel">
+        <h3>APM presentation path</h3>
+        <div id="apm-output" class="captured-output">Enter a Trace ID to build the Trace Explorer pivot.</div>
+    </div>
+    <div class="card captured-panel">
+        <h3>Log Analytics pivots</h3>
+        <div id="la-output" class="captured-output">Enter evidence keys to build saved-search filters.</div>
+    </div>
+</section>
+
+<section class="card captured-panel">
+    <h3>All captured-data checklist</h3>
+    <div class="checklist-grid">
+        <div><strong>MELTS coverage</strong><span>Metrics, events, logs, traces, and synthetic journeys should all produce fresh evidence for each demo run.</span></div>
+        <div><strong>APM Trace Explorer</strong><span>Trace waterfall, SQL spans, Java sidecar spans, errors, and span events.</span></div>
+        <div><strong>APM RUM</strong><span>Browser page views, AJAX calls, fictional user sessions, checkout actions.</span></div>
+        <div><strong>App Servers</strong><span>Java sidecar JVM/process/server-request metrics; Python FastAPI is shown through traces, not this page.</span></div>
+        <div><strong>OCI Logging</strong><span>Structured JSON app rows with <code>oracleApmTraceId</code> and safe payment/security fields.</span></div>
+        <div><strong>Log Analytics</strong><span>Saved searches and dashboards using Trace ID, Order ID, Gateway Request ID, Attack ID, and Session ID.</span></div>
+        <div><strong>ATP / SQL</strong><span>Order/payment/support rows plus SQL spans with <code>DbOracleSqlId</code> where available.</span></div>
+    </div>
+</section>
+
+<section class="card captured-panel">
+    <h3>Capability inventory</h3>
+    <pre id="capabilities-output" class="code-output">Click Load Capability Inventory to fetch /api/observability/capabilities.</pre>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.captured-hero { display:grid; gap:0.6rem; margin-bottom:1rem; }
+.captured-hero p:not(.eyebrow) { color: var(--text-secondary); line-height:1.6; max-width: 72rem; }
+.captured-panel { display:grid; gap:1rem; }
+.captured-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:0.75rem; }
+.captured-grid label { display:grid; gap:0.35rem; color:var(--text-secondary); font-size:0.82rem; }
+.captured-actions { display:flex; gap:0.5rem; flex-wrap:wrap; }
+.captured-layout { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:1rem; margin:1rem 0; }
+.captured-output { display:grid; gap:0.6rem; color:var(--text-secondary); }
+.captured-output code, .checklist-grid code {
+    display:block; white-space:normal; overflow-wrap:anywhere; background:rgba(0,0,0,0.22);
+    border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:0.55rem 0.65rem;
+}
+.checklist-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:0.75rem; }
+.checklist-grid > div { border:1px solid var(--line); border-radius:14px; padding:0.85rem; background:rgba(255,255,255,0.035); display:grid; gap:0.35rem; }
+.checklist-grid strong { color:var(--accent-strong); }
+.checklist-grid span { color:var(--text-secondary); font-size:0.84rem; line-height:1.45; }
+@media (max-width: 980px) { .captured-layout { grid-template-columns:1fr; } }
+</style>
+<script nonce="{{ request.state.csp_nonce if request and request.state and request.state.csp_nonce else '' }}">
+function val(id) { return document.getElementById(id).value.trim(); }
+
+function literalFilter(field, value) {
+    return value ? `'${field}' = '${value.replace(/'/g, "''")}'` : '';
+}
+
+function renderPivots() {
+    const traceId = val('trace-id-input');
+    const orderId = val('order-id-input');
+    const gatewayId = val('gateway-id-input');
+    const attackId = val('attack-id-input');
+    const assistantSessionId = val('assistant-session-input');
+    const apmUrl = traceId
+        ? `https://cloud.oracle.com/apm-traces/trace-explorer?traceId=${encodeURIComponent(traceId)}`
+        : 'Open Application Performance Monitoring → Trace Explorer and filter by the scenario time window.';
+    document.getElementById('apm-output').innerHTML = `
+        <code>${apmUrl}</code>
+        <code>Saved query: OCTO APM - trace drilldown</code>
+        <code>Checkout: OCTO APM - checkout end-to-end</code>
+        <code>Payment Java: OCTO APM - payment Java sidecar</code>
+        <code>Assistant: OCTO APM - assistant GenAI LLMetry</code>
+        <code>Attack/service errors: OCTO APM - service errors</code>
+    `;
+    const filters = [
+        literalFilter('Trace ID', traceId),
+        literalFilter('Order ID', orderId),
+        literalFilter('Payment Gateway Request ID', gatewayId),
+        literalFilter('Attack ID', attackId),
+        literalFilter('Session ID', assistantSessionId),
+    ].filter(Boolean);
+    document.getElementById('la-output').innerHTML = `
+        <code>trace-drilldown${traceId ? ` → ${literalFilter('Trace ID', traceId)}` : ''}</code>
+        <code>checkout-payment-correlation${orderId || gatewayId || traceId ? ` → ${filters.filter(f => /Trace ID|Order ID|Payment Gateway/.test(f)).join(' OR ')}` : ''}</code>
+        <code>payment-gateway-security-triage${gatewayId ? ` → ${literalFilter('Payment Gateway Request ID', gatewayId)}` : ''}</code>
+        <code>attack-lab-trace-timeline${attackId ? ` → ${literalFilter('Attack ID', attackId)}` : ''}</code>
+        <code>genai-assistant-llmetry${assistantSessionId ? ` → ${literalFilter('Session ID', assistantSessionId)}` : ''}</code>
+        <code>service-trace-log-coverage → prove per-service trace/span log coverage</code>
+    `;
+}
+
+async function loadCapabilities() {
+    const out = document.getElementById('capabilities-output');
+    out.textContent = 'Loading capabilities...';
+    try {
+        const resp = await _fetch('/api/observability/capabilities');
+        const data = await resp.json();
+        out.textContent = JSON.stringify({
+            melts: data.melts,
+            signals: data.signals,
+            demo_generators: data.demo_generators,
+            endpoints: data.endpoints
+        }, null, 2);
+    } catch (err) {
+        out.textContent = `Unable to load capabilities: ${err.message}`;
+    }
+}
+
+document.getElementById('build-pivots').addEventListener('click', renderPivots);
+document.getElementById('load-capabilities').addEventListener('click', loadCapabilities);
+renderPivots();
+</script>
+{% endblock %}

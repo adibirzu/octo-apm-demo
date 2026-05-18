@@ -25,6 +25,21 @@
         </form>
         <div class="coordinator-answer" id="coordinator-answer" aria-live="polite"></div>
     </section>
+    <section class="coordinator-panel" id="admin-retention-panel" aria-label="Data retention cleanup">
+        <div class="coordinator-head">
+            <div>
+                <p class="eyebrow">Database</p>
+                <h2>Clear Old Demo Data</h2>
+            </div>
+            <span class="status-value-pill" id="retention-status">Preview first</span>
+        </div>
+        <form class="coordinator-form" id="retention-form">
+            <input id="retention-days" class="form-input" type="number" min="1" max="3650" value="30" aria-label="Older than days">
+            <button type="button" class="btn btn-secondary" id="retention-preview">Preview</button>
+            <button type="submit" class="btn btn-primary" id="retention-cleanup">Clear</button>
+        </form>
+        <div class="coordinator-answer" id="retention-result" aria-live="polite"></div>
+    </section>
     {% endif %}
     <div class="card">
         <table class="data-table" id="data-table">
@@ -633,6 +648,88 @@ async function setupAdminCoordinator() {
     });
 }
 
+function renderRetentionResult(payload, mode) {
+    const result = document.getElementById('retention-result');
+    const status = document.getElementById('retention-status');
+    if (!result || !status) return;
+    const rows = (payload.tables || []).map(row => `
+        <tr>
+            <td>${escapeHtml(row.table)}</td>
+            <td>${Number(row.matching_rows || 0).toLocaleString()}</td>
+            <td>${Number(row.deleted_rows || 0).toLocaleString()}</td>
+        </tr>
+    `).join('');
+    const total = mode === 'cleanup'
+        ? Number(payload.total_deleted_rows || 0)
+        : Number(payload.total_matching_rows || 0);
+    status.textContent = mode === 'cleanup' ? `${total.toLocaleString()} deleted` : `${total.toLocaleString()} rows`;
+    status.className = `status-value-pill ${total ? 'is-warning' : 'is-healthy'}`;
+    result.className = 'coordinator-answer is-allowed';
+    result.innerHTML = `
+        <p>Cutoff: ${escapeHtml(payload.cutoff || '')}</p>
+        <table class="data-table">
+            <thead><tr><th>Table</th><th>Matching</th><th>Deleted</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="3">No matching rows</td></tr>'}</tbody>
+        </table>
+    `;
+}
+
+async function runRetentionPreview() {
+    const days = Number(document.getElementById('retention-days')?.value || 30);
+    const result = document.getElementById('retention-result');
+    if (result) result.innerHTML = '<p>Checking rows...</p>';
+    const resp = await _fetch(`/api/admin/data-retention/preview?older_than_days=${encodeURIComponent(days)}`);
+    const payload = await resp.json();
+    if (!resp.ok) throw new Error(payload.detail || 'Preview failed');
+    renderRetentionResult(payload, 'preview');
+}
+
+async function setupAdminRetention() {
+    if (MODULE !== 'admin') return;
+    const form = document.getElementById('retention-form');
+    const preview = document.getElementById('retention-preview');
+    const cleanup = document.getElementById('retention-cleanup');
+    const daysInput = document.getElementById('retention-days');
+    const result = document.getElementById('retention-result');
+    if (!form || !preview || !cleanup || !daysInput || !result) return;
+
+    preview.addEventListener('click', async () => {
+        try {
+            preview.disabled = true;
+            await runRetentionPreview();
+        } catch (error) {
+            result.className = 'coordinator-answer is-blocked';
+            result.innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+        } finally {
+            preview.disabled = false;
+        }
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const days = Number(daysInput.value || 30);
+        if (!window.confirm(`Clear demo DB entries older than ${days} days?`)) return;
+        try {
+            cleanup.disabled = true;
+            result.innerHTML = '<p>Clearing rows...</p>';
+            const resp = await _fetch('/api/admin/data-retention/cleanup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ older_than_days: days }),
+            });
+            const payload = await resp.json();
+            if (!resp.ok) throw new Error(payload.detail || 'Cleanup failed');
+            renderRetentionResult(payload, 'cleanup');
+            loadData();
+        } catch (error) {
+            result.className = 'coordinator-answer is-blocked';
+            result.innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+        } finally {
+            cleanup.disabled = false;
+        }
+    });
+}
+
 /* ── Init ───────────────────────────────────────────── */
 
 if (config.createFields) document.getElementById('btn-create').style.display = '';
@@ -653,6 +750,7 @@ document.getElementById('search-input').addEventListener('keyup', (e) => {
 });
 
 setupAdminCoordinator();
+setupAdminRetention();
 loadData();
 </script>
 {% endblock %}

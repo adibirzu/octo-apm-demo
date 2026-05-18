@@ -428,6 +428,50 @@
         line-height: 1.5;
         margin-bottom: 4px;
     }
+    .checkout-observability-guide {
+        display: grid;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: var(--shop-radius-md);
+        border: 1px solid color-mix(in oklab, var(--shop-accent) 24%, var(--shop-line));
+        background: rgba(110, 240, 197, 0.035);
+        font-size: 0.78rem;
+        color: var(--shop-muted);
+        line-height: 1.45;
+    }
+    .checkout-observability-guide strong { color: var(--shop-ink); }
+    .checkout-observability-guide ul { margin: 0; padding-left: 18px; }
+    .checkout-evidence {
+        display: grid;
+        gap: 7px;
+        margin-top: 8px;
+        padding: 10px 12px;
+        border-radius: var(--shop-radius-md);
+        background: rgba(7, 9, 12, 0.64);
+        border: 1px solid var(--shop-line);
+        color: var(--shop-muted);
+        font-size: 0.76rem;
+        overflow-wrap: anywhere;
+    }
+    .checkout-evidence code {
+        display: block;
+        white-space: normal;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 10px;
+        padding: 6px 8px;
+    }
+    .evidence-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+    }
+    .copy-evidence-btn {
+        min-width: 72px;
+        padding: 6px 8px;
+        font-size: 0.72rem;
+    }
     .checkout-form { display: grid; gap: 10px; }
     .checkout-form input,
     .checkout-form textarea,
@@ -621,26 +665,26 @@
     <header class="shop-hero">
         <div class="hero-copy">
             <div>
-                <div class="hero-kicker">Catalog · ATP-backed · OCI APM traced</div>
+                <div class="hero-kicker">Demo catalog · Synthetic data · OCI APM traced</div>
                 <h1>The Drone Shop</h1>
-                <p>Mission-ready drone platforms, payloads, radios, batteries, and enterprise checkout. Product data comes from the live Oracle ATP catalog, cart and payment workflows stay connected to the existing backend, and every critical path is visible in OCI APM.</p>
+                <p>Mission-ready drone platforms, payloads, radios, batteries, and simulated checkout. All products, orders, prices, payment tokens, and customer data on this demo page are fake and exist only to showcase observability with OCI services.</p>
             </div>
             <div class="hero-pills">
-                <span class="chip">● Live inventory</span>
+                <span class="chip">● Demo inventory</span>
                 <span class="chip">Simulated VISA / Mastercard</span>
                 <span class="chip">Apple Pay / Google Pay</span>
-                <span class="chip">CRM sync</span>
+                <span class="chip">Trace-linked orders</span>
             </div>
         </div>
         <div class="hero-panel">
             <div class="mono-label">Commerce workflow</div>
             <div class="hero-metric">
-                <span>Catalog source</span>
-                <strong id="backendChip">ATP</strong>
+                <span>Demo signals</span>
+                <strong id="apmChip">APM</strong>
             </div>
             <div class="hero-metric">
-                <span>CRM link</span>
-                <strong id="crmChip">CRM</strong>
+                <span>Order links</span>
+                <strong id="crmChip">Logs</strong>
             </div>
             <div class="hero-metric">
                 <span>Cart session</span>
@@ -675,11 +719,11 @@
         <!-- Catalog -->
         <section class="catalog-area">
             <div class="catalog-meta">
-                <span class="muted">Showing live catalog results from Oracle ATP</span>
+                <span class="muted">Showing synthetic demo catalog results</span>
                 <div class="status-chips" id="statsChips"></div>
             </div>
             <div class="product-grid" id="productGrid">
-                <div class="helper" style="grid-column:1/-1;padding:24px 0;">Loading catalog from Oracle ATP…</div>
+                <div class="helper" style="grid-column:1/-1;padding:24px 0;">Loading demo catalog…</div>
             </div>
         </section>
 
@@ -710,7 +754,16 @@
                     <span class="muted">Total</span>
                     <strong id="cartTotal">$0.00</strong>
                 </div>
-                <div class="order-note">Orders are persisted in Oracle ATP, traced through OCI APM, and synchronized with Enterprise CRM.</div>
+                <div class="order-note">Orders, payments, and browser actions emit synthetic traces, logs, and metrics for OCI observability demos.</div>
+                <div class="checkout-observability-guide" id="checkoutObservabilityGuide">
+                    <strong>What this checkout generates</strong>
+                    <ul>
+                        <li>APM spans: <code>shop.checkout</code>, payment authorize, order sync, and ATP SQL with <code>DbOracleSqlId</code>.</li>
+                        <li>RUM actions: add to cart, checkout start, checkout complete/error.</li>
+                        <li>Logs/Log Analytics pivots: <code>Trace ID</code>, <code>Order ID</code>, and <code>Payment Gateway Request ID</code>.</li>
+                    </ul>
+                    <span>After placing an order, copy the captured data below into APM Trace Explorer and the <code>checkout-payment-correlation</code> Log Analytics search.</span>
+                </div>
                 <form class="checkout-form" id="checkoutForm" data-testid="checkout-form">
                     <input name="customer_name" placeholder="Contact name" data-testid="checkout-name" required>
                     <input name="customer_email" type="email" placeholder="Contact email" data-testid="checkout-email" required>
@@ -761,6 +814,7 @@
                     <button class="btn" type="submit" id="checkoutSubmitButton" data-testid="place-order-button">Place Order</button>
                 </form>
                 <div class="helper" id="checkoutStatus" data-testid="checkout-status" style="margin-top:6px;"></div>
+                <div class="checkout-evidence" id="checkoutEvidence" data-testid="checkout-evidence" hidden></div>
             </div>
 
             <!-- Authorized dealers -->
@@ -799,6 +853,8 @@ function _uuid() {
     });
 }
 
+const JOURNEY_TRACE_TTL_MS = 30 * 60 * 1000;
+
 const state = {
     products: [],
     filtered: [],
@@ -806,14 +862,11 @@ const state = {
     category: 'All',
     sessionId: localStorage.getItem('octo-session-id') || _uuid(),
     browserTraceId: localStorage.getItem('octo-browser-trace-id') || '',
+    journeyId: localStorage.getItem('octo-shop-journey-id') || '',
+    journeyStartedAt: Number(localStorage.getItem('octo-shop-journey-started-at') || 0),
     checkoutInFlight: false,
     checkoutIdempotencyKey: '',
 };
-if (!/^[0-9a-f]{32}$/i.test(state.browserTraceId)) {
-    state.browserTraceId = randomHex(32);
-}
-localStorage.setItem('octo-session-id', state.sessionId);
-localStorage.setItem('octo-browser-trace-id', state.browserTraceId);
 
 function randomHex(length) {
     const bytes = new Uint8Array(Math.ceil(length / 2));
@@ -823,6 +876,50 @@ function randomHex(length) {
         for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
     }
     return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('').slice(0, length);
+}
+
+function persistJourneyState() {
+    localStorage.setItem('octo-session-id', state.sessionId);
+    localStorage.setItem('octo-browser-trace-id', state.browserTraceId);
+    localStorage.setItem('octo-shop-journey-id', state.journeyId);
+    localStorage.setItem('octo-shop-journey-started-at', String(state.journeyStartedAt));
+    if (window.apmrum) {
+        window.apmrum.customDimensions = Object.assign(window.apmrum.customDimensions || {}, {
+            shop_journey_id: state.journeyId,
+            browser_trace_id: state.browserTraceId,
+        });
+    }
+}
+
+function rotatePurchaseJourney(reason = 'new_purchase') {
+    state.browserTraceId = randomHex(32);
+    state.journeyId = _uuid();
+    state.journeyStartedAt = Date.now();
+    persistJourneyState();
+    return reason;
+}
+
+function purchaseJourneyExpired() {
+    return (
+        !/^[0-9a-f]{32}$/i.test(state.browserTraceId) ||
+        !state.journeyId ||
+        !state.journeyStartedAt ||
+        Date.now() - state.journeyStartedAt > JOURNEY_TRACE_TTL_MS
+    );
+}
+
+function ensurePurchaseJourney(reason = 'purchase_action') {
+    if (purchaseJourneyExpired()) {
+        rotatePurchaseJourney(reason);
+    } else {
+        persistJourneyState();
+    }
+}
+
+if (purchaseJourneyExpired()) {
+    rotatePurchaseJourney('initial_or_expired');
+} else {
+    persistJourneyState();
 }
 
 function money(v) {
@@ -859,26 +956,37 @@ function currentAuthUser() {
     }
 }
 
-function browserTraceHeaders(extra = {}) {
+function safeHeaderValue(value, limit = 120) {
+    return String(value || '')
+        .replace(/[\r\n\t]/g, ' ')
+        .replace(/[^\x20-\x7E]/g, '')
+        .slice(0, limit);
+}
+
+function browserTraceHeaders(extra = {}, telemetry = {}) {
+    const correlationId = telemetry.purchaseJourney ? state.browserTraceId : randomHex(32);
     const headers = {
-        traceparent: `00-${state.browserTraceId}-${randomHex(16)}-01`,
-        'X-Correlation-Id': state.browserTraceId,
+        'X-Correlation-Id': correlationId,
         'X-OCTO-Session-Id': state.sessionId,
         ...extra,
     };
+    if (telemetry.purchaseJourney) headers['X-OCTO-Journey-Id'] = state.journeyId;
+    if (telemetry.userAction) headers['X-OCTO-User-Action'] = safeHeaderValue(telemetry.userAction);
+    if (telemetry.step) headers['X-OCTO-Checkout-Step'] = safeHeaderValue(telemetry.step, 80);
+    if (telemetry.paymentMethod) headers['X-OCTO-Payment-Method'] = safeHeaderValue(telemetry.paymentMethod, 50);
     const token = currentAuthToken();
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
 }
 
-function jsonApiHeaders() {
-    return browserTraceHeaders({'Content-Type': 'application/json'});
+function jsonApiHeaders(telemetry = {}) {
+    return browserTraceHeaders({'Content-Type': 'application/json'}, telemetry);
 }
 
-async function apiFetch(path, options = {}) {
+async function apiFetch(path, options = {}, telemetry = {}) {
     return _fetch(path, {
         ...options,
-        headers: browserTraceHeaders(options.headers || {}),
+        headers: browserTraceHeaders(options.headers || {}, telemetry),
     });
 }
 
@@ -1008,7 +1116,7 @@ function openQuickView(productId) {
         <div class="quick-view-action">
             <div>
                 <div class="product-price">${money(product.price)}</div>
-                <div class="helper">Adds to the same ATP-backed cart session.</div>
+                <div class="helper">Adds to the same demo cart session.</div>
             </div>
             <button class="btn btn-primary quick-add-btn" type="button" data-id="${product.id}" data-testid="quick-add-to-cart-button">Add to Cart</button>
         </div>
@@ -1054,22 +1162,29 @@ function applyFilters() {
 
 /* ── Storefront load ─────────────────────────────────────────── */
 async function loadStorefront() {
-    const res = await apiFetch('/api/shop/storefront');
+    const res = await apiFetch('/api/shop/storefront', {}, {
+        userAction: 'shop.catalog.load',
+        step: 'catalog',
+    });
     if (!res.ok) throw new Error(`Storefront ${res.status}`);
     const data = await res.json();
     state.products = data.products || [];
     const be = data.backend || {};
     const crm = data.crm_sync || {};
-    document.getElementById('backendChip').textContent = be.apm_configured ? 'ATP + APM' : 'Oracle ATP';
-    document.getElementById('crmChip').textContent = crm.configured ? 'CRM sync' : 'CRM optional';
+    document.getElementById('apmChip').textContent = be.apm_configured ? 'APM ready' : 'Demo data';
+    document.getElementById('crmChip').textContent = crm.configured ? 'Order links' : 'Demo mode';
     renderCategories(data.categories || []);
     renderStats(data.stats || {});
     applyFilters();
 }
 
 /* ── Cart ────────────────────────────────────────────────────── */
-async function loadCart() {
-    const res = await apiFetch(`/api/cart?session_id=${encodeURIComponent(state.sessionId)}`);
+async function loadCart(usePurchaseJourney = false) {
+    const res = await apiFetch(`/api/cart?session_id=${encodeURIComponent(state.sessionId)}`, {}, {
+        userAction: 'shop.cart.load',
+        step: 'cart',
+        purchaseJourney: usePurchaseJourney,
+    });
     if (!res.ok) return;
     const data = await res.json();
     state.cart = data.items || [];
@@ -1099,6 +1214,7 @@ async function loadCart() {
 }
 
 async function addToCart(productId) {
+    ensurePurchaseJourney('cart_add');
     const product = state.products.find(p => p.id === productId);
     rumEvent('shop.add_to_cart', {
         product_id: productId,
@@ -1109,8 +1225,12 @@ async function addToCart(productId) {
     });
     const res = await apiFetch('/api/cart/add', {
         method: 'POST',
-        headers: jsonApiHeaders(),
+        headers: jsonApiHeaders({userAction: 'shop.cart.add', step: 'cart', purchaseJourney: true}),
         body: JSON.stringify({session_id: state.sessionId, product_id: productId, quantity: 1}),
+    }, {
+        userAction: 'shop.cart.add',
+        step: 'cart',
+        purchaseJourney: true,
     });
     const data = await res.json();
     if (!res.ok || data.error) {
@@ -1119,13 +1239,17 @@ async function addToCart(productId) {
         return;
     }
     state.checkoutIdempotencyKey = '';
-    await loadCart();
+    await loadCart(true);
 }
 
 async function removeCartItem(itemId) {
-    await apiFetch(`/api/cart/${itemId}`, {method: 'DELETE'});
+    await apiFetch(`/api/cart/${itemId}`, {method: 'DELETE'}, {
+        userAction: 'shop.cart.remove',
+        step: 'cart',
+        purchaseJourney: true,
+    });
     state.checkoutIdempotencyKey = '';
-    await loadCart();
+    await loadCart(true);
 }
 
 function updatePaymentPanels() {
@@ -1179,7 +1303,12 @@ function simulateWallet(walletType) {
     document.getElementById('walletTokenStatus').textContent =
         `${walletType === 'apple_pay' ? 'Apple Pay' : 'Google Pay'} token ready (${network}).`;
     updatePaymentPanels();
-    rumEvent('shop.wallet_token_created', {payment_method: walletType, payment_wallet_type: walletType, payment_card_brand: network.toLowerCase()});
+    rumEvent('shop.wallet_token_created', {
+        payment_method: walletType,
+        payment_wallet_type: walletType,
+        payment_card_brand: network.toLowerCase(),
+        checkout_step: 'wallet_token',
+    });
 }
 
 function buildPaymentDetails(formEl, form) {
@@ -1213,10 +1342,96 @@ function buildPaymentDetails(formEl, form) {
     return {manual: {method}};
 }
 
+function checkoutErrorMessage(result, statusCode) {
+    if (result && typeof result.error === 'string' && result.error.trim()) {
+        return result.error.trim();
+    }
+    if (result && typeof result.detail === 'string' && result.detail.trim()) {
+        return result.detail.trim();
+    }
+    if (result && Array.isArray(result.detail)) {
+        const detailText = result.detail.map(item => {
+            if (typeof item === 'string') return item;
+            const field = Array.isArray(item.loc) ? item.loc.join('.') : '';
+            return [field, item.msg].filter(Boolean).join(': ');
+        }).filter(Boolean).join('; ');
+        if (detailText) return detailText;
+    }
+    if (result && typeof result.message === 'string' && result.message.trim()) {
+        return result.message.trim();
+    }
+    return `Checkout failed (${statusCode})`;
+}
+
+function renderCheckoutEvidence(result) {
+    const evidence = document.getElementById('checkoutEvidence');
+    if (!evidence || !result) return;
+    const traceId = result.trace_id || '';
+    const orderId = result.order_id || '';
+    const gatewayId = result.payment?.gateway?.request_id || result.payment?.gateway_request_id || '';
+    const paymentStatus = result.payment?.status || result.payment_status || '';
+    const gateway = result.payment?.gateway || {};
+    const stepCount = (gateway.steps || []).length + (gateway.final_step ? 1 : 0);
+    const network = result.payment?.gateway?.payment_network || result.payment?.network || result.payment?.card_brand || '';
+    const method = result.payment?.wallet_type || result.payment?.method || result.payment_method || 'credit_card';
+    const walletGateway = method === 'apple_pay'
+        ? 'Apple Pay Gateway'
+        : method === 'google_pay'
+            ? 'Google Pay Gateway'
+            : '';
+    const networkGateway = String(network).toLowerCase() === 'mastercard'
+        ? 'Mastercard Payment Network'
+        : String(network).toLowerCase() === 'visa'
+            ? 'VISA Payment Network'
+            : 'Network Token Payment Network';
+    const components = [
+        'Browser RUM',
+        'Drone Shop',
+        'OCTO Payment Gateway Emulator',
+        walletGateway,
+        'OCTO Antifraud Verification App',
+        'OCTO Java Payment Processor',
+        networkGateway,
+        'Oracle ATP',
+        'Order Management',
+    ].filter(Boolean);
+    const rows = [
+        ['Trace ID', traceId || 'not returned'],
+        ['Order ID', orderId || 'not returned'],
+        ['Payment Gateway Request ID', gatewayId || 'not returned'],
+        ['Payment Status', paymentStatus || 'unknown'],
+        ['Payment Flow Components', components.join(' → ')],
+        ['Gateway Steps', stepCount ? `${stepCount} token-safe gateway steps captured` : 'not returned'],
+        ['APM Saved Query', `OCTO APM - checkout end-to-end → TraceId = ${traceId || '<TRACE_ID>'}`],
+        ['Log Analytics Search', `checkout-payment-correlation → 'Trace ID' = '${traceId || '<TRACE_ID>'}' OR 'Order ID' = '${String(orderId || '<ORDER_ID>')}'`],
+        ['Security Triage Search', gatewayId ? `payment-gateway-security-triage → 'Payment Gateway Request ID' = '${gatewayId}'` : 'payment-gateway-security-triage → use Payment Gateway Request ID'],
+    ];
+    evidence.hidden = false;
+    evidence.innerHTML = `<strong>Captured data pivots</strong>` + rows.map(([label, value]) => `
+        <div class="evidence-row">
+            <code>${esc(label)}: ${esc(value)}</code>
+            <button class="btn copy-evidence-btn" type="button" data-copy="${esc(value)}">Copy</button>
+        </div>
+    `).join('');
+    evidence.querySelectorAll('.copy-evidence-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+            const value = button.getAttribute('data-copy') || '';
+            try {
+                await navigator.clipboard.writeText(value);
+                button.textContent = 'Copied';
+            } catch (_) {
+                button.textContent = 'Select';
+            }
+            setTimeout(() => { button.textContent = 'Copy'; }, 1400);
+        });
+    });
+}
+
 /* ── Checkout ────────────────────────────────────────────────── */
 async function submitCheckout(e) {
     e.preventDefault();
     if (state.checkoutInFlight) return;
+    ensurePurchaseJourney('checkout_submit');
     state.checkoutInFlight = true;
     const formEl = e.currentTarget;
     const submitButton = formEl.querySelector('button[type="submit"]');
@@ -1231,6 +1446,7 @@ async function submitCheckout(e) {
         ...Object.fromEntries(form.entries()),
         session_id: state.sessionId,
         browser_trace_id: state.browserTraceId,
+        journey_id: state.journeyId,
         checkout_idempotency_key: state.checkoutIdempotencyKey,
         items: state.cart.map(i => ({product_id: i.product_id, quantity: i.quantity})),
         payment_details: buildPaymentDetails(formEl, form),
@@ -1250,13 +1466,29 @@ async function submitCheckout(e) {
     try {
         const res = await apiFetch('/api/shop/checkout', {
             method: 'POST',
-            headers: jsonApiHeaders(),
+            headers: jsonApiHeaders({
+                userAction: 'shop.checkout.submit',
+                step: 'payment',
+                paymentMethod: method,
+                purchaseJourney: true,
+            }),
             body: JSON.stringify(payload),
+        }, {
+            userAction: 'shop.checkout.submit',
+            step: 'payment',
+            paymentMethod: method,
+            purchaseJourney: true,
         });
-        const result = await res.json();
+        let result = {};
+        try {
+            result = await res.json();
+        } catch (_) {
+            result = {};
+        }
         if (!res.ok || result.error) {
-            rumEvent('shop.checkout_error', {error: result.error || `HTTP ${res.status}`, cart_items: state.cart.length});
-            status.textContent = result.error || `Checkout failed (${res.status})`;
+            const errorMessage = checkoutErrorMessage(result, res.status);
+            rumEvent('shop.checkout_error', {error: errorMessage, http_status_code: res.status, cart_items: state.cart.length});
+            status.textContent = errorMessage;
             return;
         }
         rumEvent('shop.checkout_complete', {
@@ -1278,6 +1510,7 @@ async function submitCheckout(e) {
             order_status: result.order_status || '',
             payment_required: Boolean(result.payment_required),
         });
+        renderCheckoutEvidence(result);
         const payment = result.payment || {};
         const paymentLabel = payment.wallet_type
             ? payment.wallet_type.replace('_', ' ')
@@ -1293,6 +1526,7 @@ async function submitCheckout(e) {
         formEl.reset();
         updatePaymentPanels();
         updateCardPreview();
+        rotatePurchaseJourney('checkout_complete');
         await Promise.all([loadCart(), loadStorefront()]);
     } catch (err) {
         rumEvent('shop.checkout_exception', {error: err.message});
@@ -1309,7 +1543,10 @@ async function submitCheckout(e) {
 /* ── Dealers ─────────────────────────────────────────────────── */
 async function loadShops() {
     try {
-        const res = await apiFetch('/api/shop/locations');
+        const res = await apiFetch('/api/shop/locations', {}, {
+            userAction: 'shop.locations.load',
+            step: 'locations',
+        });
         const data = await res.json();
         const shops = data.shops || [];
         document.getElementById('shopCount').textContent = `${shops.length} locations`;
@@ -1328,7 +1565,7 @@ async function loadShops() {
 async function trackPageView() {
     await apiFetch('/api/analytics/track', {
         method: 'POST',
-        headers: jsonApiHeaders(),
+        headers: jsonApiHeaders({userAction: 'shop.analytics.page_view', step: 'page_view'}),
         body: JSON.stringify({
             page: window.location.pathname,
             session_id: state.sessionId,
@@ -1336,20 +1573,29 @@ async function trackPageView() {
             load_time_ms: Math.round(performance.now()),
             referrer: document.referrer || 'direct',
         }),
+    }, {
+        userAction: 'shop.analytics.page_view',
+        step: 'page_view',
     });
 }
 
 /* ── RUM Custom Events (OCI APM user interaction tracing) ────── */
 function rumEvent(name, attrs) {
     try {
+        const enrichedAttrs = {
+            shop_journey_id: state.journeyId,
+            browser_trace_id: state.browserTraceId,
+            session_id: state.sessionId,
+            ...(attrs || {}),
+        };
         if (window.octoRumEvent) {
-            window.octoRumEvent(name, attrs || {});
+            window.octoRumEvent(name, enrichedAttrs);
             return;
         }
         if (window.apmrum && typeof window.apmrum.reportError === 'function') {
             // Use a custom event via the RUM beacon — OCI APM surfaces these
             // as "User Interaction" spans in the Session Explorer.
-            const payload = {name, ...attrs, timestamp: Date.now()};
+            const payload = {name, ...enrichedAttrs, timestamp: Date.now()};
             // OCI APM RUM supports custom actions via the global apmrum object
             if (window.apmrum.api && window.apmrum.api.addAction) {
                 window.apmrum.api.addAction(name, payload);
@@ -1357,7 +1603,7 @@ function rumEvent(name, attrs) {
         }
         // Also emit a performance mark so browser DevTools shows the event
         if (window.performance && window.performance.mark) {
-            window.performance.mark(`rum:${name}`, {detail: attrs});
+            window.performance.mark(`rum:${name}`, {detail: enrichedAttrs});
         }
     } catch (_) { /* RUM not loaded */ }
 }

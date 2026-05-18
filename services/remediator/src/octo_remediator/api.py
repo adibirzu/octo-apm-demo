@@ -27,6 +27,7 @@ from .playbooks.base import (
     RemediationTier,
     _now_iso,
 )
+from .telemetry import instrument_fastapi_app
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,11 @@ class _RunStore:
 def create_app(*, store: _RunStore | None = None) -> FastAPI:
     store = store or _RunStore()
     app = FastAPI(title="octo-remediator", version="1.0.0")
+    instrument_fastapi_app(
+        app,
+        service_name=os.getenv("OTEL_SERVICE_NAME", "octo-remediator"),
+        service_version="1.0.0",
+    )
     auto_medium = os.getenv("OCTO_REMEDIATOR_AUTO_MEDIUM", "false").lower() == "true"
 
     @app.get("/health")

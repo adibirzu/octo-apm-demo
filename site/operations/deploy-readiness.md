@@ -25,14 +25,74 @@ bash deploy/verify.sh
 - root deploy tests, provisioning-wizard tests, and shop/crm/tool pytest suites
 - lightweight template-render smoke for both apps
 
+Latest local release gate, May 14, 2026:
+
+```text
+VERIFY PASSED — 0 warning(s)
+```
+
+That run included full Shop and CRM pytest groups, strict MkDocs, Helm
+render/lint, Terraform validation, Docker compose config, Kubernetes client
+dry-run for rendered Helm, and template smoke checks.
+
+The latest shared private rollout validated by this gate is immutable image
+tag `obs-20260514203801`. Post-rollout smoke checks covered the public
+round-robin load-balanced Shop/Admin routes, direct VM checkout, OKE checkout,
+APM trace lookup, Log Analytics trace/order/payment-gateway correlation, and
+OCI Monitoring custom metrics for the VM and OKE service names.
+
 Supplementary targeted checks:
 
 ```bash
 python3 -m pytest -q tests/test_unified_deploy_surface.py
+bash deploy/compute/validate.sh
 python3 -m pytest -q services/load-control/tests/test_profiles.py \
   services/load-control/tests/test_api.py \
   services/load-control/tests/test_runs.py
 ```
+
+## Non-destructive rollout checks
+
+Run these before touching a shared demo route. They validate the same
+deployment contract used by the VM and OKE paths without changing the
+public Load Balancer routing policy.
+
+```bash
+bash deploy/verify.sh
+bash deploy/compute/validate.sh
+
+DNS_DOMAIN=<domain> \
+OCIR_REGION=<region> \
+OCIR_TENANCY=<namespace> \
+IMAGE_TAG=<immutable-tag> \
+OKE_CLUSTER_NAME=octo-apm-demo-oke \
+SERVER_DRY_RUN=true \
+APPLY=false \
+bash deploy/oke/deploy-oke.sh
+
+APPLY=false bash deploy/oke/install-oci-kubernetes-monitoring.sh
+```
+
+Live promotion stays separate from validation:
+
+- `deploy/oke/wire-existing-lb-backends.sh --round-robin-active --apply`
+  only after VM and OKE direct smoke tests pass.
+- `deploy/oke/wire-existing-lb-backends.sh --rollback-active-vm` returns
+  the active backend sets to VM-only if the OKE path regresses.
+- Playwright E2E should cover login, cart, checkout, payment rail, order
+  view, and admin order visibility against both public routes during the
+  round-robin period.
+- APM Trace Explorer must show the browser/user action, Shop, Java payment
+  gateway, Admin/CRM, and database spans for a successful purchase.
+- Log Analytics saved searches must return matching records for the same
+  trace ID, workflow ID, order ID, payment gateway request ID, and service
+  names before the deployment is promoted.
+- Deployment parity checks must show the same capability contract across
+  OKE raw manifests, Helm, two-instance Compute, unified VM, and local
+  containers: service namespace/instance IDs, Java payment gateway,
+  Workflow Gateway/Select AI where Oracle ATP is available, LLMetry/Langfuse
+  flags, payment simulation flags, and Log Analytics `SOC Application Logs`
+  annotations.
 
 ## Manual steps still outside Terraform
 

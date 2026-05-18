@@ -96,6 +96,10 @@ class Config:
 
     # ── Java APM app-server sidecar ──
     java_apm_service_url = _env_value("JAVA_APM_SERVICE_URL", "").rstrip("/")
+    java_apm_service_name = _env_value(
+        "JAVA_APM_SERVICE_NAME",
+        "octo-java-app-server-oke" if otel_service_name.endswith("-oke") else "octo-java-app-server",
+    )
     java_apm_timeout_seconds = _env_float("JAVA_APM_TIMEOUT_SECONDS", 3.0)
     java_apm_enabled = _env_value("JAVA_APM_ENABLED", "true").lower() in ("1", "true", "yes") and bool(java_apm_service_url)
 

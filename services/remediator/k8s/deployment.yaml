@@ -71,6 +71,12 @@ spec:
               value: "false"
             - name: PORT
               value: "8080"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://gateway.octo-otel.svc.cluster.local:4318"
+            - name: OTEL_SERVICE_NAME
+              value: "octo-remediator"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=octo,deployment.environment=production,cloud.provider=oci,oci.demo.stack=octo-apm-demo,k8s.namespace.name=octo-remediator,k8s.deployment.name=remediator"
           readinessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10

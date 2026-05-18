@@ -29,7 +29,7 @@ module "iam" {
 - `read objects` — wallet + artifacts from Object Storage
 - `use log-content` — ingest app logs via Logging SDK
 - `use apm-domains` — push traces to APM
-- `use metrics where target.metrics.namespace = 'octo_drone_shop'` — publish the shop's custom metrics
+- `use metrics where target.metrics.namespace = 'octo_apm_demo'` — publish the Shop and Admin custom metrics
 - `use stack-monitoring-resources` — enrich monitored resources
 - `use generative-ai-family` — AI assistant
 - `use ons-topics` — emit cross-service events

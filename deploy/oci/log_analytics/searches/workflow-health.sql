@@ -2,11 +2,14 @@
 -- workflow-health
 -- Per-workflow latency + error-rate over the selected window.
 -- ============================================================================
-'Workflow ID' != null
-| where Time > dateRelative(1h)
+('Log Source' = 'OCI Unified Schema Logs' and 'OCI Resource Name' in ('octo-drone-shop', 'enterprise-crm-portal'))
+| jsonextract field = Message Service = '$.service_name'
+| jsonextract field = Message 'Workflow ID' = '$.workflow_id'
+| jsonextract field = Message 'HTTP Status Code' = '$.http_status_code'
+| jsonextract field = Message 'DB Elapsed ms' = '$.db_elapsed_ms'
+| where 'Workflow ID' != null
 | stats count as Requests,
-        countif('HTTP Status Code' >= 500) as Errors,
-        pct('DB Elapsed ms', 95) as 'DB p95 ms'
+        values('HTTP Status Code') as Statuses,
+        values('DB Elapsed ms') as 'DB ms samples'
   by 'Workflow ID', Service
-| eval 'Error Rate %' = round((Errors / Requests) * 100, 2)
-| sort -'Error Rate %'
+| sort -Requests

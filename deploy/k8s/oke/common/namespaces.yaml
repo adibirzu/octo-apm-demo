@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: octo-drone-shop
+  name: ${K8S_NAMESPACE_SHOP}
   labels:
     app.kubernetes.io/part-of: octo-apm-demo
     app.kubernetes.io/component: shop
@@ -13,7 +13,7 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: enterprise-crm
+  name: ${K8S_NAMESPACE_CRM}
   labels:
     app.kubernetes.io/part-of: octo-apm-demo
     app.kubernetes.io/component: crm

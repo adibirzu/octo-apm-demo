@@ -22,13 +22,13 @@ class ChaosMiddleware(BaseHTTPMiddleware):
         if request.url.path.startswith("/api/simulate"):
             return await call_next(request)
 
-        if chaos.error_rate > 0 and random.random() < chaos.error_rate:
+        if chaos.error_rate > 0 and random.random() < chaos.error_rate:  # noqa: S311
             return JSONResponse(
                 {"error": "Chaos: simulated error burst", "chaos": True},
                 status_code=500,
             )
 
         if chaos.slow_responses:
-            await asyncio.sleep(random.uniform(2, 5))
+            await asyncio.sleep(random.uniform(2, 5))  # noqa: S311
 
         return await call_next(request)

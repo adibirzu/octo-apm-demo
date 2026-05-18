@@ -27,8 +27,8 @@ arriving:
 ```bash
 oci monitoring metric-data summarize-metrics-data \
     --compartment-id "$OCI_COMPARTMENT_ID" \
-    --namespace octo_drone_shop \
-    --query-text 'shop.checkout.count[1m].sum()' \
+    --namespace octo_apm_demo \
+    --query-text 'app.checkout.count[1m].sum()' \
     --start-time "$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)" \
     --end-time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     | jq '.data[].aggregated-datapoints[-3:]'
@@ -53,8 +53,8 @@ Console → Monitoring → **Alarm Definitions → Create Alarm**.
 | Alarm Name | `octo-shop-error-rate-lab05` |
 | Alarm Severity | Warning |
 | Compartment | (your demo compartment) |
-| Metric Namespace | `octo_drone_shop` |
-| Metric Name | `shop.http.errors_5xx` |
+| Metric Namespace | `octo_apm_demo` |
+| Metric Name | `app.errors.rate` |
 | Interval | 1 m |
 | Statistic | sum |
 | Trigger Operator | greater than |
@@ -71,8 +71,8 @@ oci monitoring alarm create \
     --compartment-id "$OCI_COMPARTMENT_ID" \
     --display-name "octo-shop-error-rate-lab05" \
     --metric-compartment-id "$OCI_COMPARTMENT_ID" \
-    --namespace "octo_drone_shop" \
-    --query-text "shop.http.errors_5xx[1m].sum() > 0" \
+    --namespace "octo_apm_demo" \
+    --query-text "app.errors.rate[1m].sum() > 0" \
     --severity "WARNING" \
     --body "Shop is emitting 5xx errors. Run-id: {annotation.run_id}. Trace exemplar: {annotation.trace_exemplar}." \
     --destinations "[\"$NOTIFICATIONS_TOPIC_OCID\"]" \
@@ -119,7 +119,7 @@ auto-resolves to `OK`.
 Expected:
 
 ```
-✓ custom namespace octo_drone_shop has metrics in the last hour
+✓ custom namespace octo_apm_demo has metrics in the last hour
 ✓ alarm 'octo-shop-error-rate-lab05' exists
 ✓ alarm body references annotation contract (run_id, trace_exemplar)
 PASS — Lab 05 complete

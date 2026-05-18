@@ -115,7 +115,7 @@ def _datetime_value(payload: dict, key: str) -> datetime | None:
 
 async def _require_existing_row(db, table: str, row_id: int, field_name: str = "id") -> dict:
     result = await db.execute(
-        text(f"SELECT * FROM {table} WHERE {field_name} = :value FETCH FIRST 1 ROWS ONLY"),
+        text(f"SELECT * FROM {table} WHERE {field_name} = :value FETCH FIRST 1 ROWS ONLY"),  # noqa: S608
         {"value": row_id},
     )
     row = result.mappings().first()

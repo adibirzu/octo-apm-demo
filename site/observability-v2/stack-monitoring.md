@@ -100,14 +100,14 @@ host easier to join with Log Analytics.
 Use the helper script:
 
 ```bash
-COMPARTMENT_ID=ocid1.compartment.oc1..xxx \
-AUTONOMOUS_DATABASE_ID=ocid1.autonomousdatabase.oc1..xxx \
+COMPARTMENT_ID=<COMPARTMENT_OCID> \
+AUTONOMOUS_DATABASE_ID=<AUTONOMOUS_DATABASE_OCID> \
 SM_RESOURCE_NAME=octo-atp \
 ./deploy/oci/ensure_stack_monitoring.sh          # dry run (default)
 
 DRY_RUN=false \
-COMPARTMENT_ID=ocid1.compartment.oc1..xxx \
-AUTONOMOUS_DATABASE_ID=ocid1.autonomousdatabase.oc1..xxx \
+COMPARTMENT_ID=<COMPARTMENT_OCID> \
+AUTONOMOUS_DATABASE_ID=<AUTONOMOUS_DATABASE_OCID> \
 ./deploy/oci/ensure_stack_monitoring.sh          # actually register
 ```
 

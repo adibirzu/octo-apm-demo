@@ -1,13 +1,48 @@
+---
+title: Lab 06 — WAF event investigation
+description: Investigate a WAF detection from end-to-end — what triggered it, what the attacker actually tried, and what the application did with the request. Includes a tour of the deliberate attack-surface endpoints baked into the CRM service.
+---
+
 # Lab 06 — WAF event investigation
 
 ## Objective
 
 Investigate a WAF event from end to end: what triggered it, was it
-malicious, what did the user actually try to do.
+malicious, what did the user actually try to do. The CRM service ships
+with **deliberate vulnerability surfaces** so detection rules and
+WAF policies have something realistic to fire on.
 
 ## Time budget
 
 30 minutes.
+
+## What you'll learn
+
+- How OCI WAF DETECTION mode logs events without blocking traffic
+- How to correlate a WAF record with the downstream application span
+- The three intentional CRM demo vulnerabilities (insecure
+  deserialization, server-side template injection, weak API-key
+  generation) — and how they appear in detection rules
+
+## The attack surface (intentional demo vulnerabilities)
+
+The CRM service deliberately exposes the following vulnerable endpoints
+so the workshop has realistic attack patterns to investigate. All three
+are annotated `# nosec` + `# VULN` in source so security scanners
+recognize them as intentional demo surface:
+
+| Endpoint | Source | Vulnerability class | Severity |
+|---|---|---|---|
+| `/api/reports/import` | `crm/server/modules/reports.py:119` | Insecure deserialization (`pickle.loads`) | CRITICAL (CWE-502) |
+| `/api/reports/render` | `crm/server/modules/reports.py:150` | OS command injection (`subprocess shell=True`) | HIGH (CWE-78) |
+| `/api/invoices/preview` | `crm/server/modules/invoices.py:128` | Server-side template injection (Jinja2 no-autoescape) | HIGH (CWE-94) |
+| `/api/keys/generate` | `crm/server/modules/api_keys.py:40` | Weak credential generation (MD5 of timestamp+username) | HIGH (CWE-330) |
+
+The corresponding Logging Analytics detection rules — visible in the
+list below — pattern-match the traces emitted by exploitation of these
+surfaces:
+
+![Detection rules list](../assets/screenshots/oci/loganalytics-04-detection-rules.png)
 
 ## Prerequisites
 

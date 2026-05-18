@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Query, Request
 from opentelemetry import trace
 from sqlalchemy import text
 
@@ -12,14 +12,15 @@ from server.auth_security import require_authenticated_or_internal_service, requ
 from server.database import get_db
 from server.modules.integrations import sync_customers_from_crm, sync_order_to_crm
 from server.observability import business_metrics
+from server.observability.correlation import apply_span_attributes
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
+from server.observability.purchase_journey import purchase_context_from_request, purchase_span_attributes
 from server.observability.security_spans import security_span
 from server.store_service import (
     compute_subtotal,
     ensure_customer,
     fetch_cart_items,
-    normalize_storefront_session_id,
     place_order,
     resolve_direct_items,
 )
@@ -39,14 +40,19 @@ def _trace_id() -> str:
 async def get_cart(request: Request, session_id: str = ""):
     """Get cart items for the active storefront session."""
     tracer = get_tracer()
-    raw_sid = session_id or request.cookies.get("session_id", "")
-    try:
-        sid = normalize_storefront_session_id(raw_sid, allow_empty=True)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    sid = session_id or request.cookies.get("session_id", "")
+    journey_context = purchase_context_from_request(
+        request,
+        {"session_id": sid},
+        default_action="shop.cart.load",
+        default_step="cart",
+    )
+    journey_attrs = purchase_span_attributes(journey_context)
 
     with tracer.start_as_current_span("orders.cart.get") as span:
-        span.set_attribute("cart.session_id", sid or "anonymous")
+        apply_span_attributes(span, {**journey_attrs, "cart.session_id": sid or "anonymous"})
+        if journey_attrs:
+            span.add_event("shop.cart.loaded", journey_attrs)
         if not sid:
             return {"items": [], "total": 0, "session_id": ""}
 
@@ -65,11 +71,17 @@ async def add_to_cart(payload: dict, request: Request):
     """Add or increment an item in the current cart."""
     tracer = get_tracer()
     with tracer.start_as_current_span("orders.cart.add") as span:
-        raw_sid = payload.get("session_id") or request.cookies.get("session_id") or str(uuid.uuid4())
-        try:
-            sid = normalize_storefront_session_id(raw_sid)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        sid = payload.get("session_id") or request.cookies.get("session_id") or str(uuid.uuid4())
+        journey_context = purchase_context_from_request(
+            request,
+            {**payload, "session_id": sid},
+            default_action="shop.cart.add",
+            default_step="cart",
+        )
+        journey_attrs = purchase_span_attributes(journey_context)
+        apply_span_attributes(span, journey_attrs)
+        if journey_attrs:
+            span.add_event("shop.cart.action", journey_attrs)
         source_ip = request.client.host if request.client else "unknown"
         try:
             product_id = int(payload.get("product_id"))
@@ -82,7 +94,7 @@ async def add_to_cart(payload: dict, request: Request):
                 endpoint="/api/cart/add",
                 session_id=sid,
             )
-            raise HTTPException(status_code=400, detail="Invalid product id")
+            return {"error": "Invalid product id", "session_id": sid}
         try:
             quantity = max(int(payload.get("quantity", 1) or 1), 1)
         except (TypeError, ValueError):
@@ -95,11 +107,17 @@ async def add_to_cart(payload: dict, request: Request):
                 product_id=product_id,
                 session_id=sid,
             )
-            raise HTTPException(status_code=400, detail="Invalid quantity")
+            return {"error": "Invalid quantity", "session_id": sid}
 
-        span.set_attribute("cart.session_id", sid)
-        span.set_attribute("cart.product_id", product_id)
-        span.set_attribute("cart.quantity", quantity)
+        apply_span_attributes(
+            span,
+            {
+                **journey_attrs,
+                "cart.session_id": sid,
+                "cart.product_id": product_id,
+                "cart.quantity": quantity,
+            },
+        )
         if quantity > 20:
             security_span(
                 "rate_limit",
@@ -110,7 +128,7 @@ async def add_to_cart(payload: dict, request: Request):
                 product_id=product_id,
                 session_id=sid,
             )
-            raise HTTPException(status_code=400, detail="Quantity exceeds allowed threshold")
+            return {"error": "Quantity exceeds allowed threshold", "session_id": sid}
 
         async with get_db() as db:
             product_lookup = await db.execute(
@@ -131,10 +149,10 @@ async def add_to_cart(payload: dict, request: Request):
                     product_id=product_id,
                     session_id=sid,
                 )
-                raise HTTPException(status_code=404, detail="Product not found")
+                return {"error": "Product not found", "session_id": sid}
 
             if int(product.get("stock") or 0) <= 0:
-                raise HTTPException(status_code=409, detail="Product is out of stock")
+                return {"error": "Product is out of stock", "session_id": sid}
 
             existing = await db.execute(
                 text(
@@ -159,8 +177,28 @@ async def add_to_cart(payload: dict, request: Request):
                 )
 
         business_metrics.record_cart_addition(category=str(product.get("category") or ""))
-        push_log("INFO", "Cart updated", **{"cart.session_id": sid, "cart.product_id": product_id})
-        return {"status": "added", "success": True, "session_id": sid}
+        span.add_event(
+            "shop.cart.item_added",
+            {
+                **journey_attrs,
+                "cart.session_id": sid,
+                "cart.product_id": product_id,
+                "cart.quantity": quantity,
+                "product.category": str(product.get("category") or ""),
+            },
+        )
+        push_log(
+            "INFO",
+            "Cart updated",
+            **{
+                **journey_attrs,
+                "cart.session_id": sid,
+                "cart.product_id": product_id,
+                "cart.quantity": quantity,
+                "product.category": str(product.get("category") or ""),
+            },
+        )
+        return {"status": "added", "session_id": sid}
 
 
 @router.delete("/cart/{item_id}")
@@ -186,7 +224,7 @@ async def list_orders(request: Request, limit: int = Query(default=100, ge=1, le
         async with get_db() as db:
             result = await db.execute(
                 text(
-                    "SELECT o.id, o.customer_id, o.user_id, c.name AS customer_name, c.email AS customer_email, "
+                    "SELECT o.id, o.customer_id, o.user_id, c.name AS customer_name, c.email AS customer_email, "  # noqa: S608
                     "o.total, o.status, o.payment_method, o.payment_status, o.payment_required, "
                     "o.payment_provider, o.payment_provider_reference, o.payment_gateway_request_id, o.payment_paid_at, "
                     "o.shipping_address, o.created_at, "
@@ -300,7 +338,7 @@ async def create_order(payload: dict, request: Request):
 
             if not items:
                 business_metrics.record_checkout(success=False)
-                raise HTTPException(status_code=400, detail="Cart is empty")
+                return {"error": "Cart is empty", "session_id": session_id}
 
             customer = await ensure_customer(
                 db,
@@ -330,8 +368,6 @@ async def create_order(payload: dict, request: Request):
             source="orders_api",
         )
         span.set_attribute("orders.order_id", order_result["order"]["id"])
-        span.set_attribute("orders.user_id", int(order_result["order"].get("user_id") or 0))
-        span.set_attribute("orders.customer_id", int(order_result["order"].get("customer_id") or 0))
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
         span.set_attribute("integration.crm_order_synced", bool(crm_sync.get("synced")))

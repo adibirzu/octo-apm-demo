@@ -1,0 +1,25 @@
+{
+  "name": "octo-apm-login-auth-flow",
+  "displayName": "OCTO APM - login/auth flow",
+  "description": "Trace Explorer query for shop and admin login, session, and auth checks. Use the TraceId to inspect user action logs and DB writes in Log Analytics.",
+  "queryText": "show (traces) TraceStatus as Status, TraceFirstSpanStartTime as \"Start Time\", TraceId, ServiceName as Service, OperationName as Operation, TraceDuration as Duration, ErrorCount as \"Span Errors\" where ServiceName in ('octo-drone-shop','octo-drone-shop-oke','enterprise-crm-portal','enterprise-crm-portal-oke') and (OperationName like '%login%' or OperationName like '%auth%' or OperationName like '%session%')",
+  "scope": {
+    "type": "traces",
+    "defaultLookback": "l24h",
+    "services": ["octo-drone-shop", "octo-drone-shop-oke", "enterprise-crm-portal", "enterprise-crm-portal-oke"]
+  },
+  "parameters": [],
+  "troubleshootingFields": ["TraceId", "ServiceName", "OperationName", "TraceDuration", "ErrorCount", "User ID (hashed)", "Request ID"],
+  "logAnalyticsPivots": [
+    {
+      "savedSearch": "auth-login-correlation",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    },
+    {
+      "savedSearch": "trace-drilldown",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    }
+  ]
+}

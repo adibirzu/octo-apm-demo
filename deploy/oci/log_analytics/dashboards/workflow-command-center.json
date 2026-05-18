@@ -7,6 +7,17 @@
     {"title": "DB slowness hotspots",           "search": "db-slowness-hotspots"},
     {"title": "Chaos vs organic errors",        "search": "chaos-vs-organic"},
     {"title": "WAF ↔ app 5xx correlation",     "search": "waf-vs-app-errors"},
-    {"title": "Trace drill-down (parameterised)", "search": "trace-drilldown"}
+    {"title": "Trace drill-down (parameterised)", "search": "trace-drilldown"},
+    {"title": "Checkout payment correlation",  "search": "checkout-payment-correlation"},
+    {"title": "Payment gateway security triage", "search": "payment-gateway-security-triage"},
+    {"title": "Payment threat hunting",        "search": "payment-threats"},
+    {"title": "Login/auth correlation",        "search": "auth-login-correlation"},
+    {"title": "Assistant LLMetry",             "search": "genai-assistant-llmetry"},
+    {"title": "Connector live log coverage",  "search": "connector-live-log-coverage"},
+    {"title": "OKE ONM ingestion health",     "search": "oke-onm-ingestion-health"},
+    {"title": "OKE trace correlation",        "search": "oke-kubernetes-trace-correlation"},
+    {"title": "Service trace/log coverage",    "search": "service-trace-log-coverage"},
+    {"title": "Service health errors",        "search": "service-health-errors"},
+    {"title": "Service error triage",          "search": "service-error-triage"}
   ]
 }

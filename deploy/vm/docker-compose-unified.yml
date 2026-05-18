@@ -3,8 +3,8 @@
 #
 # This is the alternative to the OKE deployment path for demos,
 # workshops, or air-gapped installs where Kubernetes is too much.
-# The same container images are used — OCIR pulls ensure the VM runs
-# bit-for-bit identical code to the OKE rollout.
+# The same app, Java gateway, and Workflow Gateway images are used — OCIR pulls
+# ensure the VM runs bit-for-bit identical code to the OKE rollout.
 
 version: "3.9"
 
@@ -20,14 +20,29 @@ services:
       - octo
     environment:
       APP_NAME: octo-drone-shop
+      OTEL_SERVICE_NAME: ${SHOP_OTEL_SERVICE_NAME:-octo-drone-shop}
       APP_RUNTIME: vm
+      APP_ENV: ${ENVIRONMENT:-production}
       ENVIRONMENT: ${ENVIRONMENT:-production}
       PORT: "8080"
       DNS_DOMAIN: ${DNS_DOMAIN}
+      SERVICE_NAMESPACE: ${SERVICE_NAMESPACE:-octo}
+      SERVICE_INSTANCE_ID: ${SHOP_SERVICE_INSTANCE_ID:-octo-drone-shop-vm}
+      DEMO_STACK_NAME: ${DEMO_STACK_NAME:-octo-vm}
+      APP_TOPOLOGY_PROFILE: ${APP_TOPOLOGY_PROFILE:-single-vm}
+      OCI_REGION: ${OCI_REGION:-}
+      OCI_MONITORING_NAMESPACE: ${OCI_MONITORING_NAMESPACE:-octo_apm_demo}
+      OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-always_on}
+      OTEL_PYTHON_LOG_CORRELATION: ${OTEL_PYTHON_LOG_CORRELATION:-true}
+      OTLP_LOG_EXPORT_ENABLED: ${OTLP_LOG_EXPORT_ENABLED:-false}
       # Cross-service on loopback — both containers share the internal
       # bridge network.
       SERVICE_CRM_URL: http://crm:8080
+      ENTERPRISE_CRM_URL: http://crm:8080
+      SHOP_PUBLIC_URL: ${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}
       CRM_PUBLIC_URL: https://crm.${DNS_DOMAIN}
+      CRM_BASE_URL: https://crm.${DNS_DOMAIN}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://shop.${DNS_DOMAIN},https://crm.${DNS_DOMAIN}}
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
       AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET}
       # Oracle ATP via wallet mount
@@ -36,6 +51,8 @@ services:
       ORACLE_PASSWORD: ${ORACLE_PASSWORD}
       ORACLE_WALLET_DIR: /opt/oracle/wallet
       ORACLE_WALLET_PASSWORD: ${ORACLE_WALLET_PASSWORD}
+      ATP_OCID: ${ATP_OCID:-}
+      DATABASE_OBSERVABILITY_ENABLED: ${DATABASE_OBSERVABILITY_ENABLED:-true}
       # OCI observability — optional
       OCI_AUTH_MODE: ${OCI_AUTH_MODE:-instance_principal}
       OCI_COMPARTMENT_ID: ${OCI_COMPARTMENT_ID}
@@ -44,8 +61,44 @@ services:
       OCI_APM_PUBLIC_DATAKEY: ${OCI_APM_PUBLIC_DATAKEY}
       OCI_APM_RUM_ENDPOINT: ${OCI_APM_RUM_ENDPOINT}
       OCI_APM_WEB_APPLICATION: ${OCI_APM_WEB_APPLICATION:-octo-drone-shop-web}
+      OCI_APM_RUM_PUBLIC_DATAKEY: ${OCI_APM_RUM_PUBLIC_DATAKEY:-}
       OCI_LOG_ID: ${OCI_LOG_ID}
       OCI_LOG_GROUP_ID: ${OCI_LOG_GROUP_ID}
+      OCI_LOG_CHAOS_AUDIT_ID: ${OCI_LOG_CHAOS_AUDIT_ID:-}
+      OCI_LOG_SECURITY_ID: ${OCI_LOG_SECURITY_ID:-}
+      JAVA_APM_ENABLED: ${JAVA_APM_ENABLED:-true}
+      JAVA_APM_SERVICE_URL: ${JAVA_APM_SERVICE_URL:-http://java-apm:8080}
+      JAVA_APM_SERVICE_NAME: ${JAVA_APM_SERVICE_NAME:-octo-java-app-server}
+      JAVA_APM_TIMEOUT_SECONDS: ${JAVA_APM_TIMEOUT_SECONDS:-3.0}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-simulated}
+      PAYMENT_GATEWAY_SIMULATION_ENABLED: ${PAYMENT_GATEWAY_SIMULATION_ENABLED:-true}
+      PAYMENT_SIMULATION_MODE: ${PAYMENT_SIMULATION_MODE:-approve}
+      PAYMENT_SIMULATION_CURRENCY: ${PAYMENT_SIMULATION_CURRENCY:-usd}
+      WORKFLOW_API_BASE_URL: ${WORKFLOW_API_BASE_URL:-http://workflow-gateway:8090}
+      WORKFLOW_PUBLIC_API_BASE_URL: ${WORKFLOW_PUBLIC_API_BASE_URL:-/api/workflow-gateway}
+      WORKFLOW_SERVICE_NAME: ${WORKFLOW_SERVICE_NAME:-octo-workflow-gateway}
+      WORKFLOW_POLL_SECONDS: ${WORKFLOW_POLL_SECONDS:-90}
+      WORKFLOW_FAULTY_QUERY_ENABLED: ${WORKFLOW_FAULTY_QUERY_ENABLED:-false}
+      SELECTAI_PROFILE_NAME: ${SELECTAI_PROFILE_NAME:-}
+      SELECTAI_TIMEOUT_SECONDS: ${SELECTAI_TIMEOUT_SECONDS:-30}
+      OCI_GENAI_ENDPOINT: ${OCI_GENAI_ENDPOINT:-}
+      OCI_GENAI_MODEL_ID: ${OCI_GENAI_MODEL_ID:-}
+      LLMETRY_ENABLED: ${LLMETRY_ENABLED:-true}
+      LLMETRY_STORE_ENABLED: ${LLMETRY_STORE_ENABLED:-true}
+      LLMETRY_CAPTURE_CONTENT: ${LLMETRY_CAPTURE_CONTENT:-false}
+      LANGFUSE_ENABLED: ${LANGFUSE_ENABLED:-false}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_OTEL_EXPORT_ENABLED: ${LANGFUSE_OTEL_EXPORT_ENABLED:-true}
+      LANGFUSE_TIMEOUT_SECONDS: ${LANGFUSE_TIMEOUT_SECONDS:-2.0}
+      LANGFUSE_INGESTION_VERSION: ${LANGFUSE_INGESTION_VERSION:-4}
+      SYNTHETIC_USERS_ENABLED: ${SYNTHETIC_USERS_ENABLED:-true}
+      SYNTHETIC_USER_EMAIL_DOMAIN: ${SYNTHETIC_USER_EMAIL_DOMAIN:-apex.example.test}
+      SYNTHETIC_USER_COUNT: ${SYNTHETIC_USER_COUNT:-12}
+      SYNTHETIC_USER_ORDER_COUNT: ${SYNTHETIC_USER_ORDER_COUNT:-6}
+      SYNTHETIC_USER_DELETE_AFTER_DAYS: ${SYNTHETIC_USER_DELETE_AFTER_DAYS:-7}
+      SYNTHETIC_USER_JOB_TIMEOUT_SECONDS: ${SYNTHETIC_USER_JOB_TIMEOUT_SECONDS:-30}
       IDCS_DOMAIN_URL: ${IDCS_DOMAIN_URL}
       IDCS_CLIENT_ID: ${IDCS_CLIENT_ID}
       IDCS_CLIENT_SECRET: ${IDCS_CLIENT_SECRET}
@@ -65,11 +118,25 @@ services:
       - octo
     environment:
       APP_NAME: enterprise-crm-portal
+      OTEL_SERVICE_NAME: ${CRM_OTEL_SERVICE_NAME:-enterprise-crm-portal}
       APP_RUNTIME: vm
       APP_ENV: ${ENVIRONMENT:-production}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
       APP_PORT: "8080"
       DNS_DOMAIN: ${DNS_DOMAIN}
+      SERVICE_NAMESPACE: ${SERVICE_NAMESPACE:-octo}
+      SERVICE_INSTANCE_ID: ${CRM_SERVICE_INSTANCE_ID:-enterprise-crm-portal-vm}
+      DEMO_STACK_NAME: ${DEMO_STACK_NAME:-octo-vm}
+      APP_TOPOLOGY_PROFILE: ${APP_TOPOLOGY_PROFILE:-single-vm}
+      OCI_REGION: ${OCI_REGION:-}
+      OCI_MONITORING_NAMESPACE: ${OCI_MONITORING_NAMESPACE:-octo_apm_demo}
+      OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-always_on}
+      OTEL_PYTHON_LOG_CORRELATION: ${OTEL_PYTHON_LOG_CORRELATION:-true}
+      OTLP_LOG_EXPORT_ENABLED: ${OTLP_LOG_EXPORT_ENABLED:-false}
       CRM_BASE_URL: https://crm.${DNS_DOMAIN}
+      SHOP_PUBLIC_URL: ${SHOP_PUBLIC_URL:-https://shop.${DNS_DOMAIN}}
+      OCTO_PUBLIC_HOSTNAME: ${OCTO_PUBLIC_HOSTNAME:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://shop.${DNS_DOMAIN},https://crm.${DNS_DOMAIN}}
       SERVICE_SHOP_URL: http://shop:8080
       INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
       APP_SECRET_KEY: ${APP_SECRET_KEY}
@@ -79,13 +146,20 @@ services:
       ORACLE_PASSWORD: ${ORACLE_PASSWORD}
       ORACLE_WALLET_DIR: /opt/oracle/wallet
       ORACLE_WALLET_PASSWORD: ${ORACLE_WALLET_PASSWORD}
+      ATP_OCID: ${ATP_OCID:-}
+      DATABASE_OBSERVABILITY_ENABLED: ${DATABASE_OBSERVABILITY_ENABLED:-true}
       OCI_AUTH_MODE: ${OCI_AUTH_MODE:-instance_principal}
+      OCI_COMPARTMENT_ID: ${OCI_COMPARTMENT_ID}
       OCI_APM_ENDPOINT: ${OCI_APM_ENDPOINT}
       OCI_APM_PRIVATE_DATAKEY: ${OCI_APM_PRIVATE_DATAKEY}
       OCI_APM_RUM_ENDPOINT: ${OCI_APM_RUM_ENDPOINT}
       OCI_APM_RUM_PUBLIC_DATAKEY: ${OCI_APM_PUBLIC_DATAKEY}
       OCI_LOG_ID: ${OCI_LOG_ID}
       OCI_LOG_GROUP_ID: ${OCI_LOG_GROUP_ID}
+      OCI_LOG_CHAOS_AUDIT_ID: ${OCI_LOG_CHAOS_AUDIT_ID:-}
+      OCI_LOG_SECURITY_ID: ${OCI_LOG_SECURITY_ID:-}
+      ORDERS_SYNC_ENABLED: ${ORDERS_SYNC_ENABLED:-true}
+      ORDERS_SYNC_INTERVAL_SECONDS: ${ORDERS_SYNC_INTERVAL_SECONDS:-300}
     volumes:
       - ./wallet:/opt/oracle/wallet:ro
     healthcheck:
@@ -95,6 +169,69 @@ services:
       retries: 5
       start_period: 30s
 
+  java-apm:
+    image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-apm-java-demo:${JAVA_APM_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    networks:
+      - octo
+    environment:
+      PORT: "8080"
+      OCI_APM_SERVICE_NAME: ${JAVA_APM_SERVICE_NAME:-octo-java-app-server}
+      APP_RUNTIME: vm
+      SERVICE_NAMESPACE: ${SERVICE_NAMESPACE:-octo}
+      SERVICE_INSTANCE_ID: ${JAVA_APM_SERVICE_INSTANCE_ID:-octo-java-app-server-vm}
+      DEMO_STACK_NAME: ${DEMO_STACK_NAME:-octo-vm}
+      OCI_AUTH_MODE: ${OCI_AUTH_MODE:-instance_principal}
+      OCI_REGION: ${OCI_REGION:-}
+      OCI_APM_ENDPOINT: ${OCI_APM_ENDPOINT}
+      OCI_APM_PRIVATE_DATAKEY: ${OCI_APM_PRIVATE_DATAKEY}
+      ORACLE_DSN: ${ORACLE_DSN}
+      ORACLE_USER: ${ORACLE_USER:-ADMIN}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      ORACLE_WALLET_DIR: /opt/oracle/wallet
+      PAYMENT_SIMULATION_MODE: ${PAYMENT_SIMULATION_MODE:-approve}
+    volumes:
+      - ./wallet:/opt/oracle/wallet:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+
+  workflow-gateway:
+    image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-workflow-gateway:${WORKFLOW_GATEWAY_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    networks:
+      - octo
+    environment:
+      WORKFLOW_APP_NAME: ${WORKFLOW_APP_NAME:-octo-workflow-gateway}
+      WORKFLOW_SERVICE_NAME: ${WORKFLOW_SERVICE_NAME:-octo-workflow-gateway}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      WORKFLOW_PORT: "8090"
+      SERVICE_NAMESPACE: ${SERVICE_NAMESPACE:-octo}
+      SERVICE_INSTANCE_ID: ${WORKFLOW_SERVICE_INSTANCE_ID:-octo-workflow-gateway-vm}
+      DEMO_STACK_NAME: ${DEMO_STACK_NAME:-octo-vm}
+      OCI_AUTH_MODE: ${OCI_AUTH_MODE:-instance_principal}
+      OCI_REGION: ${OCI_REGION:-}
+      OCI_MONITORING_NAMESPACE: ${OCI_MONITORING_NAMESPACE:-octo_apm_demo}
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=${SERVICE_NAMESPACE:-octo},deployment.environment=${ENVIRONMENT:-production},cloud.provider=oci,oci.demo.stack=${DEMO_STACK_NAME:-octo-vm}
+      ORACLE_DSN: ${ORACLE_DSN}
+      ORACLE_USER: ${ORACLE_USER:-ADMIN}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      ORACLE_WALLET_DIR: /opt/oracle/wallet
+      ORACLE_WALLET_PASSWORD: ${ORACLE_WALLET_PASSWORD}
+      ENTERPRISE_CRM_URL: http://crm:8080
+      OCI_APM_ENDPOINT: ${OCI_APM_ENDPOINT}
+      OCI_APM_PRIVATE_DATAKEY: ${OCI_APM_PRIVATE_DATAKEY}
+      WORKFLOW_LOG_LEVEL: ${WORKFLOW_LOG_LEVEL:-info}
+      WORKFLOW_POLL_SECONDS: ${WORKFLOW_POLL_SECONDS:-90}
+      WORKFLOW_ALLOWED_ORIGINS: ${WORKFLOW_ALLOWED_ORIGINS:-https://shop.${DNS_DOMAIN},https://crm.${DNS_DOMAIN}}
+      WORKFLOW_FAULTY_QUERY_ENABLED: ${WORKFLOW_FAULTY_QUERY_ENABLED:-false}
+      SELECTAI_PROFILE_NAME: ${SELECTAI_PROFILE_NAME:-}
+      SELECTAI_TIMEOUT_SECONDS: ${SELECTAI_TIMEOUT_SECONDS:-30}
+    volumes:
+      - ./wallet:/opt/oracle/wallet:ro
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
@@ -111,3 +248,7 @@ services:
         condition: service_healthy
       crm:
         condition: service_healthy
+      java-apm:
+        condition: service_healthy
+      workflow-gateway:
+        condition: service_started

@@ -74,6 +74,13 @@ function assertGatewayWorkflow(payment: Record<string, unknown>): Record<string,
   expect(names).toContain('processor_authorization_response');
   expect(names).toContain('network_authorization_routing');
 
+  const processorResponse = assertObject(steps.find((step) => step.name === 'processor_authorization_response')?.details ?? {});
+  expect(typeof processorResponse['payment.processor.decision']).toBe('string');
+  expect(typeof processorResponse['payment.processor.response_code']).toBe('string');
+  expect(typeof processorResponse['payment.processor.gateway_code']).toBe('string');
+  const networkRouting = assertObject(steps.find((step) => step.name === 'network_authorization_routing')?.details ?? {});
+  expect(typeof networkRouting['payment.network.transaction_id']).toBe('string');
+
   const verification = assertObject(gateway.verification);
   expect(verification.provider).toBe('octo-antifraud-verification-app');
   expect(typeof verification.decision).toBe('string');
@@ -91,6 +98,7 @@ test.describe('Payment Gateway Trace', () => {
     const productId = await cheapestProductId(request);
     await loginViaUi(page);
     await page.goto(`${SHOP_URL}/shop`);
+    const journeyBeforeCheckout = await page.evaluate(() => localStorage.getItem('octo-shop-journey-id') || '');
 
     await expect(page.locator('[data-testid="buyer-auth-chip"]')).toContainText('Signed in');
     await page.locator(`[data-testid="add-to-cart-button"][data-id="${productId}"]`).click();
@@ -111,8 +119,13 @@ test.describe('Payment Gateway Trace', () => {
     const checkoutResponse = await checkoutResponsePromise;
     expect(checkoutResponse.status()).toBe(200);
     const checkoutRequestHeaders = checkoutResponse.request().headers();
-    expect(checkoutRequestHeaders.traceparent).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
+    expect(checkoutRequestHeaders.traceparent).toBeUndefined();
     expect(checkoutRequestHeaders['x-correlation-id']).toMatch(/^[0-9a-f]{32}$/);
+    expect(checkoutRequestHeaders['x-octo-journey-id']).toBe(journeyBeforeCheckout);
+    expect(checkoutRequestHeaders['x-octo-user-action']).toBe('shop.checkout.submit');
+    expect(checkoutRequestHeaders['x-octo-checkout-step']).toBe('payment');
+    expect(checkoutRequestHeaders['x-octo-payment-method']).toBe('google_pay');
+    expect(checkoutRequestHeaders['x-octo-session-id']).toBeTruthy();
     expect(checkoutRequestHeaders.authorization).toContain('Bearer ');
     const checkout = assertObject(await checkoutResponse.json());
 
@@ -131,6 +144,12 @@ test.describe('Payment Gateway Trace', () => {
     await expect(page.locator('[data-testid="checkout-status"]')).toContainText('Order paid', {
       timeout: INTEGRATION_TIMEOUT_MS,
     });
+    await expect
+      .poll(
+        () => page.evaluate(() => localStorage.getItem('octo-shop-journey-id') || ''),
+        { timeout: INTEGRATION_TIMEOUT_MS },
+      )
+      .not.toBe(journeyBeforeCheckout);
 
     const token = await page.evaluate(() => localStorage.getItem('octo-auth-token') || '');
     expect(token.length).toBeGreaterThan(0);
@@ -198,5 +217,64 @@ test.describe('Payment Gateway Trace', () => {
       expect(['internal-antifraud', 'java-antifraud-verification-app']).toContain(payment.decision_source);
     }
     expect(assertObject(gateway.final_step).status).toBe('declined');
+  });
+
+  test('signed-in buyer completes Apple Pay checkout with merchant validation span', async ({ page, request }) => {
+    test.setTimeout(INTEGRATION_TIMEOUT_MS * 4);
+
+    const productId = await cheapestProductId(request);
+    await loginViaUi(page);
+    await page.goto(`${SHOP_URL}/shop`);
+    const journeyBeforeCheckout = await page.evaluate(() => localStorage.getItem('octo-shop-journey-id') || '');
+
+    await expect(page.locator('[data-testid="buyer-auth-chip"]')).toContainText('Signed in');
+    await page.locator(`[data-testid="add-to-cart-button"][data-id="${productId}"]`).click();
+    await expect(page.locator('#cartChip')).toContainText(/1 item|[2-9] items/, { timeout: INTEGRATION_TIMEOUT_MS });
+
+    await page.locator('[data-testid="checkout-name"]').fill('Apple Trace Shopper');
+    await page.locator('[data-testid="checkout-email"]').fill('apple.trace.shopper@octo.local');
+    await page.locator('[data-testid="checkout-company"]').fill('OCTO Trace Labs');
+    await page.locator('[data-testid="checkout-address"]').fill('3 Observability Way, Trace City');
+    await page.locator('[data-testid="payment-method"]').selectOption('apple_pay');
+    await page.locator('[data-testid="apple-pay-button"]').click();
+
+    const checkoutResponsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/shop/checkout') && response.request().method() === 'POST',
+      { timeout: INTEGRATION_TIMEOUT_MS },
+    );
+    await page.locator('[data-testid="place-order-button"]').click();
+    const checkoutResponse = await checkoutResponsePromise;
+    expect(checkoutResponse.status()).toBe(200);
+    const checkoutRequestHeaders = checkoutResponse.request().headers();
+    expect(checkoutRequestHeaders.traceparent).toBeUndefined();
+    expect(checkoutRequestHeaders['x-octo-journey-id']).toBe(journeyBeforeCheckout);
+    expect(checkoutRequestHeaders['x-octo-user-action']).toBe('shop.checkout.submit');
+    expect(checkoutRequestHeaders['x-octo-checkout-step']).toBe('payment');
+    expect(checkoutRequestHeaders['x-octo-payment-method']).toBe('apple_pay');
+    const checkout = assertObject(await checkoutResponse.json());
+
+    expect(checkout.status).toBe('order_placed');
+    expect(checkout.payment_status).toBe('paid');
+    expect(typeof checkout.trace_id).toBe('string');
+    expect((checkout.trace_id as string).length).toBe(32);
+
+    const payment = assertObject(checkout.payment);
+    expect(payment.status).toBe('authorized');
+    expect(payment.method).toBe('apple_pay');
+    expect(payment.wallet_type).toBe('apple_pay');
+    const gateway = assertGatewayWorkflow(payment);
+    const names = ((gateway.steps as Array<Record<string, unknown>> | undefined) ?? [])
+      .map((step) => String(step.name));
+    expect(names).toContain('apple_pay_merchant_validation');
+
+    await expect(page.locator('[data-testid="checkout-status"]')).toContainText('Order paid', {
+      timeout: INTEGRATION_TIMEOUT_MS,
+    });
+    await expect
+      .poll(
+        () => page.evaluate(() => localStorage.getItem('octo-shop-journey-id') || ''),
+        { timeout: INTEGRATION_TIMEOUT_MS },
+      )
+      .not.toBe(journeyBeforeCheckout);
   });
 });

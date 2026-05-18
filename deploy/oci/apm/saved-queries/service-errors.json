@@ -1,0 +1,25 @@
+{
+  "name": "octo-apm-service-errors",
+  "displayName": "OCTO APM - service errors",
+  "description": "Trace Explorer query for error traces across app and platform services. Use with service-error-triage in Log Analytics.",
+  "queryText": "show (traces) TraceStatus as Status, TraceFirstSpanStartTime as \"Start Time\", TraceId, ServiceName as Service, OperationName as Operation, TraceDuration as Duration, ErrorCount as \"Span Errors\" where ServiceName in ('octo-drone-shop','octo-drone-shop-oke','enterprise-crm-portal','enterprise-crm-portal-oke','octo-java-app-server','octo-java-app-server-oke','octo-workflow-gateway','octo-workflow-gateway-oke','octo-async-worker','octo-load-control','octo-browser-runner','octo-object-pipeline','octo-remediator') and ErrorCount > 0",
+  "scope": {
+    "type": "traces",
+    "defaultLookback": "l24h",
+    "services": ["octo-drone-shop", "octo-drone-shop-oke", "enterprise-crm-portal", "enterprise-crm-portal-oke", "octo-java-app-server", "octo-java-app-server-oke", "octo-workflow-gateway", "octo-workflow-gateway-oke", "octo-async-worker", "octo-load-control", "octo-browser-runner", "octo-object-pipeline", "octo-remediator"]
+  },
+  "parameters": [],
+  "troubleshootingFields": ["TraceId", "ServiceName", "OperationName", "TraceDuration", "ErrorCount", "HTTP Status Code", "Security Severity"],
+  "logAnalyticsPivots": [
+    {
+      "savedSearch": "service-error-triage",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    },
+    {
+      "savedSearch": "trace-drilldown",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    }
+  ]
+}

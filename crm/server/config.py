@@ -143,6 +143,7 @@ class Config:
     oci_log_id: str = field(default_factory=lambda: _env("OCI_LOG_ID"))
     oci_log_group_id: str = field(default_factory=lambda: _env("OCI_LOG_GROUP_ID"))
     oci_auth_mode: str = field(default_factory=lambda: _env("OCI_AUTH_MODE", "instance_principal"))
+    oci_compartment_id: str = field(default_factory=lambda: _env("OCI_COMPARTMENT_ID"))
 
     # Splunk
     splunk_hec_url: str = field(default_factory=lambda: _env("SPLUNK_HEC_URL"))
@@ -344,6 +345,7 @@ class Config:
             "apm_configured": self.apm_configured,
             "rum_configured": self.rum_configured,
             "logging_configured": self.logging_configured,
+            "oci_monitoring_configured": bool(self.oci_compartment_id),
             "splunk_configured": bool(self.splunk_hec_url and self.splunk_hec_token),
             "idcs_configured": self.idcs_configured,
             "orders_sync_enabled": self.orders_sync_enabled,

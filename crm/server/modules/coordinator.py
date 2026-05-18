@@ -286,8 +286,9 @@ def _scope_payload() -> dict:
     return {
         "surface": _ADMIN_SURFACE,
         "scope": _PROJECT_SCOPE,
-        "allowed_hosts": sorted(_ALLOWED_RESOURCE_HOSTS),
+        "allowed_hosts": sorted(_allowed_resource_hosts()),
         "admin_only": True,
+        "guardrails": _guardrails_payload(),
         "topics": [
             {"key": topic.key, "label": topic.label}
             for topic in _TOPICS
@@ -312,9 +313,42 @@ def _request_host(request: Request) -> str:
 def _configured_admin_hosts() -> set[str]:
     hosts = {_ADMIN_SURFACE}
     parsed = urlparse(cfg.crm_base_url or "")
-    if parsed.hostname == _ADMIN_SURFACE:
+    if parsed.hostname:
         hosts.add(parsed.hostname)
+    dns_domain = (getattr(cfg, "dns_domain", "") or "").strip()
+    if dns_domain:
+        hosts.add(f"admin.{dns_domain}")
+        hosts.add(f"crm.{dns_domain}")
     return hosts
+
+
+def _configured_shop_hosts() -> set[str]:
+    hosts: set[str] = set()
+    for raw_url in (getattr(cfg, "shop_public_url", "") or "",):
+        parsed = urlparse(raw_url)
+        if parsed.hostname:
+            hosts.add(parsed.hostname)
+    dns_domain = (getattr(cfg, "dns_domain", "") or "").strip()
+    if dns_domain:
+        hosts.add(f"drones.{dns_domain}")
+        hosts.add(f"shop.{dns_domain}")
+        hosts.add(f"langfuse.{dns_domain}")
+    return hosts
+
+
+def _allowed_resource_hosts() -> set[str]:
+    return set(_ALLOWED_RESOURCE_HOSTS) | _configured_admin_hosts() | _configured_shop_hosts()
+
+
+def _guardrails_payload() -> dict:
+    return {
+        "admin_only": True,
+        "scope_enforced": True,
+        "oci_auth_mode": getattr(cfg, "oci_auth_mode", "instance_principal"),
+        "allowed_hosts": sorted(_allowed_resource_hosts()),
+        "raw_prompt_logged": False,
+        "allowed_scope": _PROJECT_SCOPE,
+    }
 
 
 def _require_admin_host(request: Request) -> str:
@@ -330,7 +364,7 @@ def _require_admin_host(request: Request) -> str:
 def _scope_allows(message: str) -> tuple[bool, str]:
     normalized = _normalize(message)
     domains = {domain.lower() for domain in _DOMAIN_RE.findall(message)}
-    external_domains = domains.difference(_ALLOWED_RESOURCE_HOSTS)
+    external_domains = domains.difference(_allowed_resource_hosts())
     if external_domains:
         return False, "external_domain"
     for phrase in _BLOCKED_SCOPE_PHRASES:
@@ -381,6 +415,7 @@ def _answer_response(topics: list[CoordinatorTopic]) -> dict:
         "allowed": True,
         "surface": _ADMIN_SURFACE,
         "scope": _PROJECT_SCOPE,
+        "guardrails": _guardrails_payload(),
         "answer": answer,
         "sources": sources,
         "suggested_actions": actions[:6],
@@ -392,6 +427,7 @@ def _refusal_response(reason: str) -> dict:
         "allowed": False,
         "surface": _ADMIN_SURFACE,
         "scope": _PROJECT_SCOPE,
+        "guardrails": _guardrails_payload(),
         "answer": (
             "I can only answer questions about OCTO APM Demo admin pages and OCTO DEMO resources. "
             "Ask about admin users, orders, traces, logs, ATP, the drone shop dependency, security simulations, "
@@ -414,6 +450,9 @@ def _set_common_span_attrs(span, actor: dict, host: str, page: str, *, allowed: 
     span.set_attribute("coordinator.scope", _PROJECT_SCOPE)
     span.set_attribute("coordinator.allowed", allowed)
     span.set_attribute("coordinator.topic", topic)
+    span.set_attribute("coordinator.scope.enforced", True)
+    span.set_attribute("coordinator.auth.mode", getattr(cfg, "oci_auth_mode", "instance_principal"))
+    span.set_attribute("oci.auth.mode", getattr(cfg, "oci_auth_mode", "instance_principal"))
 
 
 def _log_query(actor: dict, host: str, page: str, *, allowed: bool, topic: str, reason: str) -> None:
@@ -430,5 +469,8 @@ def _log_query(actor: dict, host: str, page: str, *, allowed: bool, topic: str, 
             "coordinator.allowed": allowed,
             "coordinator.topic": topic,
             "coordinator.refusal_reason": reason,
+            "coordinator.scope.enforced": True,
+            "coordinator.auth.mode": getattr(cfg, "oci_auth_mode", "instance_principal"),
+            "oci.auth.mode": getattr(cfg, "oci_auth_mode", "instance_principal"),
         },
     )

@@ -46,6 +46,8 @@ spec:
               value: "http://gateway.octo-otel.svc.cluster.local:4318"
             - name: OTEL_SERVICE_NAME
               value: "octo-load-control"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=octo,deployment.environment=production,cloud.provider=oci,oci.demo.stack=octo-apm-demo,k8s.namespace.name=octo-load-control,k8s.deployment.name=load-control"
           volumeMounts:
             - name: ledger
               mountPath: /data

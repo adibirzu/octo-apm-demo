@@ -23,7 +23,7 @@
 
 ## OCI Monitoring Custom Metrics
 
-Published every 60 seconds to OCI Monitoring namespace `octo_drone_shop`:
+Published every 60 seconds to OCI Monitoring namespace `octo_apm_demo`:
 
 | Metric | Unit | Description |
 |---|---|---|

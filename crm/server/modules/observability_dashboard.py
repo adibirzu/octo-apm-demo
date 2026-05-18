@@ -1,9 +1,7 @@
-"""360 Observability Dashboard — unified monitoring view across all pillars.
+"""OCI Observability demo dashboard.
 
-Provides API endpoints and data aggregation for a single-pane-of-glass dashboard
-covering application health, database performance, integration status, security
-events, order sync health, and links to OCI console drill-downs (APM, OPSI,
-DB Management, Log Analytics).
+The browser-facing dashboard returns customer-safe business and experience
+signals while internal detail endpoints retain lower-level health checks.
 """
 
 from __future__ import annotations
@@ -11,17 +9,18 @@ from __future__ import annotations
 import time
 import logging
 from datetime import datetime, timedelta
+from typing import Any
 
 from fastapi import APIRouter, Request
-from sqlalchemy import func, select, text, case, cast, Float
+from sqlalchemy import func, select, text, cast, Float
 
 from server.config import cfg
 from server.database import (
-    AuditLog, Customer, Invoice, Order, OrderItem, OrderSyncAudit,
+    AuditLog, Customer, Invoice, Order, OrderSyncAudit,
     Product, SupportTicket, User, UserSession, async_session_factory,
 )
 from server.db_compat import HEALTH_CHECK_SQL
-from server.observability.correlation import build_correlation_id, current_trace_context, service_metadata
+from server.observability.correlation import build_correlation_id, service_metadata
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
 
@@ -34,7 +33,6 @@ async def observability_360(request: Request):
     """Full 360-degree observability summary — one call for the dashboard page."""
     tracer = get_tracer()
     correlation_id = build_correlation_id(getattr(getattr(request, "state", None), "correlation_id", ""))
-    trace_ctx = current_trace_context()
     start = time.time()
 
     with tracer.start_as_current_span("observability.360.dashboard") as span:
@@ -45,6 +43,7 @@ async def observability_360(request: Request):
         integration_health = await _integration_health_summary()
         security_summary = await _security_summary()
         sync_health = await _order_sync_health()
+        pillars = _observability_pillars()
 
         elapsed_ms = round((time.time() - start) * 1000, 2)
         span.set_attribute("dashboard.query_time_ms", elapsed_ms)
@@ -57,46 +56,17 @@ async def observability_360(request: Request):
 
         return {
             "timestamp": datetime.utcnow().isoformat() + "Z",
-            "correlation": {
-                "correlation_id": correlation_id,
-                "trace_id": trace_ctx["trace_id"],
-                "span_id": trace_ctx["span_id"],
-                "traceparent": trace_ctx["traceparent"],
-            },
-            "service": service_metadata(),
-            "pillars": {
-                "apm": {
-                    "configured": cfg.apm_configured,
-                    "console_url": cfg.apm_console_url or None,
-                    "service_name": cfg.otel_service_name,
-                    "rum_configured": cfg.rum_configured,
-                },
-                "logging": {
-                    "configured": cfg.logging_configured,
-                    "log_id": cfg.oci_log_id or None,
-                    "console_url": cfg.log_analytics_console_url or None,
-                },
-                "metrics": {
-                    "prometheus": True,
-                    "otlp_export": cfg.apm_configured,
-                },
-                "opsi": {
-                    "console_url": cfg.opsi_console_url or None,
-                    "configured": bool(cfg.opsi_console_url),
-                },
-                "db_management": {
-                    "console_url": cfg.db_management_console_url or None,
-                    "configured": bool(cfg.db_management_console_url),
-                    "atp_ocid": cfg.atp_ocid or None,
-                },
-            },
-            "app_health": app_health,
-            "db_health": db_health,
-            "integration_health": integration_health,
-            "security": security_summary,
-            "order_sync": sync_health,
+            **_customer_observability_dashboard(
+                app_health=app_health,
+                db_health=db_health,
+                integration_health=integration_health,
+                security=security_summary,
+                order_sync=sync_health,
+                pillars=pillars,
+            ),
             "dashboard_meta": {
                 "query_time_ms": elapsed_ms,
+                "data_source": "live_demo_application",
             },
         }
 
@@ -131,10 +101,17 @@ async def observability_capabilities():
     return _observability_capabilities()
 
 
+@router.get("/melts")
+async def observability_melts():
+    """MELTS collection contract for admin demo evidence."""
+    return _melts_capabilities()
+
+
 def _observability_capabilities() -> dict:
     return {
         "service": service_metadata(),
         "runtime": cfg.safe_runtime_summary(),
+        "melts": _melts_capabilities(),
         "signals": {
             "traces": {
                 "enabled": cfg.apm_configured,
@@ -157,6 +134,8 @@ def _observability_capabilities() -> dict:
             },
             "metrics": {
                 "prometheus_endpoint": "/metrics",
+                "oci_monitoring_enabled": bool(cfg.oci_compartment_id),
+                "oci_monitoring_namespace": "octo_apm_demo",
                 "business_metric_families": [
                     "orders",
                     "order_sync",
@@ -191,6 +170,11 @@ def _observability_capabilities() -> dict:
                 "enabled": True,
                 "surface": "admin.octodemo.cloud",
                 "scope": "octo-apm-demo",
+                "admin_only": True,
+                "scope_enforced": True,
+                "oci_auth_mode": cfg.oci_auth_mode,
+                "raw_prompt_logged": False,
+                "allowed_hosts": ["admin.octodemo.cloud"],
                 "span_names": ["admin.coordinator.scope", "admin.coordinator.query"],
                 "log_fields": [
                     "coordinator.surface",
@@ -199,6 +183,9 @@ def _observability_capabilities() -> dict:
                     "coordinator.allowed",
                     "coordinator.topic",
                     "coordinator.refusal_reason",
+                    "coordinator.scope.enforced",
+                    "coordinator.auth.mode",
+                    "oci.auth.mode",
                 ],
             },
         },
@@ -225,6 +212,7 @@ def _observability_capabilities() -> dict:
         "endpoints": {
             "dashboard": "/api/observability/360",
             "capabilities": "/api/observability/capabilities",
+            "melts": "/api/observability/melts",
             "frontend_ingest": "/api/observability/frontend",
             "admin_coordinator": "/api/admin/coordinator/query",
             "metrics": "/metrics",
@@ -237,6 +225,345 @@ def _observability_capabilities() -> dict:
             "raw_shared_secret_exposed": False,
         },
     }
+
+
+def _melts_capabilities() -> dict[str, Any]:
+    """Describe how Admin/CRM proves Metrics, Events, Logs, Traces, and Synthetics."""
+    return {
+        "version": "2026.05",
+        "coverage": {
+            "metrics": {
+                "status": "enabled" if cfg.oci_compartment_id else "needs_oci_compartment_id",
+                "namespace": "octo_apm_demo",
+                "families": [
+                    "app.requests.rate",
+                    "app.errors.rate",
+                    "app.orders.count",
+                    "app.order_sync.count",
+                    "app.auth.success.count",
+                    "app.auth.failure.count",
+                    "app.security.events.count",
+                    "app.dashboard.loads.count",
+                ],
+                "dimensions": ["serviceName", "environment", "runtime", "instanceId"],
+            },
+            "events": {
+                "status": "enabled",
+                "families": [
+                    "auth.login",
+                    "admin.coordinator.query",
+                    "orders.sync.external",
+                    "simulation.storyboard",
+                    "attack_lab.stage",
+                ],
+                "join_fields": ["Trace ID", "Order ID", "Source Order ID", "Attack ID", "Assistant Session ID"],
+            },
+            "logs": {
+                "status": "enabled" if cfg.logging_configured else "not_configured",
+                "sources": ["SOC Application Logs", "OCI Unified Schema Logs"],
+                "saved_searches": [
+                    "service-trace-log-coverage",
+                    "connector-live-log-coverage",
+                    "auth-login-correlation",
+                    "service-error-triage",
+                    "attack-lab-trace-timeline",
+                ],
+            },
+            "traces": {
+                "status": "enabled" if cfg.apm_configured else "not_configured",
+                "saved_queries": [
+                    "OCTO APM - login/auth flow",
+                    "OCTO APM - trace drilldown",
+                    "OCTO APM - platform workflows",
+                    "OCTO APM - service errors",
+                ],
+                "required_components": [
+                    "enterprise-crm-portal",
+                    "octo-drone-shop",
+                    "oracle-atp",
+                    "admin.coordinator",
+                ],
+            },
+            "synthetics": {
+                "status": "enabled" if cfg.orders_sync_enabled else "manual",
+                "generators": ["admin_simulation", "order_sync", "browser_runner", "traffic_generator"],
+                "rum_dimensions": ["workflow_id", "request_id", "auth.login.result"],
+            },
+        },
+        "operator_pivots": {
+            "primary": ["Trace ID", "Order ID", "Source Order ID", "Request ID"],
+            "secondary": ["Run ID", "Workflow ID", "Attack ID", "Assistant Session ID"],
+            "privacy": "customer_safe_no_raw_secret_or_payment_content",
+        },
+    }
+
+
+def _observability_pillars() -> dict:
+    """Internal signal inventory used to build the customer demo view."""
+    return {
+        "apm": {
+            "configured": cfg.apm_configured,
+            "rum_configured": cfg.rum_configured,
+        },
+        "logging": {
+            "configured": cfg.logging_configured,
+        },
+        "metrics": {
+            "configured": True,
+        },
+        "data_insights": {
+            "configured": bool(cfg.opsi_console_url or cfg.db_management_console_url),
+        },
+        "security": {
+            "configured": True,
+        },
+    }
+
+
+def _customer_observability_dashboard(
+    *,
+    app_health: dict,
+    db_health: dict,
+    integration_health: dict,
+    security: dict,
+    order_sync: dict,
+    pillars: dict,
+) -> dict:
+    """Build the browser-facing, customer-safe observability demo payload."""
+    entities = app_health.get("entities") or {}
+    activity = app_health.get("activity") or {}
+    sync_stats = (order_sync.get("stats") or {})
+    sync_orders = (order_sync.get("orders") or {})
+    audit = (security.get("audit") or {})
+    waf = (security.get("waf") or {})
+    total_syncs = int(sync_stats.get("total_sync_operations") or 0)
+    successful_syncs = int(sync_stats.get("successful") or 0)
+    failed_syncs = int(sync_stats.get("failed") or 0)
+    raw_success_rate = sync_stats.get("success_rate_pct")
+    success_rate = float(raw_success_rate) if raw_success_rate is not None else 100.0
+    backlog = int(sync_orders.get("backlog") or 0)
+    db_available = db_health.get("status") == "connected"
+    integration_ready = bool((integration_health.get("drone_shop") or {}).get("configured"))
+    signal_cards = _customer_signal_cards(pillars, db_available, bool(waf.get("detection_enabled")))
+    active_signal_count = sum(1 for item in signal_cards if item["active"])
+    total_signal_count = len(signal_cards)
+    health_tone = _demo_health_tone(
+        db_available=db_available,
+        success_rate=success_rate,
+        backlog=backlog,
+        failed_syncs=failed_syncs,
+    )
+
+    return {
+        "demo": {
+            "name": "OCI Observability Demo",
+            "badge": "Demo project",
+            "description": (
+                "A customer-facing demo project showcasing OCI Observability "
+                "service capabilities with live business and experience signals."
+            ),
+            "privacy_note": "Technical identifiers and infrastructure settings are intentionally hidden.",
+        },
+        "hero": {
+            "title": "Customer Experience Monitoring",
+            "status": health_tone["label"],
+            "tone": health_tone["tone"],
+            "summary": health_tone["summary"],
+            "active_signals": active_signal_count,
+            "total_signals": total_signal_count,
+        },
+        "scorecards": [
+            {
+                "id": "customers",
+                "label": "Customers",
+                "value": int(entities.get("customers") or 0),
+                "format": "number",
+                "tone": "neutral",
+            },
+            {
+                "id": "orders",
+                "label": "Orders",
+                "value": int(entities.get("orders") or 0),
+                "format": "number",
+                "tone": "neutral",
+            },
+            {
+                "id": "revenue",
+                "label": "Revenue",
+                "value": float(activity.get("total_revenue") or 0),
+                "format": "currency",
+                "tone": "success",
+            },
+            {
+                "id": "experience",
+                "label": "Order Experience",
+                "value": success_rate,
+                "format": "percent",
+                "tone": _percent_tone(success_rate),
+            },
+        ],
+        "charts": {
+            "business_mix": [
+                {"label": "Customers", "value": int(entities.get("customers") or 0), "tone": "accent"},
+                {"label": "Orders", "value": int(entities.get("orders") or 0), "tone": "success"},
+                {"label": "Products", "value": int(entities.get("products") or 0), "tone": "warm"},
+                {"label": "Support", "value": int(entities.get("tickets") or 0), "tone": "rose"},
+            ],
+            "order_flow": [
+                {"label": "Successful handoffs", "value": successful_syncs, "tone": "success"},
+                {"label": "Needs attention", "value": failed_syncs, "tone": "danger"},
+                {"label": "In progress", "value": backlog, "tone": "warm"},
+            ],
+            "signal_coverage": signal_cards,
+        },
+        "customer_journey": [
+            {
+                "label": "Browse and buy",
+                "metric": f"{int(activity.get('orders_24h') or 0)} orders in the last 24 hours",
+                "status": "Observed",
+                "tone": "success" if int(activity.get("orders_24h") or 0) > 0 else "neutral",
+            },
+            {
+                "label": "Order handoff",
+                "metric": f"{success_rate:.1f}% successful",
+                "status": "Healthy" if success_rate >= 95 else "Watch",
+                "tone": _percent_tone(success_rate),
+            },
+            {
+                "label": "Support readiness",
+                "metric": f"{int(activity.get('open_tickets') or 0)} open tickets",
+                "status": "Ready",
+                "tone": "warm" if int(activity.get("open_tickets") or 0) > 5 else "success",
+            },
+            {
+                "label": "Experience protection",
+                "metric": f"{int(audit.get('entries_24h') or 0)} signals today",
+                "status": "Monitored",
+                "tone": "neutral",
+            },
+        ],
+        "service_health": {
+            "data_service": {
+                "label": "Customer data service",
+                "status": "Available" if db_available else "Needs attention",
+                "latency_ms": round(float(db_health.get("latency_ms") or 0), 1) if db_available else None,
+                "tone": "success" if db_available else "danger",
+            },
+            "order_handoff": {
+                "label": "Storefront order handoff",
+                "status": "On" if order_sync.get("enabled") else "Paused",
+                "success_rate": success_rate,
+                "total": total_syncs,
+                "tone": _percent_tone(success_rate) if order_sync.get("enabled") else "warm",
+            },
+            "integration": {
+                "label": "Storefront connection",
+                "status": "Connected" if integration_ready else "Ready to connect",
+                "tone": "success" if integration_ready else "warm",
+            },
+            "protection": {
+                "label": "Protection monitoring",
+                "status": "Active" if waf.get("detection_enabled") else "Ready",
+                "events_today": int(audit.get("entries_24h") or 0),
+                "coverage_count": len(security.get("owasp_coverage") or []),
+                "tone": "success" if waf.get("detection_enabled") else "warm",
+            },
+        },
+    }
+
+
+def _customer_signal_cards(pillars: dict, db_available: bool, security_active: bool) -> list[dict]:
+    """Return OCI capability cards without infrastructure identifiers."""
+    return [
+        {
+            "id": "apm",
+            "label": "Application performance",
+            "service": "OCI Application Performance Monitoring",
+            "active": bool((pillars.get("apm") or {}).get("configured")),
+            "description": "Trace application journeys and latency across the demo experience.",
+            "tone": "accent",
+        },
+        {
+            "id": "rum",
+            "label": "Real user experience",
+            "service": "OCI APM Browser RUM",
+            "active": bool((pillars.get("apm") or {}).get("rum_configured")),
+            "description": "Measure page loads, browser errors, and user interactions.",
+            "tone": "success",
+        },
+        {
+            "id": "logs",
+            "label": "Logs and events",
+            "service": "OCI Logging and Log Analytics",
+            "active": bool((pillars.get("logging") or {}).get("configured")),
+            "description": "Review customer-impacting events from one searchable timeline.",
+            "tone": "warm",
+        },
+        {
+            "id": "metrics",
+            "label": "Service metrics",
+            "service": "OCI Monitoring",
+            "active": bool((pillars.get("metrics") or {}).get("configured")),
+            "description": "Track health indicators for the live demo application.",
+            "tone": "rose",
+        },
+        {
+            "id": "data",
+            "label": "Data service insight",
+            "service": "OCI Database Management and Operations Insights",
+            "active": bool((pillars.get("data_insights") or {}).get("configured") or db_available),
+            "description": "Connect user journeys with data service responsiveness.",
+            "tone": "success",
+        },
+        {
+            "id": "security",
+            "label": "Protection signals",
+            "service": "OCI security and edge observability",
+            "active": security_active,
+            "description": "Surface security-relevant events as part of the experience view.",
+            "tone": "accent",
+        },
+    ]
+
+
+def _demo_health_tone(
+    *,
+    db_available: bool,
+    success_rate: float,
+    backlog: int,
+    failed_syncs: int,
+) -> dict:
+    if not db_available:
+        return {
+            "label": "Needs attention",
+            "tone": "danger",
+            "summary": "Customer activity is visible, but the data service needs attention.",
+        }
+    if success_rate < 80 or failed_syncs > 0:
+        return {
+            "label": "Watch",
+            "tone": "warm",
+            "summary": "OCI Observability highlights customer flows that need review.",
+        }
+    if backlog > 5:
+        return {
+            "label": "Busy",
+            "tone": "warm",
+            "summary": "The demo is healthy with active customer work in progress.",
+        }
+    return {
+        "label": "Healthy",
+        "tone": "success",
+        "summary": "Live customer journeys are visible across OCI Observability signals.",
+    }
+
+
+def _percent_tone(value: float) -> str:
+    if value >= 95:
+        return "success"
+    if value >= 80:
+        return "warm"
+    return "danger"
 
 
 async def _app_health_summary() -> dict:
@@ -298,6 +625,11 @@ async def _db_health_summary() -> dict:
             await session.execute(text(HEALTH_CHECK_SQL))
             db_ok = True
         db_latency_ms = round((time.time() - start) * 1000, 2)
+        try:
+            from server.observability.oci_monitoring import set_db_latency
+            set_db_latency(db_latency_ms)
+        except Exception:  # noqa: S110
+            pass
     except Exception as e:
         return {
             "status": "disconnected",

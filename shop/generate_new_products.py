@@ -8,6 +8,8 @@ import time
 from PIL import Image
 import io
 
+from server.observability.otel_setup import monitor_script
+
 OUTPUT_DIR = "server/static/img/products"
 
 PRODUCTS = [
@@ -62,18 +64,19 @@ def generate_image(prompt, output_path, token):
 
 
 def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    token = get_access_token()
-    for i, p in enumerate(PRODUCTS):
-        fname = p["sku"].lower().replace("-", "_") + ".jpg"
-        path = os.path.join(OUTPUT_DIR, fname)
-        if os.path.exists(path) and os.path.getsize(path) > 5000:
-            print(f"[{i+1}/{len(PRODUCTS)}] SKIP {p['name']}")
-            continue
-        print(f"[{i+1}/{len(PRODUCTS)}] Generating {p['name']}...", end=" ", flush=True)
-        ok, msg = generate_image(p["prompt"], path, token)
-        print(f"{'OK' if ok else 'FAIL'}: {msg}")
-        time.sleep(2)
+    with monitor_script("generate_new_products", {"script.product_count": len(PRODUCTS)}):
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        token = get_access_token()
+        for i, p in enumerate(PRODUCTS):
+            fname = p["sku"].lower().replace("-", "_") + ".jpg"
+            path = os.path.join(OUTPUT_DIR, fname)
+            if os.path.exists(path) and os.path.getsize(path) > 5000:
+                print(f"[{i+1}/{len(PRODUCTS)}] SKIP {p['name']}")
+                continue
+            print(f"[{i+1}/{len(PRODUCTS)}] Generating {p['name']}...", end=" ", flush=True)
+            ok, msg = generate_image(p["prompt"], path, token)
+            print(f"{'OK' if ok else 'FAIL'}: {msg}")
+            time.sleep(2)
 
 
 if __name__ == "__main__":

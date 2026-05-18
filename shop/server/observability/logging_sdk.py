@@ -18,6 +18,8 @@ from opentelemetry import trace
 
 from server.config import cfg
 from server.observability.correlation import current_trace_context, service_metadata
+from server.observability.workflow_context import current_workflow
+from server.security.request_id import current_request_id
 
 
 _REQUEST_SPAN = ContextVar("octo_request_span", default=None)
@@ -33,6 +35,23 @@ _PII_KEYS = frozenset({
     "payment.card_number", "card_number", "card.number",
     "payment.card_cvv", "card_cvv", "card.cvv", "cvv",
 })
+_CARD_MASK_EXEMPT_KEYS = frozenset({
+    "trace_id",
+    "span_id",
+    "oracleApmTraceId",
+    "oracleApmSpanId",
+    "traceparent",
+    "request_id",
+    "correlation.id",
+    "workflow_id",
+    "workflow_step",
+    "run_id",
+    "orders.order_id",
+    "order_id",
+    "source_order_id",
+    "payment.gateway.request_id",
+    "payment.network.transaction_id",
+})
 
 _SPAN_EVENT_KEYS = (
     "trace_id",
@@ -41,6 +60,7 @@ _SPAN_EVENT_KEYS = (
     "oracleApmSpanId",
     "service.name",
     "app.service",
+    "peer.service",
     "app.name",
     "app.module",
     "app.page.name",
@@ -53,29 +73,22 @@ _SPAN_EVENT_KEYS = (
     "workflow_step",
     "workflow.id",
     "workflow.step",
+    "shop.journey_id",
+    "shop.session_id",
+    "browser.trace_id",
+    "enduser.action",
+    "checkout.step",
     "request_id",
     "run_id",
     "upstream.trace_id",
-    "auth.user_id",
-    "auth.username",
-    "auth.role",
-    "auth.method",
-    "auth.success",
-    "auth.failure_reason",
     "db.target",
     "db.connection_name",
-    "orders.order_id",
-    "orders.user_id",
-    "orders.customer_id",
-    "cart.session_id",
-    "cart.product_id",
-    "cart.quantity",
-    "payment.method",
     "payment.provider",
     "payment.status",
     "payment.risk_score",
     "payment.gateway.name",
     "payment.gateway.provider",
+    "payment.gateway.version",
     "payment.gateway.request_id",
     "payment.gateway.step",
     "payment.gateway.step_index",
@@ -83,22 +96,89 @@ _SPAN_EVENT_KEYS = (
     "payment.gateway.step_status",
     "payment.gateway.step_latency_ms",
     "payment.gateway.step_count",
+    "payment.gateway.request_shape",
+    "payment.gateway.authorization_type",
+    "payment.gateway.decryption_method",
+    "payment.gateway.emulated",
+    "payment.gateway.final",
+    "payment.method",
     "payment.network",
+    "payment.amount_minor_units",
+    "payment.currency",
+    "payment.wallet_type",
+    "payment.wallet_token_hash",
+    "payment.wallet.provider",
+    "payment.wallet.type",
+    "payment.wallet.tokenization_type",
+    "payment.wallet.gateway",
+    "payment.wallet.token_hash",
+    "payment.wallet.gateway_merchant_id_hash",
+    "payment.wallet.cryptogram.present",
+    "payment.wallet.encrypted_payload.present",
+    "payment.wallet.encrypted_payload.format",
+    "payment.wallet.token_type",
+    "payment.wallet.merchant_session.validated",
+    "payment.token.safe",
     "payment.card_brand",
     "payment.card_last4",
-    "payment.wallet_type",
+    "payment.card.brand",
+    "payment.card.last4",
+    "payment.card.tokenized",
+    "payment.card.fingerprint",
+    "payment.card.avs.result",
+    "payment.card.cvv.result",
+    "payment.card.pan_present",
+    "payment.card.cvv_present",
+    "payment.card.entry_mode",
+    "payment.3ds.program",
+    "payment.3ds.eci",
+    "payment.3ds.authentication_value.present",
+    "payment.3ds.flow",
+    "payment.google_pay.api_version",
+    "payment.google_pay.api_version_minor",
+    "payment.google_pay.payment_method_data.type",
+    "payment.google_pay.card_network",
+    "payment.google_pay.allowed_auth_methods",
+    "payment.google_pay.tokenization_data.type",
+    "payment.google_pay.signed_message.format",
+    "payment.apple_pay.merchant_validation.status",
+    "payment.apple_pay.validation_url",
+    "payment.apple_pay.session.emulated",
+    "payment.apple_pay.merchant_identifier_hash",
+    "payment.apple_pay.payment_data.version",
+    "payment.apple_pay.payment_method.network",
+    "payment.apple_pay.payment_method.type",
+    "payment.apple_pay.header.transaction_id_hash",
+    "payment.apple_pay.header.ephemeral_public_key.present",
+    "payment.apple_pay.header.public_key_hash.present",
+    "payment.apple_pay.signature.present",
+    "payment.apple_pay.data.present",
+    "payment.apple_pay.payment_processing_certificate",
     "payment.verification.provider",
     "payment.verification.status",
     "payment.verification.decision",
     "payment.verification.risk_score",
+    "payment.verification.error_code",
+    "payment.verification.periodic_review",
+    "payment.verification.latency_ms",
+    "payment.antifraud.input_score",
     "payment.processor.name",
     "payment.processor.status",
     "payment.processor.decision",
+    "payment.processor.error_code",
+    "payment.processor.latency_ms",
+    "payment.processor.response_code",
+    "payment.processor.gateway_code",
+    "payment.network.route",
+    "payment.network.response_code",
+    "payment.network.gateway_code",
+    "payment.network.transaction_id",
+    "payment.network.token.present",
+    "payment.network.cryptogram.validated",
+    "payment.acquirer.name",
     "payment.interception.detected",
     "payment.redirect.detected",
     "assistant.session_id",
-    "assistant.project.name",
-    "assistant.public_host",
     "assistant.provider",
     "assistant.model_id",
     "assistant.documents_grounded",
@@ -107,7 +187,6 @@ _SPAN_EVENT_KEYS = (
     "assistant.guardrail.reason",
     "assistant.outcome",
     "llmetry.schema.version",
-    "llmetry.project.name",
     "llmetry.latency_ms",
     "llmetry.content.captured",
     "llmetry.error_type",
@@ -122,24 +201,18 @@ _SPAN_EVENT_KEYS = (
     "llm.token.completion",
     "llm.token.total",
     "gen_ai.system",
-    "gen_ai.provider.name",
     "gen_ai.operation.name",
     "gen_ai.request.model",
     "gen_ai.response.model",
     "gen_ai.usage.input_tokens",
     "gen_ai.usage.output_tokens",
     "gen_ai.usage.total_tokens",
-    "oci.auth.mode",
-    "oci.genai.endpoint_host",
     "langfuse.configured",
-    "langfuse.host",
-    "langfuse.project.name",
-    "langfuse.environment",
-    "langfuse.release",
     "langfuse.trace.name",
     "langfuse.session.id",
     "langfuse.observation.type",
     "java_apm.path",
+    "java_apm.service.name",
     "java_apm.status_code",
     "java_apm.latency_ms",
     "java_apm.error_type",
@@ -171,13 +244,70 @@ _SPAN_EVENT_KEYS = (
     "security.attack.type",
     "security.attack.severity",
     "security.severity",
-    "security.check.name",
-    "security.endpoint",
-    "security.session_id",
-    "security.product_id",
-    "owasp.category",
-    "owasp.name",
 )
+
+_LOGAN_ALIAS_FIELDS = {
+    "service.name": "service_name",
+    "service.namespace": "service_namespace",
+    "service.instance.id": "service_instance_id",
+    "deployment.environment": "deployment_environment",
+    "http.method": "http_method",
+    "http.url.path": "url_path",
+    "http.status_code": "http_status_code",
+    "http.response_time_ms": "http_response_time_ms",
+    "shop.journey_id": "shop_journey_id",
+    "shop.session_id": "session_id",
+    "browser.trace_id": "browser_trace_id",
+    "enduser.action": "enduser_action",
+    "checkout.step": "checkout_step",
+    "auth.user_id": "user_id",
+    "security.username_hash": "user_id_hash",
+    "db.target": "db_target",
+    "db.connection_name": "db_connection_name",
+    "orders.order_id": "order_id",
+    "payment.provider": "payment_provider",
+    "payment.status": "payment_status",
+    "payment.method": "payment_method",
+    "payment.network": "payment_network",
+    "payment.risk_score": "payment_risk_score",
+    "payment.amount_minor_units": "payment_amount_minor_units",
+    "payment.currency": "payment_currency",
+    "payment.wallet_token_hash": "payment_wallet_token_hash",
+    "payment.card_brand": "payment_card_brand",
+    "payment.card_last4": "payment_card_last4",
+    "payment.gateway.request_id": "payment_gateway_request_id",
+    "payment.gateway.name": "payment_gateway_name",
+    "payment.gateway.provider": "payment_gateway_provider",
+    "payment.gateway.version": "payment_gateway_version",
+    "payment.gateway.step": "payment_gateway_step",
+    "payment.gateway.step_index": "payment_gateway_step_index",
+    "payment.gateway.phase": "payment_gateway_phase",
+    "payment.gateway.step_status": "payment_gateway_step_status",
+    "payment.gateway.step_latency_ms": "payment_gateway_step_latency_ms",
+    "payment.gateway.step_count": "payment_gateway_step_count",
+    "payment.processor.response_code": "payment_processor_response_code",
+    "payment.processor.gateway_code": "payment_processor_gateway_code",
+    "payment.network.transaction_id": "payment_network_transaction_id",
+    "payment.card.avs.result": "payment_card_avs_result",
+    "payment.card.cvv.result": "payment_card_cvv_result",
+    "payment.3ds.program": "payment_3ds_program",
+    "payment.3ds.eci": "payment_3ds_eci",
+    "payment.3ds.flow": "payment_3ds_flow",
+    "java_apm.path": "java_apm_path",
+    "java_apm.service.name": "java_apm_service_name",
+    "java_apm.status_code": "java_apm_status_code",
+    "java_apm.latency_ms": "java_apm_latency_ms",
+    "java_apm.error_type": "java_apm_error_type",
+    "payment.processor.name": "payment_processor_name",
+    "peer.service": "peer_service",
+    "llmetry.error_type": "llmetry_error_type",
+    "oci.api_gateway.threat_signal": "oci_api_gateway_threat_signal",
+    "mitre.technique_id": "mitre_technique_id",
+    "osquery.finding": "osquery_finding",
+    "security.attack.id": "attack_id",
+    "security.attack.type": "attack_type",
+    "security.attack.severity": "attack_severity",
+}
 
 
 def _mask_email(email: str) -> str:
@@ -210,6 +340,9 @@ def _mask_pii(data: dict) -> dict:
         if not isinstance(value, str):
             masked[key] = value
             continue
+        if key in _CARD_MASK_EXEMPT_KEYS:
+            masked[key] = value
+            continue
         if key in _PII_KEYS:
             if "@" in value:
                 masked[key] = _mask_email(value)
@@ -236,6 +369,37 @@ def _span_event_value(value):
     if value is None:
         return ""
     return json.dumps(value, default=str)[:512]
+
+
+def _with_logan_aliases(payload: dict) -> dict:
+    aliases = {
+        alias: payload[key]
+        for key, alias in _LOGAN_ALIAS_FIELDS.items()
+        if key in payload and alias not in payload
+    }
+    return {**payload, **aliases}
+
+
+def _build_oci_log_payload(level: str, message: str, extra: dict, event_time: datetime) -> dict:
+    event_payload = _with_logan_aliases(
+        {
+            "timestamp": event_time.isoformat(),
+            "level": level.upper(),
+            "message": message,
+            **extra,
+        }
+    )
+    plain_message = str(event_payload.get("message", message))
+    logan_payload = {
+        **event_payload,
+        "event.message": plain_message,
+        "event_message": plain_message,
+        "log_message": plain_message,
+    }
+    return {
+        **logan_payload,
+        "message": json.dumps(logan_payload, default=str, separators=(",", ":"), sort_keys=True),
+    }
 
 
 def bind_request_span(span):
@@ -319,7 +483,7 @@ class _JSONFormatter(logging.Formatter):
             log_entry["traceparent"] = trace_ctx["traceparent"]
             log_entry["oracleApmTraceId"] = trace_ctx["trace_id"]
             log_entry["oracleApmSpanId"] = trace_ctx["span_id"]
-        return json.dumps(log_entry, default=str)
+        return json.dumps(_with_logan_aliases(log_entry), default=str)
 
 
 _handler = logging.StreamHandler(sys.stdout)
@@ -364,6 +528,23 @@ def push_log(level: str, message: str, **kwargs):
     Injects trace_id and oracleApmTraceId for APM ↔ Log Analytics correlation.
     PII fields (email, phone) are masked before external push.
     """
+    try:
+        workflow = current_workflow()
+        if workflow is not None:
+            kwargs.setdefault("workflow.id", workflow.workflow_id)
+            kwargs.setdefault("workflow.step", workflow.step)
+            kwargs.setdefault("workflow_id", workflow.workflow_id)
+            kwargs.setdefault("workflow_step", workflow.step)
+    except Exception:  # noqa: S110
+        pass
+
+    try:
+        request_id = current_request_id()
+        if request_id and not kwargs.get("request_id"):
+            kwargs["request_id"] = request_id
+    except Exception:  # noqa: S110
+        pass
+
     trace_ctx = current_trace_context()
     if trace_ctx["trace_id"]:
         kwargs["trace_id"] = trace_ctx["trace_id"]
@@ -401,16 +582,9 @@ def _push_to_oci_logging(level: str, message: str, extra: dict):
         import oci
         from oci.loggingingestion.models import PutLogsDetails, LogEntryBatch, LogEntry
         event_time = datetime.now(timezone.utc)
+        payload = _build_oci_log_payload(level, message, extra, event_time)
         entry = LogEntry(
-            data=json.dumps(
-                {
-                    "timestamp": event_time.isoformat(),
-                    "level": level.upper(),
-                    "message": message,
-                    **extra,
-                },
-                default=str,
-            ),
+            data=json.dumps(payload, default=str),
             id=f"octo-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}",
             time=event_time,
         )
@@ -455,12 +629,12 @@ def _push_to_splunk(level: str, message: str, extra: dict):
             url = f"{url}/services/collector/event"
         httpx.post(
             url,
-            json={"event": event, "sourcetype": "oci:octo-crm-apm:security"},
+            json={"event": event, "sourcetype": f"oci:{cfg.otel_service_name}:security"},
             headers={"Authorization": f"Splunk {cfg.splunk_hec_token}"},
-            verify=False,
+            verify=False,  # nosec B501 - local Splunk HEC uses self-signed certs in the demo; fire-and-forget  # noqa: S501
             timeout=2.0,
         )
-    except Exception:
+    except Exception:  # noqa: S110
         pass  # fire-and-forget
 
 
@@ -474,16 +648,6 @@ def log_security_event(
     **extra,
 ):
     """Log a security event with standard attributes for Log Analytics correlation."""
-    endpoint = str(extra.pop("endpoint", "") or "")
-    security_check = str(extra.pop("security_check", vuln_type) or vuln_type)
-    security_stage = str(extra.pop("security_stage", "request_validation") or "request_validation")
-    product_id = extra.pop("product_id", 0)
-    session_id = str(extra.pop("session_id", "") or "")
-    mitre_technique_id = extra.get("mitre_technique_id", "")
-    mitre_tactic = extra.get("mitre_tactic", "")
-    mitre_technique = extra.get("mitre_technique", "")
-    owasp_category = extra.get("owasp_category", "")
-    owasp_name = extra.get("owasp_name", "")
     push_log(
         "WARNING" if severity in ("low", "medium") else "ERROR",
         message,
@@ -491,24 +655,9 @@ def log_security_event(
             "security.attack.detected": True,
             "security.attack.type": vuln_type,
             "security.attack.severity": severity,
-            "security.attack.stage": security_stage,
-            "security.check.name": security_check,
-            "security.endpoint": endpoint,
-            "security.session_id": session_id,
-            "security.product_id": product_id,
             "security.source_ip": source_ip,
             "security.username": username,
             "security.attack.payload": payload[:512] if payload else "",
-            "http.url.path": endpoint,
-            "client.address": source_ip,
-            "source.ip": source_ip,
-            "cart.product_id": product_id,
-            "cart.session_id": session_id,
-            "mitre.technique_id": mitre_technique_id,
-            "mitre.tactic": mitre_tactic,
-            "mitre.technique": mitre_technique,
-            "owasp.category": owasp_category,
-            "owasp.name": owasp_name,
             **extra,
         },
     )

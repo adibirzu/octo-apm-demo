@@ -1,0 +1,51 @@
+{
+  "model_profile": "quality",
+  "commit_docs": true,
+  "parallelization": 1,
+  "search_gitignored": false,
+  "brave_search": true,
+  "firecrawl": false,
+  "exa_search": false,
+  "git": {
+    "branching_strategy": "phase",
+    "phase_branch_template": "gsd/phase-{phase}-{slug}",
+    "milestone_branch_template": "gsd/{milestone}-{slug}",
+    "quick_branch_template": null
+  },
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true,
+    "nyquist_validation": true,
+    "auto_advance": true,
+    "node_repair": true,
+    "node_repair_budget": 2,
+    "ui_phase": true,
+    "ui_safety_gate": true,
+    "text_mode": true,
+    "research_before_questions": true,
+    "discuss_mode": "discuss",
+    "skip_discuss": false,
+    "code_review": true,
+    "code_review_depth": "standard",
+    "tdd_mode": true,
+    "ui_review": true,
+    "pattern_mapper": true,
+    "ai_integration_phase": true,
+    "use_worktrees": false
+  },
+  "hooks": {
+    "context_warnings": true
+  },
+  "project_code": "octo-apm-demo",
+  "phase_naming": "sequential",
+  "agent_skills": {},
+  "features": {},
+  "resolve_model_ids": "omit",
+  "intel": {
+    "enabled": true
+  },
+  "graphify": {
+    "enabled": true
+  }
+}

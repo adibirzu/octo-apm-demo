@@ -8,8 +8,15 @@
 # Usage:
 #   ./deploy/compute/deploy-apps.sh --outputs-json outputs.json --role all --image-tag 20260505
 #   ./deploy/compute/deploy-apps.sh --profile <OCI_PROFILE> --role shop --shop-image iad.ocir.io/ns/octo-drone-shop:20260505 --apply
+#   ./deploy/compute/deploy-apps.sh --profile <OCI_PROFILE> --role shop --shop-image iad.ocir.io/ns/octo-drone-shop:20260505 --java-apm-image iad.ocir.io/ns/octo-apm-java-demo:20260505 --apply
+#   ./deploy/compute/deploy-apps.sh --profile <OCI_PROFILE> --role shop --image-tag 20260505 --workflow-gateway-image iad.ocir.io/ns/octo-workflow-gateway:20260505 --apply
 #   ./deploy/compute/deploy-apps.sh --outputs-json outputs.json --compartment-id ocid1.compartment.oc1..xxxx --repo-ref main --apply
 #   ./deploy/compute/deploy-apps.sh --shop-instance-id ocid1.instance.oc1..shop --crm-instance-id ocid1.instance.oc1..crm --compartment-id ocid1.compartment.oc1..xxxx --apply
+#
+# Larger generated commands are uploaded to Object Storage and referenced via
+# Run Command OBJECT_STORAGE_TUPLE because OCI rejects oversized inline TEXT
+# sources with: content.source.text size must be between 1 and 4096.
+# Override with --run-command-bucket/--run-command-namespace if needed.
 
 set -euo pipefail
 
@@ -26,6 +33,8 @@ ROLE="all"
 IMAGE_TAG=""
 SHOP_IMAGE=""
 CRM_IMAGE=""
+JAVA_APM_IMAGE=""
+WORKFLOW_GATEWAY_IMAGE=""
 REPO_REF=""
 APP_IMAGE_BUILD_ENABLED=""
 APP_IMAGE_PULL_POLICY=""
@@ -36,6 +45,9 @@ WAIT_FOR_COMPLETION=true
 TIMEOUT_SECONDS=1800
 WAIT_TIMEOUT_SECONDS=2400
 POLL_INTERVAL_SECONDS=15
+RUN_COMMAND_BUCKET="${RUN_COMMAND_BUCKET:-octo-apm-demo-run-command}"
+RUN_COMMAND_NAMESPACE="${RUN_COMMAND_NAMESPACE:-}"
+INLINE_COMMAND_MAX_BYTES="${INLINE_COMMAND_MAX_BYTES:-3900}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -75,6 +87,14 @@ while [[ $# -gt 0 ]]; do
             CRM_IMAGE="${2:?--crm-image requires an image reference}"
             shift 2
             ;;
+        --java-apm-image)
+            JAVA_APM_IMAGE="${2:?--java-apm-image requires an image reference}"
+            shift 2
+            ;;
+        --workflow-gateway-image)
+            WORKFLOW_GATEWAY_IMAGE="${2:?--workflow-gateway-image requires an image reference}"
+            shift 2
+            ;;
         --repo-ref)
             REPO_REF="${2:?--repo-ref requires a branch, tag, or commit}"
             shift 2
@@ -105,6 +125,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --poll-interval)
             POLL_INTERVAL_SECONDS="${2:?--poll-interval requires seconds}"
+            shift 2
+            ;;
+        --run-command-bucket)
+            RUN_COMMAND_BUCKET="${2:?--run-command-bucket requires an Object Storage bucket name}"
+            shift 2
+            ;;
+        --run-command-namespace)
+            RUN_COMMAND_NAMESPACE="${2:?--run-command-namespace requires an Object Storage namespace}"
+            shift 2
+            ;;
+        --inline-command-max-bytes)
+            INLINE_COMMAND_MAX_BYTES="${2:?--inline-command-max-bytes requires bytes}"
             shift 2
             ;;
         --apply)
@@ -151,7 +183,7 @@ case "${APP_IMAGE_BUILD_ENABLED}" in
         ;;
 esac
 
-for numeric in TIMEOUT_SECONDS WAIT_TIMEOUT_SECONDS POLL_INTERVAL_SECONDS; do
+for numeric in TIMEOUT_SECONDS WAIT_TIMEOUT_SECONDS POLL_INTERVAL_SECONDS INLINE_COMMAND_MAX_BYTES; do
     if ! [[ "${!numeric}" =~ ^[0-9]+$ ]]; then
         printf '%s must be a positive integer\n' "${numeric}" >&2
         exit 2
@@ -273,16 +305,60 @@ oci_cli() {
     fi
 }
 
+run_command_namespace() {
+    if [[ -n "${RUN_COMMAND_NAMESPACE}" ]]; then
+        printf '%s\n' "${RUN_COMMAND_NAMESPACE}"
+        return
+    fi
+    oci_cli os ns get --query data --raw-output
+}
+
+ensure_run_command_bucket() {
+    local namespace="$1"
+    if oci_cli os bucket get \
+        --namespace-name "${namespace}" \
+        --bucket-name "${RUN_COMMAND_BUCKET}" >/dev/null 2>&1; then
+        return
+    fi
+    printf 'Creating Object Storage bucket for Run Command source: %s/%s\n' "${namespace}" "${RUN_COMMAND_BUCKET}"
+    oci_cli os bucket create \
+        --namespace-name "${namespace}" \
+        --compartment-id "${COMPARTMENT_ID}" \
+        --name "${RUN_COMMAND_BUCKET}" \
+        --public-access-type NoPublicAccess \
+        --freeform-tags '{"project":"octo-apm-demo","managed_by":"deploy/compute/deploy-apps.sh"}' >/dev/null
+}
+
+upload_run_command_source() {
+    local namespace="$1"
+    local role="$2"
+    local script_file="$3"
+    local digest
+    local object_name
+
+    digest="$(shasum -a 256 "${script_file}" | awk '{print $1}')"
+    object_name="run-command/${role}-$(date -u +%Y%m%d%H%M%S)-${digest}.sh"
+    oci_cli os object put \
+        --namespace-name "${namespace}" \
+        --bucket-name "${RUN_COMMAND_BUCKET}" \
+        --name "${object_name}" \
+        --file "${script_file}" \
+        --force >/dev/null
+    printf '%s\n' "${object_name}"
+}
+
 render_remote_script() {
     local role="$1"
     local app_image="$2"
-    local out_file="$3"
+    local java_apm_image="$3"
+    local workflow_gateway_image="$4"
+    local out_file="$5"
 
-    python3 - "${role}" "${app_image}" "${IMAGE_TAG}" "${REPO_REF}" "${APP_IMAGE_PULL_POLICY}" "${APP_IMAGE_BUILD_ENABLED}" >"${out_file}" <<'PY'
+    python3 - "${role}" "${app_image}" "${java_apm_image}" "${workflow_gateway_image}" "${IMAGE_TAG}" "${REPO_REF}" "${APP_IMAGE_PULL_POLICY}" "${APP_IMAGE_BUILD_ENABLED}" >"${out_file}" <<'PY'
 import shlex
 import sys
 
-role, app_image, image_tag, repo_ref, pull_policy, build_enabled = sys.argv[1:]
+role, app_image, java_apm_image, workflow_gateway_image, image_tag, repo_ref, pull_policy, build_enabled = sys.argv[1:]
 
 
 def sq(value: str) -> str:
@@ -293,6 +369,8 @@ print("#!/usr/bin/env bash")
 print("set -euo pipefail")
 print(f"ROLE={sq(role)}")
 print(f"APP_IMAGE_OVERRIDE={sq(app_image)}")
+print(f"JAVA_APM_IMAGE_OVERRIDE={sq(java_apm_image)}")
+print(f"WORKFLOW_GATEWAY_IMAGE_OVERRIDE={sq(workflow_gateway_image)}")
 print(f"IMAGE_TAG={sq(image_tag)}")
 print(f"REPO_REF={sq(repo_ref)}")
 print(f"APP_IMAGE_PULL_POLICY_OVERRIDE={sq(pull_policy)}")
@@ -313,14 +391,31 @@ fail() {
 set_env_var() {
     local name="$1"
     local value="$2"
-    local escaped
-    escaped="$(printf '%q' "${value}")"
-    if grep -q "^${name}=" "${ENV_FILE}"; then
-        sed -i.bak "s|^${name}=.*|${name}=${escaped}|" "${ENV_FILE}"
-    else
-        printf '%s=%s\n' "${name}" "${escaped}" >>"${ENV_FILE}"
-    fi
-    chmod 0600 "${ENV_FILE}"
+    python3 - "${ENV_FILE}" "${name}" "${value}" <<'PYENV'
+import pathlib
+import shlex
+import sys
+
+path = pathlib.Path(sys.argv[1])
+name = sys.argv[2]
+value = sys.argv[3]
+new_line = f"{name}={shlex.quote(value)}"
+lines = path.read_text(encoding="utf-8").splitlines()
+updated = False
+rendered = []
+for line in lines:
+    if line.startswith(f"{name}="):
+        rendered.append(new_line)
+        updated = True
+    else:
+        rendered.append(line)
+if not updated:
+    rendered.append(new_line)
+tmp = path.with_name(f"{path.name}.tmp")
+tmp.write_text("\n".join(rendered) + "\n", encoding="utf-8")
+tmp.chmod(0o600)
+tmp.replace(path)
+PYENV
 }
 
 retag_image() {
@@ -341,10 +436,12 @@ retag_image() {
 }
 
 if [[ "$(id -u)" -ne 0 ]]; then
-    command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1 && exec sudo -n bash "$0"
-    fail "root or passwordless sudo required"
+    if command -v sudo >/dev/null 2>&1; then
+        log "re-executing through sudo for privileged service management"
+        exec sudo -n bash "$0"
+    fi
+    fail "OCI Run Command user is not root and sudo is unavailable; check Oracle Cloud Agent privileges"
 fi
-
 if [[ ! -f "${ENV_FILE}" ]]; then
     fail "missing ${ENV_FILE}; render/copy runtime.env before app promotion"
 fi
@@ -382,8 +479,29 @@ elif [[ -n "${IMAGE_TAG}" ]]; then
     set_env_var APP_IMAGE "${APP_IMAGE}"
 fi
 
+if [[ "${ROLE}" == "shop" ]]; then
+    if [[ -n "${JAVA_APM_IMAGE_OVERRIDE}" ]]; then
+        set_env_var JAVA_APM_IMAGE "${JAVA_APM_IMAGE_OVERRIDE}"
+        JAVA_APM_IMAGE="${JAVA_APM_IMAGE_OVERRIDE}"
+    elif [[ -n "${IMAGE_TAG}" && -n "${JAVA_APM_IMAGE:-}" ]]; then
+        JAVA_APM_IMAGE="$(retag_image "${JAVA_APM_IMAGE}" "${IMAGE_TAG}")"
+        set_env_var JAVA_APM_IMAGE "${JAVA_APM_IMAGE}"
+    fi
+    if [[ -n "${WORKFLOW_GATEWAY_IMAGE_OVERRIDE}" ]]; then
+        set_env_var WORKFLOW_GATEWAY_IMAGE "${WORKFLOW_GATEWAY_IMAGE_OVERRIDE}"
+        WORKFLOW_GATEWAY_IMAGE="${WORKFLOW_GATEWAY_IMAGE_OVERRIDE}"
+    elif [[ -n "${IMAGE_TAG}" && -n "${WORKFLOW_GATEWAY_IMAGE:-}" ]]; then
+        WORKFLOW_GATEWAY_IMAGE="$(retag_image "${WORKFLOW_GATEWAY_IMAGE}" "${IMAGE_TAG}")"
+        set_env_var WORKFLOW_GATEWAY_IMAGE "${WORKFLOW_GATEWAY_IMAGE}"
+    fi
+fi
+
 if [[ -n "${APP_IMAGE_PULL_POLICY_OVERRIDE}" ]]; then
     set_env_var APP_IMAGE_PULL_POLICY "${APP_IMAGE_PULL_POLICY_OVERRIDE}"
+    if [[ "${ROLE}" == "shop" ]]; then
+        set_env_var JAVA_APM_IMAGE_PULL_POLICY "${APP_IMAGE_PULL_POLICY_OVERRIDE}"
+        set_env_var WORKFLOW_GATEWAY_IMAGE_PULL_POLICY "${APP_IMAGE_PULL_POLICY_OVERRIDE}"
+    fi
 fi
 if [[ -n "${APP_IMAGE_BUILD_ENABLED_OVERRIDE}" ]]; then
     set_env_var APP_IMAGE_BUILD_ENABLED "${APP_IMAGE_BUILD_ENABLED_OVERRIDE}"
@@ -393,6 +511,16 @@ log "running app pre-flight"
 /opt/octo/deploy/compute/install.sh --check
 log "applying runtime configuration"
 /opt/octo/deploy/compute/install.sh
+if [[ "${ROLE}" == "shop" && "${JAVA_APM_ENABLED:-false}" =~ ^(true|1|yes)$ ]]; then
+    log "restarting octo-java-apm.service"
+    systemctl restart octo-java-apm.service
+    systemctl is-active --quiet octo-java-apm.service
+fi
+if [[ "${ROLE}" == "shop" && "${WORKFLOW_GATEWAY_ENABLED:-false}" =~ ^(true|1|yes)$ ]]; then
+    log "restarting octo-workflow-gateway.service"
+    systemctl restart octo-workflow-gateway.service
+    systemctl is-active --quiet octo-workflow-gateway.service
+fi
 log "restarting octo-compute.service"
 systemctl restart octo-compute.service
 systemctl is-active --quiet octo-compute.service
@@ -417,25 +545,37 @@ render_payload() {
     local instance_id="$2"
     local script_file="$3"
     local payload_file="$4"
+    local source_namespace="${5:-}"
+    local source_bucket="${6:-}"
+    local source_object="${7:-}"
 
-    python3 - "${role}" "${COMPARTMENT_ID}" "${instance_id}" "${script_file}" "${TIMEOUT_SECONDS}" >"${payload_file}" <<'PY'
+    python3 - "${role}" "${COMPARTMENT_ID}" "${instance_id}" "${script_file}" "${TIMEOUT_SECONDS}" "${source_namespace}" "${source_bucket}" "${source_object}" >"${payload_file}" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 
-role, compartment_id, instance_id, script_path, timeout = sys.argv[1:]
+role, compartment_id, instance_id, script_path, timeout, source_namespace, source_bucket, source_object = sys.argv[1:]
 script = pathlib.Path(script_path).read_text(encoding="utf-8")
+if source_object:
+    source = {
+        "sourceType": "OBJECT_STORAGE_TUPLE",
+        "namespaceName": source_namespace,
+        "bucketName": source_bucket,
+        "objectName": source_object,
+    }
+else:
+    source = {
+        "sourceType": "TEXT",
+        "text": script,
+        "textSha256": hashlib.sha256(script.encode("utf-8")).hexdigest(),
+    }
 payload = {
     "compartmentId": compartment_id,
     "displayName": f"octo-compute-{role}-app-deploy",
     "target": {"instanceId": instance_id},
     "content": {
-        "source": {
-            "sourceType": "TEXT",
-            "text": script,
-            "textSha256": hashlib.sha256(script.encode("utf-8")).hexdigest(),
-        },
+        "source": source,
         "output": {"outputType": "TEXT"},
     },
     "timeoutInSeconds": str(timeout),
@@ -538,12 +678,33 @@ while IFS=$'\t' read -r role instance_id; do
         crm) app_image="${CRM_IMAGE}" ;;
         *) printf 'Unexpected role from target resolver: %s\n' "${role}" >&2; exit 2 ;;
     esac
+    java_apm_image=""
+    workflow_gateway_image=""
+    if [[ "${role}" == "shop" ]]; then
+        java_apm_image="${JAVA_APM_IMAGE}"
+        workflow_gateway_image="${WORKFLOW_GATEWAY_IMAGE}"
+    fi
 
     script_file="${tmp_dir}/${role}.remote.sh"
     payload_file="${tmp_dir}/${role}.payload.json"
     create_file="${tmp_dir}/${role}.create.json"
-    render_remote_script "${role}" "${app_image}" "${script_file}"
-    render_payload "${role}" "${instance_id}" "${script_file}" "${payload_file}"
+    render_remote_script "${role}" "${app_image}" "${java_apm_image}" "${workflow_gateway_image}" "${script_file}"
+    source_namespace=""
+    source_bucket=""
+    source_object=""
+    script_size="$(wc -c <"${script_file}" | tr -d ' ')"
+    if (( script_size > INLINE_COMMAND_MAX_BYTES )); then
+        if [[ "${APPLY}" == "true" ]]; then
+            source_namespace="$(run_command_namespace)"
+            source_bucket="${RUN_COMMAND_BUCKET}"
+            ensure_run_command_bucket "${source_namespace}"
+            source_object="$(upload_run_command_source "${source_namespace}" "${role}" "${script_file}")"
+            printf 'Run Command source uploaded: %s/%s/%s (%s bytes)\n' "${source_namespace}" "${source_bucket}" "${source_object}" "${script_size}"
+        else
+            printf 'Run Command source is %s bytes and will use Object Storage when --apply is set.\n' "${script_size}"
+        fi
+    fi
+    render_payload "${role}" "${instance_id}" "${script_file}" "${payload_file}" "${source_namespace}" "${source_bucket}" "${source_object}"
 
     printf '\nRole: %s\n' "${role}"
     printf 'Instance OCID: %s\n' "${instance_id}"
@@ -554,18 +715,13 @@ while IFS=$'\t' read -r role instance_id; do
     else
         printf 'Image override: unchanged\n'
     fi
+    [[ -n "${java_apm_image}" ]] && printf 'Java APM image override: %s\n' "${java_apm_image}"
+    [[ -n "${workflow_gateway_image}" ]] && printf 'Workflow Gateway image override: %s\n' "${workflow_gateway_image}"
     [[ -n "${REPO_REF}" ]] && printf 'Repo ref: %s\n' "${REPO_REF}"
     [[ -n "${APP_IMAGE_PULL_POLICY}" ]] && printf 'APP_IMAGE_PULL_POLICY: %s\n' "${APP_IMAGE_PULL_POLICY}"
     [[ -n "${APP_IMAGE_BUILD_ENABLED}" ]] && printf 'APP_IMAGE_BUILD_ENABLED: %s\n' "${APP_IMAGE_BUILD_ENABLED}"
 
     if [[ "${APPLY}" != "true" ]]; then
-        text_bytes="$(python3 - "${payload_file}" <<'PY'
-import json
-import sys
-print(len(json.load(open(sys.argv[1], encoding="utf-8"))["content"]["source"]["text"].encode("utf-8")))
-PY
-)"
-        printf 'Run Command text bytes: %s\n' "${text_bytes}"
         printf 'Would create OCI Run Command: octo-compute-%s-app-deploy\n' "${role}"
         continue
     fi

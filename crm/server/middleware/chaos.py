@@ -23,7 +23,7 @@ class ChaosMiddleware(BaseHTTPMiddleware):
         tracer = get_tracer()
 
         # CPU spike simulation
-        if cfg.simulate_cpu_spike and random.random() < 0.3:
+        if cfg.simulate_cpu_spike and random.random() < 0.3:  # noqa: S311
             with tracer.start_as_current_span("chaos.cpu_spike") as span:
                 span.set_attribute("chaos.type", "cpu_spike")
                 end = time.time() + 0.5
@@ -49,7 +49,7 @@ class ChaosMiddleware(BaseHTTPMiddleware):
         # Slow query simulation (adds latency before DB-heavy routes)
         if cfg.simulate_slow_queries and request.url.path.startswith("/api/"):
             with tracer.start_as_current_span("chaos.slow_query") as span:
-                delay = random.uniform(1.0, 5.0)
+                delay = random.uniform(1.0, 5.0)  # noqa: S311
                 span.set_attribute("chaos.type", "slow_query")
                 span.set_attribute("chaos.delay_seconds", round(delay, 2))
                 await asyncio.sleep(delay)
@@ -60,7 +60,7 @@ class ChaosMiddleware(BaseHTTPMiddleware):
         sim = get_sim_state()
         error_rate = sim.get("error_rate", 0.0)
         if error_rate > 0 and not request.url.path.startswith("/api/simulate"):
-            if random.random() < error_rate:
+            if random.random() < error_rate:  # noqa: S311
                 with tracer.start_as_current_span("chaos.error_rate") as span:
                     span.set_attribute("chaos.type", "error_rate")
                     span.set_attribute("chaos.error_rate", error_rate)

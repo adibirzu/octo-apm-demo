@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from types import SimpleNamespace
 
 from server.observability import oci_monitoring
 
@@ -83,3 +84,24 @@ def test_build_metric_data_uses_service_dimensions() -> None:
     assert dimensions["environment"] == oci_monitoring.cfg.app_env
     assert dimensions["runtime"] == oci_monitoring.cfg.app_runtime
     assert dimensions["instanceId"] == oci_monitoring.cfg.service_instance_id
+
+
+def test_resolve_monitoring_region_prefers_monitoring_override(monkeypatch) -> None:
+    monkeypatch.setenv("OCI_MONITORING_REGION", "us-ashburn-1")
+    monkeypatch.setenv("OCI_REGION", "eu-frankfurt-1")
+
+    assert oci_monitoring._resolve_monitoring_region() == "us-ashburn-1"
+
+
+def test_resolve_monitoring_region_prefers_apm_endpoint_over_cluster_region(monkeypatch) -> None:
+    monkeypatch.delenv("OCI_MONITORING_REGION", raising=False)
+    monkeypatch.setenv("OCI_REGION", "eu-frankfurt-1")
+    monkeypatch.setattr(
+        oci_monitoring,
+        "cfg",
+        SimpleNamespace(
+            oci_apm_endpoint="https://example.apm-agt.us-phoenix-1.oci.oraclecloud.com",
+        ),
+    )
+
+    assert oci_monitoring._resolve_monitoring_region() == "us-phoenix-1"

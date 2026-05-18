@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from typing import Any
 
 import httpx
@@ -27,6 +28,7 @@ from . import events
 from .executor import ExecutorBackend, wait_then_mark_complete
 from .profiles import ProfileName, get_profile, list_profiles
 from .runs import InMemoryLedger, Ledger, LocalJsonLedger, Run, RunState, _now_iso
+from .telemetry import instrument_fastapi_app
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +62,6 @@ def create_app(
     if executor is None:
         # Build the default executor with real HTTPX clients pointed at
         # the traffic-generator + chaos admin from env.
-        import os
-
         traffic_base = os.getenv(
             "TRAFFIC_GENERATOR_URL", "http://traffic-generator.octo-traffic.svc.cluster.local:8080"
         )
@@ -77,6 +77,11 @@ def create_app(
         title="octo-load-control",
         version="1.0.0",
         description="Named workload-profile orchestrator for octo-apm-demo.",
+    )
+    instrument_fastapi_app(
+        app,
+        service_name=os.getenv("OTEL_SERVICE_NAME", "octo-load-control"),
+        service_version="1.0.0",
     )
 
     @app.get("/health")

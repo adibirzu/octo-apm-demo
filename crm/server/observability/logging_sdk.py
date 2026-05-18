@@ -20,6 +20,8 @@ from opentelemetry import trace
 
 from server.config import cfg
 from server.observability.correlation import current_trace_context, service_metadata
+from server.observability.workflow_context import current_workflow
+from server.security.request_id import current_request_id
 
 logger = logging.getLogger(__name__)
 _REQUEST_SPAN = ContextVar("octo_request_span", default=None)
@@ -107,6 +109,63 @@ _SPAN_EVENT_KEYS = (
     "coordinator.refusal_reason",
 )
 
+_LOGAN_ALIAS_FIELDS = {
+    "service.name": "service_name",
+    "service.namespace": "service_namespace",
+    "service.instance.id": "service_instance_id",
+    "deployment.environment": "deployment_environment",
+    "http.method": "http_method",
+    "http.url.path": "url_path",
+    "http.status_code": "http_status_code",
+    "http.response_time_ms": "http_response_time_ms",
+    "auth.user_id": "user_id",
+    "security.username_hash": "user_id_hash",
+    "db.target": "db_target",
+    "db.connection_name": "db_connection_name",
+    "orders.order_id": "order_id",
+    "payment.provider": "payment_provider",
+    "payment.status": "payment_status",
+    "payment.method": "payment_method",
+    "payment.network": "payment_network",
+    "payment.risk_score": "payment_risk_score",
+    "payment.amount_minor_units": "payment_amount_minor_units",
+    "payment.currency": "payment_currency",
+    "payment.wallet_token_hash": "payment_wallet_token_hash",
+    "payment.card_brand": "payment_card_brand",
+    "payment.card_last4": "payment_card_last4",
+    "payment.gateway.request_id": "payment_gateway_request_id",
+    "payment.gateway.name": "payment_gateway_name",
+    "payment.gateway.provider": "payment_gateway_provider",
+    "payment.gateway.version": "payment_gateway_version",
+    "payment.gateway.step": "payment_gateway_step",
+    "payment.gateway.step_index": "payment_gateway_step_index",
+    "payment.gateway.phase": "payment_gateway_phase",
+    "payment.gateway.step_status": "payment_gateway_step_status",
+    "payment.gateway.step_latency_ms": "payment_gateway_step_latency_ms",
+    "payment.processor.response_code": "payment_processor_response_code",
+    "payment.processor.gateway_code": "payment_processor_gateway_code",
+    "payment.network.transaction_id": "payment_network_transaction_id",
+    "payment.card.avs.result": "payment_card_avs_result",
+    "payment.card.cvv.result": "payment_card_cvv_result",
+    "payment.3ds.program": "payment_3ds_program",
+    "payment.3ds.eci": "payment_3ds_eci",
+    "payment.3ds.flow": "payment_3ds_flow",
+    "java_apm.path": "java_apm_path",
+    "java_apm.status_code": "java_apm_status_code",
+    "java_apm.latency_ms": "java_apm_latency_ms",
+    "java_apm.error_type": "java_apm_error_type",
+    "llmetry.error_type": "llmetry_error_type",
+    "oci.api_gateway.threat_signal": "oci_api_gateway_threat_signal",
+    "mitre.technique_id": "mitre_technique_id",
+    "osquery.finding": "osquery_finding",
+    "security.attack.id": "attack_id",
+    "security.attack.type": "attack_type",
+    "security.attack.severity": "attack_severity",
+    "coordinator.surface": "coordinator_surface",
+    "coordinator.scope": "coordinator_scope",
+    "coordinator.allowed": "coordinator_allowed",
+}
+
 
 def _mask_email(email: str) -> str:
     if "@" not in email:
@@ -147,6 +206,37 @@ def _span_event_value(value):
     if value is None:
         return ""
     return json.dumps(value, default=str)[:512]
+
+
+def _with_logan_aliases(payload: dict) -> dict:
+    aliases = {
+        alias: payload[key]
+        for key, alias in _LOGAN_ALIAS_FIELDS.items()
+        if key in payload and alias not in payload
+    }
+    return {**payload, **aliases}
+
+
+def _build_oci_log_payload(level: str, message: str, extra: dict, event_time: datetime) -> dict:
+    event_payload = _with_logan_aliases(
+        {
+            "timestamp": event_time.isoformat(),
+            "level": level.upper(),
+            "message": message,
+            **extra,
+        }
+    )
+    plain_message = str(event_payload.get("message", message))
+    logan_payload = {
+        **event_payload,
+        "event.message": plain_message,
+        "event_message": plain_message,
+        "log_message": plain_message,
+    }
+    return {
+        **logan_payload,
+        "message": json.dumps(logan_payload, default=str, separators=(",", ":"), sort_keys=True),
+    }
 
 
 def bind_request_span(span):
@@ -228,7 +318,7 @@ class _JSONFormatter(logging.Formatter):
             log_entry["traceparent"] = trace_ctx["traceparent"]
             log_entry["oracleApmTraceId"] = trace_ctx["trace_id"]
             log_entry["oracleApmSpanId"] = trace_ctx["span_id"]
-        return json.dumps(log_entry, default=str)
+        return json.dumps(_with_logan_aliases(log_entry), default=str)
 
 
 _handler = logging.StreamHandler(sys.stdout)
@@ -266,6 +356,23 @@ def _get_oci_logging_client():
 
 def push_log(level: str, message: str, **kwargs):
     """Push a structured log to OCI Logging and optionally Splunk."""
+    try:
+        workflow = current_workflow()
+        if workflow is not None:
+            kwargs.setdefault("workflow.id", workflow.workflow_id)
+            kwargs.setdefault("workflow.step", workflow.step)
+            kwargs.setdefault("workflow_id", workflow.workflow_id)
+            kwargs.setdefault("workflow_step", workflow.step)
+    except Exception:  # noqa: S110
+        pass
+
+    try:
+        request_id = current_request_id()
+        if request_id and not kwargs.get("request_id"):
+            kwargs["request_id"] = request_id
+    except Exception:  # noqa: S110
+        pass
+
     trace_ctx = current_trace_context()
     if trace_ctx["trace_id"]:
         kwargs["trace_id"] = trace_ctx["trace_id"]
@@ -305,16 +412,9 @@ def _push_to_oci_logging(level: str, message: str, extra: dict):
         import oci
         from oci.loggingingestion.models import PutLogsDetails, LogEntryBatch, LogEntry
         event_time = datetime.now(timezone.utc)
+        payload = _build_oci_log_payload(level, message, extra, event_time)
         entry = LogEntry(
-            data=json.dumps(
-                {
-                    "timestamp": event_time.isoformat(),
-                    "level": level.upper(),
-                    "message": message,
-                    **extra,
-                },
-                default=str,
-            ),
+            data=json.dumps(payload, default=str),
             id=f"crm-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}",
             time=event_time,
         )
@@ -360,7 +460,7 @@ def _push_to_splunk(level: str, message: str, extra: dict):
             headers={"Authorization": f"Splunk {cfg.splunk_hec_token}"},
             timeout=2.0,
         )
-    except Exception:
+    except Exception:  # noqa: S110
         pass  # fire-and-forget
 
 

@@ -1,6 +1,6 @@
 # Introduction
 
-The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). This unified project lives in [`adibirzu/octo-apm-demo`](https://github.com/adibirzu/octo-apm-demo) and brings together the Drone Shop service, Enterprise CRM service, deployment automation, Resource Manager stacks, and documentation.
+The **OCTO Cloud-Native Platform** is a reference implementation of enterprise applications running on Oracle Cloud Infrastructure (OCI). This unified project lives in [`%%GITHUB_OWNER%%/%%GITHUB_REPO%%`](%%GITHUB_REPO_URL%%) and brings together the Drone Shop service, Enterprise CRM service, deployment automation, Resource Manager stacks, and documentation.
 
 ## Goals
 
@@ -23,8 +23,8 @@ Both services integrate with the full OCI observability stack through modular ad
 
 ## Current Runtime Model
 
-- **Shop frontend**: `https://drones.octodemo.cloud`
-- **Admin/CRM frontend**: `https://admin.octodemo.cloud`
+- **Shop frontend**: `https://shop.example.test`
+- **CRM frontend**: `https://crm.example.test`
 - **Shared database**: Oracle ATP
 - **Catalog source of truth**: CRM
 - **Browser-visible CRM links**: public URL only
@@ -196,6 +196,6 @@ flowchart TD
 
 | Repository | Component |
 |---|---|
-| [octo-apm-demo](https://github.com/adibirzu/octo-apm-demo) | Unified deployment, Resource Manager stacks, and documentation source |
-| [octo-drone-shop](https://github.com/adibirzu/octo-apm-demo/tree/main/shop) | Drone Shop + Workflow Gateway service source |
-| [enterprise-crm-portal](https://github.com/adibirzu/octo-apm-demo/tree/main/crm) | Enterprise CRM Portal |
+| [octo-apm-demo](%%GITHUB_REPO_URL%%) | Unified deployment, Resource Manager stacks, and documentation source |
+| [octo-drone-shop](%%SHOP_REPO_URL%%) | Drone Shop + Workflow Gateway service source |
+| [enterprise-crm-portal](%%CRM_REPO_URL%%) | Enterprise CRM Portal |

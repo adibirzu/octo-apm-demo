@@ -48,7 +48,7 @@ async def list_products(request: Request,
 
             where = " AND ".join(conditions)
             query = (
-                f"SELECT id, name, sku, description, price, stock, category, image_url "
+                f"SELECT id, name, sku, description, price, stock, category, image_url "  # noqa: S608
                 f"FROM products WHERE {where} ORDER BY {safe_sort}"
             )
 

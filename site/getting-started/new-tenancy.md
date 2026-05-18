@@ -47,7 +47,7 @@ REMOTE_BUILD_HOST=control-plane-oci \
 3. creates OCIR repos
 4. provisions or reconnects ATP
 5. seeds wallet/auth/logging/OCI secrets in both namespaces
-6. builds and pushes Shop + CRM images
+6. builds and pushes Shop, CRM, Java payment gateway, and Workflow Gateway images
 7. applies manifests or ingress resources
 8. reuses or installs shared ingress
 9. loads TLS material when available

@@ -67,4 +67,4 @@ k6 run --env PROFILE=heavy ...
 2. **Operations Insights** → SQL Warehouse → Top SQL: INSERT/aggregation patterns
 3. **APM** → Trace Explorer → filter `db.system=oracle`: per-statement spans
 4. **Log Analytics** → search `"slow query demo"`: correlated structured logs
-5. **OCI Monitoring** → `octo_drone_shop` namespace: metric spikes during test
+5. **OCI Monitoring** → `octo_apm_demo` namespace: metric spikes during test

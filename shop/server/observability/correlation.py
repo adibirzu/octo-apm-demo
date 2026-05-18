@@ -120,7 +120,8 @@ def compute_oracle_sql_id(sql_text: str) -> str:
 
     Produces the same 13-character identifier visible in V$SQL.SQL_ID and AWR reports.
     """
-    md5 = hashlib.md5((sql_text + "\0").encode("utf-8")).digest()
+    # SQL_ID derivation, not a security hash — disable bandit B324.
+    md5 = hashlib.md5((sql_text + "\0").encode("utf-8"), usedforsecurity=False).digest()
     hi, lo = struct.unpack(">II", md5[8:16])
     sqln = (hi << 32) | lo
     alphabet = "0123456789abcdfghjkmnpqrstuvwxyz"

@@ -24,7 +24,13 @@ import argparse
 import json
 import socket
 import sys
+from contextlib import nullcontext
 from dataclasses import asdict, dataclass, field
+
+try:
+    from server.observability.otel_setup import monitor_script
+except Exception:  # pragma: no cover - optional when run outside app env
+    monitor_script = None
 
 
 def _imds_reachable(*, timeout: float = 1.5) -> bool:
@@ -102,6 +108,17 @@ def build_payload(
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw_args = sys.argv[1:] if argv is None else argv
+    monitor = (
+        monitor_script("create_la_source")
+        if monitor_script and "--apply" in raw_args
+        else nullcontext()
+    )
+    with monitor:
+        return _main(argv)
+
+
+def _main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--la-namespace", required=True, help="OCI Log Analytics namespace")
     ap.add_argument("--la-log-group-id", required=True, help="OCI LA log group OCID")

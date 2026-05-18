@@ -1,0 +1,25 @@
+{
+  "name": "octo-apm-assistant-genai-llmetry",
+  "displayName": "OCTO APM - assistant GenAI LLMetry",
+  "description": "Span query for Drone Shop assistant, Select AI, OCI GenAI, guardrails, Langfuse, and LLMetry latency/error analysis.",
+  "queryText": "show (spans) TraceId, ServiceName as Service, OperationName as Operation, SpanDuration as Duration where ServiceName in ('octo-drone-shop','octo-drone-shop-oke') and (OperationName like '%assistant%' or OperationName like '%genai%' or OperationName like '%llm%' or OperationName like '%selectai%')",
+  "scope": {
+    "type": "spans",
+    "defaultLookback": "l24h",
+    "services": ["octo-drone-shop", "octo-drone-shop-oke"]
+  },
+  "parameters": [],
+  "troubleshootingFields": ["TraceId", "ServiceName", "OperationName", "SpanDuration", "assistant.session_id", "llm.prompt.hash", "langfuse.session.id"],
+  "logAnalyticsPivots": [
+    {
+      "savedSearch": "genai-assistant-llmetry",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    },
+    {
+      "savedSearch": "trace-drilldown",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    }
+  ]
+}

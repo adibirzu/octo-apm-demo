@@ -22,22 +22,24 @@ done
 
 | Namespace | Metric | What it shows |
 |---|---|---|
-| `octo_drone_shop` | `app.health` | Rolling 0/1 heartbeat |
-| `octo_drone_shop` | `app.requests.rate` | Req/60s published by the pod |
-| `octo_drone_shop` | `app.errors.rate` | 5xx/60s |
-| `octo_drone_shop` | `app.checkout.count` | Checkouts/min |
-| `octo_drone_shop` | `app.orders.count` | Order creations/min |
-| `octo_drone_shop` | `app.db.latency_ms` | ATP round-trip on `/ready` |
-| `octo_drone_shop` | `app.crm.sync_age_s` | Seconds since last CRM sync |
-| `octo_drone_shop` | `app.sessions.active` | Active session gauge |
-| `octo_drone_shop` | `app.inventory.low_stock_products` | Products with stock < 10 |
+| `octo_apm_demo` | `app.health` | Rolling 0/1 heartbeat |
+| `octo_apm_demo` | `app.requests.rate` | Req/60s published by the pod |
+| `octo_apm_demo` | `app.errors.rate` | 5xx/60s |
+| `octo_apm_demo` | `app.checkout.count` | Checkouts/min |
+| `octo_apm_demo` | `app.orders.count` | Order creations/min |
+| `octo_apm_demo` | `app.db.latency_ms` | ATP round-trip on `/ready` |
+| `octo_apm_demo` | `app.crm.sync_age_s` | Seconds since last CRM sync |
+| `octo_apm_demo` | `app.auth.success.count` | Admin successful logins/min |
+| `octo_apm_demo` | `app.auth.failure.count` | Admin failed logins/min |
+| `octo_apm_demo` | `app.security.events.count` | Security events/min |
+| `octo_apm_demo` | `app.inventory.low_stock_products` | Products with stock < 10 |
 | `oci_autonomous_database` | `CpuUtilization` | ATP CPU % |
 | `oci_autonomous_database` | `CurrentLogons` | Active DB sessions |
 | `oci_vcn` + `oci_oke_cluster` | built-in | Network + node health |
 
 Query template:
 ```
-octo_drone_shop/app.requests.rate[5m].mean()
+octo_apm_demo/app.requests.rate[5m].mean()
 ```
 Build an alarm on `app.errors.rate[5m].sum() > 5` → Notifications topic →
 `octo-remediator` playbook (tier-gated auto-fix).
@@ -79,7 +81,7 @@ done
 A CronJob (`deploy/k8s/oke/apm-java-demo/deployment.yaml`) also fires the
 same pattern every 5 min so the App Servers view never goes flat.
 
-Deploy + side-load the agent per [services/apm-java-demo/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/services/apm-java-demo/README.md).
+Deploy + side-load the agent per [services/apm-java-demo/README.md](%%GITHUB_REPO_URL%%/blob/main/services/apm-java-demo/README.md).
 
 ## 2. Traces drill-down (OCI APM)
 
@@ -109,7 +111,7 @@ Deploy + side-load the agent per [services/apm-java-demo/README.md](https://gith
 The beacon JS is embedded in `shop/server/templates/base.html`; public
 data key lands via the `octo-apm` K8s secret. Registration of the web
 application is a one-time OCI Console step — see
-[OBSERVABILITY-BOOTSTRAP.md §7a](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md).
+[OBSERVABILITY-BOOTSTRAP.md §7a](%%GITHUB_REPO_URL%%/blob/main/deploy/OBSERVABILITY-BOOTSTRAP.md).
 
 ## 4. Logs drill-down (OCI Logging → Log Analytics)
 
@@ -120,8 +122,10 @@ application is a one-time OCI Console step — see
 
 **Trace → logs** correlation:
 1. Copy the `oracleApmTraceId` from an APM span.
-2. In Log Analytics, search `'oracleApmTraceId' = '<id>'` against source
-   `octo-shop-app-json`.
+2. In Log Analytics, search by `Trace ID` against `SOC Application Logs`
+   for direct/OKE app rows. For Connector Hub rows from OCI Logging, open
+   `connector-live-log-coverage.sql`; those records appear as
+   `OCI Unified Schema Logs` and carry the trace id inside `Message`.
 3. Every log line produced during that request appears.
 
 **Saved searches** (in `tools/la-saved-searches/`):

@@ -4,8 +4,6 @@ End-to-end order lifecycle from cart to shipment, with full observability at eve
 
 ## Flow
 
-![Checkout payment flow](../architecture/diagrams/checkout-payment-flow.svg?v=20260509-flow)
-
 ```mermaid
 sequenceDiagram
     participant Browser
@@ -22,7 +20,7 @@ sequenceDiagram
     Shop-->>Browser: {status: "added"}
     Browser->>APM: RUM: shop.add_to_cart
 
-    Browser->>Shop: POST /api/shop/checkout (checkout_idempotency_key, payment_details)
+    Browser->>Shop: POST /api/shop/checkout
     Shop->>APM: span: shop.checkout
     Shop->>ATP: SELECT cart_items + products
     Shop->>ATP: UPSERT customer
@@ -30,29 +28,13 @@ sequenceDiagram
     Shop->>ATP: UPDATE products SET stock -= quantity
     Shop->>ATP: INSERT shipment
     Shop->>ATP: INSERT audit_log
-    Shop->>PGW: payment.simulated.authorize (PCI-safe context)
-    PGW->>APM: span: payment_gateway.emulator.authorize
-    alt credit_card
-        PGW->>APM: gateway_payment_received
-        PGW->>APM: card_data_received
-        PGW->>APM: gateway_card_tokenization
-        PGW->>APM: internal_antifraud_screening
-        PGW->>APM: card_network_routing
-    else apple_pay / google_pay
-        PGW->>APM: gateway_payment_received
-        PGW->>APM: wallet_token_received
-        PGW->>APM: gateway_token_decryption
-        PGW->>APM: network_token_cryptogram_validation
-        PGW->>APM: internal_antifraud_screening
-    end
-    PGW->>Java: verification_antifraud_request
-    Java-->>PGW: verification_antifraud_response
-    PGW->>Java: processor_authorization_request
-    Java-->>PGW: processor_authorization_response
-    PGW->>APM: network_authorization_routing
-    PGW->>APM: merchant_authorization_result
+    Shop->>PGW: authorize Visa/Mastercard/Apple Pay/Google Pay
+    PGW->>APM: spans: wallet/card token, antifraud, routing
+    PGW->>Java: /payment/verify token-safe antifraud context
+    Java->>APM: span events: wallet token, AVS/CVV, 3DS, network auth
+    PGW->>Java: /payment/authorize processor/network authorization
+    PGW->>ATP: INSERT payment_gateway_events
     Shop->>ATP: INSERT payment_transactions
-    Shop->>ATP: INSERT payment_gateway_events
     Shop->>ATP: DELETE cart_items (session cleanup)
     Shop->>CRM: POST /api/orders (sync via traceparent)
     Shop-->>Browser: {order_id, tracking_number, total}
@@ -84,17 +66,47 @@ total    = max(subtotal - discount, 0) + shipping
 | Add to cart | `orders.cart.add` | `shop.business.cart.additions` | "Cart updated" |
 | Checkout | `shop.checkout` | `shop.business.orders.created` | "Store checkout persisted" |
 | Payment gateway | `payment_gateway.emulator.authorize` | `shop.business.payment.authorizations` | "Payment gateway ... request" |
-| Wallet/card token | `payment_gateway.<method>.*` | - | `gateway_payment_received`, `card_data_received`, `gateway_card_tokenization`, `wallet_token_received`, `gateway_token_decryption`, `network_token_cryptogram_validation` |
-| Antifraud verification | `payment_gateway.<method>.verification_*` | - | Java verification request/response with `payment.verification.decision` |
+| Wallet/card token | `payment_gateway.<method>.*` | - | Google Pay `PaymentData`, Apple Pay token, card tokenization logs |
+| Verification hop | `java_app_server.post.api.java-apm.payment.verify` | `java_app_server` | "Java app-server sidecar call completed" |
 | Processor hop | `java_app_server.post.api.java-apm.payment.authorize` | `java_app_server` | "Java app-server sidecar call completed" |
-| Gateway result | `payment_gateway.<method>.merchant_authorization_result` | - | `payment.gateway.request_id`, status, risk score, and decision source |
+| Java payment events | `java.payment.*` span events | - | Wallet validation, 3DS, AVS/CVV, response code, network id |
 | Stock update | (SQLAlchemy auto) | - | - |
 | Shipment | (SQLAlchemy auto) | `shop.business.shipments.created` | - |
 | CRM sync | `integration.crm.sync_order` | `shop.business.crm.sync` | "Order synced to CRM" |
 
 Payment gateway events are persisted in `payment_gateway_events` with
 `trace_id`, `span_id`, `gateway_request_id`, method, network, step name, and
-safe metadata. Raw PAN, CVV, and wallet tokens are not logged or persisted.
+safe metadata. Raw PAN, CVV, cryptograms, and wallet tokens are not logged or
+persisted.
+
+## Payment Rail Simulation
+
+The implementation now matches the architecture diagram: checkout calls a
+Python gateway emulator, the gateway calls the Java sidecar for antifraud
+verification and processor authorization, and both components stamp the same
+`payment.gateway.request_id` so APM, Log Analytics, ATP rows, CRM orders, and
+browser RUM events can be joined.
+
+| Rail | Simulated workflow evidence |
+|---|---|
+| Google Pay | `PaymentData.paymentMethodData.type=CARD`, `tokenizationData.type=PAYMENT_GATEWAY`, gateway merchant hash, token hash, card network, cryptogram validation |
+| Apple Pay | merchant validation, payment token envelope, `paymentData.version=EC_v1`, header transaction id hash, payment method network |
+| Visa | e-commerce tokenization, Visa Secure 3DS `eci=05`, AVS/CVV result, processor response code, synthetic network transaction id |
+| Mastercard | e-commerce tokenization, Mastercard Identity Check 3DS `eci=02`, AVS/CVV result, processor response code, synthetic network transaction id |
+
+Only token-safe fields cross into Java: gateway request id, method,
+network, gateway provider, wallet token hash, card brand/last4,
+card fingerprint, billing postal-code presence, CVV presence, risk
+reasons, and idempotency hash. The Shop Java client also sends
+`X-Request-Id`, `X-Workflow-Id=checkout`, and a payment-specific
+`X-Workflow-Step` header so Java server spans, Java stdout JSON, Shop
+sidecar logs, and APM traces share the same workflow pivots.
+
+Gateway step API responses expose `component`, `component_label`, and
+`peer_service` for each safe step. Operators should see labels such as
+Google Pay Gateway, Apple Pay Gateway, VISA Payment Network, Mastercard
+Payment Network, OCTO Java Payment Processor, and OCTO Antifraud
+Verification App without exposing payment secrets.
 Operators can inspect the stored gateway timeline through:
 
 ```text
@@ -108,6 +120,12 @@ admin observability pages, or `X-Internal-Service-Key` for trusted internal
 automation. Responses include the persisted step sequence so the payment
 view can be correlated with APM spans, application logs, CRM order state, and
 Oracle rows.
+
+Login and checkout database evidence share the same user/order relationship:
+`auth.login` emits success/failure logs and successful logins insert an
+`audit_logs` row with the authenticated `user_id`; checkout-created audit rows
+also use the authenticated user id when present. This lets Log Analytics and
+ATP queries map login activity to the later order and payment rows.
 
 Orders carry the payment state needed for CRM and support workflows:
 
@@ -124,27 +142,9 @@ gateway event sequence without reading raw payment details.
 
 ## Security Checks
 
-| Check | Trigger | Security Span | Log Analytics pivots |
-|---|---|---|---|
-| Invalid `product_id` | Non-integer | `ATTACK:MASS_ASSIGN` | `Security Check=mass_assign`, `Security Endpoint=/api/cart/add`, `Cart Session ID`, `Trace ID` |
-| Quantity > 20 | Rate limit | `ATTACK:RATE_LIMIT` | `Security Check=rate_limit`, `Cart Product ID`, `Cart Quantity`, `Client IP` |
-| Missing/inactive product | IDOR attempt | `ATTACK:IDOR` | `Security Check=idor`, `Cart Product ID`, `OWASP Category=A01:2021`, `MITRE Technique ID=T1078` |
-| Invalid quantity | Non-integer | `ATTACK:MASS_ASSIGN` | `Security Check=mass_assign`, `Security Product ID`, `Security Session ID`, `Trace ID` |
-
-Each guardrail emits an APM `ATTACK:*` child span, a structured app log with
-`oracleApmTraceId`, and a row in `security_events`. The Log Analytics saved
-search `checkout-security-checks.sql` groups these real events by check,
-endpoint, source IP, product, session, OWASP category, and MITRE technique.
-
-Payment dashboards use real gateway logs and persisted gateway events:
-
-- `payment-gateway-timeline.sql` reconstructs the ordered gateway step
-  sequence for a `Payment Gateway Request ID`, trace id, or order id.
-- `payment-risk-decisions.sql` groups authorization outcomes by payment
-  method, network, wallet/card metadata, verification decision, processor
-  decision, and risk score.
-- `user-order-action-correlation.sql` joins password-login, checkout, order,
-  payment, and guardrail records by authenticated user id, order id, and trace.
-- `payment-security-command-center.json` combines payment timeline, payment
-  risk, checkout security checks, user/order correlation, and trace drilldown
-  widgets.
+| Check | Trigger | Security Span |
+|---|---|---|
+| Invalid product_id | Non-integer | `ATTACK:MASS_ASSIGN` |
+| Quantity > 20 | Rate limit | `ATTACK:RATE_LIMIT` |
+| Missing/inactive product | IDOR attempt | `ATTACK:IDOR` |
+| Invalid quantity | Non-integer | `ATTACK:MASS_ASSIGN` |

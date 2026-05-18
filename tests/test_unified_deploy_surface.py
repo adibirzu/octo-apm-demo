@@ -42,14 +42,14 @@ def test_root_oke_manifests_use_shop_and_crm_hostnames() -> None:
     shop_manifest = read_text("deploy/k8s/oke/shop/deployment.yaml")
     crm_manifest = read_text("deploy/k8s/oke/crm/deployment.yaml")
 
-    assert 'https://crm.${DNS_DOMAIN}' in shop_manifest
-    assert 'shop.${DNS_DOMAIN}' in shop_manifest
+    assert 'https://admin.${DNS_DOMAIN}' in shop_manifest
+    assert 'drones.${DNS_DOMAIN}' in shop_manifest
     assert (
         'http://enterprise-crm-portal.${K8S_NAMESPACE_CRM}.svc.cluster.local:8080'
         in shop_manifest
     )
 
-    assert 'https://crm.${DNS_DOMAIN}' in crm_manifest
+    assert 'https://admin.${DNS_DOMAIN}' in crm_manifest
     assert (
         'http://octo-drone-shop.${K8S_NAMESPACE_SHOP}.svc.cluster.local:8080'
         in crm_manifest
@@ -78,14 +78,69 @@ def test_oke_assets_use_unified_namespaces_and_hostnames() -> None:
     namespaces = read_text("deploy/k8s/oke/common/namespaces.yaml")
     network_policies = read_text("deploy/k8s/oke/common/network-policies.yaml")
 
-    assert "octo-drone-shop" in namespaces
-    assert "enterprise-crm" in namespaces
+    assert "${K8S_NAMESPACE_SHOP}" in namespaces
+    assert "${K8S_NAMESPACE_CRM}" in namespaces
+    assert ": \"${K8S_NAMESPACE_SHOP:=octo-drone-shop}\"" in deploy_oke
+    assert ": \"${K8S_NAMESPACE_CRM:=enterprise-crm}\"" in deploy_oke
     assert "octo-shop-prod" not in namespaces
     assert "octo-backend-prod" not in namespaces
 
     combined = deploy_oke + network_policies
     assert "drone.${DNS_DOMAIN}" not in combined
     assert "backend.${DNS_DOMAIN}" not in combined
+
+
+def test_oke_monitoring_installer_is_preflight_safe_and_pinned() -> None:
+    installer = read_text("deploy/oke/install-oci-kubernetes-monitoring.sh")
+
+    assert "releases/download/oci-onm-4.2.1/helm-chart.tgz" in installer
+    assert 'CHART_SHA256:=d61d3cd9c72deefc1dbd83cedd5f1cf775bfc33c24d4c1206fd19b4e7b4ca8fc' in installer
+    assert ': "${APPLY:=true}"' in installer
+    assert ': "${SERVER_DRY_RUN:=true}"' in installer
+    assert 'if [[ "${APPLY}" != "true" ]]' in installer
+    assert "--rollback-on-failure" in installer
+    assert "--history-max 5" in installer
+    assert "helm template" in installer
+    assert "kubectl apply --dry-run=server" in installer
+    assert "OCI_ONM_ENABLE_SERVICE_LOGS:=false" in installer
+    assert "--enable_service_log|--rms_template_base64_encoded" in installer
+
+
+def test_oke_log_analytics_searches_scope_to_demo_cluster() -> None:
+    search_paths = (
+        "deploy/oci/log_analytics/searches/oke-onm-ingestion-health.sql",
+        "deploy/oci/log_analytics/searches/rule-oke-onm-log-samples.sql",
+        "deploy/oci/log_analytics/searches/oke-kubernetes-trace-correlation.sql",
+    )
+
+    for relative_path in search_paths:
+        search = read_text(relative_path)
+        assert "'Kubernetes Cluster Name' = 'octo-apm-demo-oke'" in search
+        assert "or Namespace in ('octo-drone-shop','enterprise-crm','oci-onm')" not in search
+
+
+def test_oke_image_build_requires_immutable_tag_and_runtime_uid() -> None:
+    build_script = read_text("deploy/oke/build-push-images.sh")
+
+    assert ': "${PUSH_LATEST:=false}"' in build_script
+    assert ': "${VERIFY_RUNTIME_UID:=true}"' in build_script
+    assert ': "${EXPECTED_RUNTIME_UID:=10001}"' in build_script
+    assert 'if [[ "${IMAGE_TAG}" == "latest"' in build_script
+    assert "Refusing to publish mutable image tag 'latest'" in build_script
+    assert "--entrypoint id" in build_script
+    assert "docker image inspect" in build_script
+    assert "runtime UID ${runtime_uid} OK" in build_script
+    assert "Do not deploy this tag with the OKE pod securityContext." in build_script
+
+
+def test_oke_secret_bootstrap_renders_namespaces_and_validates_langfuse() -> None:
+    bootstrap = read_text("deploy/oke/bootstrap-emdemo-secrets.sh")
+
+    assert "command -v envsubst" in bootstrap
+    assert "envsubst < \"${REPO_ROOT}/deploy/k8s/oke/common/namespaces.yaml\"" in bootstrap
+    assert "validate_bool \"${LANGFUSE_ENABLED}\" LANGFUSE_ENABLED" in bootstrap
+    assert "required_value \"${LANGFUSE_PUBLIC_KEY:-}\" LANGFUSE_PUBLIC_KEY" in bootstrap
+    assert "required_value \"${LANGFUSE_SECRET_KEY:-}\" LANGFUSE_SECRET_KEY" in bootstrap
 
 
 def test_default_profile_docs_and_examples_target_cyber_sec_ro() -> None:
@@ -175,8 +230,11 @@ def test_verify_script_renders_helm_templates_instead_of_parsing_go_templates_ra
     assert "helm template octo-apm-demo" in verify
     assert "helm lint" in verify
     assert "secrets.create=true" in verify
-    assert "kubectl apply --dry-run=client" in verify
+    assert "kubectl create --dry-run=client" in verify
     assert 'deploy/helm/*/templates/*' in verify
+    assert "is_network_dependency_error" in verify
+    assert "provider registry unavailable" in verify
+    assert "terraform -chdir=\"${REPO_ROOT}/deploy/terraform\" init -backend=false" in verify
     assert "terraform validate" in verify
     assert "deploy/wizard/tests/test_plan.py" in verify
     assert "services/load-control" in verify
@@ -214,13 +272,22 @@ def test_resource_manager_deploy_button_and_docs_publish_zip_url() -> None:
     assert parsed.path == "/resourcemanager/stacks/create"
     assert parse_qs(parsed.query)["zipUrl"] == [RESOURCE_MANAGER_ZIP_URL]
 
-    for text in (readme, resource_manager_readme, deployment_options):
+    # README.md and deploy/ READMEs use hardcoded URLs (GitHub renders them directly).
+    for text in (readme, resource_manager_readme):
         assert "Deploy to Oracle Cloud" in text
         assert RESOURCE_MANAGER_BUTTON_URL in text
 
-    for text in (readme, compute_readme, compute_doc, deployment_options):
+    # site/ docs use %%GITHUB_REPO_URL%% placeholders resolved by the mkdocs hook.
+    assert "Deploy to Oracle Cloud" in deployment_options
+    assert "%%GITHUB_REPO_URL%%/releases/download/resource-manager-stack/octo-stack.zip" in deployment_options
+
+    for text in (readme, compute_readme):
         assert "Deploy Full Compute Stack to Oracle Cloud" in text or "Deploy Full Private Compute Stack to Oracle Cloud" in text
         assert COMPUTE_RESOURCE_MANAGER_BUTTON_URL in text
+
+    for text in (compute_doc, deployment_options):
+        assert "Deploy Full Compute Stack to Oracle Cloud" in text or "Deploy Full Private Compute Stack to Oracle Cloud" in text
+        assert "%%GITHUB_REPO_URL%%/releases/download/compute-resource-manager-stack" in text or COMPUTE_RESOURCE_MANAGER_BUTTON_URL in text
 
     workflow_path = ROOT / ".github/workflows/resource-manager-stack.yml"
     if workflow_path.exists():
@@ -342,6 +409,26 @@ def test_bootstrap_starts_atp_and_oke_manifests_do_not_partially_configure_sso()
     assert "IDCS_REDIRECT_URI" not in shop_manifest
     assert "IDCS_POST_LOGOUT_REDIRECT" not in shop_manifest
     assert "IDCS_REDIRECT_URI" not in crm_manifest
+
+
+def test_oke_deploy_wires_payment_gateway_and_log_correlation_fields() -> None:
+    deploy_script = read_text("deploy/oke/deploy-oke.sh")
+    shop_manifest = read_text("deploy/k8s/oke/shop/deployment.yaml")
+    crm_manifest = read_text("deploy/k8s/oke/crm/deployment.yaml")
+    java_manifest = read_text("deploy/k8s/oke/apm-java-demo/deployment.yaml")
+
+    assert 'apply_manifest "${OKE_DIR}/apm-java-demo/deployment.yaml"' in deploy_script
+    assert "kubectl rollout status deployment/octo-apm-java-demo" in deploy_script
+    assert "JAVA_APM_SERVICE_URL" in shop_manifest
+    assert "PAYMENT_GATEWAY_SIMULATION_ENABLED" in shop_manifest
+    assert "SERVICE_NAMESPACE" in shop_manifest
+    assert "SERVICE_INSTANCE_ID" in shop_manifest
+    assert "OTEL_RESOURCE_ATTRIBUTES" in shop_manifest
+    assert "SERVICE_NAMESPACE" in crm_manifest
+    assert "SERVICE_INSTANCE_ID" in crm_manifest
+    assert "OTEL_RESOURCE_ATTRIBUTES" in crm_manifest
+    assert "octo-apm-java-demo" in java_manifest
+    assert "OTEL_RESOURCE_ATTRIBUTES" in java_manifest
 
 
 def test_bootstrap_recovers_stopped_managed_workers_before_ingress_apply() -> None:
@@ -575,6 +662,7 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
     assert "configure-lb-certificate.sh" in validate
     assert "verify-deployment.sh" in validate
     assert "deploy-apps.sh" in validate
+    assert "provider registry unavailable" in validate
     assert "terraform -chdir=\"${SCRIPT_DIR}/terraform\" validate" in validate
     assert "Resource Manager package terraform validates" in validate
     assert "deploy/compute/validate.sh" in verify
@@ -605,8 +693,15 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
     assert "--crm-instance-id" in deploy_apps
     assert "APP_IMAGE_PULL_POLICY" in deploy_apps
     assert "APP_IMAGE_BUILD_ENABLED" in deploy_apps
-    assert "root or passwordless sudo required" in deploy_apps
-    assert 'exec sudo -n bash "$0"' in deploy_apps
+    assert "sudo -n bash" in deploy_apps
+    assert "OBJECT_STORAGE_TUPLE" in deploy_apps
+    assert "content.source.text size" in deploy_apps
+    assert "os object put" in deploy_apps
+    assert "--run-command-bucket" in deploy_apps
+    assert "--workflow-gateway-image" in deploy_apps
+    assert "WORKFLOW_GATEWAY_IMAGE" in deploy_apps
+    assert "systemctl restart octo-workflow-gateway.service" in deploy_apps
+    assert "systemctl restart octo-java-apm.service" in deploy_apps
     assert "/opt/octo/deploy/compute/install.sh --check" in deploy_apps
     assert "systemctl restart octo-compute.service" in deploy_apps
     assert "bootstrap_admin_password" not in deploy_apps.lower()

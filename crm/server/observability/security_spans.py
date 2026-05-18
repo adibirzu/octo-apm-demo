@@ -99,6 +99,7 @@ def security_span(
     tracer = get_tracer()
     mitre = MITRE_MAP.get(vuln_type, ("T0000", "unknown", "Unknown"))
     owasp = OWASP_MAP.get(vuln_type, "Unknown")
+    expected_demo_event = bool((extra_attrs or {}).get("error.expected") or (extra_attrs or {}).get("demo.expected"))
 
     span_name = f"ATTACK:{vuln_type.upper()}"
 
@@ -119,11 +120,12 @@ def security_span(
         if extra_attrs:
             for k, v in extra_attrs.items():
                 span.set_attribute(k, v)
-        span.set_status(StatusCode.ERROR, f"Security event: {vuln_type}")
+        if not expected_demo_event:
+            span.set_status(StatusCode.ERROR, f"Security event: {vuln_type}")
         # Record security event as a metric for alerting
         try:
             from server.observability.business_metrics import record_security_event
             record_security_event(vuln_type, severity)
-        except Exception:
+        except Exception:  # noqa: S110
             pass  # metrics not yet initialized during startup
         yield span

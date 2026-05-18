@@ -63,7 +63,7 @@ def _clear_connection(dbapi_connection, connection_record):
         if hasattr(dbapi_connection, 'module'):
             dbapi_connection.action = "idle"
             dbapi_connection.client_identifier = ""
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
 

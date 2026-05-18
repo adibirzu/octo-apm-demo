@@ -13,6 +13,7 @@ import logging
 import sys
 
 from .fuzzer import EdgeFuzzer
+from .telemetry import script_span
 
 
 def main() -> int:
@@ -34,7 +35,17 @@ def main() -> int:
         run_id=args.run_id,
         operator=args.operator,
     )
-    stats = asyncio.run(fuzzer.run())
+    with script_span(
+        "edge_fuzz.run",
+        attributes={
+            "target.endpoint": args.endpoint,
+            "fuzz.request_count": args.count,
+            "fuzz.concurrency": args.concurrency,
+            "chaos.run_id": args.run_id,
+            "operator": args.operator,
+        },
+    ):
+        stats = asyncio.run(fuzzer.run())
     print(stats.as_dict())
     return 0
 

@@ -93,7 +93,7 @@ async def by_region(region: str = "", request: Request = None):
         delay = REGION_SHIPPING_DELAY_MS.get(region, 500)
         with tracer.start_as_current_span("shipping.region_lookup_delay") as d_span:
             d_span.set_attribute("shipping.delay_ms", delay)
-            await asyncio.sleep(delay / 1000 * random.uniform(0.8, 1.2))
+            await asyncio.sleep(delay / 1000 * random.uniform(0.8, 1.2))  # noqa: S311
 
         async with get_db() as db:
             result = await db.execute(

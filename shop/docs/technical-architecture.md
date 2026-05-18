@@ -101,7 +101,7 @@ Browser → /api/auth/sso/callback → IDCS /oauth2/v1/token
 | Source | Destination | What |
 |---|---|---|
 | Prometheus `/metrics` | Grafana / scraper | HTTP RED, business KPIs, runtime |
-| OCI Monitoring SDK | OCI Monitoring (`octo_drone_shop` namespace) | app.health, requests.rate, errors.rate, checkout.count, orders.count, db.latency_ms, crm.sync_age_s |
+| OCI Monitoring SDK | OCI Monitoring (`octo_apm_demo` namespace) | app.health, app.requests.rate, app.errors.rate, app.checkout.count, app.orders.count, app.db.latency_ms, app.crm.sync_age_s |
 | OCI Alarms | OCI Notifications → email/webhook | Error rate > 5/min, DB p95 > 2s, health down, CRM sync stale |
 | OCI Health Checks | OCI Console | HTTP `/ready` every 30s |
 
@@ -191,7 +191,7 @@ All k6 tests accept `DNS_DOMAIN` and `PROFILE` (light/moderate/heavy) environmen
 - [ ] OCI APM Topology shows edges between all services
 - [ ] OCI APM RUM shows shop.add_to_cart and shop.checkout events
 - [ ] OCI Log Analytics: `oracleApmTraceId=<trace_id>` returns correlated logs
-- [ ] OCI Monitoring: `octo_drone_shop` namespace has metrics
+- [ ] OCI Monitoring: `octo_apm_demo` namespace has metrics
 - [ ] OCI DB Management Performance Hub shows SQL from the app
 - [ ] `npm run test:e2e` passes all 237 tests
 - [ ] `k6 run --env DNS_DOMAIN=<domain> k6/cross_service_stress.js` completes without threshold violations

@@ -8,12 +8,20 @@ import signal
 import sys
 
 from .config import WorkerConfig
+from .telemetry import init_otel, script_span
 from .worker import Worker
 
 
 def main() -> int:
     cfg = WorkerConfig()
     logging.basicConfig(level=cfg.log_level.upper(), format="%(message)s")
+    init_otel(
+        service_name=cfg.service_name,
+        resource_attributes={
+            "messaging.system": "redis",
+            "messaging.destination.name": ",".join(cfg.streams),
+        },
+    )
 
     worker = Worker(cfg)
 
@@ -21,7 +29,16 @@ def main() -> int:
         loop = asyncio.get_event_loop()
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(sig, worker.request_stop)
-        stats = await worker.run()
+        with script_span(
+            "async_worker.run",
+            service_name=cfg.service_name,
+            attributes={
+                "messaging.system": "redis",
+                "messaging.destination.name": ",".join(cfg.streams),
+                "worker.run_once": cfg.run_once,
+            },
+        ):
+            stats = await worker.run()
         print(stats.as_dict())
         return 0
 

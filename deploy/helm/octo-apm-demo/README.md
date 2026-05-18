@@ -1,12 +1,14 @@
 # octo-apm-demo Helm chart
 
-Installs the Drone Shop + Enterprise CRM Portal demo onto an **existing
-OKE cluster**. It is the Helm equivalent of the manifests under
+Installs the Drone Shop + Enterprise CRM Portal demo plus the Java payment
+gateway and Workflow Gateway onto an **existing OKE cluster**. It is the Helm
+equivalent of the manifests under
 `deploy/k8s/oke/`, intended for operators who already have:
 
 - an OKE cluster with a working ingress controller
 - an Autonomous DB (ATP) with wallet and credentials
-- OCIR repos populated with shop + crm images
+- OCIR repos populated with shop, crm, `octo-apm-java-demo`, and
+  `octo-workflow-gateway` images
 
 If you have none of that, run `deploy/bootstrap.sh` instead — it
 provisions ATP, OCIR, DNS, ingress, and the TLS material for you.
@@ -28,6 +30,19 @@ by default (`namespaces.create=true`), so a single release owns both
 components. Pass `--namespace <anything>` purely to satisfy Helm's
 per-release bookkeeping.
 
+The Java payment gateway is enabled by default through
+`javaGateway.enabled=true`. Drone Shop points at the in-cluster
+`octo-apm-java-demo` service and keeps `PAYMENT_PROVIDER=simulated` with
+`PAYMENT_GATEWAY_SIMULATION_ENABLED=true`, so Apple Pay, Google Pay, Visa, and Mastercard workflows match the raw OKE manifests.
+
+The Workflow Gateway is enabled by default through
+`workflowGateway.enabled=true`. Drone Shop uses the in-cluster
+`octo-workflow-gateway` service for admin-scoped Select AI/workflow calls,
+while browser traffic stays on the same-origin `/api/workflow-gateway` proxy.
+The chart sets the same OKE service names and `SOC Application Logs`
+annotations as the raw manifests so APM and Log Analytics pivots behave the
+same in both install modes.
+
 ## Bring-your-own-secrets (default, recommended)
 
 The chart references these Secrets **in each app namespace**. They must
@@ -38,7 +53,8 @@ exist before the pods will start:
 | `octo-atp`         | `dsn`, `username`, `password`, `wallet-password`                                                                          |
 | `octo-atp-wallet`  | `wallet.zip` (binary ATP wallet)                                                                                          |
 | `octo-auth`        | `token-secret`, `internal-service-key`, `app-secret-key`, `bootstrap-admin-password`                                      |
-| `octo-oci-config`  | `compartment-id`, optional `genai-endpoint`, `genai-model-id`                                                             |
+| `octo-oci-config`  | `compartment-id`, optional `genai-endpoint`, `genai-model-id`, `selectai-profile-name`                                   |
+| `octo-llmetry`     | optional: `langfuse-enabled`, `langfuse-host`, `langfuse-public-key`, `langfuse-secret-key`, `langfuse-otel-export-enabled` |
 | `octo-apm`         | optional: `endpoint`, `private-key`, `public-key`, `rum-endpoint`, `rum-web-application-ocid`                             |
 | `octo-logging`     | optional: `log-group-id`, `log-id`, `log-chaos-audit-id`, `log-security-id`                                               |
 | `octo-sso`         | optional: `idcs-domain-url`, `idcs-client-id`, `idcs-client-secret`                                                       |
@@ -107,6 +123,8 @@ console for those.
 | Ingress                       | separate `ingress.yaml`    | toggled via `ingress.enabled`               |
 | Secret seeding                | bootstrap.sh               | references OR chart-managed via `secrets.*` |
 | Namespace creation            | common/namespaces.yaml     | `namespaces.create`                         |
+| Java payment gateway          | `apm-java-demo/deployment.yaml` | `javaGateway.enabled=true`             |
+| Workflow Gateway / Select AI  | `workflow-gateway/deployment.yaml` | `workflowGateway.enabled=true`       |
 | LoadBalancer Service per app  | yes (skipped by bootstrap) | no (use Ingress)                            |
 | WAF-policy annotations        | yes                        | add via `shop.env.extra` /                  |
 |                               |                            | manual annotation patch if needed           |

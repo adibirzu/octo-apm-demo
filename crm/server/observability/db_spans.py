@@ -29,7 +29,8 @@ def compute_oracle_sql_id(sql_text: str) -> str:
     2. Take last 8 bytes as big-endian uint64
     3. Encode in Oracle's base-32 alphabet → 13 chars
     """
-    md5_hash = hashlib.md5((sql_text + "\0").encode("utf-8")).digest()
+    # SQL_ID derivation — matches Oracle's V$SQL.SQL_ID algorithm, not security.
+    md5_hash = hashlib.md5((sql_text + "\0").encode("utf-8"), usedforsecurity=False).digest()
     # Last 8 bytes as unsigned 64-bit big-endian
     msb, lsb = struct.unpack(">II", md5_hash[8:16])
     sqln = (msb << 32) | lsb

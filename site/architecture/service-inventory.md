@@ -7,10 +7,11 @@ and which correlation-contract fields it emits.
 
 | Service | Source | Public URL | OTel `service.name` |
 |---|---|---|---|
-| Drone Shop | `shop/` | `https://drones.octodemo.cloud` (`https://shop.${DNS_DOMAIN}` in portable stacks) | `octo-drone-shop` |
-| Enterprise CRM Portal | `crm/` | `https://admin.octodemo.cloud` (`https://crm.${DNS_DOMAIN}` in portable stacks) | `enterprise-crm-portal` |
-| Admin Coordinator surface | `crm/server/modules/coordinator.py` | `https://admin.octodemo.cloud/admin` | `enterprise-crm-portal` |
-| Workflow Gateway (Go) | `shop/services/workflow-gateway/` | internal | `octo-workflow-gateway` |
+| Drone Shop | `shop/` | `https://shop.example.test` (`https://shop.${DNS_DOMAIN}` in portable stacks) | `octo-drone-shop` |
+| Enterprise CRM Portal | `crm/` | `https://admin.example.test` (`https://crm.${DNS_DOMAIN}` in portable stacks) | `enterprise-crm-portal` |
+| Admin Coordinator surface | `crm/server/modules/coordinator.py` | `https://admin.example.test/admin` | `enterprise-crm-portal` |
+| Java payment/app-server sidecar | `services/apm-java-demo/` | private loopback endpoint on the Shop host in Compute | `octo-java-app-server` |
+| Workflow Gateway (Go) | `shop/services/workflow-gateway/` | internal | `octo-workflow-gateway` (`octo-workflow-gateway-oke` on OKE) |
 
 ## Platform services (OCI 360)
 
@@ -27,25 +28,6 @@ and which correlation-contract fields it emits.
 | 8a | `octo-container-lab` | `services/container-lab/` | K8s Jobs: CPU, memory, disk stress. Trips HPA + alarms. |
 | 8b | `octo-vm-lab` | `services/vm-lab/` | cloud-init + systemd-wrapped stress-ng on a dedicated VM. |
 | 9 | `octo-remediator` | `services/remediator/` | Alarm-driven recovery. Tier-gated playbooks (LOW auto, MEDIUM conditional, HIGH approval). |
-
-## Placement By Deployment Type
-
-| Component | OKE | Two-instance Compute | Unified VM |
-|---|---|---|---|
-| Drone Shop | `octo-drone-shop` Deployment + public LB Service | `octo-compute.service` on the private Shop VM | local app process/container |
-| Enterprise CRM Portal | `enterprise-crm-portal` Deployment + public LB Service | `octo-compute.service` on the private CRM VM | local app process/container |
-| Java APM sidecar | sidecar/Deployment option for App Server and JVM metrics | `octo-java-apm` Podman container on the Shop VM | optional local sidecar |
-| Workflow Gateway | `octo-workflow-gateway` Deployment/Service | `octo-workflow-gateway` Podman container on the Shop VM | optional local service |
-| Browser Runner | Kubernetes Job launched by load-control | local Playwright E2E against public hosts | local Playwright E2E |
-| Load Control | service Deployment when enabled | not currently deployed on private Compute | optional local service |
-| Remediator | service Deployment when enabled | not currently deployed on private Compute | optional local service |
-| OTel Gateway | collector Deployment when enabled | not required; apps export directly to OCI APM | optional collector |
-| Langfuse | low-resource `octo-langfuse` namespace on OKE | external `lf.octodemo.cloud` used by live Shop | optional external |
-
-The May 11, 2026 `emdemo` live Compute deployment currently runs Shop, CRM,
-the Java APM sidecar, and the Workflow Gateway. The OKE manifests cover the
-same app/service contracts, but the target OCTO project VCN still needs a new
-or selected OKE cluster before those manifests can be applied there.
 
 ## Tooling
 
@@ -68,6 +50,31 @@ Every service emits the **same** identity fields, per
 - `workflow_id` on business-flow spans + logs
 - `run_id` **when** originated by `octo-load-control` or `octo-remediator`
 
+## APM to Log Analytics Mapping
+
+Use this matrix when checking whether logs can be mapped back to traces. The
+preferred join is always APM `TraceId` to Log Analytics `Trace ID`.
+
+| service | APM service/query coverage | log mapping | high-value joins |
+| --- | --- | --- | --- |
+| `octo-drone-shop` | `checkout-end-to-end`, `login-auth-flow`, `assistant-genai-llmetry`, `service-errors` | `octo-shop-v2` parser maps `trace_id`, `oracleApmTraceId`, `span_id`, `request_id`, `workflow_id` | `Order ID`, `Payment Gateway Request ID`, `Session ID`, `Application Hash`, `User ID` |
+| `enterprise-crm-portal` | `checkout-end-to-end`, `login-auth-flow`, `service-errors` | `octo-crm-v2` parser maps the same trace/log contract | `Source Order ID`, `Order ID`, `Request ID`, `DB Statement`, `User ID` |
+| `octo-java-app-server` | `payment-java-sidecar`, `service-errors` | Java logs carry MDC `trace_id`/`span_id`; Shop logs also map `java_apm.*` sidecar call results | `Payment Gateway Request ID`, `Transaction ID`, `Response Code`, `Java APM Error Type` |
+| `octo-workflow-gateway` / `octo-workflow-gateway-oke` | `db-slow-spans`, `platform-workflows` | Go telemetry emits JSON logs with `oracleApmTraceId`, `trace_id`, `service.name` | `Workflow ID`, `Run ID`, `DB Statement`, `Trace ID` |
+| `octo-load-control` | `platform-workflows`, `service-errors` | run ledger and workload dispatch logs should stamp `run_id`, `workflow_id`, and service name | `Run ID`, profile name, target service |
+| `octo-browser-runner` | `platform-workflows` plus RUM sessions | pino logs and RUM custom dimensions carry `run_id` and synthetic user metadata | `Run ID`, `synthetic_user_domain`, `Trace ID` from backend responses |
+| `octo-async-worker` | `platform-workflows` | Redis stream events carry producer `trace_id`/`span_id`; worker spans preserve `workflow.id` and `run_id` | stream name, event id, DLQ reason, `Trace ID` |
+| `octo-cache` | `platform-workflows` when client spans are active | cache client emits span attributes; app logs keep the upstream trace id | cache namespace, hit/miss, latency, `Trace ID` |
+| `octo-object-pipeline` | `platform-workflows`, `service-errors` | OCI Events envelope must include `oracleApmTraceId` when an upstream trace exists | object name, bucket, handler result, `Run ID` |
+| `octo-edge-fuzz` | `platform-workflows`, `service-errors` | fuzzer requests set `X-Run-Id`; API Gateway/app logs carry request and trace fields | `Run ID`, `API Gateway Request ID`, `Attack ID` |
+| `octo-remediator` | `platform-workflows`, `service-errors` | remediation actions should log alarm/run ids and target resource | `Run ID`, alarm id, target service, playbook |
+| WAF/API Gateway/OSQuery/Tetragon | Log Analytics-only plus APM trace ids from app pivots | dedicated parsers map edge, host, and eBPF fields | `Request ID`, `API Gateway Request ID`, `Attack ID`, `Instance OCID`, `OSQuery Query` |
+
+Fast troubleshooting searches live in `deploy/oci/log_analytics/searches/`:
+`service-trace-log-coverage`, `trace-drilldown`, `checkout-payment-correlation`,
+`auth-login-correlation`, `genai-assistant-llmetry`, `service-error-triage`,
+`db-slowness-hotspots`, and the attack-lab searches.
+
 ## Event namespace
 
 OCI Events emitted by the platform follow
@@ -85,6 +92,7 @@ OCI Events emitted by the platform follow
 
 | Surface | Scope |
 |---|---|
+| `python3 -m pytest -q tests/test_signal_contract_inventory.py` | Source-level signal contract inventory for APM, Log Analytics, and Monitoring drift |
 | `python3 -m pytest -q tests/test_unified_deploy_surface.py` | Deploy/docs invariants for the unified repo |
 | `python3 -m pytest -q deploy/wizard/tests/test_plan.py` | Provisioning wizard plan composition |
 | `bash deploy/verify.sh` | Shell, plain YAML/JSON, Helm render + lint, terraform fmt, compose, pre-flight, mkdocs, pytest, template smoke |

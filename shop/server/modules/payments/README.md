@@ -20,7 +20,7 @@ existing demos keep working.
 | `gateway_emulator.py` | Dedicated payment gateway emulator between checkout and processor; emits per-step spans/logs and stores token-safe gateway events |
 | `checkout_workflow.py` | Normalizes card/wallet payloads into PCI-safe metadata, risk reasons, and persistence fields |
 
-## Demo Gateway Trace
+## Enterprise Demo Gateway Trace
 
 The shop checkout path runs a dedicated gateway emulator for
 `credit_card`, `apple_pay`, and `google_pay`. Each payment creates a
@@ -33,8 +33,46 @@ rows for these phases:
    sidecar (`/api/java-apm/payment/verify`).
 4. Simulated processor authorization through the Java APM sidecar
    (`/api/java-apm/payment/authorize`).
-5. Simulated card/network routing.
+5. Simulated Visa/Mastercard network routing, with response code,
+   gateway code, AVS/CVV result, 3DS indicator, retrieval reference,
+   and synthetic network transaction id.
 6. Normalized merchant authorization result returned to Drone Shop.
+
+APM component attributes are explicit on every gateway span, so the
+Topology/Trace Explorer component column separates wallet, processor, and
+network work:
+
+| Span phase | `component` |
+|---|---|
+| Google Pay wallet/token phases | `google-pay-gateway` |
+| Apple Pay merchant session/token phases | `apple-pay-gateway` |
+| Antifraud verification app | `octo-antifraud-verification-app` |
+| Java processor request/response | `octo-java-payment-processor` |
+| Visa authorization rail | `visa-payment-network` |
+| Mastercard authorization rail | `mastercard-payment-network` |
+
+The flow is modeled after the public wallet/card gateway contracts:
+
+| Method | Simulated technical shape | Token-safe evidence emitted |
+|---|---|---|
+| Google Pay | `PaymentData.paymentMethodData.type=CARD`, `tokenizationData.type=PAYMENT_GATEWAY`, gateway merchant routing, and network-token cryptogram validation | `payment.google_pay.*`, `payment.wallet.token_hash`, gateway name, card network, 3DS attributes |
+| Apple Pay | merchant validation, payment token envelope, `paymentData.version=EC_v1`, token header fields, payment method network, and PSP decryption handoff | `payment.apple_pay.*`, token hash, merchant identifier hash, network, 3DS attributes |
+| Visa card | e-commerce card tokenization, Visa Secure frictionless simulation, AVS/CVV result, authorization response | `payment.card.*`, `payment.3ds.program=Visa Secure`, `payment.3ds.eci=05`, network response/gateway code |
+| Mastercard card | e-commerce card tokenization, Mastercard Identity Check simulation, AVS/CVV result, authorization response | `payment.card.*`, `payment.3ds.program=Mastercard Identity Check`, `payment.3ds.eci=02`, network response/gateway code |
+
+The Java sidecar is part of the payment path, not a detached load demo.
+The Python gateway sends only token-safe context to the sidecar:
+`payment_gateway_request_id`, method, network, gateway provider, wallet
+token hash, card brand/last4, card fingerprint, billing postal-code
+presence, CVV presence, risk reasons, and verification decision. The
+sidecar enriches the active Java APM span and emits events such as:
+
+- `java.payment.antifraud.verify`
+- `java.payment.wallet.google.payment_data.validated`
+- `java.payment.wallet.apple.payment_token.validated`
+- `java.payment.processor.authorization_request`
+- `java.payment.network.visa.authorize`
+- `java.payment.network.mastercard.authorize`
 
 Orders start as `payment_pending` with `payment_required=1`. Authorized
 payments move the order to `status=paid`, `payment_status=paid`,

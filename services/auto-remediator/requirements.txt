@@ -1,0 +1,8 @@
+fdk>=0.1.66
+oci>=2.119.1
+requests>=2.31.0
+opentelemetry-api>=1.24
+opentelemetry-sdk>=1.24
+opentelemetry-exporter-otlp-proto-http>=1.24
+opentelemetry-instrumentation-requests>=0.45b0
+opentelemetry-instrumentation-logging>=0.45b0

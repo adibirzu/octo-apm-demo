@@ -19,6 +19,30 @@
       "search": "api-gateway-edge-detections"
     },
     {
+      "title": "API Gateway threat rule",
+      "search": "rule-api-gateway-threat-count"
+    },
+    {
+      "title": "Compromised VM rule",
+      "search": "rule-compromised-vm-count"
+    },
+    {
+      "title": "Java payment error rule",
+      "search": "rule-java-payment-error-count"
+    },
+    {
+      "title": "Payment threat hunting",
+      "search": "payment-threats"
+    },
+    {
+      "title": "Payment redirect rule",
+      "search": "rule-payment-redirect-count"
+    },
+    {
+      "title": "Payment interception rule",
+      "search": "rule-payment-interception-count"
+    },
+    {
       "title": "OSQuery findings by host",
       "search": "osquery-attack-findings"
     },

@@ -165,7 +165,7 @@ async def _active_products(db: Any, limit: int = 8) -> list[dict[str, Any]]:
     safe_limit = _clamp_int(limit, default=8, minimum=1, maximum=25)
     result = await db.execute(
         text(
-            "SELECT id, name, price FROM products WHERE is_active = 1 "
+            "SELECT id, name, price FROM products WHERE is_active = 1 "  # noqa: S608
             f"ORDER BY id FETCH FIRST {safe_limit} ROWS ONLY"
         ),
     )

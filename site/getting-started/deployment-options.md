@@ -4,9 +4,9 @@ The platform ships four supported install paths. Pick the one that
 matches the environment; all four target the same container images
 and the same Oracle Autonomous Database integration contract.
 
-[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip)
+[Deploy to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=%%GITHUB_REPO_URL%%/releases/download/resource-manager-stack/octo-stack.zip)
 
-[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/adibirzu/octo-apm-demo/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
+[Deploy Full Private Compute Stack to Oracle Cloud](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=%%GITHUB_REPO_URL%%/releases/download/compute-resource-manager-stack-20260504/octo-compute-stack.zip)
 
 | Path | When to pick | Setup time | Scaling | Zero-downtime rollouts |
 |---|---|---|---|---|
@@ -17,21 +17,17 @@ and the same Oracle Autonomous Database integration contract.
 
 ## OKE (Kubernetes)
 
-Reference path. Two separate Deployments (shop + CRM) behind OCI LB +
-WAF, shared Autonomous Database, observability wired via `ensure_apm.sh`
-/ `ensure_stack_monitoring.sh`. See
+Kubernetes path for production-style demos, workshops, autoscaling, and staged
+VM-to-OKE cutovers. The OKE runtime deploys the same Shop, CRM, Java
+app-server, and Workflow Gateway images behind OCI LB/WAF/API Gateway routing,
+uses the same shared Autonomous Database and APM domain contract, and preserves the same
+event-generation and Captured Data Center UX as the VM runtime.
+
+Two or more Deployments run behind OCI LB + WAF, with observability wired via
+`ensure_apm.sh`, OKE manifests/Helm, OCI Kubernetes Monitoring, and the same Log
+Analytics field/search/dashboard assets. See
 [new-tenancy.md](new-tenancy.md) and
 [oke-deployment.md](oke-deployment.md).
-
-For the OCTO DEMO `emdemo` tenancy, run
-`OCI_PROFILE=emdemo ./deploy/oke/check-small-cluster.sh` before creating
-anything. The May 11, 2026 preflight shows enough quota for a small same-VCN
-test cluster, but no active cluster exists in the OCTO project VCN yet. The
-existing clusters are in a different quickstart VCN, so the Langfuse OKE
-installer correctly refuses them by default. New Log Analytics connectors are
-also blocked by Service Connector Hub quota (`available=0`), so OKE logs need
-an approved connector consolidation or quota increase before they become Log
-Analytics dashboard input.
 
 ## Two-instance Compute
 
@@ -41,6 +37,11 @@ Balancer with WAF, two private Compute instances, a dedicated private ATP
 endpoint, NAT and Service Gateway routes, OCI APM, OCI Logging custom
 logs, optional Log Analytics pipelines, Stack Monitoring Standard, and
 the instance-principal policies needed for app and OS telemetry.
+
+This path remains the simplest private reference for showing the complete live
+journey: Shop checkout, Admin Simulation Lab, Demo Storyboard, Attack Lab,
+Java App Servers, OCI APM, OCI Logging, Log Analytics, ATP SQL drilldown, and
+the `/captured-data` operator pivot page.
 
 Private branch note: build `deploy/compute/build/octo-compute-stack.zip`
 locally and upload it in Resource Manager. The placeholder GitHub release URL
@@ -95,18 +96,19 @@ Stacks → Create Stack** (source = My Configuration, file =
 APM/RUM, Log Analytics, and WAF sections with native OCI pickers.
 
 The historical deploy button used the GitHub Release stack package at
-`https://github.com/adibirzu/octo-apm-demo/releases/download/resource-manager-stack/octo-stack.zip`.
+`%%GITHUB_REPO_URL%%/releases/download/resource-manager-stack/octo-stack.zip`.
 That placeholder URL currently returns HTTP 404. On a private branch, build the
 zip and upload it manually, or publish a real private release asset before
 using a deploy button.
 
-Full details: [deploy/resource-manager/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/resource-manager/README.md).
+Full details: [deploy/resource-manager/README.md](%%GITHUB_REPO_URL%%/blob/main/deploy/resource-manager/README.md).
 
 ## Unified single VM
 
-One OCI Compute instance runs both apps behind nginx, talking to your
-existing Autonomous Database over the wallet. Useful for workshops,
-local reproductions, or air-gapped deployments.
+One OCI Compute instance runs Shop, Admin/CRM, Java payment gateway, and
+Workflow Gateway behind nginx, talking to your existing Autonomous Database
+over the wallet. Useful for workshops, local reproductions, or air-gapped
+deployments.
 
 ```bash
 cd deploy/vm
@@ -115,28 +117,26 @@ unzip /path/to/Wallet_<DB>.zip -d wallet
 sudo ./install.sh
 ```
 
-Or paste [`deploy/vm/cloud-init.yaml`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/cloud-init.yaml) into the
+Or paste [`deploy/vm/cloud-init.yaml`](%%GITHUB_REPO_URL%%/blob/main/deploy/vm/cloud-init.yaml) into the
 OCI Console Compute create form for a one-shot bootstrap. Full
-walkthrough: [deploy/vm/README.md](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/vm/README.md).
+walkthrough: [deploy/vm/README.md](%%GITHUB_REPO_URL%%/blob/main/deploy/vm/README.md).
 
 ## Matrix of cross-service contract parity
 
-All app deployment paths enforce the same integration contract:
+All app deployment paths enforce the same integration contract. The local
+container stack is intentionally OCI-disabled and uses Postgres, so Oracle-only
+Select AI/workflow execution is profile-gated there; VM, two-instance Compute,
+and OKE run the production Oracle path.
 
-| | OKE | Two-instance Compute | Resource Manager | Unified VM |
+| Capability | OKE | Two-instance Compute | Unified VM | Local containers |
 |---|---|---|---|---|
-| `SERVICE_CRM_URL` / `SERVICE_SHOP_URL` | ✅ | ✅ (private IP) | n/a | ✅ (loopback) |
-| `INTERNAL_SERVICE_KEY` header on cross-service POSTs | ✅ | ✅ | n/a | ✅ |
-| `idempotency_token` + `source_order_id` dedup | ✅ | ✅ | n/a | ✅ |
-| `/api/integrations/schema` discovery | ✅ | ✅ | n/a | ✅ |
-| APM + RUM + Log Analytics + Stack Monitoring | ✅ | ✅ | ✅ (provisions) | ✅ (consumes) |
-
-## Deployment-Type Architecture
-
-| Layer | OKE | Two-instance Compute | Resource Manager | Unified VM |
-|---|---|---|---|---|
-| Edge | OCI LB Services per app, WAF annotations, optional ingress controller | One public OCI LB with hostname routing to private backends | Creates or validates WAF/APM/Logging surfaces only | Host nginx or direct service ports |
-| App runtime | Kubernetes Deployments for Shop, CRM, Java APM sidecar, Workflow Gateway, and optional platform services | Podman systemd services on private Shop and CRM VMs | n/a | Local systemd/containers on one VM |
-| Data | Shared ATP wallet through K8s Secrets or Vault CSI | Private ATP endpoint and wallet on each VM | Optional ATP/observability provisioning only | Existing ATP wallet mounted locally |
-| Observability | OTel to OCI APM, RUM, OCI Logging, optional OTel gateway, LA after connector/source mapping | OTel to OCI APM, RUM, OCI Logging SDK, Java app-server metrics, LA after connector/source mapping | APM domain, RUM app, logs, WAF, and optional connectors | Same app telemetry, lower HA |
-| Control/automation | `kubectl`, HPA/PDB, browser-runner jobs, load-control/remediator services | SSH/Run Command, systemd restart, local browser/API tests | Terraform plan/apply/import | Shell install and local restart |
+| `SERVICE_CRM_URL` / `SERVICE_SHOP_URL` | ✅ | ✅ (private IP) | ✅ (bridge) | ✅ (bridge) |
+| `INTERNAL_SERVICE_KEY` header on cross-service POSTs | ✅ | ✅ | ✅ | ✅ |
+| `idempotency_token` + `source_order_id` dedup | ✅ | ✅ | ✅ | ✅ |
+| `/api/integrations/schema` discovery | ✅ | ✅ | ✅ | ✅ |
+| Java payment gateway simulation | ✅ `octo-java-app-server-oke` | ✅ `octo-java-app-server` | ✅ `octo-java-app-server` | ✅ `octo-java-app-server-local` |
+| Workflow Gateway / Select AI | ✅ `octo-workflow-gateway-oke` | ✅ `octo-workflow-gateway` | ✅ `octo-workflow-gateway` | ⚠️ Oracle path disabled by default |
+| GenAI LLMetry + optional Langfuse export | ✅ | ✅ | ✅ | ✅ local/no export |
+| APM + RUM + Log Analytics + Stack Monitoring | ✅ | ✅ | ✅ consumes existing resources | ⚠️ exporters disabled |
+| Guided event generation + `/captured-data` pivots | ✅ | ✅ | ✅ | ✅ |
+| Resource Manager | provisions infra and can bootstrap OKE dependencies | provisions private Compute path | n/a | n/a |

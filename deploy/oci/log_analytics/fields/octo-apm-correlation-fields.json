@@ -1,0 +1,1015 @@
+{
+  "schemaVersion": "2026-05-12",
+  "policy": "reuse-existing-fields-first",
+  "namespaceFieldInventory": "Generated from `oci log-analytics field list-fields` for the emdemo Log Analytics namespace. Re-run apply_fields.sh to validate against a target namespace before deployment.",
+  "fields": [
+    {
+      "semanticName": "Order ID",
+      "sourcePaths": [
+        "$.orders.order_id",
+        "$.order_id"
+      ],
+      "parserFieldName": "Order ID",
+      "existingFieldName": "orderid",
+      "existingDisplayName": "Order ID",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Source Order ID",
+      "sourcePaths": [
+        "$.source_order_id"
+      ],
+      "parserFieldName": "Source Order ID",
+      "existingFieldName": "udfsm49",
+      "existingDisplayName": "Source Order ID",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Request ID",
+      "sourcePaths": [
+        "$.payment.gateway.request_id"
+      ],
+      "parserFieldName": "Payment Gateway Request ID",
+      "existingFieldName": "udfsm50",
+      "existingDisplayName": "Payment Gateway Request ID",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Status",
+      "sourcePaths": [
+        "$.payment.status",
+        "$.payment.verification.decision",
+        "$.payment.processor.decision"
+      ],
+      "parserFieldName": "Payment Status",
+      "existingFieldName": "udfsm51",
+      "existingDisplayName": "Payment Status",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Network",
+      "sourcePaths": [
+        "$.payment.network",
+        "$.payment.card_brand",
+        "$.payment.card.brand",
+        "$.payment.google_pay.card_network",
+        "$.payment.apple_pay.payment_method.network"
+      ],
+      "parserFieldName": "Payment Network",
+      "existingFieldName": "udfsm52",
+      "existingDisplayName": "Payment Network",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Wallet Token Hash",
+      "sourcePaths": [
+        "$.payment.wallet.token_hash",
+        "$.payment.wallet_token_hash"
+      ],
+      "parserFieldName": "Payment Wallet Token Hash",
+      "existingFieldName": "udfsm53",
+      "existingDisplayName": "Payment Wallet Token Hash",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Provider",
+      "sourcePaths": [
+        "$.payment.provider"
+      ],
+      "parserFieldName": "Payment Provider",
+      "existingFieldName": "udfsm92",
+      "existingDisplayName": "Payment Provider",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Risk Score",
+      "sourcePaths": [
+        "$.payment.risk_score",
+        "$.payment.verification.risk_score"
+      ],
+      "parserFieldName": "Payment Risk Score",
+      "existingFieldName": "udfl146",
+      "existingDisplayName": "Payment Risk Score",
+      "dataType": "LONG",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Card Last4",
+      "sourcePaths": [
+        "$.payment.card_last4",
+        "$.payment.card.last4"
+      ],
+      "parserFieldName": "Payment Card Last4",
+      "existingFieldName": "udfsm29",
+      "existingDisplayName": "Payment Card Last4",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Processor Response Code",
+      "sourcePaths": [
+        "$.payment.processor.response_code",
+        "$.payment.network.response_code",
+        "$.java_apm.status_code"
+      ],
+      "parserFieldName": "Response Code",
+      "existingFieldName": "udfsm33",
+      "existingDisplayName": "Response Code",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Processor Gateway Code",
+      "sourcePaths": [
+        "$.payment.processor.gateway_code",
+        "$.payment.network.gateway_code",
+        "$.payment.wallet.gateway"
+      ],
+      "parserFieldName": "Gateway ID",
+      "existingFieldName": "gwid",
+      "existingDisplayName": "Gateway ID",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Network Transaction ID",
+      "sourcePaths": [
+        "$.payment.network.transaction_id"
+      ],
+      "parserFieldName": "Transaction ID",
+      "existingFieldName": "txnid",
+      "existingDisplayName": "Transaction ID",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment AVS Result",
+      "sourcePaths": [
+        "$.payment.card.avs.result"
+      ],
+      "parserFieldName": "Result",
+      "existingFieldName": "result",
+      "existingDisplayName": "Result",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment CVV Result",
+      "sourcePaths": [
+        "$.payment.card.cvv.result"
+      ],
+      "parserFieldName": "Security Result",
+      "existingFieldName": "msecresult",
+      "existingDisplayName": "Security Result",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment 3DS Program",
+      "sourcePaths": [
+        "$.payment.3ds.program"
+      ],
+      "parserFieldName": "Program",
+      "existingFieldName": "prog",
+      "existingDisplayName": "Program",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment 3DS ECI",
+      "sourcePaths": [
+        "$.payment.3ds.eci"
+      ],
+      "parserFieldName": "Flow Code",
+      "existingFieldName": "flowcode",
+      "existingDisplayName": "Flow Code",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Name",
+      "sourcePaths": [
+        "$.payment.gateway.name"
+      ],
+      "parserFieldName": "Gateway",
+      "existingFieldName": "gateway",
+      "existingDisplayName": "Gateway",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Provider",
+      "sourcePaths": [
+        "$.payment.gateway.provider"
+      ],
+      "parserFieldName": "Provider",
+      "existingFieldName": "provider",
+      "existingDisplayName": "Provider",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Version",
+      "sourcePaths": [
+        "$.payment.gateway.version"
+      ],
+      "parserFieldName": "Version",
+      "existingFieldName": "ver",
+      "existingDisplayName": "Version",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Step",
+      "sourcePaths": [
+        "$.payment.gateway.step"
+      ],
+      "parserFieldName": "Workflow Step",
+      "existingFieldName": "udfsm66",
+      "existingDisplayName": "Workflow Step",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Step Index",
+      "sourcePaths": [
+        "$.payment.gateway.step_index"
+      ],
+      "parserFieldName": "Step Id",
+      "existingFieldName": "udfs380",
+      "existingDisplayName": "Step Id",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Phase",
+      "sourcePaths": [
+        "$.payment.gateway.phase"
+      ],
+      "parserFieldName": "Process Phase",
+      "existingFieldName": "udfs371",
+      "existingDisplayName": "Process Phase",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Step Status",
+      "sourcePaths": [
+        "$.payment.gateway.step_status"
+      ],
+      "parserFieldName": "Event Status",
+      "existingFieldName": "udfs484",
+      "existingDisplayName": "Event Status",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Step Latency",
+      "sourcePaths": [
+        "$.payment.gateway.step_latency_ms"
+      ],
+      "parserFieldName": "Elapsed Time (Gateway)",
+      "existingFieldName": "elaptimegateway",
+      "existingDisplayName": "Elapsed Time (Gateway)",
+      "dataType": "FLOAT",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Request Type",
+      "sourcePaths": [
+        "$.payment.gateway.request_shape"
+      ],
+      "parserFieldName": "Request Type",
+      "existingFieldName": "udfs375",
+      "existingDisplayName": "Request Type",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Gateway Authorization Type",
+      "sourcePaths": [
+        "$.payment.gateway.authorization_type"
+      ],
+      "parserFieldName": "Authorization Scheme",
+      "existingFieldName": "authrscheme",
+      "existingDisplayName": "Authorization Scheme",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Method",
+      "sourcePaths": [
+        "$.payment.method"
+      ],
+      "parserFieldName": "Method",
+      "existingFieldName": "method",
+      "existingDisplayName": "Method",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Amount Minor Units",
+      "sourcePaths": [
+        "$.payment.amount_minor_units"
+      ],
+      "parserFieldName": "ORDER_AMOUNT",
+      "existingFieldName": "udff98",
+      "existingDisplayName": "ORDER_AMOUNT",
+      "dataType": "FLOAT",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Currency",
+      "sourcePaths": [
+        "$.payment.currency"
+      ],
+      "parserFieldName": "BillingCurrency",
+      "existingFieldName": "udfs659",
+      "existingDisplayName": "BillingCurrency",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Wallet Tokenization Type",
+      "sourcePaths": [
+        "$.payment.wallet.tokenization_type"
+      ],
+      "parserFieldName": "Provider Type",
+      "existingFieldName": "providertype",
+      "existingDisplayName": "Provider Type",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Verification Error",
+      "sourcePaths": [
+        "$.payment.verification.error_code",
+        "$.payment.processor.error_code"
+      ],
+      "parserFieldName": "Error Type",
+      "existingFieldName": "udfsm48",
+      "existingDisplayName": "Error Type",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Downstream Latency",
+      "sourcePaths": [
+        "$.payment.verification.latency_ms",
+        "$.payment.processor.latency_ms"
+      ],
+      "parserFieldName": "Latency",
+      "existingFieldName": "latency",
+      "existingDisplayName": "Latency",
+      "dataType": "FLOAT",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Payment Network Route",
+      "sourcePaths": [
+        "$.payment.network.route",
+        "$.payment.3ds.flow"
+      ],
+      "parserFieldName": "Flow",
+      "existingFieldName": "flow",
+      "existingDisplayName": "Flow",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Java APM Response Code",
+      "sourcePaths": [
+        "$.java_apm.status_code"
+      ],
+      "parserFieldName": "Response Code",
+      "existingFieldName": "udfsm33",
+      "existingDisplayName": "Response Code",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Java APM Service Name",
+      "sourcePaths": [
+        "$.java_apm.service.name",
+        "$.payment.processor.name"
+      ],
+      "parserFieldName": "Downstream Component",
+      "existingFieldName": "downstrcomp",
+      "existingDisplayName": "Downstream Component",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Assistant Session ID",
+      "sourcePaths": [
+        "$.assistant.session_id"
+      ],
+      "parserFieldName": "Session ID",
+      "existingFieldName": "udfs513",
+      "existingDisplayName": "Session ID",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Assistant Provider",
+      "sourcePaths": [
+        "$.assistant.provider"
+      ],
+      "parserFieldName": "Provider",
+      "existingFieldName": "provider",
+      "existingDisplayName": "Provider",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Assistant Model ID",
+      "sourcePaths": [
+        "$.assistant.model_id"
+      ],
+      "parserFieldName": "Model Version",
+      "existingFieldName": "udfs400",
+      "existingDisplayName": "Model Version",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Assistant Documents Grounded",
+      "sourcePaths": [
+        "$.assistant.documents_grounded"
+      ],
+      "parserFieldName": "Result Count",
+      "existingFieldName": "resultcnt",
+      "existingDisplayName": "Result Count",
+      "dataType": "INTEGER",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Assistant Guardrail Allowed",
+      "sourcePaths": [
+        "$.assistant.guardrail.allowed"
+      ],
+      "parserFieldName": "Security Result",
+      "existingFieldName": "msecresult",
+      "existingDisplayName": "Security Result",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Assistant Guardrail Reason",
+      "sourcePaths": [
+        "$.assistant.guardrail.reason"
+      ],
+      "parserFieldName": "Security Additional Attributes",
+      "existingFieldName": "msecaddlattrs",
+      "existingDisplayName": "Security Additional Attributes",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Assistant Outcome",
+      "sourcePaths": [
+        "$.assistant.outcome"
+      ],
+      "parserFieldName": "Result",
+      "existingFieldName": "result",
+      "existingDisplayName": "Result",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLMetry Schema Version",
+      "sourcePaths": [
+        "$.llmetry.schema.version"
+      ],
+      "parserFieldName": "Version",
+      "existingFieldName": "ver",
+      "existingDisplayName": "Version",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLMetry Latency ms",
+      "sourcePaths": [
+        "$.llmetry.latency_ms"
+      ],
+      "parserFieldName": "Server Response Wait Time",
+      "existingFieldName": "srvrrspwaittime",
+      "existingDisplayName": "Server Response Wait Time",
+      "dataType": "LONG",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLMetry Error Type",
+      "sourcePaths": [
+        "$.llmetry.error_type"
+      ],
+      "parserFieldName": "Error Type",
+      "existingFieldName": "udfsm48",
+      "existingDisplayName": "Error Type",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLM System",
+      "sourcePaths": [
+        "$.llm.system"
+      ],
+      "parserFieldName": "Subsystem",
+      "existingFieldName": "subsys",
+      "existingDisplayName": "Subsystem",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLM Model",
+      "sourcePaths": [
+        "$.llm.model"
+      ],
+      "parserFieldName": "Model Version",
+      "existingFieldName": "udfs400",
+      "existingDisplayName": "Model Version",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLM Prompt Hash",
+      "sourcePaths": [
+        "$.llm.prompt.hash"
+      ],
+      "parserFieldName": "Application Hash",
+      "existingFieldName": "apphash",
+      "existingDisplayName": "Application Hash",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLM Prompt Length",
+      "sourcePaths": [
+        "$.llm.prompt.length"
+      ],
+      "parserFieldName": "Request Length",
+      "existingFieldName": "reqlen",
+      "existingDisplayName": "Request Length",
+      "dataType": "INTEGER",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLM Response Hash",
+      "sourcePaths": [
+        "$.llm.response.hash"
+      ],
+      "parserFieldName": "Current Hash",
+      "existingFieldName": "currhash",
+      "existingDisplayName": "Current Hash",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "LLM Response Length",
+      "sourcePaths": [
+        "$.llm.response.length"
+      ],
+      "parserFieldName": "Upstream Response Length",
+      "existingFieldName": "upstrresplen",
+      "existingDisplayName": "Upstream Response Length",
+      "dataType": "INTEGER",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "GenAI Input Tokens",
+      "sourcePaths": [
+        "$.gen_ai.usage.input_tokens"
+      ],
+      "parserFieldName": "Content Size In",
+      "existingFieldName": "contszin",
+      "existingDisplayName": "Content Size In",
+      "dataType": "FLOAT",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "GenAI Output Tokens",
+      "sourcePaths": [
+        "$.gen_ai.usage.output_tokens"
+      ],
+      "parserFieldName": "Content Size Out",
+      "existingFieldName": "contszout",
+      "existingDisplayName": "Content Size Out",
+      "dataType": "FLOAT",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "GenAI Total Tokens",
+      "sourcePaths": [
+        "$.gen_ai.usage.total_tokens"
+      ],
+      "parserFieldName": "Total Size",
+      "existingFieldName": "udff68",
+      "existingDisplayName": "Total Size",
+      "dataType": "FLOAT",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Langfuse Session ID",
+      "sourcePaths": [
+        "$.langfuse.session.id"
+      ],
+      "parserFieldName": "Session",
+      "existingFieldName": "sess",
+      "existingDisplayName": "Session",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Langfuse Trace Name",
+      "sourcePaths": [
+        "$.langfuse.trace.name"
+      ],
+      "parserFieldName": "Program Details",
+      "existingFieldName": "progdetail",
+      "existingDisplayName": "Program Details",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Langfuse Observation Type",
+      "sourcePaths": [
+        "$.langfuse.observation.type"
+      ],
+      "parserFieldName": "Event Types",
+      "existingFieldName": "eventtypes",
+      "existingDisplayName": "Event Types",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "User ID (hashed)",
+      "sourcePaths": [
+        "$.user_id_hash",
+        "$.applied_by"
+      ],
+      "parserFieldName": "User ID",
+      "existingFieldName": "usrid",
+      "existingDisplayName": "User ID",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Business ID",
+      "sourcePaths": [
+        "$.business_id"
+      ],
+      "parserFieldName": "Business Object",
+      "existingFieldName": "businessobj",
+      "existingDisplayName": "Business Object",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Chaos Scenario",
+      "sourcePaths": [
+        "$.chaos.scenario",
+        "$.scenario_id"
+      ],
+      "parserFieldName": "Event Types",
+      "existingFieldName": "eventtypes",
+      "existingDisplayName": "Event Types",
+      "dataType": "STRING",
+      "isMultiValued": true,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Chaos Injected",
+      "sourcePaths": [
+        "$.chaos.injected"
+      ],
+      "parserFieldName": "Event Status",
+      "existingFieldName": "udfs484",
+      "existingDisplayName": "Event Status",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Chaos Target",
+      "sourcePaths": [
+        "$.target"
+      ],
+      "parserFieldName": "Target",
+      "existingFieldName": "udfs516",
+      "existingDisplayName": "Target",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Chaos TTL Seconds",
+      "sourcePaths": [
+        "$.ttl_seconds"
+      ],
+      "parserFieldName": "Duration",
+      "existingFieldName": "dur",
+      "existingDisplayName": "Duration",
+      "dataType": "FLOAT",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "HTTP Request Method",
+      "sourcePaths": [
+        "$.http.request.method",
+        "$.http.method",
+        "$.data.httpMethod"
+      ],
+      "parserFieldName": "Method",
+      "existingFieldName": "method",
+      "existingDisplayName": "Method",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Client IP",
+      "sourcePaths": [
+        "$.client.address",
+        "$.data.clientAddress"
+      ],
+      "parserFieldName": "Host IP Address (Client)",
+      "existingFieldName": "clnthostip",
+      "existingDisplayName": "Host IP Address (Client)",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "User Agent",
+      "sourcePaths": [
+        "$.user_agent.original"
+      ],
+      "parserFieldName": "User Agent String",
+      "existingFieldName": "usrag",
+      "existingDisplayName": "User Agent String",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Attack Type",
+      "sourcePaths": [
+        "$.security.attack.type"
+      ],
+      "parserFieldName": "Security Event Classification",
+      "existingFieldName": "mseceventclass",
+      "existingDisplayName": "Security Event Classification",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Attack Detected",
+      "sourcePaths": [
+        "$.security.attack.detected"
+      ],
+      "parserFieldName": "Security Result",
+      "existingFieldName": "msecresult",
+      "existingDisplayName": "Security Result",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "API Gateway Name",
+      "sourcePaths": [
+        "$.oci.api_gateway.name"
+      ],
+      "parserFieldName": "Gateway",
+      "existingFieldName": "gateway",
+      "existingDisplayName": "Gateway",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "API Gateway Scope",
+      "sourcePaths": [
+        "$.oci.api_gateway.scope"
+      ],
+      "parserFieldName": "Scope",
+      "existingFieldName": "scope",
+      "existingDisplayName": "Scope",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "API Gateway Deployment ID",
+      "sourcePaths": [
+        "$.oci.api_gateway.deployment_id"
+      ],
+      "parserFieldName": "Deployment ID",
+      "existingFieldName": "deploymentid",
+      "existingDisplayName": "Deployment ID",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "API Gateway Route ID",
+      "sourcePaths": [
+        "$.oci.api_gateway.route_id"
+      ],
+      "parserFieldName": "Object ID",
+      "existingFieldName": "objid",
+      "existingDisplayName": "Object ID",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "API Gateway Route Family",
+      "sourcePaths": [
+        "$.oci.api_gateway.route_family"
+      ],
+      "parserFieldName": "Family",
+      "existingFieldName": "udfs91",
+      "existingDisplayName": "Family",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Process Arguments",
+      "sourcePaths": [
+        "$.process_exec.process.arguments"
+      ],
+      "parserFieldName": "Arguments",
+      "existingFieldName": "args",
+      "existingDisplayName": "Arguments",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Kubernetes Pod",
+      "sourcePaths": [
+        "$.process_exec.process.pod.name"
+      ],
+      "parserFieldName": "Pod",
+      "existingFieldName": "pod",
+      "existingDisplayName": "Pod",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Exited Process",
+      "sourcePaths": [
+        "$.process_exit.process.binary"
+      ],
+      "parserFieldName": "Process Name",
+      "existingFieldName": "procname",
+      "existingDisplayName": "Process Name",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Kernel Function",
+      "sourcePaths": [
+        "$.process_kprobe.function_name"
+      ],
+      "parserFieldName": "Function",
+      "existingFieldName": "functionname",
+      "existingDisplayName": "Function",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "HTTP Host",
+      "sourcePaths": [
+        "$.data.httpHost"
+      ],
+      "parserFieldName": "Edge Request Host",
+      "existingFieldName": "udfs764",
+      "existingDisplayName": "Edge Request Host",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "Country Code",
+      "sourcePaths": [
+        "$.data.countryCode"
+      ],
+      "parserFieldName": "Client Host Country Code",
+      "existingFieldName": "countrycodeclnt",
+      "existingDisplayName": "Client Host Country Code",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "WAF Action",
+      "sourcePaths": [
+        "$.data.action"
+      ],
+      "parserFieldName": "Security Action",
+      "existingFieldName": "msecaction",
+      "existingDisplayName": "Security Action",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "WAF Rule Name",
+      "sourcePaths": [
+        "$.data.ruleName"
+      ],
+      "parserFieldName": "Security Rule",
+      "existingFieldName": "msecrule",
+      "existingDisplayName": "Security Rule",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    },
+    {
+      "semanticName": "WAF Rule Type",
+      "sourcePaths": [
+        "$.data.ruleType"
+      ],
+      "parserFieldName": "Security Event Classification",
+      "existingFieldName": "mseceventclass",
+      "existingDisplayName": "Security Event Classification",
+      "dataType": "STRING",
+      "isMultiValued": false,
+      "createIfMissing": false
+    }
+  ],
+  "optionalCustomFields": []
+}

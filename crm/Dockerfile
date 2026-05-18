@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Non-root user for container security
-RUN useradd --create-home --shell /bin/bash appuser
+# Non-root user for container security. Keep the UID aligned with the OKE
+# pod securityContext so Kubernetes can enforce runAsNonRoot deterministically.
+RUN useradd --create-home --shell /bin/bash --uid 10001 appuser
 
 COPY --from=builder /install /usr/local
 

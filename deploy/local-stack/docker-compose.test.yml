@@ -11,6 +11,7 @@
 #     docker compose -f docker-compose.test.yml up --build
 #     # shop:  http://localhost:18080
 #     # crm:   http://localhost:18090
+#     # java:  http://localhost:18091
 #     # redis: localhost:16379
 #     # pg:    localhost:15432
 
@@ -67,14 +68,30 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      java-apm:
+        condition: service_healthy
     environment:
       APP_NAME: octo-drone-shop
+      OTEL_SERVICE_NAME: octo-drone-shop-local
       APP_RUNTIME: local
+      APP_ENV: test
       ENVIRONMENT: test
       PORT: "8080"
       DNS_DOMAIN: localhost.local
+      SERVICE_NAMESPACE: octo
+      SERVICE_INSTANCE_ID: octo-drone-shop-local
+      DEMO_STACK_NAME: octo-local-stack
+      OCI_REGION: local
+      OCI_COMPARTMENT_ID: local-disabled
+      OCI_MONITORING_NAMESPACE: octo_apm_demo
+      OTEL_TRACES_SAMPLER: always_on
+      OTEL_PYTHON_LOG_CORRELATION: "true"
+      OTLP_LOG_EXPORT_ENABLED: "false"
+      SHOP_PUBLIC_URL: http://localhost:18080
+      CORS_ALLOWED_ORIGINS: http://localhost:18080,http://localhost:18090
       SERVICE_CRM_URL: http://crm:8080
       CRM_PUBLIC_URL: http://crm:8080
+      CRM_BASE_URL: http://crm:8080
       INTERNAL_SERVICE_KEY: local-test-key
       AUTH_TOKEN_SECRET: local-test-auth-secret
       # Postgres stand-in for ATP
@@ -85,6 +102,39 @@ services:
       OCTO_ASYNC_ORDER_SYNC_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: ""
       OCI_AUTH_MODE: disabled
+      OCI_APM_ENDPOINT: ""
+      OCI_APM_PRIVATE_DATAKEY: ""
+      OCI_APM_PUBLIC_DATAKEY: ""
+      OCI_APM_RUM_ENDPOINT: ""
+      OCI_LOG_ID: ""
+      OCI_LOG_GROUP_ID: ""
+      JAVA_APM_ENABLED: "true"
+      JAVA_APM_SERVICE_URL: http://java-apm:8080
+      JAVA_APM_SERVICE_NAME: octo-java-app-server-local
+      JAVA_APM_TIMEOUT_SECONDS: "3.0"
+      PAYMENT_PROVIDER: simulated
+      PAYMENT_GATEWAY_SIMULATION_ENABLED: "true"
+      PAYMENT_SIMULATION_MODE: approve
+      PAYMENT_SIMULATION_CURRENCY: usd
+      WORKFLOW_API_BASE_URL: ""
+      WORKFLOW_PUBLIC_API_BASE_URL: ""
+      WORKFLOW_SERVICE_NAME: octo-workflow-gateway-local
+      WORKFLOW_FAULTY_QUERY_ENABLED: "false"
+      SELECTAI_PROFILE_NAME: ""
+      OCI_GENAI_ENDPOINT: ""
+      OCI_GENAI_MODEL_ID: ""
+      LLMETRY_ENABLED: "true"
+      LLMETRY_STORE_ENABLED: "true"
+      LLMETRY_CAPTURE_CONTENT: "false"
+      LANGFUSE_ENABLED: "false"
+      LANGFUSE_HOST: ""
+      LANGFUSE_PUBLIC_KEY: ""
+      LANGFUSE_SECRET_KEY: ""
+      SYNTHETIC_USERS_ENABLED: "true"
+      SYNTHETIC_USER_EMAIL_DOMAIN: apex.example.test
+      SYNTHETIC_USER_COUNT: "4"
+      SYNTHETIC_USER_ORDER_COUNT: "2"
+      SYNTHETIC_USER_DELETE_AFTER_DAYS: "3"
     ports:
       - "18080:8080"
     networks:
@@ -108,11 +158,24 @@ services:
         condition: service_healthy
     environment:
       APP_NAME: enterprise-crm-portal
+      OTEL_SERVICE_NAME: enterprise-crm-portal-local
       APP_RUNTIME: local
       APP_ENV: test
+      ENVIRONMENT: test
       APP_PORT: "8080"
       DNS_DOMAIN: localhost.local
+      SERVICE_NAMESPACE: octo
+      SERVICE_INSTANCE_ID: enterprise-crm-portal-local
+      DEMO_STACK_NAME: octo-local-stack
+      OCI_REGION: local
+      OCI_COMPARTMENT_ID: local-disabled
+      OCI_MONITORING_NAMESPACE: octo_apm_demo
+      OTEL_TRACES_SAMPLER: always_on
+      OTEL_PYTHON_LOG_CORRELATION: "true"
+      OTLP_LOG_EXPORT_ENABLED: "false"
       CRM_BASE_URL: http://crm:8080
+      SHOP_PUBLIC_URL: http://localhost:18080
+      CORS_ALLOWED_ORIGINS: http://localhost:18080,http://localhost:18090
       SERVICE_SHOP_URL: http://shop:8080
       INTERNAL_SERVICE_KEY: local-test-key
       APP_SECRET_KEY: local-test-crm-secret
@@ -120,6 +183,15 @@ services:
       DATABASE_URL: postgresql://octo:octo-local-test@postgres:5432/octo
       OCTO_CACHE_URL: redis://redis:6379/1
       OCI_AUTH_MODE: disabled
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+      OCI_APM_ENDPOINT: ""
+      OCI_APM_PRIVATE_DATAKEY: ""
+      OCI_APM_RUM_ENDPOINT: ""
+      OCI_APM_RUM_PUBLIC_DATAKEY: ""
+      OCI_LOG_ID: ""
+      OCI_LOG_GROUP_ID: ""
+      ORDERS_SYNC_ENABLED: "true"
+      ORDERS_SYNC_INTERVAL_SECONDS: "60"
     ports:
       - "18090:8080"
     networks:
@@ -130,3 +202,31 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  java-apm:
+    build:
+      context: ../..
+      dockerfile: services/apm-java-demo/Dockerfile
+    image: octo-java-apm:local-test
+    environment:
+      PORT: "8080"
+      OCI_APM_SERVICE_NAME: octo-java-app-server-local
+      APP_RUNTIME: local
+      SERVICE_NAMESPACE: octo
+      SERVICE_INSTANCE_ID: octo-java-app-server-local
+      DEMO_STACK_NAME: octo-local-stack
+      OCI_AUTH_MODE: disabled
+      OCI_REGION: local
+      OCI_APM_ENDPOINT: ""
+      OCI_APM_PRIVATE_DATAKEY: ""
+      PAYMENT_SIMULATION_MODE: approve
+    ports:
+      - "18091:8080"
+    networks:
+      - octo-test
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 25s

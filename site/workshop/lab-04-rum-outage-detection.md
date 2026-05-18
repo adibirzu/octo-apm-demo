@@ -1,14 +1,30 @@
+---
+title: Lab 04 — Detecting a frontend outage from RUM
+description: Use OCI APM Real User Monitoring (RUM) to detect when the frontend is broken from the customer's perspective — even when the backend /ready says everything is fine.
+---
+
 # Lab 04 — Detecting a frontend outage from RUM
 
 ## Objective
 
 Use OCI APM Real User Monitoring (RUM) to detect when the frontend is
 broken from the customer's perspective — even when the backend
-`/ready` says everything is fine.
+`/ready` says everything is fine. RUM captures what the user actually
+experiences in their browser: page load times, JS errors, fetch
+failures, custom interactions.
 
 ## Time budget
 
 25 minutes.
+
+## What you'll learn
+
+- How the RUM SDK beacon flows from the browser to OCI APM
+- How browser sessions correlate with FastAPI server spans via W3C
+  trace context propagation
+- How to find a specific user session in the RUM overview
+- The difference between a backend `/ready` saying OK and what the
+  user actually experiences
 
 ## Prerequisites
 
@@ -42,6 +58,15 @@ Each interaction sends a beacon. With dev tools open, you should see
 ### 3. Find your session in RUM (Console)
 
 Console → APM → **Real User Monitoring → Sessions Explorer**.
+
+**Where you land first** — the RUM **overview dashboard** for the
+selected Web Application shows aggregate health: user sessions, unique
+users, page views, Apdex score, response-time distribution, browser
+breakdown, OS breakdown, geographic distribution.
+
+![RUM overview dashboard](../assets/screenshots/oci/apm-05-rum-overview.png)
+
+From the overview, drill into the **Sessions Explorer**:
 
 Filter by:
 - Time range: last 5 minutes

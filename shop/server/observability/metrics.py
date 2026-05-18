@@ -133,7 +133,7 @@ class RuntimeMetrics:
                 yield metrics.Observation(rss)
             m.create_observable_gauge("shop.process.memory.rss", callbacks=[_rss_callback],
                                       description="Process RSS memory in bytes", unit="By")
-        except Exception:
+        except Exception:  # noqa: S110
             pass
         try:
             _start = time.time()
@@ -141,7 +141,7 @@ class RuntimeMetrics:
                 yield metrics.Observation(time.time() - _start)
             m.create_observable_gauge("shop.process.uptime", callbacks=[_uptime_cb],
                                       description="Process uptime in seconds", unit="s")
-        except Exception:
+        except Exception:  # noqa: S110
             pass
         self._inited = True
 

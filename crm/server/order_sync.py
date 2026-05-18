@@ -269,6 +269,11 @@ def _normalize_external_order(raw_order: dict[str, Any]) -> dict[str, Any]:
                     "expected_total": expected_total,
                 }
             )[:512],
+            extra_attrs={
+                "demo.scenario": "orders-sync-mass-assignment",
+                "demo.expected": True,
+                "error.expected": True,
+            },
         ):
             log_security_event(
                 "mass_assignment",
@@ -276,6 +281,11 @@ def _normalize_external_order(raw_order: dict[str, Any]) -> dict[str, Any]:
                 "External order total mismatch detected",
                 payload=json.dumps(raw_order)[:512],
                 source_system=cfg.orders_sync_source_name,
+                **{
+                    "demo.scenario": "orders-sync-mass-assignment",
+                    "demo.expected": True,
+                    "error.expected": True,
+                },
             )
 
     backlog_status = "backlog" if status in BACKLOG_STATUSES else "current"
@@ -408,7 +418,8 @@ async def _resolve_product(session, item: dict[str, Any], product_cache: dict[st
         return product
 
     base_name = item.get("product_name") or "Synced Item"
-    digest = hashlib.md5((ref or base_name).encode("utf-8")).hexdigest()[:8].upper()
+    # Deterministic SKU derivation — not a security hash.
+    digest = hashlib.md5((ref or base_name).encode("utf-8"), usedforsecurity=False).hexdigest()[:8].upper()
     sku = f"SYNC-{digest}"
     product = Product(
         name=base_name,

@@ -57,8 +57,8 @@ export OCI_APM_PUBLIC_DATAKEY="<public-data-key>"
 ### Level 3: Structured Logging
 
 ```bash
-export OCI_LOG_ID="ocid1.log.oc1...."
-export OCI_LOG_GROUP_ID="ocid1.loggroup.oc1...."
+export OCI_LOG_ID="<OCI_LOG_OCID>"
+export OCI_LOG_GROUP_ID="<OCI_LOG_GROUP_OCID>"
 ```
 
 **What you get:**
@@ -82,7 +82,7 @@ OCI Console → Logging → Log Group → Enable Log Analytics
 ### Level 5: Custom Metrics & Alarms
 
 ```bash
-export OCI_COMPARTMENT_ID="ocid1.compartment.oc1...."
+export OCI_COMPARTMENT_ID="<COMPARTMENT_OCID>"
 ```
 
 Then run:
@@ -101,7 +101,7 @@ SHOP_PUBLIC_URL="https://shop.${DNS_DOMAIN}" \
 ### Level 6: Database Observability
 
 ```bash
-AUTONOMOUS_DATABASE_ID="ocid1.autonomousdatabase.oc1...." \
+AUTONOMOUS_DATABASE_ID="<AUTONOMOUS_DATABASE_OCID>" \
 ./deploy/oci/ensure_db_observability.sh
 ```
 

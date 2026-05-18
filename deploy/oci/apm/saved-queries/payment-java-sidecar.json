@@ -1,0 +1,25 @@
+{
+  "name": "octo-apm-payment-java-sidecar",
+  "displayName": "OCTO APM - payment Java sidecar",
+  "description": "Span query for Java payment authorization, wallet, card-network, and sidecar latency/error analysis.",
+  "queryText": "show (spans) TraceId, ServiceName as Service, OperationName as Operation, SpanDuration as Duration where ServiceName in ('octo-java-app-server','octo-java-app-server-oke','octo-drone-shop','octo-drone-shop-oke') and (OperationName like '%payment%' or OperationName like '%authorize%' or OperationName like '%verify%' or OperationName like '%java%')",
+  "scope": {
+    "type": "spans",
+    "defaultLookback": "l24h",
+    "services": ["octo-java-app-server", "octo-java-app-server-oke", "octo-drone-shop", "octo-drone-shop-oke"]
+  },
+  "parameters": [],
+  "troubleshootingFields": ["TraceId", "ServiceName", "OperationName", "SpanDuration", "payment.network.transaction_id", "payment.processor.response_code"],
+  "logAnalyticsPivots": [
+    {
+      "savedSearch": "checkout-payment-correlation",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    },
+    {
+      "savedSearch": "service-error-triage",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    }
+  ]
+}

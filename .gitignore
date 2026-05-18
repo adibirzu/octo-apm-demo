@@ -52,6 +52,14 @@ output/pdf/*private*.pdf
 site/observability-v2/private-*.md
 site/operations/private-*.md
 
+# Private architecture diagram variants with resolved IPs or tenancy details.
+# Published diagrams must stay sanitized and generic.
+site/architecture/diagrams/*with-ips*
+site/architecture/diagrams/*resolved*
+site/architecture/diagrams/*private-live*
+site/architecture/diagrams/*.local.drawio
+site/architecture/diagrams/*.local.svg
+
 # Terraform
 *.tfstate
 *.tfstate.backup

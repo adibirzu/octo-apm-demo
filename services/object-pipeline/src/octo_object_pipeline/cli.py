@@ -6,8 +6,11 @@ import os
 
 import uvicorn
 
+from .telemetry import init_otel
+
 
 def main() -> int:
+    init_otel(service_name=os.getenv("OTEL_SERVICE_NAME", "octo-object-pipeline"))
     uvicorn.run(
         "octo_object_pipeline.api:app",
         host="0.0.0.0",

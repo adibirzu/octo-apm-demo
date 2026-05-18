@@ -194,7 +194,7 @@ k6 run --env DNS_DOMAIN=<your-domain> --env PROFILE=heavy k6/db_stress.js
 | Topology | OCI APM | APM → Topology → CRM ↔ Shop ↔ ATP ↔ IDCS edges |
 | RUM | OCI APM | APM → Real User Monitoring → Session Explorer (add-to-cart, checkout events) |
 | Logs | OCI Logging + Log Analytics | Log Analytics → search `oracleApmTraceId=<trace_id>` |
-| Metrics | OCI Monitoring | Monitoring → Metric Explorer → namespace `octo_drone_shop` |
+| Metrics | OCI Monitoring | Monitoring → Metric Explorer → namespace `octo_apm_demo` |
 | Alarms | OCI Monitoring | Monitoring → Alarms (error-rate, db-latency, health-down, crm-sync) |
 | DB | OCI DB Management | DB Management → Performance Hub → SQL Monitor |
 | DB insights | OCI Operations Insights | OPSI → SQL Warehouse → filter by `MODULE=octo-drone-shop` |

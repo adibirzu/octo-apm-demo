@@ -143,7 +143,7 @@ async def analytics_geo(region: str = "", request: Request = None):
         span.set_attribute("analytics.region", region)
 
         delay = REGION_LATENCY.get(region, 100)
-        await asyncio.sleep(delay / 1000 * random.uniform(0.8, 1.2))
+        await asyncio.sleep(delay / 1000 * random.uniform(0.8, 1.2))  # noqa: S311
 
         async with get_db() as db:
             if region:

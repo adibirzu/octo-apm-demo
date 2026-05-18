@@ -36,6 +36,12 @@ spec:
                   name: octo-events
                   key: topic-url
                   optional: true
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://gateway.octo-otel.svc.cluster.local:4318"
+            - name: OTEL_SERVICE_NAME
+              value: "octo-object-pipeline"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=octo,deployment.environment=production,cloud.provider=oci,oci.demo.stack=octo-apm-demo,k8s.namespace.name=octo-object,k8s.deployment.name=object-pipeline"
           readinessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 10

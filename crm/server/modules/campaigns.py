@@ -278,7 +278,7 @@ async def update_lead_status(campaign_id: int, lead_id: int, request: Request):
                     params["notes"] = body["notes"]
 
                 await db.execute(
-                    text(f"UPDATE leads SET {update_fields} WHERE id = :lid"),
+                    text(f"UPDATE leads SET {update_fields} WHERE id = :lid"),  # noqa: S608
                     params
                 )
 

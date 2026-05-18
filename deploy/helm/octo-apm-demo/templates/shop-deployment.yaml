@@ -26,6 +26,8 @@ spec:
         {{- include "octo.shop.selectorLabels" . | nindent 8 }}
       annotations:
         octo.oracle.com/restartedAt: {{ printf "%s-r%d" (toString (default .Values.global.image.tag $shop.image.tag)) (int .Release.Revision) | quote }}
+        oracle.com/oci_la_log_source_name: "SOC Application Logs"
+        oracle.com/oci_la_log_set: "octo-apm-demo"
     spec:
       {{- if .Values.global.image.pullSecretName }}
       imagePullSecrets:
@@ -42,19 +44,75 @@ spec:
             - name: APP_NAME
               value: octo-drone-shop
             - name: OTEL_SERVICE_NAME
-              value: octo-drone-shop
+              value: octo-drone-shop-oke
             - name: APP_RUNTIME
               value: oke
             - name: ENVIRONMENT
-              value: production
+              value: {{ .Values.global.environment | quote }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: SERVICE_NAMESPACE
+              value: {{ .Values.global.serviceNamespace | quote }}
+            - name: SERVICE_INSTANCE_ID
+              value: "$(POD_NAME)"
+            - name: DEMO_STACK_NAME
+              value: {{ .Values.global.stackName | quote }}
+            - name: OCI_MONITORING_NAMESPACE
+              value: {{ .Values.global.monitoringNamespace | quote }}
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace={{ .Values.global.serviceNamespace }},deployment.environment={{ .Values.global.environment }},cloud.provider=oci,oci.demo.stack={{ .Values.global.stackName }},k8s.cluster.name={{ .Values.global.okeClusterName }},k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
+            - name: OTEL_TRACES_SAMPLER
+              value: "always_on"
+            - name: OTEL_PYTHON_LOG_CORRELATION
+              value: "true"
+            - name: OTLP_LOG_EXPORT_ENABLED
+              value: "false"
             - name: DNS_DOMAIN
               value: {{ .Values.global.dnsDomain | quote }}
             - name: SERVICE_CRM_URL
               value: {{ printf "http://enterprise-crm-portal.%s.svc.cluster.local:8080" .Values.crm.namespace | quote }}
             - name: CRM_PUBLIC_URL
               value: {{ printf "https://%s" (include "octo.fqdn" (list . .Values.crm)) | quote }}
+            - name: JAVA_APM_ENABLED
+              value: {{ .Values.javaGateway.enabled | quote }}
+            - name: JAVA_APM_SERVICE_URL
+              value: {{ printf "http://octo-apm-java-demo.%s.svc.cluster.local" .Values.shop.namespace | quote }}
+            - name: JAVA_APM_SERVICE_NAME
+              value: {{ .Values.javaGateway.serviceName | quote }}
+            - name: PAYMENT_PROVIDER
+              value: {{ default "simulated" $shop.env.paymentProvider | quote }}
+            - name: PAYMENT_GATEWAY_SIMULATION_ENABLED
+              value: {{ default "true" $shop.env.paymentGatewaySimulationEnabled | quote }}
+            - name: PAYMENT_SIMULATION_MODE
+              value: {{ default "approve" $shop.env.paymentSimulationMode | quote }}
+            - name: PAYMENT_SIMULATION_CURRENCY
+              value: {{ default "usd" $shop.env.paymentSimulationCurrency | quote }}
+            - name: WORKFLOW_API_BASE_URL
+              value: {{ printf "http://octo-workflow-gateway.%s.svc.cluster.local:8090" .Values.shop.namespace | quote }}
+            - name: WORKFLOW_PUBLIC_API_BASE_URL
+              value: {{ default "/api/workflow-gateway" $shop.env.workflowPublicApiBaseUrl | quote }}
+            - name: WORKFLOW_SERVICE_NAME
+              value: {{ .Values.workflowGateway.serviceName | quote }}
+            - name: WORKFLOW_POLL_SECONDS
+              value: {{ .Values.workflowGateway.pollSeconds | quote }}
+            - name: WORKFLOW_FAULTY_QUERY_ENABLED
+              value: {{ default "false" $shop.env.workflowFaultyQueryEnabled | quote }}
+            - name: SELECTAI_TIMEOUT_SECONDS
+              value: {{ .Values.workflowGateway.selectaiTimeoutSeconds | quote }}
             - name: OCI_AUTH_MODE
               value: {{ .Values.global.ociAuthMode | quote }}
+            - name: OCI_REGION
+              value: {{ .Values.global.ociRegion | quote }}
             - name: AUTH_TOKEN_SECRET
               valueFrom: {secretKeyRef: {name: octo-auth, key: token-secret}}
             - name: INTERNAL_SERVICE_KEY
@@ -89,6 +147,8 @@ spec:
               valueFrom: {secretKeyRef: {name: octo-oci-config, key: genai-endpoint, optional: true}}
             - name: OCI_GENAI_MODEL_ID
               valueFrom: {secretKeyRef: {name: octo-oci-config, key: genai-model-id, optional: true}}
+            - name: SELECTAI_PROFILE_NAME
+              valueFrom: {secretKeyRef: {name: octo-oci-config, key: selectai-profile-name, optional: true}}
             - name: LLMETRY_ENABLED
               value: {{ default "true" $shop.env.llmetryEnabled | quote }}
             - name: LLMETRY_STORE_ENABLED

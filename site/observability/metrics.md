@@ -23,7 +23,7 @@
 
 ## OCI Monitoring Custom Metrics
 
-Published every 60 seconds to OCI Monitoring namespace `octo_drone_shop`:
+Published every 60 seconds to OCI Monitoring namespace `octo_apm_demo`:
 
 | Metric | Unit | Description |
 |---|---|---|
@@ -35,6 +35,11 @@ Published every 60 seconds to OCI Monitoring namespace `octo_drone_shop`:
 | `app.orders.count` | count | Orders per interval |
 | `app.db.latency_ms` | milliseconds | Last readiness check round-trip |
 | `app.crm.sync_age_s` | seconds | Seconds since last CRM sync |
+| `app.auth.success.count` | count | Admin successful logins per interval |
+| `app.auth.failure.count` | count | Admin failed logins per interval |
+| `app.security.events.count` | count | Admin security events per interval |
+| `app.dashboard.loads.count` | count | Admin dashboard loads per interval |
+| `app.order_sync.count` | count | Admin order sync operations per interval |
 | `app.inventory.low_stock_products` | count | Products with stock < 10 |
 
 ## Prometheus Endpoint

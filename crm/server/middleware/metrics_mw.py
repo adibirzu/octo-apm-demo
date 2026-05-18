@@ -11,6 +11,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from server.observability.metrics import http_metrics
+from server.observability.oci_monitoring import increment_errors, increment_requests
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
@@ -21,6 +22,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
         method = request.method
 
         http_metrics.request_started(route, method)
+        increment_requests()
         start = time.perf_counter()
         status_code = 500
 
@@ -41,3 +43,5 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             duration_ms = (time.perf_counter() - start) * 1000
             http_metrics.request_finished(route, method)
             http_metrics.record_request(route, method, status_code, duration_ms)
+            if status_code >= 500:
+                increment_errors()

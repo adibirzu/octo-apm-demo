@@ -1,0 +1,25 @@
+{
+  "name": "octo-apm-db-slow-spans",
+  "displayName": "OCTO APM - DB slow spans",
+  "description": "Span query for SQL and connection spans above the operator threshold. Pivot to Log Analytics db-slowness-hotspots and DB Management by TraceId and SQL attributes.",
+  "queryText": "show (spans) TraceId, ServiceName as Service, OperationName as Operation, SpanDuration as Duration where ServiceName in ('octo-drone-shop','octo-drone-shop-oke','enterprise-crm-portal','enterprise-crm-portal-oke','octo-workflow-gateway','octo-workflow-gateway-oke') and SpanDuration > 250 and (OperationName like '%SELECT%' or OperationName like '%INSERT%' or OperationName like '%UPDATE%' or OperationName like '%connect%')",
+  "scope": {
+    "type": "spans",
+    "defaultLookback": "l24h",
+    "services": ["octo-drone-shop", "octo-drone-shop-oke", "enterprise-crm-portal", "enterprise-crm-portal-oke", "octo-workflow-gateway", "octo-workflow-gateway-oke"]
+  },
+  "parameters": [],
+  "troubleshootingFields": ["TraceId", "ServiceName", "OperationName", "SpanDuration", "DbOracleSqlId", "DbStatement"],
+  "logAnalyticsPivots": [
+    {
+      "savedSearch": "db-slowness-hotspots",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    },
+    {
+      "savedSearch": "trace-drilldown",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    }
+  ]
+}

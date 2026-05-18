@@ -29,6 +29,12 @@ ok() { printf '\033[32m  PASS  \033[0m%s\n' "$*"; }
 fail() { printf '\033[31m  FAIL  \033[0m%s\n' "$*" >&2; FAILED=1; }
 warn() { printf '\033[33m  WARN  \033[0m%s\n' "$*"; }
 
+is_network_dependency_error() {
+    grep -Eiq \
+        "Failed to install provider|Failed to query available provider packages|could not connect to registry\\.terraform\\.io|context deadline exceeded|operation timed out|Client\\.Timeout" \
+        "$@"
+}
+
 for script in "${SCRIPT_DIR}/install.sh" "${SCRIPT_DIR}/render-runtime-env.sh" "${SCRIPT_DIR}/deploy-apps.sh" "${SCRIPT_DIR}/stack-package.sh" "${SCRIPT_DIR}/check-oci-limits.sh" "${SCRIPT_DIR}/configure-lb-certificate.sh" "${SCRIPT_DIR}/verify-deployment.sh" "${SCRIPT_DIR}/validate.sh"; do
     if bash -n "${script}"; then
         ok "${script#${REPO_ROOT}/} bash -n"
@@ -174,9 +180,12 @@ if command -v terraform >/dev/null 2>&1; then
     if terraform -chdir="${SCRIPT_DIR}/terraform" init -backend=false -input=false -no-color >/tmp/octo-compute-tf-init.log 2>&1 && \
        terraform -chdir="${SCRIPT_DIR}/terraform" validate -no-color >/tmp/octo-compute-tf-validate.log 2>&1; then
         ok "deploy/compute terraform validates"
+    elif is_network_dependency_error /tmp/octo-compute-tf-init.log /tmp/octo-compute-tf-validate.log; then
+        warn "deploy/compute terraform validate skipped — provider registry unavailable"
+        cat /tmp/octo-compute-tf-init.log /tmp/octo-compute-tf-validate.log 2>/dev/null | tail -16 | sed 's/^/         /'
     else
         fail "deploy/compute terraform validates"
-        cat /tmp/octo-compute-tf-init.log /tmp/octo-compute-tf-validate.log | tail -40 | sed 's/^/         /'
+        cat /tmp/octo-compute-tf-init.log /tmp/octo-compute-tf-validate.log 2>/dev/null | tail -40 | sed 's/^/         /'
     fi
 else
     warn "terraform not installed — skipped compute terraform validate"
@@ -203,9 +212,12 @@ if command -v terraform >/dev/null 2>&1 && [[ -f "${stack_zip}" ]]; then
        terraform -chdir="${stack_tmp}" init -backend=false -input=false -no-color >/tmp/octo-compute-stack-init.log 2>&1 && \
        terraform -chdir="${stack_tmp}" validate -no-color >/tmp/octo-compute-stack-validate.log 2>&1; then
         ok "deploy/compute Resource Manager package terraform validates"
+    elif is_network_dependency_error /tmp/octo-compute-stack-init.log /tmp/octo-compute-stack-validate.log; then
+        warn "deploy/compute Resource Manager package terraform validate skipped — provider registry unavailable"
+        cat /tmp/octo-compute-stack-init.log /tmp/octo-compute-stack-validate.log 2>/dev/null | tail -16 | sed 's/^/         /'
     else
         fail "deploy/compute Resource Manager package terraform validates"
-        cat /tmp/octo-compute-stack-init.log /tmp/octo-compute-stack-validate.log | tail -40 | sed 's/^/         /'
+        cat /tmp/octo-compute-stack-init.log /tmp/octo-compute-stack-validate.log 2>/dev/null | tail -40 | sed 's/^/         /'
     fi
     rm -rf "${stack_tmp}"
 fi

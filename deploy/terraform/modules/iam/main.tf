@@ -82,7 +82,7 @@ resource "oci_identity_policy" "oke_workers" {
     "Allow dynamic-group octo-oke-workers to read apm-agent-installers in compartment id ${var.compartment_id}",
 
     # OCI Monitoring — publish custom metrics
-    "Allow dynamic-group octo-oke-workers to use metrics in compartment id ${var.compartment_id} where target.metrics.namespace = 'octo_drone_shop'",
+    "Allow dynamic-group octo-oke-workers to use metrics in compartment id ${var.compartment_id} where target.metrics.namespace = 'octo_apm_demo'",
 
     # Stack Monitoring — enrich monitored resources
     "Allow dynamic-group octo-oke-workers to use stack-monitoring-resources in compartment id ${var.compartment_id}",

@@ -9,6 +9,7 @@ in air-gapped dev environments without hanging on export attempts.
 
 from __future__ import annotations
 
+import os
 from typing import Iterable
 
 from opentelemetry import trace
@@ -33,6 +34,17 @@ def _parse_kv(raw: str) -> dict[str, str]:
     return out
 
 
+def _otlp_trace_endpoint(endpoint: str) -> str:
+    endpoint = (endpoint or "").rstrip("/")
+    if not endpoint:
+        return ""
+    if endpoint.endswith("/v1/traces") or endpoint.endswith("/private/v1/traces"):
+        return endpoint
+    if "/20200101" in endpoint:
+        return f"{endpoint.split('/20200101', 1)[0]}/20200101/opentelemetry/private/v1/traces"
+    return f"{endpoint}/v1/traces"
+
+
 def init_tracing(cfg: TrafficConfig) -> trace.Tracer:
     """Install a global TracerProvider. Safe to call multiple times —
     subsequent calls return the existing provider's tracer."""
@@ -46,10 +58,25 @@ def init_tracing(cfg: TrafficConfig) -> trace.Tracer:
 
     provider = TracerProvider(resource=resource)
 
-    if cfg.otel_exporter_otlp_endpoint:
+    endpoint = _otlp_trace_endpoint(
+        cfg.otel_exporter_otlp_endpoint
+        or os.getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "")
+        or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+        or os.getenv("OCI_APM_ENDPOINT", "")
+    )
+    headers = _parse_kv(
+        cfg.otel_exporter_otlp_headers
+        or os.getenv("OTEL_EXPORTER_OTLP_TRACES_HEADERS", "")
+        or os.getenv("OTEL_EXPORTER_OTLP_HEADERS", "")
+    )
+    private_key = os.getenv("OCI_APM_PRIVATE_DATAKEY", "")
+    if private_key and "Authorization" not in headers:
+        headers["Authorization"] = f"dataKey {private_key}"
+
+    if endpoint:
         exporter = OTLPSpanExporter(
-            endpoint=cfg.otel_exporter_otlp_endpoint,
-            headers=_parse_kv(cfg.otel_exporter_otlp_headers),
+            endpoint=endpoint,
+            headers=headers,
         )
         provider.add_span_processor(BatchSpanProcessor(exporter))
 

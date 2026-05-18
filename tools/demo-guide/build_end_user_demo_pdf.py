@@ -421,7 +421,7 @@ def build_story(styles: dict[str, ParagraphStyle]) -> list:
                 "Explain that selected global vantage points run the monitor and reveal regional failures or latency differences.",
                 "Click a monitor, review target URL, interval, timeout, SSL validation, DNS override status, and selected vantage points.",
                 "Open History, click a monitor run, and explain status, completion time, vantage point, waterfall/HAR, response headers, timings, screenshots, and trace details where available.",
-                "To create a scripted browser monitor, create a Playwright script using tools/demo-guide/octo-availability-monitor.playwright.ts, validate it, then create a Scripted Browser monitor from selected global vantage points.",
+                "To create a scripted browser monitor, use deploy/oci/ensure_availability_monitors.sh --scripted-browser to upload shop/tools/apm/octo-apm-demo-synthetic.spec.ts, validate it, then create or update a Scripted Browser monitor from selected global vantage points.",
             ],
             body,
         ),
@@ -430,7 +430,7 @@ def build_story(styles: dict[str, ParagraphStyle]) -> list:
             [
                 "Open Log Analytics Log Explorer for the order or attack time window.",
                 "Filter by oracleApmTraceId = <trace-id>, security.attack.id = <attack-id>, or payment.gateway.request_id = <gateway-request-id>.",
-                "Pin Trace ID, Span ID, Service, Host Name, User Name, Payment Method, Payment Status, Payment Gateway Request ID, MITRE Technique ID, OSQuery Finding, and Original Log Content.",
+                "Pin Trace ID, Span ID, Service, Host Name, User Name, Payment Method, Payment Status, Payment Gateway Request ID, MITRE Technique ID, OSQuery Finding, and msg.",
                 "Open an app log row and use the trace id to return to APM Trace Explorer.",
                 "For attack demos, open saved searches for attack timeline, detections, OSQuery findings, and edge detections.",
             ],

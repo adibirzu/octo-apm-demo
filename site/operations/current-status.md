@@ -1,26 +1,184 @@
 # Current Status
 
-Snapshot date: **April 28, 2026** for the shared `DEFAULT` runtime.
-Private Compute stack validation updated on **May 7, 2026**.
-OCTO DEMO `emdemo` validation updated on **May 11, 2026**.
+Snapshot date: **May 14, 2026** for the private OCTO deployment.
+Private Compute and OKE validation updated on **May 14, 2026**.
 
 This page records the latest observed state of the shared `DEFAULT`
 deployment surface tracked by this repo. It is a runtime snapshot, not a
 guarantee that the shared environment will remain healthy without checking
 the validation commands below.
 
-May 11, 2026 update: the `emdemo` CRM compute host was updated and
+May 14, 2026 deployment update: Shop, Admin/CRM, the Java payment gateway,
+and the Workflow Gateway are deployed on VM and OKE with immutable image tag
+`obs-20260514203801`.
+Shop and Admin expose
+`/api/observability/melts`, and the checkout success view now shows copyable
+evidence for Trace ID, Order ID, Payment Gateway Request ID, payment status,
+payment rail components, gateway steps, APM saved query, Log Analytics search,
+and security triage search. The Shop and Admin OCI Monitoring publishers now
+use the shared `octo_apm_demo` namespace and resolve the Monitoring ingestion
+region from `OCI_MONITORING_REGION`, then the APM endpoint, then
+`OCI_REGION`/`OCI_REGION_ID`, falling back to Phoenix for the private
+deployment. This keeps the OKE cluster and OCIR in Frankfurt while custom
+metrics continue to land in the Phoenix Monitoring namespace used by the
+private APM domain. OKE and VM deployment templates set `OCI_REGION`,
+`OCI_COMPARTMENT_ID`, and `OCI_MONITORING_NAMESPACE` so custom metrics can
+populate OCI Monitoring alongside APM traces and Log Analytics logs. A new Log
+Analytics saved search,
+`melts-collection-completeness.sql`, checks structured app logs,
+connector-fed OCI Unified Schema logs, and OKE Kubernetes container logs in one
+place.
+
+May 14, 2026 live promotion check: the active OCI Load Balancer still uses the
+same host routing and round-robin backend sets across the original VM backend
+and both OKE NodePort backends. `shop`, `crm`, `oke_shop_nodeport`, and
+`oke_admin_nodeport` all reported `OK` with no warning, critical, or unknown
+backends after the `obs-20260514203801` rollout. Public readiness through
+`drones.${DNS_DOMAIN}` and `admin.${DNS_DOMAIN}` returned `ready=true`,
+ATP connected to `octoatp_low`, APM configured, RUM configured, and logging
+configured. OKE Deployments were running the same immutable tag for
+`octo-drone-shop`, `enterprise-crm-portal`, `octo-apm-java-demo`, and
+`octo-workflow-gateway`; the VM Podman containers were also restarted on the
+same tag.
+
+May 14, 2026 cross-product correlation check: a public load-balanced Google
+Pay checkout created order `72841` with trace
+`b9a9dd874c5e9c80dd7df12a8b05c391` and gateway request
+`pgw-72841-b1f699ba876b5edb`. APM returned 60 spans across
+`octo-drone-shop-oke`, `enterprise-crm-portal-oke`, and
+`octo-java-app-server-oke`, including Shop checkout, cart, order persistence,
+Google Pay gateway steps, Java payment verify/authorize, CRM sync, and DB
+spans. Log Analytics returned the same trace/order/gateway identifiers across
+Shop, CRM, and Java rows in the checkout workflow. A direct VM credit-card
+smoke checkout created order `72843` with trace
+`ea45ecc34bd39158c0c31e00c7034eeb` and gateway request
+`pgw-72843-f466bbdd8a43a71f`; APM returned 53 spans across
+`octo-drone-shop`, `enterprise-crm-portal`, and `octo-java-app-server`,
+including Visa card tokenization, antifraud verification, Java processor
+authorization, CRM order sync, and DB work. OCI Monitoring `app.health`
+samples were present for the VM and OKE Shop/Admin service names in the
+`octo_apm_demo` namespace, and Log Analytics showed recent checkout, login,
+cart, browse, CRM, and admin workflow rows for both VM and OKE service names.
+
+May 14, 2026 Log Analytics update: the Shop and Admin stdout formatters now
+emit parser-friendly aliases beside the dotted OpenTelemetry-style fields, so
+OKE stdout can promote `Order ID`, `Payment Gateway Request ID`, workflow,
+payment gateway step, processor response, Java sidecar, and payment rail fields
+through the same `SOC Application Logs` source as the workshop data. The
+private demo SOC parser/source refresh reused the existing namespace fields and
+promoted the contract through 138 field maps without creating duplicate Log
+Analytics fields. `melts-collection-completeness.sql` now counts promoted OKE
+order and gateway fields, and `oke-checkout-payment-correlation.sql` provides a
+focused OKE checkout timeline for Shop -> Java payment gateway -> CRM sync.
+Post-deploy validation generated fresh Google Pay, declined Visa card, and
+Apple Pay checkouts through the public load balancer. Log Analytics shows
+promoted OKE order and payment gateway request fields across
+`octo-drone-shop-oke`, `octo-java-app-server-oke`, and
+`enterprise-crm-portal-oke`, and recent OKE processor rows use
+`Downstream Component = octo-java-app-server-oke`.
+
+May 13, 2026 update: the `<OCI_PROFILE>` OKE parallel deployment is live beside
+the VM runtime. Cluster `octo-apm-demo-oke` has two private
+`VM.Standard.E5.Flex` workers (`<OKE_NODE_PRIVATE_IP_1>`, `<OKE_NODE_PRIVATE_IP_2>`) for
+`4 OCPU / 32 GiB` requested capacity. Image tag
+`oke-20260513122023-shop-downstream` is deployed for Shop,
+`oke-20260513103616-aecfbae` remains deployed for Admin/CRM, and the Java
+payment gateway is on `oke-20260513112855-java-json` to add structured
+stdout events for Log Analytics correlation. Each OKE app Deployment now runs 2 replicas with HPA
+minimum 2, PDB `minAvailable: 1`, and runtime UID `10001`.
+OKE service names are `octo-drone-shop-oke`,
+`enterprise-crm-portal-oke`, and `octo-java-app-server-oke`, all sending
+traces to the existing `octo-apm-demo` APM domain. The public OCI LB has
+healthy staged backend sets `oke_shop_nodeport` and `oke_admin_nodeport`.
+The active `shop` and `crm` backend sets now use `ROUND_ROBIN` across the
+original VM backend and both OKE NodePort backends. Host routing still points
+to `shop` and `crm`, so no listener, certificate, or routing-policy cutover
+was made.
+OCI Kubernetes Monitoring is deployed in `oci-onm`; the Log Analytics
+DaemonSets, tcpconnect DaemonSets, discovery CronJob, and Management
+Agent are running. CSI topology labels were repaired on both nodes, and
+the ONM installer defaults to `emptyDir` Management Agent state for this
+low-resource test cluster. The live ONM release is revision 4 with
+Resource Manager service-log automation disabled. ONM sends Kubernetes
+container and tcpconnect logs directly to Log Analytics through its
+Fluentd Log Analytics output, so it does not consume Service Connector Hub
+capacity. The private demo Service Connector Hub quota remains exhausted
+(`used=7`, `available=0`), which still blocks additional OCI Logging ->
+Log Analytics connectors. The live app-log route reuses an existing approved
+Connector Hub path from the OCTO OCI Logging group into the
+private demo Log Analytics group; those connector-fed rows appear as
+`OCI Unified Schema Logs` and are validated with
+`connector-live-log-coverage.sql`. ONM metrics are configured under
+`mgmtagent_kubernetes_metrics` with cluster name `octo-apm-demo-oke`; the
+legacy Log Analytics entity name is reused by cloud-resource-id because
+entity rename is not supported. `octo-llmetry` is populated in both OKE
+namespaces, and Shop readiness reports `langfuse_configured=true`. Focused Playwright
+E2E validation passed for Google Pay, Apple Pay, and declined Visa card
+flows against OKE. APM Trace Explorer returns OKE spans for
+`octo-drone-shop-oke` and `octo-java-app-server-oke`, including payment
+gateway, Java verify/authorize, processor response, and network-routing
+spans. Log Analytics shows Kubernetes Container Generic Logs for
+`octo-drone-shop`, `enterprise-crm`, and Java payment gateway pods.
+
+Follow-up validation on May 13, 2026 confirmed the active VM+OKE backend
+sets, staged OKE backend sets, ONM collectors, OKE app pods, and VM
+`octo-compute.service` units are healthy. OKE app pods are annotated with
+`oracle.com/oci_la_log_source_name="SOC Application Logs"` and
+`oracle.com/oci_la_log_set="octo-apm-demo"`, so Log Analytics now promotes
+OKE stdout into the existing `Trace ID`, `Span ID`, `Service Name`, and
+`Service Namespace` fields. The Java payment gateway now emits explicit
+JSON events for `java_payment_verify`, `java_payment_authorize`, and
+controlled Java demo errors so Log Analytics can correlate gateway records
+with APM traces. Shop logs now emit `java_apm.service.name` and
+`payment.processor.name`; Log Analytics saved searches expose those values
+through the existing `Downstream Component` field so VM and OKE checkout
+records can pivot cleanly to `octo-java-app-server` or
+`octo-java-app-server-oke`. The Workflow Command Center includes OKE ONM
+ingestion health, OKE trace correlation, and service-health widgets. New
+scheduled detection rules publish `OkeOnmLogSamples` and
+`OkeCollectorErrorEvents` metrics. The OKE ONM saved searches now require
+`Kubernetes Cluster Name = octo-apm-demo-oke`; namespace-only fallbacks are
+intentionally avoided because other retained clusters can also emit `oci-onm`
+namespace records in the shared Log Analytics namespace. The service-health saved search excludes
+expected demo and attack-lab events (`demo.scenario`, `error.expected`,
+security severity, and attack workflows), while the threat-hunting searches
+still retain those events.
+
+The Compute VMs were rebuilt from the same source and restarted after the OKE
+rollout. Both VM app containers now run as UID/GID `10001`; `install.sh`
+sets `/opt/octo/wallet` and `/opt/octo/secrets` ownership/modes for that UID
+so wallet and Langfuse secret files remain readable by non-root containers
+without making them world-readable. The VM Java sidecar runs with Podman
+`json-file` logging so its `ctr.log` is compatible with the existing
+container-log tail pattern, but `enable_unified_agent_log_collection=false`
+and the private demo Service Connector Hub quota is exhausted, so VM Java direct
+stdout is not a Log Analytics source today. VM checkout correlation is
+provided by the Shop OCI Logging SDK events carrying `Downstream Component`.
+
+May 11, 2026 update: the `<OCI_PROFILE>` CRM compute host was updated and
 `octo-compute.service` was restarted. Public readiness through the live
-load balancer is healthy for both `admin.octodemo.cloud` and
-`drones.octodemo.cloud`. The OCI Coordinator is now exposed only in the
+load balancer is healthy for both `admin.example.test` and
+`shop.example.test`. The OCI Coordinator is now exposed only in the
 CRM Admin page (`/admin`) and only through the admin API
 `/api/admin/coordinator/query`. Its answer scope is fixed to
 `octo-apm-demo`; authenticated live validation confirmed OCTO-scoped
 user/order/database trace questions are answered, the same authenticated
-request with `Host: drones.octodemo.cloud` returns HTTP 403, and app logs
+request with `Host: shop.example.test` returns HTTP 403, and app logs
 emit `coordinator.surface`, `coordinator.host`, `coordinator.scope`,
 `coordinator.allowed`, `coordinator.topic`, `trace_id`, and
 `oracleApmTraceId` for APM and Log Analytics drilldown.
+
+May 12, 2026 update: the `<OCI_PROFILE>` runtime maturity check is green through the
+preserved HTTPS load balancer. Both `shop.example.test` and
+`admin.example.test` return `ready=true`, ATP connected to `octoatp_low`,
+APM configured, RUM configured, and logging configured. Log Analytics now has
+the repo-owned Octo APM saved searches, `Workflow Command Center`,
+`Attack Lab Command Center`, and five active `SAVED_SEARCH` detection rules
+for API Gateway threat, compromised VM, Java payment error, payment
+interception, and payment redirect. APM now has eight active provider saved
+queries for checkout, payment Java sidecar, DB slow spans, login/auth,
+assistant GenAI LLMetry, service errors, platform workflows, and trace
+drilldown, each tagged with the matching Log Analytics pivots.
 
 Later on May 11, the CRM frontend was aligned with OCI APM RUM W3C trace
 propagation. Same-origin browser calls now use the instrumented fetch path
@@ -95,7 +253,7 @@ listening ports, unexpected users, startup items, crontab, sudoers, and
 kernel modules. Ad-hoc OSQuery execution was run against the shop and CRM
 instances; three runs completed and two failed in-region. Completed
 results were normalized into OCI Logging (`<DEPLOYMENT_PREFIX>-os`) with
-`ATTACK_ID=attack-851e80f8751b`, producing 246 OSQuery log entries. Those
+`ATTACK_ID=<ATTACK_ID>`, producing 246 OSQuery log entries. Those
 records are in OCI Logging now; they will not appear in Log Analytics
 until Service Connector Hub quota is available or an approved shared
 connector is updated.
@@ -178,103 +336,6 @@ asset and open `https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=..
 If a valid asset still fails, verify Console tenancy/region context and grant
 Resource Manager create/import/job permissions for this compartment.
 
-## OCTO DEMO `emdemo` live validation
-
-Validated on May 11, 2026 against the OCTO DEMO hosts:
-
-- Shop: `https://drones.octodemo.cloud`
-- Admin/CRM: `https://admin.octodemo.cloud`
-- LB IP used for deterministic checks: `<EMDEMO_LB_PUBLIC_IP>`
-- ATP runtime service: `octoatp_low`
-- Runtime path: two-instance private Compute with the Shop Java APM sidecar
-  and Workflow Gateway running on the Shop VM.
-
-Live readiness:
-
-- Shop `/ready` returned HTTP 200 with `ready=true`, ATP connected, APM/RUM
-  configured, Java APM enabled, payment gateway simulation enabled,
-  Workflow Gateway configured, Select AI configured, OCI GenAI configured,
-  Langfuse configured, and Langfuse project `drones.octodemo.cloud`.
-- Admin/CRM `/ready` returned HTTP 200 with `ready=true`, ATP connected,
-  APM configured, RUM configured, and OCI Logging configured.
-- VM-side `octo-compute.service` is active on the Shop host, with
-  `octo-app`, `octo-java-apm`, and `octo-workflow-gateway` containers up.
-
-Checkout hardening deployed on May 11:
-
-- Anonymous `/api/shop/checkout` now validates `customer_email` before CRM/DB
-  work and returns structured HTTP 400 for missing or invalid email.
-- Empty-cart checkout now returns structured HTTP 400 instead of HTTP 200 with
-  an error body.
-- The same empty-cart client error is applied to authenticated
-  `/api/orders` creation.
-- The compute installer now preserves `/opt/octo/secrets` permissions for the
-  non-root app container so Langfuse `*_FILE` secrets remain readable after
-  future installs.
-
-Validation commands run after deployment:
-
-```bash
-python -m pytest shop/tests -q
-python -m pytest crm/tests -q
-python -m pytest tests/test_unified_deploy_surface.py -q
-python -m pytest tests/test_log_analytics_attack_assets.py -q
-python -m pytest services/async-worker/tests -q
-python -m pytest services/cache/tests -q
-PYTHONPATH=services/edge-fuzz/src python -m pytest services/edge-fuzz/tests -q
-PYTHONPATH=services/load-control/src python -m pytest services/load-control/tests -q
-PYTHONPATH=services/object-pipeline/src python -m pytest services/object-pipeline/tests -q
-PYTHONPATH=services/remediator/src python -m pytest services/remediator/tests -q
-bash services/otel-gateway/tests/test_config_validates.sh
-npm --prefix services/browser-runner test
-SHOP_URL=https://drones.octodemo.cloud CRM_URL=https://admin.octodemo.cloud \
-  npx playwright test tests/e2e/availability.spec.ts tests/e2e/health.spec.ts --project=api
-SHOP_URL=https://drones.octodemo.cloud CRM_URL=https://admin.octodemo.cloud \
-  SHOP_E2E_USERNAME=shopper SHOP_E2E_PASSWORD=<test-password> \
-  npx playwright test tests/e2e/shopping-flow.spec.ts tests/e2e/payment-gateway-trace.spec.ts --project=chromium
-```
-
-Observed results:
-
-- Shop tests: `178 passed`.
-- CRM tests: `62 passed`.
-- Deploy surface: `20 passed`.
-- Log Analytics attack assets: `8 passed`.
-- Services: async-worker `12 passed`, cache `6 passed`, edge-fuzz
-  `4 passed`, load-control `37 passed`, object-pipeline `8 passed`,
-  remediator `21 passed`.
-- OTel gateway config: YAML/key validation passed; full
-  `otelcol-contrib validate` was skipped because `otelcol-contrib` is not on
-  PATH.
-- Browser runner: `10 passed`.
-- Live API Playwright suite: `28 passed`.
-- Live browser checkout/payment suite: `12 passed`.
-
-OKE same-VCN assessment:
-
-- `deploy/oke/check-small-cluster.sh` is read-only and reports quota/capacity
-  sufficient for a small two-node OKE test cluster in `emdemo`.
-- Existing OKE clusters in the compartment are ACTIVE, but all are in the
-  quickstart VCN, not the OCTO project VCN.
-- `deploy/oke/deploy-langfuse.sh --check` correctly fails until a cluster
-  exists in the OCTO project VCN or an operator explicitly sets
-  `ALLOW_DIFFERENT_VCN=true` with a selected cluster.
-- Service Connector Hub quota is exhausted (`available=0`, `used=7`), so new
-  OCI Logging -> Log Analytics connectors for OCTO app/OKE logs cannot be
-  created yet.
-
-Log and Coordinator readiness:
-
-- Fresh Shop/CRM records are present in OCI Logging with `oracleApmTraceId`,
-  `trace_id`, `span_id`, `service.name`, route, status, and DB target fields.
-- A Log Analytics query for `Log Source = octo-shop-app-json` returned `0`
-  rows in the last hour because the OCTO Logging log group is not currently
-  routed into a Log Analytics source/parser mapping.
-- An OCI Coordinator deployed on a future same-VCN OKE cluster can ask
-  questions against the live websites and OCI Logging today. Questions that
-  require Log Analytics dashboards or saved-search joins are blocked until
-  connector quota/source binding is resolved.
-
 ## Private Compute reference deployment
 
 Validated on May 5, 2026:
@@ -310,8 +371,11 @@ Validated on May 5, 2026:
   lifecycle/backend health, WAF, APM, ATP, DB Management, Operations
   Insights, Log Analytics connectors, Management Agents, and Stack
   Monitoring HOST auto-promote state.
-- A Log Analytics query over the last 30 minutes returned 212 records in
-  `OCI Unified Schema Logs` after the connectors were created.
+- A Log Analytics query over the live `test` Service Connector path returned
+  recent OCTO app records in `OCI Unified Schema Logs`. This is expected for
+  Service Connector Hub sources of kind `logging`; the connector target keeps
+  `logSourceIdentifier=null` and dashboards use
+  `connector-live-log-coverage.sql` to parse the JSON envelope from `Message`.
 - ATP reports `database-management-status=ENABLED` and
   `operations-insights-status=ENABLED`.
 

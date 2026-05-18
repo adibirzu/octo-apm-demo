@@ -32,6 +32,7 @@ class PaymentContext:
     card_exp_month: int | None = None
     card_exp_year: int | None = None
     card_fingerprint: str = ""
+    card_cvv_present: bool = False
     wallet_type: str = ""
     wallet_token_hash: str = ""
     billing_postal_code: str = ""
@@ -60,6 +61,7 @@ class PaymentContext:
             "payment.card_exp_year": self.card_exp_year or "",
             "payment.wallet_type": self.wallet_type,
             "payment.wallet_token_hash": self.wallet_token_hash,
+            "payment.card_cvv_present": self.card_cvv_present,
             "payment.billing_postal_code": self.billing_postal_code,
             "payment.antifraud_score": self.risk_score,
             "payment.antifraud_reasons": ",".join(self.risk_reasons),
@@ -205,6 +207,7 @@ def _card_context(details: dict[str, Any], *, amount_minor_units: int, customer_
         card_exp_month=expiry_month,
         card_exp_year=expiry_year,
         card_fingerprint=fingerprint,
+        card_cvv_present=bool(cvv),
         billing_postal_code=postal_code,
         risk_score=risk_score,
         risk_reasons=tuple(reasons),

@@ -322,6 +322,13 @@ file to the container runtime. Re-run `install.sh --check` after editing
 `runtime.env` so the container env file is regenerated before a service
 restart.
 
+The current Python app images run as non-root UID/GID `10001` on both Shop
+and CRM. Keep `APP_CONTAINER_UID=10001` and `APP_CONTAINER_GID=10001` in
+the rendered env. `install.sh` enforces matching ownership and restrictive
+modes on `/opt/octo/wallet` and `/opt/octo/secrets`, so ATP wallet files
+and secret-file references such as Langfuse keys remain readable by the
+container without being world-readable.
+
 For the assistant demo, the Shop runtime reads `OCI_GENAI_ENDPOINT`,
 `OCI_GENAI_MODEL_ID`, `LLMETRY_*`, and `LANGFUSE_*` from the same
 container env file. Leave Langfuse disabled until a project has been
@@ -423,8 +430,10 @@ Compute deployment supplies:
 - `OTEL_TRACES_SAMPLER=always_on`
 
 The app records FastAPI, HTTPX, SQLAlchemy, process metrics, and custom
-business spans. Logs carry `oracleApmTraceId` so APM traces and Log
-Analytics searches can pivot both ways.
+business spans. Standalone Python scripts use the same OTLP endpoint and
+create `script.*` root spans before flushing at exit. Logs carry
+`oracleApmTraceId` so APM traces and Log Analytics searches can pivot both
+ways.
 
 For the private demo, the shop host can also run the Java app-server sidecar:
 
@@ -465,6 +474,34 @@ operator names. The app writes the synthetic e-mail into OCI RUM
 `apmrum.username` so the APM Users page shows distinct users, while app
 logs and span attributes keep only domain, counts, and hashed/order
 context.
+
+## APM Scripted Browser Monitor
+
+The deployment flow also supports the recurring OCI APM Scripted Browser
+journey in `shop/tools/apm/octo-apm-demo-synthetic.spec.ts`. It validates the
+browser path for 12 fictional buyers, each buying 2-3 in-stock drones with
+mixed card, wallet, and bank-transfer methods, then continues through support
+ticket creation, admin login, Java health, and attack-lab telemetry.
+
+Create or update it with the OCI helper:
+
+```bash
+APM_DOMAIN_ID=<APM_DOMAIN_OCID> \
+OCI_CLI_PROFILE=<OCI_PROFILE> \
+SYNTHETIC_BROWSER_MONITOR_ENABLED=true \
+OCTO_LIVE_SHOP_URL=https://shop.example.test \
+OCTO_LIVE_ADMIN_URL=https://admin.example.test \
+OCTO_ADMIN_PASSWORD_SECRET_OCID=<ADMIN_PASSWORD_SECRET_OCID> \
+OCTO_ADMIN_PASSWORD_SECRET_REGION=<OCI_REGION> \
+./deploy/oci/ensure_availability_monitors.sh --apply
+```
+
+Defaults are `OCTO_APM_DEMO_MODE=monitor`, `repeat=600`,
+`timeout=300`, and `SYNTHETIC_FAILURE_RETRIED=false`. URL parameters are
+non-secret. Admin password and optional `OCTO_INTERNAL_SERVICE_KEY` must come
+from ignored environment files or Vault-backed monitor parameters. The script
+checks token-safe payment data only: gateway request id, method, provider,
+network, antifraud decision, risk score, card brand/last4, and wallet type.
 
 ## Stack Monitoring Notes
 
@@ -521,9 +558,19 @@ Before treating the deployment as production-demo ready, confirm in OCI:
   connectors if enabled.
 - APM -> Trace Explorer shows services `octo-drone-shop` and
   `enterprise-crm-portal`.
+- Monitoring -> Metrics Explorer shows custom app metrics in namespace
+  `octo_apm_demo` after `OCI_COMPARTMENT_ID`, `OCI_REGION`, and
+  `OCI_MONITORING_NAMESPACE` are present in the rendered runtime env.
 - Stack Monitoring shows both Compute hosts under Standard monitoring.
   If `enable_stack_monitoring_atp_registration=true` and the tenancy is
   entitled, confirm the ATP monitored resource as well.
+
+Shop and CRM publish only low-cardinality metrics to OCI Monitoring:
+health, uptime, request/error interval counts, checkout/order counts, auth
+outcomes, security events, dashboard loads, DB latency, CRM sync age, and
+inventory health. Trace IDs, order IDs, gateway request IDs, user actions, and
+SQL details remain in APM traces and Log Analytics logs so metrics do not
+create high-cardinality streams.
 
 ## Smoke Test
 

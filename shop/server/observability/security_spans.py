@@ -113,7 +113,7 @@ def _persist_security_event(
                     ),
                 },
             )
-    except Exception:
+    except Exception:  # noqa: S110
         # Security telemetry must not break the request path.
         pass
 

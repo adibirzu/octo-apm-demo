@@ -53,6 +53,8 @@ spec:
               value: "http://gateway.octo-otel.svc.cluster.local:4318"
             - name: OCTO_WORKER_SERVICE_NAME
               value: "octo-async-worker"
+            - name: OCTO_WORKER_OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=octo,deployment.environment=production,cloud.provider=oci,oci.demo.stack=octo-apm-demo,k8s.namespace.name=octo-async,k8s.deployment.name=async-worker"
           resources:
             requests: { cpu: 100m, memory: 128Mi }
             limits: { cpu: 500m, memory: 256Mi }

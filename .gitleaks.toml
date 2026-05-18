@@ -1,0 +1,58 @@
+# Gitleaks configuration for octo-apm-demo.
+#
+# This project intentionally uses high-entropy test fixtures (UUIDs as
+# idempotency keys, test card numbers, test JWT tokens) in shop/tests/,
+# crm/tests/, and top-level tests/. Those values are not secrets.
+#
+# Real secrets MUST NEVER be committed. The allowlist below scopes only
+# obviously-test material; production code paths and config templates
+# are still scanned by the default ruleset.
+
+title = "octo-apm-demo gitleaks config"
+
+# Extend the default ruleset; only add allowlist rules below.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow test fixtures and documentation placeholders"
+
+# Allowlist by path: test directories and documentation
+paths = [
+  '''shop/tests/.*''',
+  '''crm/tests/.*''',
+  '''services/[^/]+/tests/.*''',
+  '''services/[^/]+/src/test/.*''',
+  '''tests/.*''',
+  '''site/.*\.md''',
+  '''docs/.*\.md''',
+  '''CONTRIBUTING\.md''',
+  '''README\.md''',
+  '''ARCHITECTURE\.md''',
+  '''.*\.env\.example''',
+  '''.*\.env\.template''',
+  '''deploy/.*\.template''',
+]
+
+# Allowlist by regex: known test/placeholder patterns
+regexes = [
+  # Standard nil/test UUIDs
+  '''550e8400-e29b-41d4-a716-[0-9a-f]{12}''',
+  '''00000000-0000-0000-0000-[0-9a-f]{12}''',
+  # Test card BIN ranges (Visa, Mastercard test PANs)
+  '''4111[0-9]{12}''',
+  '''5555555555554444''',
+  # Placeholder tokens used in docs
+  '''<[A-Z_]+>''',
+  '''\$\{[A-Z_]+\}''',
+]
+
+# Allowlist by stopwords (case-insensitive)
+stopwords = [
+  "example",
+  "placeholder",
+  "test",
+  "dummy",
+  "fixture",
+  "sample",
+]

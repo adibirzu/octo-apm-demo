@@ -51,7 +51,14 @@ def _compile(rules: Iterable[tuple[str, str, str]]) -> tuple[WorkflowRule, ...]:
 # Default registry — extended by project-level registry if provided.
 DEFAULT_RULES: tuple[WorkflowRule, ...] = _compile(
     [
+        (r"^/login(?:/|$)", "login", "page"),
+        (r"^/api/auth/login(?:/|$)", "login", "authenticate"),
+        (r"^/api/auth", "login", "auth-api"),
         (r"^/shop(?:/|$)", "browse-catalog", "catalog"),
+        (r"^/api/shop/storefront", "browse-catalog", "storefront"),
+        (r"^/api/shop/checkout", "checkout", "payment"),
+        (r"^/api/shop/payment", "checkout", "payment-simulation"),
+        (r"^/api/shop/app-server", "checkout", "java-app-server"),
         (r"^/api/products", "browse-catalog", "product-list"),
         (r"^/api/cart", "add-to-cart", "cart"),
         (r"^/api/orders", "checkout", "order"),

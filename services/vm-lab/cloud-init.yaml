@@ -14,6 +14,7 @@
 #   ${MGMT_AGENT_BUCKET_NAMESPACE}      — Object Storage namespace hosting
 #                                         the Management Agent installer
 #                                         for this tenancy
+#   ${REPO_URL}                          — Git clone URL (defaults to upstream)
 #
 # Example render:
 #   export OCI_REGION=eu-frankfurt-1
@@ -31,7 +32,7 @@ runcmd:
   - curl -fsSL "https://objectstorage.${OCI_REGION}.oraclecloud.com/n/${MGMT_AGENT_BUCKET_NAMESPACE}/b/management-agent-install/o/install.py" | sudo python3 - || true
 
   # 2. Clone octo-apm-demo to /opt/octo for the lab scripts
-  - git clone --depth 1 https://github.com/example-org/octo-apm-demo.git /opt/octo
+  - git clone --depth 1 "${REPO_URL:-https://github.com/adibirzu/octo-apm-demo.git}" /opt/octo
   - chmod +x /opt/octo/services/vm-lab/scripts/*.sh
 
   # 3. Tag the VM in ~/.octo/host.env so operators can confirm which

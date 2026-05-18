@@ -130,7 +130,7 @@ async def geo_analytics(
                 # VULN: SQL injection — region is interpolated directly
                 if effective_region:
                     # VULN: f-string SQL injection
-                    query = (f"SELECT visitor_region, COUNT(*) as view_count, "
+                    query = (f"SELECT visitor_region, COUNT(*) as view_count, "  # noqa: S608
                              f"AVG(load_time_ms) as avg_load_time, "
                              f"MIN(load_time_ms) as min_load_time, "
                              f"MAX(load_time_ms) as max_load_time "

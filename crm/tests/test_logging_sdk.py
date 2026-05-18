@@ -4,8 +4,16 @@ import json
 import sys
 import types
 from dataclasses import replace
+from pathlib import Path
+
+APP_ROOT = Path(__file__).resolve().parents[1]
+sys.path = [str(APP_ROOT), *[path for path in sys.path if path != str(APP_ROOT)]]
+for module_name in list(sys.modules):
+    if module_name == "server" or module_name.startswith("server."):
+        del sys.modules[module_name]
 
 from server.observability import logging_sdk
+from server.observability.workflow_context import WorkflowContext, _ctx
 
 
 def test_mask_pii_returns_new_dict_and_masks_contact_fields() -> None:
@@ -48,6 +56,89 @@ def test_push_log_enqueues_masked_payload(monkeypatch) -> None:
     assert message == "customer event"
     assert payload["customer_email"] == "g***@example.com"
     assert payload["customer_phone"] == "***1200"
+
+
+def test_json_formatter_adds_logan_aliases_to_stdout(monkeypatch) -> None:
+    monkeypatch.setattr(
+        logging_sdk,
+        "current_trace_context",
+        lambda: {"trace_id": "a" * 32, "span_id": "b" * 16, "traceparent": "00-" + "a" * 32 + "-" + "b" * 16 + "-01"},
+    )
+    record = logging_sdk.logging.LogRecord(
+        name="security.events",
+        level=logging_sdk.logging.INFO,
+        pathname="",
+        lineno=0,
+        msg="order accepted",
+        args=(),
+        exc_info=None,
+    )
+    record.extra_fields = {
+        "orders.order_id": 42,
+        "payment.gateway.request_id": "pgw-42-test",
+        "payment.provider": "simulated",
+        "java_apm.latency_ms": 17,
+    }
+
+    payload = json.loads(logging_sdk._JSONFormatter().format(record))
+
+    assert payload["order_id"] == 42
+    assert payload["payment_gateway_request_id"] == "pgw-42-test"
+    assert payload["payment_provider"] == "simulated"
+    assert payload["java_apm_latency_ms"] == 17
+
+
+def test_push_log_adds_current_workflow_fields(monkeypatch) -> None:
+    queued: list[tuple[str, str, dict]] = []
+
+    class _Queue:
+        def put(self, item):
+            queued.append(item)
+
+    monkeypatch.setattr(logging_sdk, "_log_queue", _Queue())
+    token = _ctx.set(WorkflowContext(workflow_id="checkout", step="order-sync"))
+    try:
+        logging_sdk.push_log("INFO", "order accepted")
+    finally:
+        _ctx.reset(token)
+
+    payload = queued[-1][2]
+    assert payload["workflow.id"] == "checkout"
+    assert payload["workflow.step"] == "order-sync"
+    assert payload["workflow_id"] == "checkout"
+    assert payload["workflow_step"] == "order-sync"
+
+
+def test_push_log_adds_request_trace_and_service_fields(monkeypatch) -> None:
+    queued: list[tuple[str, str, dict]] = []
+    records: list[logging_sdk.logging.LogRecord] = []
+
+    class _Queue:
+        def put(self, item):
+            queued.append(item)
+
+    monkeypatch.setattr(logging_sdk, "_log_queue", _Queue())
+    monkeypatch.setattr(logging_sdk, "current_request_id", lambda: "req-crm-123")
+    monkeypatch.setattr(logging_sdk._security_logger, "handle", lambda record: records.append(record))
+    monkeypatch.setattr(
+        logging_sdk,
+        "current_trace_context",
+        lambda: {"trace_id": "a" * 32, "span_id": "b" * 16, "traceparent": "00-" + "a" * 32 + "-" + "b" * 16 + "-01"},
+    )
+
+    logging_sdk.push_log("INFO", "order accepted", customer_email="grace@example.com")
+
+    payload = queued[-1][2]
+    emitted = json.loads(logging_sdk._JSONFormatter().format(records[-1]))
+
+    assert payload["request_id"] == "req-crm-123"
+    assert payload["trace_id"] == "a" * 32
+    assert payload["oracleApmTraceId"] == "a" * 32
+    assert payload["span_id"] == "b" * 16
+    assert payload["oracleApmSpanId"] == "b" * 16
+    assert payload["service.name"]
+    assert emitted["service_namespace"] == payload["service.namespace"]
+    assert payload["customer_email"] == "g***@example.com"
 
 
 def test_push_log_adds_app_log_event_to_current_and_request_spans(monkeypatch) -> None:
@@ -134,6 +225,10 @@ def test_oci_logging_payload_uses_current_sdk_shape(monkeypatch) -> None:
         {
             "oracleApmTraceId": "abc123",
             "service.name": "enterprise-crm-portal",
+            "orders.order_id": 42,
+            "payment.provider": "simulated",
+            "payment.gateway.request_id": "pgw-42-test",
+            "java_apm.latency_ms": 17,
         },
     )
 
@@ -141,10 +236,20 @@ def test_oci_logging_payload_uses_current_sdk_shape(monkeypatch) -> None:
     batch = details.kwargs["log_entry_batches"][0]
     entry = batch.kwargs["entries"][0]
     payload = json.loads(entry.kwargs["data"])
+    logan_message = json.loads(payload["message"])
 
     assert captured["put_logs"]["log_id"] == "ocid1.log.oc1..test"
     assert entry.kwargs["time"].tzinfo is not None
     assert payload["timestamp"]
     assert payload["level"] == "INFO"
-    assert payload["message"] == "order accepted"
+    assert payload["event_message"] == "order accepted"
+    assert payload["log_message"] == "order accepted"
+    assert logan_message["message"] == "order accepted"
     assert payload["oracleApmTraceId"] == "abc123"
+    assert payload["service_name"] == "enterprise-crm-portal"
+    assert payload["order_id"] == 42
+    assert payload["payment_provider"] == "simulated"
+    assert payload["payment_gateway_request_id"] == "pgw-42-test"
+    assert payload["java_apm_latency_ms"] == 17
+    assert logan_message["oracleApmTraceId"] == "abc123"
+    assert logan_message["service_name"] == "enterprise-crm-portal"

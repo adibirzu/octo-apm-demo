@@ -29,8 +29,7 @@
             window.apmrum.username = octoSyntheticUser;
             window.apmrum.syntheticUserDomain = octoSyntheticUser.split("@").pop();
         }
-        /* Observability v2 — surface workflow_id + request_id as RUM custom
-           dimensions so RUM sessions join backend traces by workflow. */
+        /* Observability v2 — group demo sessions by customer journey workflow. */
         window.apmrum.customDimensions = Object.assign(
             window.apmrum.customDimensions || {},
             {
@@ -56,7 +55,7 @@
         <div class="sidebar-header">
             <img src="/static/img/octo-icon.png" alt="OCTO" class="sidebar-logo">
             <div>
-                <p class="eyebrow">Platform application</p>
+                <p class="eyebrow">Demo project</p>
                 <h2>{{ brand_name }}</h2>
                 <div class="sidebar-meta">
                     <span class="version">v{{ app_version }}</span>
@@ -77,7 +76,8 @@
             <li><a href="/shipping" data-journey="nav_shipping" class="{% if nav_key == 'shipping' %}active{% endif %}">Shipping</a></li>
             <li><a href="/analytics" data-journey="nav_analytics" class="{% if nav_key == 'analytics' %}active{% endif %}">Analytics</a></li>
             <li><a href="/integrations" data-journey="nav_integrations" class="{% if nav_key == 'integrations' %}active{% endif %}">Integrations</a></li>
-            <li><a href="/observability" data-journey="nav_observability" class="{% if nav_key == 'observability' %}active{% endif %}">360 Monitoring</a></li>
+            <li><a href="/observability" data-journey="nav_observability" class="{% if nav_key == 'observability' %}active{% endif %}">OCI Observability</a></li>
+            <li><a href="/captured-data" data-journey="nav_captured_data" class="{% if nav_key == 'captured-data' %}active{% endif %}">Captured Data</a></li>
             <li class="separator"></li>
             <li><a href="/reports" data-journey="nav_reports" class="{% if nav_key == 'reports' %}active{% endif %}">Reports</a></li>
             <li><a href="/files" data-journey="nav_files" class="{% if nav_key == 'files' %}active{% endif %}">Files</a></li>
@@ -86,10 +86,8 @@
         </ul>
         <div class="sidebar-footer">
             <div class="sidebar-links">
-                {% if apm_console_url %}<a href="{{ apm_console_url }}" target="_blank" rel="noreferrer">APM</a>{% endif %}
-                {% if opsi_console_url %}<a href="{{ opsi_console_url }}" target="_blank" rel="noreferrer">OPSI</a>{% endif %}
-                {% if db_management_console_url %}<a href="{{ db_management_console_url }}" target="_blank" rel="noreferrer">DBMan</a>{% endif %}
-                {% if log_analytics_console_url %}<a href="{{ log_analytics_console_url }}" target="_blank" rel="noreferrer">Logs</a>{% endif %}
+                {% if apm_console_url %}<a href="{{ apm_console_url }}" target="_blank" rel="noreferrer">OCI Observability</a>{% endif %}
+                {% if log_analytics_console_url %}<a href="{{ log_analytics_console_url }}" target="_blank" rel="noreferrer">Experience Events</a>{% endif %}
             </div>
             <div class="sidebar-user-area">
                 <span id="user-info">Not logged in</span>
@@ -101,7 +99,7 @@
     <main class="content">
         <header class="content-header">
             <div>
-                <p class="eyebrow">Telemetry-correlated CRM cockpit</p>
+                <p class="eyebrow">OCI Observability demo project</p>
                 <h1>{{ title }}</h1>
             </div>
             <div class="header-actions">
@@ -125,8 +123,7 @@
         };
         window.OCTO_RUM_CONTEXT = {
             appName: {{ app_name | tojson }},
-            adminLabEnabled: true,
-            atpConnectionName: {{ atp_connection_name | tojson }}
+            adminLabEnabled: true
         };
     </script>
     <script src="/static/js/app.js"></script>

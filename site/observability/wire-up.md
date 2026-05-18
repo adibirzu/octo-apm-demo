@@ -10,10 +10,10 @@ does `<signal>` from `<service>` land?"
 |---|---|---|---|
 | Traces | shop, crm, traffic-generator, load-control, async-worker, remediator, browser-runner (via backend) | OTLP/HTTP → `gateway.octo-otel.svc.cluster.local:4318` | OCI APM Domain |
 | RUM events | shop browser SDK, crm browser SDK | direct beacon to `OCI_APM_RUM_ENDPOINT` | OCI APM RUM |
-| Application logs (JSON) | shop, crm | `oci.loggingingestion` SDK → `OCI_LOG_ID` | OCI Logging → Service Connector → OCI Log Analytics source `octo-shop-app-json` |
+| Application logs (JSON) | shop, crm | `oci.loggingingestion` SDK → `OCI_LOG_ID`; OKE stdout via ONM annotations | OCI Logging → Service Connector → Log Analytics as `OCI Unified Schema Logs`; OKE annotated stdout → `SOC Application Logs` |
 | Edge access logs | octo-edge-gateway (OCI API GW) | Gateway logging policy | OCI Logging → Log Analytics source `octo-edge-gateway-json` |
 | WAF events | OCI WAF attached to LB | WAF logging | OCI Logging log group `octo-waf-logs` |
-| Custom metrics | shop (shop.checkout.count, shop.http.errors_5xx, …), load-control run counts | OCI Monitoring SDK | OCI Monitoring namespace `octo_drone_shop` |
+| Custom metrics | shop and crm app health, request/error counts, checkout/order counts, auth outcomes, security events, dashboard loads, DB latency, inventory health | OCI Monitoring SDK | OCI Monitoring namespace `octo_apm_demo` |
 | Stream metrics (queue depth, cache hit ratio) | async-worker, cache client | OTLP metrics → otel-gateway | OCI Monitoring (once exporter GA; stdout debug today) |
 | Stack Monitoring | ATP Monitored Resource | OCI management-agent | OCI Stack Monitoring |
 | Host metrics (VM) | octo-vm-lab + any Compute targets | OCI Management Agent | OCI Monitoring / Stack Monitoring |
@@ -34,7 +34,7 @@ Each service's k8s manifest references these Secrets; populate once via
 | `octo-apm` | `rum-web-application-ocid` | shop (OCI_APM_WEB_APPLICATION) |
 | `octo-logging` | `log-id` | shop, crm |
 | `octo-logging` | `log-group-id` | shop, crm |
-| `octo-oci-config` | `compartment-id` | shop (GenAI + Monitoring) |
+| `octo-oci-config` | `compartment-id` | shop, crm (GenAI + Monitoring) |
 | `octo-events` | `topic-url` | load-control, remediator, object-pipeline |
 
 ## Correlation contract — what appears on every signal
@@ -61,7 +61,7 @@ If any hop is empty, check:
 | Empty hop | First-look |
 |---|---|
 | No APM trace | otel-gateway pod logs; OTel SDK `OTEL_EXPORTER_OTLP_ENDPOINT` points at the gateway, not OCI directly |
-| APM trace but no LA row | Service Connector `la-pipeline-octo-shop-app` running; `oci log-analytics source get --namespace-name … --source-name octo-shop-app-json` shows the source |
+| APM trace but no LA row | For OCI Logging connector rows, run `connector-live-log-coverage.sql` and check `OCI Unified Schema Logs`. For OKE stdout rows, run `oke-kubernetes-trace-correlation.sql` and verify `Kubernetes Cluster Name = octo-apm-demo-oke`. |
 | LA row but no `oracleApmTraceId` | `shop/server/observability/correlation.py` enrichment active; pod restarted after env change |
 | RUM session missing | `OCI_APM_WEB_APPLICATION` matches the web-app OCID; browser dev tools show beacon POSTs |
 
@@ -83,7 +83,7 @@ remediator matches playbook → auto-apply (LOW) or propose (MEDIUM/HIGH)
 Alarms we recommend enabling (most defined in
 `deploy/terraform/modules/api_gateway/alarms.tf` + `deploy/oci/ensure_monitoring.sh`):
 
-- `shop.http.errors_5xx` > 0 per minute (WARNING)
+- `app.errors.rate` > 0 per minute for `serviceName = "octo-drone-shop"` (WARNING)
 - `api_gateway 5xx` burst > 50 in 5m (CRITICAL) — KG-029
 - ATP CPU > 80% sustained (CRITICAL)
 - Container pod `OOMKilled` > 0 (WARNING)

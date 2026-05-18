@@ -20,16 +20,17 @@ https://admin.example.test/settings
 API trigger:
 
 ```bash
-set -a; . credentials/<profile>/app-secrets.env; set +a
+OCTO_OPERATOR_ENV=<IGNORED_OPERATOR_ENV_FILE>
+set -a; . "$OCTO_OPERATOR_ENV"; set +a
 
-curl -k -fsS --resolve admin.example.test:443:203.0.113.10 \
+curl -k -fsS --resolve admin.example.test:443:<PUBLIC_LB_IP> \
   -H 'Content-Type: application/json' \
   -H "X-Internal-Service-Key: ${INTERNAL_SERVICE_KEY}" \
   -X POST https://admin.example.test/api/simulate/drone-shop/demo-storyboard \
   -d '{
     "persona": "Field operations buyer",
     "quantity": 2,
-    "source_ip": "198.51.100.42",
+    "source_ip": "<BUYER_SOURCE_IP>",
     "card": {"brand": "visa", "number": "4242424242424242"}
   }'
 ```
@@ -67,9 +68,10 @@ creates or refreshes fictional Apex AD-style users, deletes older
 synthetic user rows, and places a small batch of drone orders:
 
 ```bash
-set -a; . credentials/<profile>/app-secrets.env; set +a
+OCTO_OPERATOR_ENV=<IGNORED_OPERATOR_ENV_FILE>
+set -a; . "$OCTO_OPERATOR_ENV"; set +a
 
-curl -k -fsS --resolve shop.example.test:443:203.0.113.10 \
+curl -k -fsS --resolve shop.example.test:443:<PUBLIC_LB_IP> \
   -H 'Content-Type: application/json' \
   -H "X-Internal-Service-Key: ${INTERNAL_SERVICE_KEY}" \
   -X POST https://shop.example.test/api/synthetic/users/run \
@@ -108,14 +110,15 @@ Default fictional users:
 API trigger:
 
 ```bash
-set -a; . credentials/<profile>/app-secrets.env; set +a
+OCTO_OPERATOR_ENV=<IGNORED_OPERATOR_ENV_FILE>
+set -a; . "$OCTO_OPERATOR_ENV"; set +a
 
-curl -k -fsS --resolve admin.example.test:443:203.0.113.10 \
+curl -k -fsS --resolve admin.example.test:443:<PUBLIC_LB_IP> \
   -H 'Content-Type: application/json' \
   -H "X-Internal-Service-Key: ${INTERNAL_SERVICE_KEY}" \
   -X POST https://admin.example.test/api/simulate/drone-shop/attack-lab \
   -d '{
-    "source_ip": "203.0.113.77",
+    "source_ip": "<ATTACK_SOURCE_IP>",
     "external_status_code": 503,
     "user_agent": "curl/8.4.0 octo-attack-lab"
   }'
@@ -132,8 +135,8 @@ The response returns `attack_id` and `trace_id`. Use both:
 
 | stage | tactic | technique | hop evidence |
 | --- | --- | --- | --- |
-| API Gateway edge control | Initial Access | `T1190` Exploit Public-Facing Application | `203.0.113.77` to public OCI API Gateway route `/api/shop/attack/simulate`, preserving trace context before the shop backend |
-| initial access | Initial Access | `T1190` Exploit Public-Facing Application | `203.0.113.77` to `shop.example.test:443` through LB `203.0.113.10` |
+| API Gateway edge control | Initial Access | `T1190` Exploit Public-Facing Application | `<ATTACK_SOURCE_IP>` to public OCI API Gateway route `/api/shop/attack/simulate`, preserving trace context before the shop backend |
+| initial access | Initial Access | `T1190` Exploit Public-Facing Application | `<ATTACK_SOURCE_IP>` to `shop.example.test:443` through the public load balancer |
 | execution | Execution | `T1059` Command and Scripting Interpreter | app host `${SHOP_PRIVATE_IP}:${SHOP_APP_PORT}`, LOTL binary `bash` |
 | discovery | Discovery | `T1046` Network Service Discovery | shop to Java app-server sidecar path on `${JAVA_APM_PRIVATE_IP}:${JAVA_APM_PORT}` |
 | defense evasion | Defense Evasion | `T1218` System Binary Proxy Execution | LOTL binary `openssl` |

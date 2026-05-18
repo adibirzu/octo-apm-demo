@@ -65,6 +65,8 @@ services:
       # agent is OpenTelemetry instrumentation exporting to OCI APM.
       OCI_AUTH_MODE: instance_principal
       OCI_COMPARTMENT_ID: ${OCI_COMPARTMENT_ID}
+      OCI_REGION: ${OCI_REGION:-}
+      OCI_MONITORING_NAMESPACE: ${OCI_MONITORING_NAMESPACE:-octo_apm_demo}
       OCI_APM_ENDPOINT: ${OCI_APM_ENDPOINT}
       OCI_APM_PRIVATE_DATAKEY: ${OCI_APM_PRIVATE_DATAKEY}
       OCI_APM_PRIVATE_DATAKEY_FILE: ${OCI_APM_PRIVATE_DATAKEY_FILE:-}

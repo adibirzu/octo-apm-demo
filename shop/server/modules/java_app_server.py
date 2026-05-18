@@ -18,6 +18,7 @@ from server.observability import business_metrics
 from server.observability.correlation import apply_span_attributes, current_trace_context
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
+from server.security.request_id import current_request_id
 
 
 def _email_domain(email: str) -> str:
@@ -27,7 +28,44 @@ def _email_domain(email: str) -> str:
     return "".join(ch for ch in domain if ch.isalnum() or ch in "._-")[:120] or "unknown"
 
 
-def _outbound_headers() -> dict[str, str]:
+def _workflow_defaults(path: str) -> tuple[str, str]:
+    if path == "/api/java-apm/payment/verify":
+        return "checkout", "payment-antifraud-verification"
+    if path == "/api/java-apm/payment/authorize":
+        return "checkout", "payment-processor-authorization"
+    if path == "/api/java-apm/quote":
+        return "checkout", "quote"
+    if path.startswith("/api/java-apm/simulate/"):
+        return "simulation", path.rsplit("/", 1)[-1] or "java-simulation"
+    return "", ""
+
+
+def _safe_header_value(value: object, limit: int = 128) -> str:
+    raw = str(value or "").strip()
+    safe = "".join(ch for ch in raw if ch.isalnum() or ch in "._:@+,-")
+    return safe[:limit]
+
+
+def _outbound_workflow_context(path: str, payload: dict[str, Any] | None = None) -> dict[str, str]:
+    payload = payload or {}
+    default_workflow, default_step = _workflow_defaults(path)
+    workflow_id = _safe_header_value(payload.get("workflow_id") or default_workflow, 80)
+    workflow_step = _safe_header_value(payload.get("workflow_step") or default_step, 80)
+    request_id = _safe_header_value(payload.get("request_id") or current_request_id() or "", 128)
+    run_id = _safe_header_value(payload.get("run_id") or "", 128)
+    return {
+        key: value
+        for key, value in {
+            "request_id": request_id,
+            "workflow.id": workflow_id,
+            "workflow.step": workflow_step,
+            "run_id": run_id,
+        }.items()
+        if value
+    }
+
+
+def _outbound_headers(path: str = "", payload: dict[str, Any] | None = None) -> dict[str, str]:
     trace_ctx = current_trace_context()
     headers = {
         "Accept": "application/json",
@@ -36,6 +74,21 @@ def _outbound_headers() -> dict[str, str]:
     }
     if trace_ctx["traceparent"]:
         headers["traceparent"] = trace_ctx["traceparent"]
+    if trace_ctx["trace_id"] and trace_ctx["span_id"]:
+        headers["X-B3-TraceId"] = trace_ctx["trace_id"]
+        headers["X-B3-SpanId"] = trace_ctx["span_id"]
+        headers["X-B3-Sampled"] = "1"
+        headers["b3"] = f"{trace_ctx['trace_id']}-{trace_ctx['span_id']}-1"
+    outbound_context = _outbound_workflow_context(path, payload)
+    header_map = {
+        "request_id": "X-Request-Id",
+        "workflow.id": "X-Workflow-Id",
+        "workflow.step": "X-Workflow-Step",
+        "run_id": "X-Run-Id",
+    }
+    for field_name, header_name in header_map.items():
+        if outbound_context.get(field_name):
+            headers[header_name] = outbound_context[field_name]
     return headers
 
 
@@ -54,6 +107,21 @@ def _payload_correlation_fields(payload: dict[str, Any] | None) -> dict[str, Any
         "api_gateway_route": "oci.api_gateway.route",
         "api_gateway_action": "oci.api_gateway.action",
         "api_gateway_policy_decision": "oci.api_gateway.policy.decision",
+        "order_id": "orders.order_id",
+        "amount_minor_units": "payment.amount_minor_units",
+        "currency": "payment.currency",
+        "payment_method": "payment.method",
+        "payment_network": "payment.network",
+        "payment_gateway_request_id": "payment.gateway.request_id",
+        "gateway_provider": "payment.gateway.provider",
+        "wallet_type": "payment.wallet_type",
+        "wallet_provider": "payment.wallet.provider",
+        "wallet_tokenization_type": "payment.wallet.tokenization_type",
+        "wallet_token_hash": "payment.wallet.token_hash",
+        "card_brand": "payment.card_brand",
+        "card_last4": "payment.card_last4",
+        "verification_decision": "payment.verification.decision",
+        "context_risk_score": "payment.risk_score",
     }
     fields: dict[str, Any] = {}
     for source_key, target_key in mapping.items():
@@ -64,12 +132,76 @@ def _payload_correlation_fields(payload: dict[str, Any] | None) -> dict[str, Any
     return fields
 
 
+def _java_component_fields() -> dict[str, str]:
+    service_name = cfg.java_apm_service_name or "octo-java-app-server"
+    return {
+        "peer.service": service_name,
+        "java_apm.service.name": service_name,
+        "payment.processor.name": service_name,
+    }
+
+
+def _safe_payment_text(value: object, limit: int = 120) -> str:
+    raw = str(value or "").strip()
+    safe = "".join(ch for ch in raw if ch.isalnum() or ch in " ._:@+-,")
+    return safe[:limit]
+
+
+def _payment_rail_payload(
+    *,
+    payment_method: str = "",
+    payment_network: str = "",
+    payment_gateway_request_id: str = "",
+    gateway_provider: str = "",
+    wallet_type: str = "",
+    wallet_provider: str = "",
+    wallet_tokenization_type: str = "",
+    wallet_token_hash: str = "",
+    card_brand: str = "",
+    card_last4: str = "",
+    card_fingerprint: str = "",
+    card_exp_month: int | None = None,
+    card_exp_year: int | None = None,
+    billing_postal_code: str = "",
+    card_cvv_present: bool | None = None,
+    verification_decision: str = "",
+    risk_reasons: str = "",
+) -> dict[str, Any]:
+    fields: dict[str, Any] = {
+        "payment_method": _safe_payment_text(payment_method, 50),
+        "payment_network": _safe_payment_text(payment_network, 40).lower(),
+        "payment_gateway_request_id": _safe_payment_text(payment_gateway_request_id, 128),
+        "gateway_provider": _safe_payment_text(gateway_provider, 100),
+        "wallet_type": _safe_payment_text(wallet_type, 40),
+        "wallet_provider": _safe_payment_text(wallet_provider, 40),
+        "wallet_tokenization_type": _safe_payment_text(wallet_tokenization_type, 40),
+        "wallet_token_hash": _safe_payment_text(wallet_token_hash, 80),
+        "card_brand": _safe_payment_text(card_brand, 40).lower(),
+        "card_last4": _safe_payment_text(card_last4, 4),
+        "card_fingerprint": _safe_payment_text(card_fingerprint, 80),
+        "billing_postal_code": _safe_payment_text(billing_postal_code, 24),
+        "verification_decision": _safe_payment_text(verification_decision, 40),
+        "risk_reasons": _safe_payment_text(risk_reasons, 500),
+    }
+    if card_exp_month is not None:
+        fields["card_exp_month"] = int(card_exp_month or 0)
+    if card_exp_year is not None:
+        fields["card_exp_year"] = int(card_exp_year or 0)
+    if card_cvv_present is not None:
+        fields["card_cvv_present"] = bool(card_cvv_present)
+    return {key: value for key, value in fields.items() if value != ""}
+
+
 class JavaAppServerClient:
     """Small async HTTP client with safe disabled/unreachable fallbacks."""
 
     def __init__(self, base_url: str | None = None, *, timeout: float | None = None) -> None:
         self.base_url = (base_url if base_url is not None else cfg.java_apm_service_url).rstrip("/")
         self.timeout = timeout if timeout is not None else cfg.java_apm_timeout_seconds
+
+    @property
+    def service_name(self) -> str:
+        return cfg.java_apm_service_name or "octo-java-app-server"
 
     @property
     def enabled(self) -> bool:
@@ -104,6 +236,23 @@ class JavaAppServerClient:
         customer_email: str,
         idempotency_key_hash: str = "",
         simulation_mode: str = "",
+        payment_method: str = "",
+        payment_network: str = "",
+        payment_gateway_request_id: str = "",
+        gateway_provider: str = "",
+        wallet_type: str = "",
+        wallet_provider: str = "",
+        wallet_tokenization_type: str = "",
+        wallet_token_hash: str = "",
+        card_brand: str = "",
+        card_last4: str = "",
+        card_fingerprint: str = "",
+        card_exp_month: int | None = None,
+        card_exp_year: int | None = None,
+        billing_postal_code: str = "",
+        card_cvv_present: bool | None = None,
+        verification_decision: str = "",
+        risk_reasons: str = "",
     ) -> dict[str, Any]:
         return await self._request(
             "POST",
@@ -115,6 +264,25 @@ class JavaAppServerClient:
                 "customer_email_domain": _email_domain(customer_email),
                 "idempotency_key_hash": idempotency_key_hash[:64],
                 "simulation_mode": simulation_mode,
+                **_payment_rail_payload(
+                    payment_method=payment_method,
+                    payment_network=payment_network,
+                    payment_gateway_request_id=payment_gateway_request_id,
+                    gateway_provider=gateway_provider,
+                    wallet_type=wallet_type,
+                    wallet_provider=wallet_provider,
+                    wallet_tokenization_type=wallet_tokenization_type,
+                    wallet_token_hash=wallet_token_hash,
+                    card_brand=card_brand,
+                    card_last4=card_last4,
+                    card_fingerprint=card_fingerprint,
+                    card_exp_month=card_exp_month,
+                    card_exp_year=card_exp_year,
+                    billing_postal_code=billing_postal_code,
+                    card_cvv_present=card_cvv_present,
+                    verification_decision=verification_decision,
+                    risk_reasons=risk_reasons,
+                ),
             },
         )
 
@@ -131,6 +299,19 @@ class JavaAppServerClient:
         context_risk_score: int = 0,
         risk_reasons: str = "",
         simulation_mode: str = "",
+        payment_gateway_request_id: str = "",
+        gateway_provider: str = "",
+        wallet_type: str = "",
+        wallet_provider: str = "",
+        wallet_tokenization_type: str = "",
+        wallet_token_hash: str = "",
+        card_brand: str = "",
+        card_last4: str = "",
+        card_fingerprint: str = "",
+        card_exp_month: int | None = None,
+        card_exp_year: int | None = None,
+        billing_postal_code: str = "",
+        card_cvv_present: bool | None = None,
     ) -> dict[str, Any]:
         return await self._request(
             "POST",
@@ -146,6 +327,23 @@ class JavaAppServerClient:
                 "context_risk_score": int(context_risk_score or 0),
                 "risk_reasons": risk_reasons[:500],
                 "simulation_mode": simulation_mode,
+                **_payment_rail_payload(
+                    payment_method=payment_method,
+                    payment_network=payment_network,
+                    payment_gateway_request_id=payment_gateway_request_id,
+                    gateway_provider=gateway_provider,
+                    wallet_type=wallet_type,
+                    wallet_provider=wallet_provider,
+                    wallet_tokenization_type=wallet_tokenization_type,
+                    wallet_token_hash=wallet_token_hash,
+                    card_brand=card_brand,
+                    card_last4=card_last4,
+                    card_fingerprint=card_fingerprint,
+                    card_exp_month=card_exp_month,
+                    card_exp_year=card_exp_year,
+                    billing_postal_code=billing_postal_code,
+                    card_cvv_present=card_cvv_present,
+                ),
             },
         )
 
@@ -165,21 +363,24 @@ class JavaAppServerClient:
         started = time.monotonic()
         with tracer.start_as_current_span(operation) as span:
             correlation_fields = _payload_correlation_fields(payload)
+            outbound_context = _outbound_workflow_context(path, payload)
+            java_component_fields = _java_component_fields()
             apply_span_attributes(
                 span,
                 {
-                    "peer.service": "octo-java-app-server",
                     "component": "http",
                     "http.method": method,
                     "http.url": f"{self.base_url}{path}",
                     "java_apm.enabled": True,
                     "app.module": "shop",
                     "app.logical_endpoint": "java_app_server.sidecar",
+                    **java_component_fields,
+                    **outbound_context,
                     **correlation_fields,
                 },
             )
             try:
-                async with httpx.AsyncClient(timeout=self.timeout, headers=_outbound_headers()) as client:
+                async with httpx.AsyncClient(timeout=self.timeout, headers=_outbound_headers(path, payload)) as client:
                     if method == "GET":
                         response = await client.get(f"{self.base_url}{path}")
                     else:
@@ -201,6 +402,8 @@ class JavaAppServerClient:
                         "java_apm.path": path,
                         "java_apm.status_code": response.status_code,
                         "java_apm.latency_ms": elapsed_ms,
+                        **java_component_fields,
+                        **outbound_context,
                         **correlation_fields,
                     },
                 )
@@ -216,6 +419,8 @@ class JavaAppServerClient:
                         "java_apm.path": path,
                         "java_apm.error_type": type(exc).__name__,
                         "java_apm.latency_ms": elapsed_ms,
+                        **java_component_fields,
+                        **outbound_context,
                         **correlation_fields,
                     },
                 )
@@ -235,7 +440,10 @@ class JavaAppServerClient:
                     **{
                         "java_apm.path": path,
                         "java_apm.status_code": exc.response.status_code,
+                        "java_apm.error_type": type(exc).__name__,
                         "java_apm.latency_ms": elapsed_ms,
+                        **java_component_fields,
+                        **outbound_context,
                         **correlation_fields,
                     },
                 )

@@ -1,7 +1,7 @@
 # Enterprise CRM Portal — production Deployment on OKE.
 #
 # Namespace:        enterprise-crm
-# Public hostname:  crm.${DNS_DOMAIN}  (for DEFAULT/<OCI_PROFILE>: crm.example.test)
+# Public hostname:  admin.${DNS_DOMAIN}
 # Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/enterprise-crm-portal:${IMAGE_TAG}
 
 apiVersion: apps/v1
@@ -14,6 +14,8 @@ metadata:
     app.kubernetes.io/part-of: octo-apm-demo
     app.kubernetes.io/component: crm
 spec:
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 300
   replicas: 2
   strategy:
     type: RollingUpdate
@@ -30,7 +32,17 @@ spec:
         app.kubernetes.io/part-of: octo-apm-demo
       annotations:
         octo.oracle.com/restartedAt: "${IMAGE_TAG}"
+        oracle.com/oci_la_log_source_name: "SOC Application Logs"
+        oracle.com/oci_la_log_set: "octo-apm-demo"
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       imagePullSecrets:
         - name: ocir-pull-secret
       containers:
@@ -40,23 +52,58 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: APP_NAME
               value: "enterprise-crm-portal"
             - name: OTEL_SERVICE_NAME
-              value: "enterprise-crm-portal"
+              value: "enterprise-crm-portal-oke"
             - name: APP_RUNTIME
               value: "oke"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: SERVICE_NAMESPACE
+              value: "octo"
+            - name: SERVICE_INSTANCE_ID
+              value: "$(POD_NAME)"
+            - name: DEMO_STACK_NAME
+              value: "octo-apm-demo"
+            - name: OCI_MONITORING_NAMESPACE
+              value: "octo_apm_demo"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=octo,deployment.environment=production,cloud.provider=oci,oci.demo.stack=octo-apm-demo,k8s.cluster.name=${OKE_CLUSTER_NAME},k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
+            - name: OTEL_TRACES_SAMPLER
+              value: "always_on"
+            - name: OTEL_PYTHON_LOG_CORRELATION
+              value: "true"
+            - name: OTLP_LOG_EXPORT_ENABLED
+              value: "false"
             - name: APP_ENV
               value: "production"
             - name: DNS_DOMAIN
               value: "${DNS_DOMAIN}"
             - name: CRM_BASE_URL
-              value: "https://crm.${DNS_DOMAIN}"
+              value: "https://admin.${DNS_DOMAIN}"
             - name: SERVICE_SHOP_URL
               value: "http://octo-drone-shop.${K8S_NAMESPACE_SHOP}.svc.cluster.local:8080"
             - name: OCI_AUTH_MODE
               value: "instance_principal"
+            - name: OCI_REGION
+              value: "${OCI_REGION}"
             # ── Cross-service
             - name: APP_SECRET_KEY
               valueFrom:
@@ -135,6 +182,12 @@ spec:
                   name: octo-logging
                   key: log-group-id
                   optional: true
+            # ── Compartment for OCI Monitoring custom MELTS metrics
+            - name: OCI_COMPARTMENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: octo-oci-config
+                  key: compartment-id
             # ── IDCS SSO
             - name: IDCS_DOMAIN_URL
               valueFrom:
@@ -184,8 +237,8 @@ spec:
               cpu: "250m"
               memory: "512Mi"
             limits:
-              cpu: "2"
-              memory: "2Gi"
+              cpu: "1"
+              memory: "1536Mi"
       volumes:
         - name: wallet
           secret:
@@ -215,24 +268,15 @@ kind: Service
 metadata:
   name: enterprise-crm-portal-lb
   namespace: ${K8S_NAMESPACE_CRM}
-  annotations:
-    service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
-    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
-    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "100"
-    service.beta.kubernetes.io/oci-load-balancer-subnet1: "${OCI_LB_SUBNET_OCID}"
-    service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode: "None"
-    oci.oraclecloud.com/waf-policy-ocid: "${WAF_POLICY_CRM_OCID}"
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: enterprise-crm-portal
   ports:
-    - name: https
-      port: 443
-      targetPort: http
-    - name: http
+    - name: edge-http
       port: 80
       targetPort: http
+      nodePort: 30081
 
 ---
 apiVersion: autoscaling/v2
@@ -246,7 +290,7 @@ spec:
     kind: Deployment
     name: enterprise-crm-portal
   minReplicas: 2
-  maxReplicas: 6
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:

@@ -1,0 +1,20 @@
+[Unit]
+Description=Cilium Tetragon eBPF Security Observability
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/octo/deploy/compute
+ExecStartPre=-/usr/bin/podman rm -f octo-tetragon
+ExecStartPre=/usr/bin/mkdir -p /var/log/tetragon
+ExecStartPre=/usr/bin/chmod 0755 /var/log/tetragon
+ExecStart=/usr/bin/podman run --name octo-tetragon --rm --network host --pid host --cgroupns host --privileged --volume /sys/kernel/btf/vmlinux:/var/lib/tetragon/btf:ro --volume /var/log/tetragon:/var/log/tetragon:rw quay.io/cilium/tetragon:v1.12.0 --export-filename /var/log/tetragon/tetragon.log
+ExecStop=/usr/bin/podman stop -t 30 octo-tetragon
+Restart=always
+RestartSec=10
+TimeoutStartSec=0
+KillMode=none
+
+[Install]
+WantedBy=multi-user.target

@@ -4,8 +4,8 @@
 # provision ATP, APM, DNS zones, or OCIR repositories — those are the
 # responsibility of deploy/bootstrap.sh or the operator's own pipeline.
 #
-# The chart exposes two components (shop, crm) plus a shared secret
-# skeleton. By default it DOES NOT create secrets — it references existing
+# The chart exposes Shop, CRM, Java payment gateway, Workflow Gateway, plus a
+# shared secret skeleton. By default it DOES NOT create secrets — it references existing
 # secrets named `octo-atp`, `octo-auth`, `octo-apm`, `octo-logging`,
 # `octo-oci-config`, `octo-sso`, `octo-atp-wallet` that bootstrap.sh seeds.
 # Flip `secrets.create: true` to render them from values (use --set-file
@@ -15,6 +15,12 @@ global:
   # Public base domain for shop/crm FQDNs. Shop is served at
   # "<shop.subdomain>.<dnsDomain>" and CRM at "<crm.subdomain>.<dnsDomain>".
   dnsDomain: example.com
+  ociRegion: eu-frankfurt-1
+  serviceNamespace: octo
+  stackName: octo-apm-demo
+  monitoringNamespace: octo_apm_demo
+  okeClusterName: octo-apm-demo-oke
+  environment: production
 
   # OCIR image coordinates. Both components pull from the same registry
   # namespace — override per-component via shop.image.* / crm.image.* if
@@ -73,6 +79,13 @@ secrets:
       compartmentId: ""
       genaiEndpoint: ""
       genaiModelId: ""
+      selectaiProfileName: ""
+    llmetry:
+      langfuseEnabled: ""
+      langfuseHost: ""
+      langfusePublicKey: ""
+      langfuseSecretKey: ""
+      langfuseOtelExportEnabled: ""
     sso:
       idcsDomainUrl: ""
       idcsClientId: ""
@@ -118,6 +131,49 @@ shop:
     port: 8080
   env:
     extra: {}
+
+# ── Java payment gateway / app-server simulator ────────────────────────
+javaGateway:
+  enabled: true
+  namespace: ""
+  serviceName: octo-java-app-server-oke
+  replicas: 2
+  image:
+    repository: octo-apm-java-demo
+    region: ""
+    tenancy: ""
+    tag: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 384Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+  pdb:
+    enabled: true
+    minAvailable: 1
+
+# ── Workflow Gateway / Select AI proxy ────────────────────────────────
+workflowGateway:
+  enabled: true
+  namespace: ""
+  serviceName: octo-workflow-gateway-oke
+  replicas: 1
+  image:
+    repository: octo-workflow-gateway
+    region: ""
+    tenancy: ""
+    tag: ""
+  pollSeconds: 90
+  selectaiTimeoutSeconds: 30
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 # ── CRM ─────────────────────────────────────────────────────────────────
 crm:
@@ -176,3 +232,9 @@ ingress:
 # caller already manages namespaces out-of-band (bootstrap.sh, GitOps).
 namespaces:
   create: true
+
+# ── Tetragon (eBPF) ─────────────────────────────────────────────────────
+# Deploys Cilium Tetragon as a privileged DaemonSet to emit eBPF kernel
+# telemetry directly into /var/log/tetragon for the Oracle Cloud Agent to pick up.
+tetragon:
+  enabled: true

@@ -22,9 +22,10 @@ from server.bootstrap import bootstrap_database
 from server.config import cfg
 from server.database import engine, get_db
 from server.db_compat import HEALTH_CHECK_SQL
-from server.observability.otel_setup import init_otel, get_tracer
+from server.observability.otel_setup import init_otel, get_tracer, instrument_fastapi_app
 from server.observability.logging_sdk import push_log
 from server.observability.metrics import init_metrics, runtime_metrics
+from server.observability.oci_monitoring import start_monitoring, stop_monitoring
 from server.middleware.tracing import TracingMiddleware
 from server.middleware.metrics_mw import MetricsMiddleware
 from server.middleware.chaos import ChaosMiddleware
@@ -82,6 +83,7 @@ async def lifespan(app: FastAPI):
     for warning in cfg.warn_deprecations():
         logger.warning(warning)
     runtime_metrics.setup()
+    start_monitoring()
     await bootstrap_database()
     sync_task = None
     if cfg.orders_sync_enabled:
@@ -98,6 +100,7 @@ async def lifespan(app: FastAPI):
         sync_task.cancel()
         with suppress(asyncio.CancelledError):
             await sync_task
+    stop_monitoring()
     push_log("INFO", "Enterprise CRM Portal shutting down")
 
 
@@ -118,9 +121,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Instrument FastAPI BEFORE adding custom middleware (must happen before startup)
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-FastAPIInstrumentor.instrument_app(app)
+# Instrument FastAPI BEFORE adding custom middleware (must happen before startup).
+instrument_fastapi_app(app)
 
 # ── Middleware (order matters — outermost first) ─────────────────
 if cfg.cors_allowed_origins:
@@ -259,7 +261,7 @@ async def list_modules():
             {"name": "integrations", "label": "Integrations", "endpoints": 6,
              "related_to": ["customers", "orders", "drone-shop-portal"],
              "cross_service": True},
-            {"name": "observability", "label": "360 Monitoring", "endpoints": 5,
+            {"name": "observability", "label": "OCI Observability Demo", "endpoints": 5,
              "related_to": ["integrations", "dashboard", "analytics"],
              "cross_service": True},
         ],
@@ -412,7 +414,12 @@ async def integrations_page(request: Request):
 
 @app.get("/observability", response_class=HTMLResponse)
 async def observability_page(request: Request):
-    return _render_page(request, "observability", "360 Monitoring", nav_key="observability")
+    return _render_page(request, "observability", "OCI Observability Demo", nav_key="observability")
+
+
+@app.get("/captured-data", response_class=HTMLResponse)
+async def captured_data_page(request: Request):
+    return _render_page(request, "captured_data", "Captured Data", nav_key="captured-data")
 
 
 @app.get("/login", response_class=HTMLResponse)

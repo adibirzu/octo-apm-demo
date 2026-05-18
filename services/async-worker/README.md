@@ -48,6 +48,9 @@ created_at         ISO-8601 UTC
 `delivery_attempt` increments on each retry. Workers read
 `traceparent` from `trace_id`+`span_id` to propagate the trace into
 their handler spans, so the whole async hop joins one trace in APM.
+The worker process also creates a root `script.async_worker.run` span and
+auto-instruments Redis and HTTPX when `OCTO_WORKER_OTEL_EXPORTER_OTLP_ENDPOINT`
+or `OCI_APM_ENDPOINT` is configured.
 
 ## Retry + DLQ
 

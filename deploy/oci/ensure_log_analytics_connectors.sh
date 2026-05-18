@@ -53,7 +53,7 @@ esac
 DRY_RUN="${DRY_RUN:-true}"
 DEPLOYMENT_PREFIX="${DEPLOYMENT_PREFIX:-octo-demo}"
 CONNECTOR_NAME="${CONNECTOR_NAME:-${DEPLOYMENT_PREFIX}-la-observability}"
-LOG_DISPLAY_NAMES="${LOG_DISPLAY_NAMES:-octo-app,${DEPLOYMENT_PREFIX}-app-stdout,${DEPLOYMENT_PREFIX}-os,octo-security,octo-chaos-audit,${DEPLOYMENT_PREFIX}-waf,${DEPLOYMENT_PREFIX}-cloudguard-raw,${DEPLOYMENT_PREFIX}-cloudguard-query-results}"
+LOG_DISPLAY_NAMES="${LOG_DISPLAY_NAMES:-octo-app,${DEPLOYMENT_PREFIX}-app-stdout,${DEPLOYMENT_PREFIX}-os,${DEPLOYMENT_PREFIX}-os-syslog,${DEPLOYMENT_PREFIX}-os-audit,octo-security,octo-chaos-audit,${DEPLOYMENT_PREFIX}-waf,${DEPLOYMENT_PREFIX}-cloudguard-raw,${DEPLOYMENT_PREFIX}-cloudguard-query-results}"
 
 if ! command -v oci >/dev/null 2>&1; then
     echo "[la-connector] OCI CLI is required" >&2

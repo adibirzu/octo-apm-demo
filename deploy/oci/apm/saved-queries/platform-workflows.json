@@ -1,0 +1,25 @@
+{
+  "name": "octo-apm-platform-workflows",
+  "displayName": "OCTO APM - platform workflows",
+  "description": "Trace Explorer query for workflow gateway, load profiles, browser runner, async worker, cache, object pipeline, edge fuzz, and remediator traces.",
+  "queryText": "show (traces) TraceId, ServiceName as Service, OperationName as Operation, TraceDuration as Duration, ErrorCount as \"Span Errors\" where ServiceName in ('octo-workflow-gateway','octo-workflow-gateway-oke','octo-load-control','octo-browser-runner','octo-async-worker','octo-cache','octo-object-pipeline','octo-remediator','octo-edge-fuzz')",
+  "scope": {
+    "type": "traces",
+    "defaultLookback": "l24h",
+    "services": ["octo-workflow-gateway", "octo-workflow-gateway-oke", "octo-load-control", "octo-browser-runner", "octo-async-worker", "octo-cache", "octo-object-pipeline", "octo-remediator", "octo-edge-fuzz"]
+  },
+  "parameters": [],
+  "troubleshootingFields": ["TraceId", "ServiceName", "OperationName", "TraceDuration", "ErrorCount", "run_id", "workflow_id"],
+  "logAnalyticsPivots": [
+    {
+      "savedSearch": "service-trace-log-coverage",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    },
+    {
+      "savedSearch": "trace-drilldown",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    }
+  ]
+}

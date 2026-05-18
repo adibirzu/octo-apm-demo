@@ -114,9 +114,10 @@ async def import_report_config(request: Request):
                 source_ip=client_ip, payload=encoded_data[:100])
 
         try:
-            # VULN: Insecure deserialization — pickle.loads on user data
+            # VULN: Insecure deserialization — pickle.loads on user data.
+            # Deliberate demo surface for the attack-lab (Lab 06).
             decoded = base64.b64decode(encoded_data)
-            config = pickle.loads(decoded)  # CRITICAL VULN
+            config = pickle.loads(decoded)  # nosec B301 - intentional demo vuln  # noqa: S301
             return {"status": "imported", "config": str(config)}
         except Exception as e:
             return {"error": f"Import failed: {str(e)}"}
@@ -143,10 +144,11 @@ async def export_report(
                     "Command injection attempt in export format",
                     source_ip=client_ip, payload=format)
 
-        # VULN: Shell command with user input
+        # VULN: Shell command with user input — deliberate command-injection
+        # demo surface for the attack-lab (Lab 06). Do not "fix".
         cmd = f"echo 'Report {report_id}' | head -1"  # simplified; real vuln would use format
         try:
-            output = subprocess.check_output(cmd, shell=True, timeout=5).decode()  # VULN
+            output = subprocess.check_output(cmd, shell=True, timeout=5).decode()  # nosec B602 - intentional demo vuln  # noqa: S602
         except Exception as e:
             output = str(e)
 

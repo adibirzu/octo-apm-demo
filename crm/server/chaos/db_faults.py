@@ -93,11 +93,11 @@ def _inject(conn: Any, cursor: Any, statement: str, parameters: Any, context: An
     faults = set(state.faults)
 
     if "db.slow" in faults:
-        delay = random.uniform(2.0, 5.0)
+        delay = random.uniform(2.0, 5.0)  # noqa: S311
         _emit_log("db.slow", state, {"delay_seconds": round(delay, 3)})
         time.sleep(delay)
 
-    if "db.deadlock" in faults and random.random() < 0.5:
+    if "db.deadlock" in faults and random.random() < 0.5:  # noqa: S311
         _emit_log("db.deadlock", state, {"statement_prefix": statement[:120]})
         # Use a StatementError subclass via SQLAlchemy's DBAPIError so the
         # app's normal error handling surfaces the failure as a 5xx.
@@ -112,7 +112,7 @@ def _inject(conn: Any, cursor: Any, statement: str, parameters: Any, context: An
             orig=_FakeOracleError("ORA-00060: deadlock detected while waiting for resource"),
         )
 
-    if "db.pool_hold" in faults and random.random() < 0.1:
+    if "db.pool_hold" in faults and random.random() < 0.1:  # noqa: S311
         _emit_log("db.pool_hold", state, {"hold_seconds": 30})
         time.sleep(30)
 

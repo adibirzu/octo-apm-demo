@@ -349,11 +349,11 @@ async def generate_demo_orders(payload: DemoOrderRequest, request: Request):
                 products.sort(key=lambda product: float(product.price or 0), reverse=True)
 
             for idx in range(payload.count):
-                customer = customers[idx % len(customers)] if payload.customer_id else random.choice(customers)
-                product = products[0] if payload.high_value else (products[idx % len(products)] if payload.product_id else random.choice(products))
-                quantity = payload.quantity if payload.count == 1 else max(1, payload.quantity + random.randint(0, 2))
+                customer = customers[idx % len(customers)] if payload.customer_id else random.choice(customers)  # noqa: S311
+                product = products[0] if payload.high_value else (products[idx % len(products)] if payload.product_id else random.choice(products))  # noqa: S311
+                quantity = payload.quantity if payload.count == 1 else max(1, payload.quantity + random.randint(0, 2))  # noqa: S311
                 if payload.high_value:
-                    quantity = max(quantity, random.randint(2, 6))
+                    quantity = max(quantity, random.randint(2, 6))  # noqa: S311
 
                 shipping_address = (
                     payload.shipping_address

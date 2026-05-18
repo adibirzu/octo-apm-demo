@@ -206,6 +206,11 @@ def record_order_created(total: float, source: str = "enterprise-crm"):
     _ensure()
     orders_created.add(1, {"source": source})
     order_value.record(total, {"source": source})
+    try:
+        from server.observability.oci_monitoring import increment_orders
+        increment_orders()
+    except Exception:  # noqa: S110
+        pass
 
 
 def record_invoice_paid(invoice_id: int):
@@ -224,12 +229,22 @@ def record_login_success(method: str = "password", role: str = "user"):
     _ensure()
     auth_login.add(1, {"method": method, "role": role})
     active_sessions.add(1, {"method": method})
+    try:
+        from server.observability.oci_monitoring import increment_auth_success
+        increment_auth_success()
+    except Exception:  # noqa: S110
+        pass
 
 
 def record_login_failure(reason: str = "invalid_password"):
     """Labels: reason (user_not_found | invalid_password)."""
     _ensure()
     auth_login_failed.add(1, {"reason": reason})
+    try:
+        from server.observability.oci_monitoring import increment_auth_failure
+        increment_auth_failure()
+    except Exception:  # noqa: S110
+        pass
 
 
 def record_logout():
@@ -241,12 +256,22 @@ def record_order_sync(created: int, updated: int, failed: int):
     """Labels: result (success | partial_failure)."""
     _ensure()
     order_sync_total.add(1, {"result": "success" if failed == 0 else "partial_failure"})
+    try:
+        from server.observability.oci_monitoring import increment_order_sync
+        increment_order_sync()
+    except Exception:  # noqa: S110
+        pass
 
 
 def record_security_event(vuln_type: str, severity: str):
     """Labels: type (sqli | xss_reflected | ...), severity (low | medium | high | critical)."""
     _ensure()
     security_events.add(1, {"type": vuln_type, "severity": severity})
+    try:
+        from server.observability.oci_monitoring import increment_security_events
+        increment_security_events()
+    except Exception:  # noqa: S110
+        pass
 
 
 def record_campaign_created(campaign_type: str = "email"):
@@ -331,3 +356,8 @@ def record_report_executed():
 def record_dashboard_load():
     _ensure()
     dashboard_loads.add(1)
+    try:
+        from server.observability.oci_monitoring import increment_dashboard_loads
+        increment_dashboard_loads()
+    except Exception:  # noqa: S110
+        pass

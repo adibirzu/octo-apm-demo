@@ -5,6 +5,7 @@
 'DB Elapsed ms' > 250
 | where Time > dateRelative(30m)
 | stats count as Hits,
+        distinctcount('Trace ID') as Traces,
         avg('DB Elapsed ms') as 'Avg ms',
         pct('DB Elapsed ms', 95) as 'p95 ms',
         max('DB Elapsed ms') as 'Max ms'

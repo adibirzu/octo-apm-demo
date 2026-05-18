@@ -14,7 +14,7 @@ from sqlalchemy import text
 from server.config import cfg
 from server.database import engine, get_db, init_tables, seed_data, sync_engine
 from server.observability.correlation import runtime_snapshot
-from server.observability.otel_setup import init_otel, get_tracer
+from server.observability.otel_setup import init_otel, get_tracer, instrument_fastapi_app
 from server.observability.logging_sdk import push_log
 from server.observability.metrics import init_metrics, runtime_metrics
 from server.observability.oci_monitoring import start_monitoring, stop_monitoring, increment_requests, increment_errors
@@ -91,7 +91,7 @@ async def lifespan(app: FastAPI):
 
     start_monitoring()  # OCI Monitoring custom metrics (if OCI_COMPARTMENT_ID is set)
 
-    push_log("INFO", "OCTO-CRM-APM started", **{
+    push_log("INFO", "OCTO Drone Shop started", **{
         "app.name": cfg.app_name,
         "app.runtime": cfg.app_runtime,
         "app.apm_configured": cfg.apm_configured,
@@ -99,19 +99,18 @@ async def lifespan(app: FastAPI):
     })
     yield
     stop_monitoring()
-    push_log("INFO", "OCTO-CRM-APM shutting down")
+    push_log("INFO", "OCTO Drone Shop shutting down")
 
 
 app = FastAPI(
-    title="OCTO-CRM-APM",
-    description="Cloud-native e-commerce with full observability (OCI APM, RUM, Logging, Splunk)",
+    title=cfg.brand_name,
+    description="Demo drone shop with fake data for showcasing OCI observability, APM, RUM, Logging, and Log Analytics.",
     version="1.0.0",
     lifespan=lifespan,
 )
 
-# Instrument FastAPI
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-FastAPIInstrumentor.instrument_app(app)
+# Instrument FastAPI with OCTO-safe header capture and request hooks.
+instrument_fastapi_app(app)
 
 # ── Middleware (outermost first) ──────────────────────────────
 # CORS — never silently fall back to wildcard. An empty list disables CORS
@@ -240,6 +239,7 @@ async def ready():
             "atp_connection_name": cfg.oracle_dsn or None,
             "apm_configured": cfg.apm_configured,
             "rum_configured": cfg.rum_configured,
+            "logging_configured": cfg.logging_configured,
             "java_apm_enabled": cfg.java_apm_enabled,
             "java_apm_service_url": cfg.java_apm_service_url or None,
             "payment_gateway_simulation_enabled": cfg.payment_gateway_simulation_enabled,

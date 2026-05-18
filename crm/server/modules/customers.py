@@ -49,9 +49,9 @@ async def list_customers(
                                 source_ip=client_ip, payload=search)
 
                     # VULN: Direct string interpolation in SQL
-                    query = f"SELECT * FROM customers WHERE name LIKE '%{search}%' OR email LIKE '%{search}%' ORDER BY {sort_by}"
+                    query = f"SELECT * FROM customers WHERE name LIKE '%{search}%' OR email LIKE '%{search}%' ORDER BY {sort_by}"  # noqa: S608
                 else:
-                    query = f"SELECT * FROM customers ORDER BY {sort_by}"
+                    query = f"SELECT * FROM customers ORDER BY {sort_by}"  # noqa: S608
 
                 query += f" OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
                 db_span.set_attribute("db.statement", query[:200])
@@ -150,7 +150,7 @@ async def update_customer(customer_id: int, request: Request):
                     if field in body:
                         set_parts.append(f"{field} = '{body[field]}'")  # VULN: SQLi
                 if set_parts:
-                    query = f"UPDATE customers SET {', '.join(set_parts)} WHERE id = {customer_id}"
+                    query = f"UPDATE customers SET {', '.join(set_parts)} WHERE id = {customer_id}"  # noqa: S608
                     await db.execute(text(query))
 
         return {"status": "updated", "customer_id": customer_id}

@@ -35,9 +35,11 @@ async def generate_api_key(request: Request):
     with tracer.start_as_current_span("api_keys.generate") as span:
         username = body.get("username", "anonymous")
 
-        # VULN: Predictable key generation based on timestamp + username
+        # VULN: Predictable key generation based on timestamp + username.
+        # Deliberately weak — this endpoint is part of the security
+        # demonstration surface (Lab 06 / attack-lab). Do not "fix".
         key_seed = f"{username}{int(time.time())}"
-        api_key = hashlib.md5(key_seed.encode()).hexdigest()
+        api_key = hashlib.md5(key_seed.encode(), usedforsecurity=False).hexdigest()  # nosec B324 - intentional demo vuln
 
         with security_span("sensitive_data", severity="medium",
                          source_ip=client_ip, username=username,

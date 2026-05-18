@@ -56,7 +56,6 @@ below is what makes those pivots clickable.
 - **`assistant.session_id` + `llm.*.hash`** join OCI APM spans, OCI
   Logging rows, ATP `llmetry_events`, and Langfuse observations without
   logging raw prompts or responses.
-
 ## Payment field dictionary
 
 Checkout, payment gateway, processor, CRM order, and payment log records
@@ -71,10 +70,41 @@ MUST include the following fields when a payment attempt exists:
 | `payment.status` | `pending`, `paid`, `declined`, `failed`, or `requires_payment` |
 | `payment.verification.decision` | Antifraud decision such as `approved`, `review`, or `declined` |
 | `payment.risk_score` | Synthetic normalized risk score used for demo filtering |
+| `payment.wallet.token_hash` | Hash of the wallet token payload; never the raw token |
+| `payment.card_brand` / `payment.card_last4` | Safe card identity fields for operator filtering |
+| `payment.card.avs.result` / `payment.card.cvv.result` | Synthetic AVS/CVV authorization evidence |
+| `payment.3ds.program` / `payment.3ds.eci` | Simulated Visa Secure or Mastercard Identity Check evidence |
+| `payment.processor.response_code` | Synthetic processor response code, for example `00`, `05`, or `91` |
+| `payment.network.transaction_id` | Synthetic network transaction id for trace/log joins |
+| `orders.order_id` / `order_id` | Safe order identifier used by Shop, CRM, payment gateway events, invoices, and shipping joins |
+| `source_order_id` | CRM-side upstream order id; preserves retry-safe relation to the Shop order |
 
 Payment metadata MUST be tokenized or synthetic. Raw PAN, CVV, wallet
 tokens, cryptograms, or customer secrets must not be stored in spans, logs,
 CRM rows, or `payment_gateway_events`.
+
+The Java sidecar MUST receive the same token-safe payment correlation
+fields from the Python gateway. It MUST enrich the active Java span with
+the gateway request id, method, network, wallet/card safe fields, processor
+decision, and Java payment span events, while preserving the no-raw-token
+rule above.
+
+## Synthetic browser field dictionary
+
+Recurring APM synthetic runs and workshop browser runs SHOULD include these
+fields when present:
+
+| Field | Purpose |
+|---|---|
+| `synthetic_user_enabled` | Distinguishes synthetic RUM sessions from normal browser sessions |
+| `synthetic_user_domain` | Groups fictional synthetic users without exposing real operator identities |
+| `payment.gateway.request_id` | Joins the synthetic checkout to payment gateway spans, logs, and persisted gateway events |
+| `payment.gateway.verification.decision` | Confirms the antifraud app decision is visible in the buying trace |
+
+OCI APM synthetic script parameters use `OCTO_APM_DEMO_MODE=monitor` for the
+short recurring path and `OCTO_APM_DEMO_MODE=full` for workshop paths. Do not
+commit live URLs, passwords, Vault OCIDs, or internal service keys with those
+parameters.
 
 ## Field semantics
 
@@ -148,8 +178,10 @@ Every JSON log record MUST include:
 }
 ```
 
-Field names are case-sensitive; the Log Analytics parser
-`octo-shop-app-json` is pinned to these exact spellings.
+Field names are case-sensitive. Log Analytics parsers should reuse existing
+namespace fields when the display name matches exactly; otherwise create the
+missing field or update every saved search, widget, dashboard, and detection
+rule to the reused display name in the same change.
 
 ## Propagation headers
 
@@ -185,6 +217,14 @@ assistant path is executed:
 | `llm.prompt.length` / `llm.response.length` | Character counts used for sizing without storing raw text |
 | `gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens` | OCI GenAI token usage when returned by the provider |
 | `langfuse.trace.name` / `langfuse.session.id` | Optional Langfuse OTLP mapping fields |
+| `llmetry.latency_ms` / `llmetry.error_type` | LLMetry health fields used by Log Analytics fast troubleshooting |
+
+In Log Analytics, these raw fields are mapped through the reuse-first namespace
+field map instead of creating new global fields. The main pivots are
+`assistant.session_id` -> `Session ID`, `llm.prompt.hash` -> `Application Hash`,
+`llm.response.hash` -> `Current Hash`, `gen_ai.usage.input_tokens` ->
+`Content Size In`, `gen_ai.usage.output_tokens` -> `Content Size Out`, and
+`langfuse.session.id` -> `Session`.
 
 Raw prompt and response text MUST NOT be emitted to spans or logs unless
 `LLMETRY_CAPTURE_CONTENT=true`, and even then only redacted previews are
@@ -252,15 +292,37 @@ When onboarding a new service to OCI 360:
 - [ ] Appears in the `/api/observability/360` inventory (once that
       endpoint is generalized — see OCI 360 Phase 0 deliverables).
 
-## Where this gets enforced
+## Signal contract enforcement
 
-- `shop/server/observability/correlation.py` and
-  `crm/server/observability/correlation.py` — Python helpers.
-- `shop/services/workflow-gateway/internal/observability/` — Go
-  equivalent.
-- `octo-otel-gateway` (planned) — enriches spans with missing fields
-  as a safety net.
-- `octo-load-control` (planned) — injects `run_id` on every workload
-  profile launch.
-- CI check: `pytest tests/contract/test_correlation_fields.py` (to be
-  added as part of Phase V — Deployment verification).
+The source-level guard for this contract is:
+
+```bash
+python3 -m pytest -q tests/test_signal_contract_inventory.py
+```
+
+That test intentionally reads the application, Java sidecar, support-service,
+APM saved-query, Log Analytics field-map, and Monitoring publisher sources. It
+fails when a required join field or operator drilldown asset is removed without
+an explicit contract update.
+
+Enforcement points:
+
+- `shop/server/observability/logging_sdk.py` and
+  `crm/server/observability/logging_sdk.py` stamp `push_log` payloads with
+  `trace_id`, `span_id`, `oracleApmTraceId`, `oracleApmSpanId`, `request_id`,
+  `workflow_id`, `workflow_step`, and the service resource identity from
+  `service_metadata()`.
+- `services/apm-java-demo/src/main/java/com/octo/apmdemo/App.java` emits stdout
+  JSON for the Java payment gateway. Those events are parser input for Log
+  Analytics and must keep the Java trace ids, service aliases, and
+  `payment_gateway_request_id`.
+- `services/*/src/*/telemetry.py` helpers must create OTel resources with
+  `service.name`, `service.namespace`, `deployment.environment`,
+  `cloud.provider`, and `oci.demo.stack`.
+- `deploy/oci/apm/saved-queries/*.json` keeps Trace Explorer drilldowns aligned
+  with the Log Analytics searches named in `logAnalyticsPivots`.
+- `deploy/oci/log_analytics/fields/octo-apm-field-reuse-map.json` records the
+  reuse-first field names that parsers and saved searches depend on.
+- `shop/server/observability/oci_monitoring.py` and
+  `crm/server/observability/oci_monitoring.py` publish custom metrics in the
+  `octo_apm_demo` namespace through the `telemetry-ingestion` endpoint.

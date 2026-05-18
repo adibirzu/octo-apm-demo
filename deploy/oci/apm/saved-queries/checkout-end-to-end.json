@@ -1,0 +1,25 @@
+{
+  "name": "octo-apm-checkout-end-to-end",
+  "displayName": "OCTO APM - checkout end-to-end",
+  "description": "Trace Explorer query for checkout, payment, Java sidecar, and CRM order-sync traces. Use the TraceId column to pivot into Log Analytics checkout-payment-correlation.",
+  "queryText": "show (traces) TraceStatus as Status, TraceFirstSpanStartTime as \"Start Time\", TraceId, ServiceName as Service, OperationName as Operation, TraceDuration as Duration, span_summary() as Spans, ErrorCount as \"Span Errors\" where ServiceName in ('octo-drone-shop','octo-drone-shop-oke','enterprise-crm-portal','enterprise-crm-portal-oke','octo-java-app-server','octo-java-app-server-oke') and (OperationName like '%orders%' or OperationName like '%checkout%' or OperationName like '%payment%' or OperationName like '%sync%')",
+  "scope": {
+    "type": "traces",
+    "defaultLookback": "l24h",
+    "services": ["octo-drone-shop", "octo-drone-shop-oke", "enterprise-crm-portal", "enterprise-crm-portal-oke", "octo-java-app-server", "octo-java-app-server-oke"]
+  },
+  "parameters": [],
+  "troubleshootingFields": ["TraceId", "ServiceName", "OperationName", "TraceDuration", "ErrorCount", "payment.gateway.request_id", "orders.order_id"],
+  "logAnalyticsPivots": [
+    {
+      "savedSearch": "checkout-payment-correlation",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    },
+    {
+      "savedSearch": "trace-drilldown",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    }
+  ]
+}

@@ -55,6 +55,7 @@ Add to the root `deploy/vm/docker-compose-unified.yml`:
       OCTO_TRAFFIC_CRM_BASE_URL: "https://crm.${DNS_DOMAIN}"
       OCTO_TRAFFIC_TARGET_RPS: "1.0"
       OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_ENDPOINT: "${OCI_APM_ENDPOINT}"
+      OCI_APM_PRIVATE_DATAKEY: "${OCI_APM_PRIVATE_DATAKEY}"
     depends_on:
       shop:
         condition: service_healthy
@@ -74,8 +75,9 @@ Add to the root `deploy/vm/docker-compose-unified.yml`:
 | `OCTO_TRAFFIC_FAILURE_INJECTION_RATE` | `0.05` | Fraction of sessions that force a bad request |
 | `OCTO_TRAFFIC_CHAOS_MODE` | `false` | Additionally toggle CRM chaos admin |
 | `OCTO_TRAFFIC_RUN_DURATION_SECONDS` | `0` | `0` = forever, `>0` = one-shot burst |
-| `OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_ENDPOINT` | `""` | OTLP/HTTP endpoint (empty = no export) |
+| `OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_ENDPOINT` | `""` | OTLP/HTTP endpoint or OCI APM data upload endpoint (empty = no export) |
 | `OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_HEADERS` | `""` | `api-key=...,tenant-id=...` |
+| `OCI_APM_PRIVATE_DATAKEY` | `""` | Optional private data key when exporting directly to OCI APM |
 | `OCTO_TRAFFIC_SEED` | `0` | `0` = non-deterministic; any other = reproducible |
 
 ## Session state machine

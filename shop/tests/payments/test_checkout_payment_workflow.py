@@ -224,3 +224,49 @@ def test_decline_test_card_is_rejected_by_antifraud_verification(monkeypatch) ->
     assert "issuer_decline_test_card" in result["risk_reasons"]
     assert result["payment_gateway"]["verification"]["decision"] == "declined"
     assert result["payment_gateway"]["final_step"]["status"] == "declined"
+
+
+def test_timeout_payment_keeps_distinct_gateway_final_status(monkeypatch) -> None:
+    db = _FakeDb()
+
+    class _Client:
+        async def verify_payment(self, **kwargs):
+            return {"status": "disabled"}
+
+        async def authorize_payment(self, **kwargs):
+            return {"status": "disabled"}
+
+    monkeypatch.setenv("PAYMENT_SIMULATION_MODE", "timeout")
+    monkeypatch.setattr("server.modules.payment_gateway_simulation.JavaAppServerClient", _Client)
+    monkeypatch.setattr(
+        "server.modules.payment_gateway_simulation.business_metrics.record_payment_authorization",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "server.modules.payment_gateway_simulation.cfg.payment_gateway_simulation_enabled",
+        True,
+    )
+
+    result = asyncio.run(
+        authorize_simulated_payment(
+            order_id=89,
+            total=250.0,
+            currency="usd",
+            customer_email="buyer@example.invalid",
+            checkout_idempotency_key="550e8400-e29b-41d4-a716-446655440089",
+            payment_method="credit_card",
+            payment_details={
+                "card": {
+                    "number": "4111111111111111",
+                    "expiry": "12/30",
+                    "cvv": "123",
+                    "billing_postal_code": "10001",
+                }
+            },
+            db=db,
+        )
+    )
+
+    assert result["status"] == "timeout"
+    assert result["payment_gateway"]["final_step"]["status"] == "timeout"
+    assert result["payment_gateway"]["final_step"]["component_label"] == "OCTO Payment Gateway Emulator"

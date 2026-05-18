@@ -14,6 +14,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, status
 
 from .handlers import get_handler
+from .telemetry import instrument_fastapi_app
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,11 @@ logger = logging.getLogger(__name__)
 def create_app(*, fetch_object=None) -> FastAPI:
     fetch_object = fetch_object or _default_fetch
     app = FastAPI(title="octo-object-pipeline", version="1.0.0")
+    instrument_fastapi_app(
+        app,
+        service_name=os.getenv("OTEL_SERVICE_NAME", "octo-object-pipeline"),
+        service_version="1.0.0",
+    )
 
     @app.get("/health")
     async def health() -> dict[str, Any]:

@@ -112,6 +112,7 @@ Add to `deploy/vm/docker-compose-unified.yml`:
       TRAFFIC_GENERATOR_URL: http://traffic-generator:8080
       CRM_CHAOS_ADMIN_URL: http://crm:8080
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-gateway:4318
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=octo,deployment.environment=production
       OCI_EVENTS_TOPIC_URL: "${OCI_EVENTS_TOPIC_URL}"
     volumes:
       - load-control-data:/data

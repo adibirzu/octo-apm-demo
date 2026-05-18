@@ -48,8 +48,8 @@ write_files:
       ENV_FILE="$${ENV_FILE:-/opt/octo/runtime.env}"
       WALLET_DIR="$${WALLET_DIR:-/opt/octo/wallet}"
       WALLET_ZIP="$${WALLET_ZIP:-/opt/octo/wallet.zip}"
-      APP_CONTAINER_UID="$${APP_CONTAINER_UID:-1000}"
-      APP_CONTAINER_GID="$${APP_CONTAINER_GID:-1000}"
+      APP_CONTAINER_UID="$${APP_CONTAINER_UID:-10001}"
+      APP_CONTAINER_GID="$${APP_CONTAINER_GID:-10001}"
 
       if [[ ! -f "$ENV_FILE" ]]; then
         echo "Missing $ENV_FILE" >&2

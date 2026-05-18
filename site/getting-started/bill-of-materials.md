@@ -2,7 +2,7 @@
 
 The authoritative minimal list of tenancy resources, secrets, CLIs, and
 container images required to redeploy the platform from a blank slate.
-Mirrored from [`deploy/BOM.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/BOM.md)
+Mirrored from [`deploy/BOM.md`](%%GITHUB_REPO_URL%%/blob/main/deploy/BOM.md)
 in the repo so both `pre-flight-check.sh` and new operators are reading
 the same source of truth.
 
@@ -30,7 +30,7 @@ the same source of truth.
 | Runtime | OKE cluster, private two-instance Compute stack, or 1 unified VM | Console, Resource Manager, or Terraform |
 | Container images | 2–3 | `deploy/deploy.sh` |
 
-Full row-by-row detail in [`deploy/BOM.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/BOM.md).
+Full row-by-row detail in [`deploy/BOM.md`](%%GITHUB_REPO_URL%%/blob/main/deploy/BOM.md).
 
 ## Smallest viable deploy (workshop/demo)
 
@@ -55,7 +55,7 @@ Full row-by-row detail in [`deploy/BOM.md`](https://github.com/adibirzu/octo-apm
 - Two private Compute instances running Podman by default
 - Private ATP endpoint, APM, Logging, Log Analytics option, and Stack
   Monitoring Standard
-- Resource Manager stack: [`deploy/compute/`](https://github.com/adibirzu/octo-apm-demo/tree/main/deploy/compute)
+- Resource Manager stack: [`deploy/compute/`](%%GITHUB_REPO_URL%%/tree/main/deploy/compute)
 
 ## Variable → script map (excerpt)
 

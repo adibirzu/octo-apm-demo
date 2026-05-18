@@ -9,7 +9,13 @@ def test_shop_observability_capabilities_are_dashboard_safe() -> None:
     payload = _observability_capabilities()
 
     assert payload["endpoints"]["capabilities"] == "/api/observability/capabilities"
+    assert payload["endpoints"]["melts"] == "/api/observability/melts"
     assert payload["endpoints"]["payment_gateway_events"] == "/api/observability/payment-gateway/events"
+    assert payload["melts"]["coverage"]["metrics"]["namespace"] == "octo_apm_demo"
+    assert "app.checkout.count" in payload["melts"]["coverage"]["metrics"]["families"]
+    assert "checkout-payment-correlation" in payload["melts"]["coverage"]["logs"]["saved_searches"]
+    assert "Apple Pay Gateway" in payload["melts"]["coverage"]["traces"]["required_components"]
+    assert "Google Pay Gateway" in payload["melts"]["coverage"]["traces"]["required_components"]
     assert payload["signals"]["logs"]["trace_correlation_fields"] == [
         "trace_id",
         "span_id",

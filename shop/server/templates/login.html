@@ -122,27 +122,27 @@
             <div class="credential-list">
                 <div class="credential-row" data-testid="demo-credential">
                     <strong>shopper</strong>
-                    <code class="credential-secret">OrderDemo2026!</code>
+                    <code>OrderDemo2026!</code>
                     <span>Place checkout orders and review orders tied to this user.</span>
-                    <button type="button" class="btn btn-outline credential-fill" data-username="shopper">Use</button>
+                    <button type="button" class="btn btn-outline credential-fill" data-username="shopper" data-password="OrderDemo2026!">Use</button>
                 </div>
                 <div class="credential-row" data-testid="demo-credential">
                     <strong>manager</strong>
-                    <code class="credential-secret">OrderDemo2026!</code>
+                    <code>OrderDemo2026!</code>
                     <span>Review the full order queue after placing test orders.</span>
-                    <button type="button" class="btn btn-outline credential-fill" data-username="manager">Use</button>
+                    <button type="button" class="btn btn-outline credential-fill" data-username="manager" data-password="OrderDemo2026!">Use</button>
                 </div>
                 <div class="credential-row" data-testid="demo-credential">
                     <strong>analyst</strong>
-                    <code class="credential-secret">OrderDemo2026!</code>
+                    <code>OrderDemo2026!</code>
                     <span>Validate buyer-scoped order visibility without admin access.</span>
-                    <button type="button" class="btn btn-outline credential-fill" data-username="analyst">Use</button>
+                    <button type="button" class="btn btn-outline credential-fill" data-username="analyst" data-password="OrderDemo2026!">Use</button>
                 </div>
                 <div class="credential-row" data-testid="demo-credential">
                     <strong>support</strong>
-                    <code class="credential-secret">OrderDemo2026!</code>
+                    <code>OrderDemo2026!</code>
                     <span>Create an order, then correlate it with support workflows.</span>
-                    <button type="button" class="btn btn-outline credential-fill" data-username="support">Use</button>
+                    <button type="button" class="btn btn-outline credential-fill" data-username="support" data-password="OrderDemo2026!">Use</button>
                 </div>
             </div>
         </div>
@@ -171,34 +171,6 @@ function setMessage(message) {
     result.textContent = message;
 }
 
-function randomHex(length) {
-    const bytes = new Uint8Array(Math.ceil(length / 2));
-    if (window.crypto && window.crypto.getRandomValues) {
-        window.crypto.getRandomValues(bytes);
-    } else {
-        for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
-    }
-    return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('').slice(0, length);
-}
-
-function currentBrowserTraceId() {
-    const existing = localStorage.getItem('octo-browser-trace-id') || '';
-    if (/^[0-9a-f]{32}$/i.test(existing)) return existing;
-    const generated = randomHex(32);
-    localStorage.setItem('octo-browser-trace-id', generated);
-    return generated;
-}
-
-function loginTraceHeaders() {
-    const traceId = currentBrowserTraceId();
-    return {
-        'Content-Type': 'application/json',
-        traceparent: `00-${traceId}-${randomHex(16)}-01`,
-        'X-Correlation-Id': traceId,
-        'X-OCTO-Login-Flow': 'password',
-    };
-}
-
 // Surface SSO callback errors that the server attached as ?sso_error=...
 const _ssoErr = new URLSearchParams(window.location.search).get('sso_error');
 if (_ssoErr) {
@@ -207,9 +179,8 @@ if (_ssoErr) {
 
 document.querySelectorAll('.credential-fill').forEach((button) => {
     button.addEventListener('click', () => {
-        const row = button.closest('.credential-row');
         document.getElementById('username').value = button.dataset.username || '';
-        document.getElementById('password').value = row?.querySelector('.credential-secret')?.textContent.trim() || '';
+        document.getElementById('password').value = button.dataset.password || '';
         setMessage(`${button.dataset.username} credentials loaded.`);
     });
 });
@@ -222,8 +193,8 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: loginTraceHeaders(),
-            body: JSON.stringify({ username, password, browser_trace_id: currentBrowserTraceId() })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
         });
         const payload = await response.json();
         if (!response.ok || payload.status !== 'success') {
@@ -233,7 +204,7 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
 
         localStorage.setItem('octo-auth-token', payload.token);
         localStorage.setItem('octo-auth-user', JSON.stringify(payload.user));
-        setMessage(`Signed in as ${payload.user.username} (${payload.user.role}). Shop orders and protected views can now call backend APIs.`);
+        setMessage(`Signed in as ${payload.user.username} (${payload.user.role}). Shop orders and protected demo views are available.`);
     } catch (error) {
         setMessage(`Login failed: ${error.message}`);
     }

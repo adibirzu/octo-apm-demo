@@ -115,6 +115,30 @@ def test_workflow_gateway_proxy_requires_admin_token(monkeypatch) -> None:
     assert response.status_code == 401
 
 
+def test_workflow_gateway_proxy_rejects_admin_token_on_public_shop_host(monkeypatch) -> None:
+    client = _client(
+        monkeypatch,
+        SimpleNamespace(
+            workflow_gateway_configured=True,
+            workflow_api_base_url="http://127.0.0.1:8090",
+            workflow_service_name="octo-workflow-gateway",
+            selectai_configured=True,
+            selectai_profile_name="OCTO_SELECTAI",
+            crm_public_hostname="admin.octodemo.cloud",
+            dns_domain="octodemo.cloud",
+        ),
+    )
+
+    response = client.post(
+        "/api/workflow-gateway/api/selectai/generate",
+        json={"prompt": "show active drone inventory"},
+        headers={**_admin_headers(monkeypatch), "host": "drones.octodemo.cloud"},
+    )
+
+    assert response.status_code == 403
+    assert "admin" in response.json()["detail"].lower()
+
+
 def test_workflow_gateway_proxy_reports_disabled_gateway(monkeypatch) -> None:
     client = _client(
         monkeypatch,

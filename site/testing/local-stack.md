@@ -11,6 +11,7 @@ against a known state.
 |------------|-----------|---------------------------------------|
 | `shop`     | 18080     | Drone shop (FastAPI)                  |
 | `crm`      | 18090     | Enterprise CRM portal (FastAPI)       |
+| `java-apm` | 18091     | Local Java payment gateway simulator  |
 | `redis`    | 16379     | Cache, rate limit, async-worker stream |
 | `postgres` | 15432     | Autonomous DB stand-in                |
 
@@ -32,7 +33,7 @@ SHOP_URL=http://localhost:18080 \
   npx playwright test tests/e2e/shopping-flow.spec.ts
 ```
 
-See [`deploy/local-stack/README.md`](https://github.com/adibirzu/octo-apm-demo/blob/main/deploy/local-stack/README.md) for teardown, logs,
+See [`deploy/local-stack/README.md`](%%GITHUB_REPO_URL%%/blob/main/deploy/local-stack/README.md) for teardown, logs,
 and caveats (Postgres parity, disabled OCI exporters, no IDCS).
 
 ## When to use it
@@ -65,3 +66,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT: ""
 ```
 
 …so traces surface only in the in-process memory exporter during tests.
+The Java payment simulator remains enabled for local checkout parity, but
+Workflow Gateway / Select AI is intentionally disabled because that path
+requires an Oracle ATP wallet and should be validated with the VM, Compute,
+or OKE deployment models.

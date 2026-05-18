@@ -50,6 +50,12 @@ spec:
                   name: octo-apm
                   key: endpoint
                   optional: true
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: private-key
+                  optional: true
             - name: OCTO_TRAFFIC_OTEL_EXPORTER_OTLP_HEADERS
               valueFrom:
                 secretKeyRef:

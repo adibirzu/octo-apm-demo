@@ -47,12 +47,14 @@ cp "${SCRIPT_DIR}/systemd/octo-java-apm.service" "${STAGE_DIR}/bootstrap/systemd
 cp "${SCRIPT_DIR}/systemd/octo-podman.service" "${STAGE_DIR}/bootstrap/systemd/octo-podman.service"
 cp "${SCRIPT_DIR}/systemd/octo-synthetic-users.service" "${STAGE_DIR}/bootstrap/systemd/octo-synthetic-users.service"
 cp "${SCRIPT_DIR}/systemd/octo-synthetic-users.timer" "${STAGE_DIR}/bootstrap/systemd/octo-synthetic-users.timer"
+cp "${SCRIPT_DIR}/systemd/octo-tetragon.service" "${STAGE_DIR}/bootstrap/systemd/octo-tetragon.service"
 cp "${SCRIPT_DIR}/systemd/octo-workflow-gateway.service" "${STAGE_DIR}/bootstrap/systemd/octo-workflow-gateway.service"
 
 mkdir -p "${STAGE_DIR}/modules-shared/modules"
 cp -R "${REPO_ROOT}/deploy/terraform/modules/atp" "${STAGE_DIR}/modules-shared/modules/atp"
 cp -R "${REPO_ROOT}/deploy/terraform/modules/apm_domain" "${STAGE_DIR}/modules-shared/modules/apm_domain"
 cp -R "${REPO_ROOT}/deploy/terraform/modules/logging" "${STAGE_DIR}/modules-shared/modules/logging"
+cp -R "${REPO_ROOT}/deploy/terraform/modules/security" "${STAGE_DIR}/modules-shared/modules/security"
 cp -R "${REPO_ROOT}/deploy/terraform/modules/stack_monitoring" "${STAGE_DIR}/modules-shared/modules/stack_monitoring"
 cp -R "${REPO_ROOT}/deploy/terraform/modules/waf" "${STAGE_DIR}/modules-shared/modules/waf"
 

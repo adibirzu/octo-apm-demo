@@ -80,7 +80,7 @@ def _clear_connection(dbapi_connection, connection_record):
                 {"client_id": ""},
             )
             cursor.close()
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
 

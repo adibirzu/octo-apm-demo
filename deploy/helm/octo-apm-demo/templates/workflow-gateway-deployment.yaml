@@ -1,0 +1,169 @@
+{{- if .Values.workflowGateway.enabled }}
+{{- $workflow := .Values.workflowGateway }}
+{{- $workflowNamespace := default .Values.shop.namespace $workflow.namespace }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-workflow-gateway
+  namespace: {{ $workflowNamespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+    {{- include "octo.workflowGateway.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: workflow-gateway
+spec:
+  replicas: {{ $workflow.replicas }}
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 300
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "octo.workflowGateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "octo.labels" . | nindent 8 }}
+        {{- include "octo.workflowGateway.selectorLabels" . | nindent 8 }}
+      annotations:
+        octo.oracle.com/restartedAt: {{ printf "%s-r%d" (toString (default .Values.global.image.tag $workflow.image.tag)) (int .Release.Revision) | quote }}
+        oracle.com/oci_la_log_source_name: "SOC Application Logs"
+        oracle.com/oci_la_log_set: "octo-apm-demo"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if .Values.global.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.global.image.pullSecretName }}
+      {{- end }}
+      containers:
+        - name: app
+          image: {{ include "octo.image" (list . $workflow) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - containerPort: 8090
+              name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: WORKFLOW_APP_NAME
+              value: octo-workflow-gateway
+            - name: WORKFLOW_SERVICE_NAME
+              value: {{ $workflow.serviceName | quote }}
+            - name: APP_RUNTIME
+              value: oke
+            - name: ENVIRONMENT
+              value: {{ .Values.global.environment | quote }}
+            - name: WORKFLOW_PORT
+              value: "8090"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: SERVICE_NAMESPACE
+              value: {{ .Values.global.serviceNamespace | quote }}
+            - name: SERVICE_INSTANCE_ID
+              value: "$(POD_NAME)"
+            - name: DEMO_STACK_NAME
+              value: {{ .Values.global.stackName | quote }}
+            - name: OCI_MONITORING_NAMESPACE
+              value: {{ .Values.global.monitoringNamespace | quote }}
+            - name: OCI_AUTH_MODE
+              value: {{ .Values.global.ociAuthMode | quote }}
+            - name: OCI_REGION
+              value: {{ .Values.global.ociRegion | quote }}
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace={{ .Values.global.serviceNamespace }},deployment.environment={{ .Values.global.environment }},cloud.provider=oci,oci.demo.stack={{ .Values.global.stackName }},k8s.cluster.name={{ .Values.global.okeClusterName }},k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
+            - name: OTEL_TRACES_SAMPLER
+              value: "always_on"
+            - name: OTLP_LOG_EXPORT_ENABLED
+              value: "false"
+            - name: ORACLE_DSN
+              valueFrom: {secretKeyRef: {name: octo-atp, key: dsn}}
+            - name: ORACLE_USER
+              valueFrom: {secretKeyRef: {name: octo-atp, key: username}}
+            - name: ORACLE_PASSWORD
+              valueFrom: {secretKeyRef: {name: octo-atp, key: password}}
+            - name: ORACLE_WALLET_DIR
+              value: /opt/oracle/wallet
+            - name: ORACLE_WALLET_PASSWORD
+              valueFrom: {secretKeyRef: {name: octo-atp, key: wallet-password}}
+            - name: ENTERPRISE_CRM_URL
+              value: {{ printf "http://enterprise-crm-portal.%s.svc.cluster.local:8080" .Values.crm.namespace | quote }}
+            - name: OCI_APM_ENDPOINT
+              valueFrom: {secretKeyRef: {name: octo-apm, key: endpoint, optional: true}}
+            - name: OCI_APM_PRIVATE_DATAKEY
+              valueFrom: {secretKeyRef: {name: octo-apm, key: private-key, optional: true}}
+            - name: OCI_COMPARTMENT_ID
+              valueFrom: {secretKeyRef: {name: octo-oci-config, key: compartment-id}}
+            - name: WORKFLOW_LOG_LEVEL
+              value: {{ default "info" $workflow.logLevel | quote }}
+            - name: WORKFLOW_POLL_SECONDS
+              value: {{ $workflow.pollSeconds | quote }}
+            - name: WORKFLOW_ALLOWED_ORIGINS
+              value: {{ printf "https://%s,https://%s" (include "octo.fqdn" (list . .Values.shop)) (include "octo.fqdn" (list . .Values.crm)) | quote }}
+            - name: WORKFLOW_FAULTY_QUERY_ENABLED
+              value: "false"
+            - name: SELECTAI_PROFILE_NAME
+              valueFrom: {secretKeyRef: {name: octo-oci-config, key: selectai-profile-name, optional: true}}
+            - name: SELECTAI_TIMEOUT_SECONDS
+              value: {{ $workflow.selectaiTimeoutSeconds | quote }}
+          volumeMounts:
+            - name: wallet
+              mountPath: /opt/oracle/wallet
+              readOnly: true
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml $workflow.resources | nindent 12 }}
+      volumes:
+        - name: wallet
+          secret:
+            secretName: octo-atp-wallet
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-workflow-gateway
+  namespace: {{ $workflowNamespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+    {{- include "octo.workflowGateway.selectorLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "octo.workflowGateway.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: 8090
+      targetPort: http
+{{- end }}

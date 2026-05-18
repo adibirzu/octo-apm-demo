@@ -163,7 +163,7 @@ def record_order_created(total: float, source: str = "drone-shop"):
     try:
         from server.observability.oci_monitoring import increment_orders
         increment_orders()
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
 def record_cart_addition(category: str = ""):
@@ -178,7 +178,7 @@ def record_checkout(success: bool = True):
     try:
         from server.observability.oci_monitoring import increment_checkouts
         increment_checkouts()
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
 def record_product_viewed(category: str = ""):

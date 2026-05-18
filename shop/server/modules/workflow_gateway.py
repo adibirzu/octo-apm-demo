@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import json
 from typing import Iterable
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -36,6 +37,7 @@ _FORWARDED_HEADERS = (
 _MAX_PROXY_BODY_BYTES = 16_384
 _MAX_SELECTAI_PROMPT_CHARS = 1000
 _ALLOWED_SELECTAI_ACTIONS = {"showsql", "narrate", "chat"}
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "testserver"}
 
 
 def _is_allowed_path(path: str) -> bool:
@@ -64,6 +66,46 @@ def _operation_for_path(path: str) -> str:
     if path.startswith("api/components/"):
         return "component.snapshots"
     return "workflow.proxy"
+
+
+def _request_host(request: Request) -> str:
+    raw_host = (
+        request.headers.get("x-forwarded-host")
+        or request.headers.get("host")
+        or request.url.hostname
+        or ""
+    )
+    raw_host = raw_host.split(",", 1)[0].strip().lower()
+    if raw_host.startswith("[") and "]" in raw_host:
+        return raw_host[1:raw_host.index("]")]
+    return raw_host.rsplit(":", 1)[0] if ":" in raw_host else raw_host
+
+
+def _admin_surface_hosts() -> set[str]:
+    hosts = set(_LOCAL_HOSTS)
+    crm_host = (getattr(cfg, "crm_public_hostname", "") or "").strip().lower()
+    if crm_host:
+        hosts.add(crm_host)
+    crm_url = (getattr(cfg, "crm_public_url", "") or "").strip()
+    if crm_url:
+        parsed = urlparse(crm_url)
+        if parsed.hostname:
+            hosts.add(parsed.hostname.lower())
+    dns_domain = (getattr(cfg, "dns_domain", "") or "").strip().lower()
+    if dns_domain:
+        hosts.add(f"admin.{dns_domain}")
+        hosts.add(f"crm.{dns_domain}")
+    return hosts
+
+
+def _require_admin_surface_host(request: Request) -> str:
+    host = _request_host(request)
+    if host in _admin_surface_hosts():
+        return host
+    raise HTTPException(
+        status_code=403,
+        detail="Workflow Gateway admin labs are only available from the admin surface.",
+    )
 
 
 def _json_payload(content: bytes | None) -> dict:
@@ -160,6 +202,9 @@ def _apply_upstream_attributes(span, upstream: httpx.Response) -> None:
 async def proxy_workflow_gateway(path: str, request: Request) -> Response:
     """Proxy browser workflow calls to the private gateway with trace context."""
     principal = require_admin_or_internal_service(request)
+    admin_host = ""
+    if principal.get("role") != "service":
+        admin_host = _require_admin_surface_host(request)
     if not cfg.workflow_gateway_configured:
         raise HTTPException(status_code=503, detail="Workflow gateway is not configured")
     if not _is_allowed_path(path):
@@ -173,6 +218,7 @@ async def proxy_workflow_gateway(path: str, request: Request) -> Response:
 
     with tracer.start_as_current_span(f"workflow_gateway.{_operation_for_path(normalized_path)}") as span:
         _apply_operation_attributes(span, path=normalized_path, request=request, payload=payload, principal=principal)
+        span.set_attribute("workflow.gateway.admin_surface_host", admin_host or "internal-service")
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
                 upstream = await client.request(

@@ -26,12 +26,11 @@ from server.observability import business_metrics
 from server.observability.correlation import apply_span_attributes
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
+from server.observability.purchase_journey import purchase_context_from_request, purchase_span_attributes
 from server.store_service import (
     ensure_customer,
     fetch_cart_items,
-    normalize_customer_email,
     normalize_checkout_idempotency_key,
-    normalize_storefront_session_id,
     place_order,
     resolve_direct_items,
     update_order_payment_state,
@@ -222,18 +221,31 @@ async def checkout(payload: dict, request: Request):
     """Persist the order, create shipment records, and emit traces/logs."""
     tracer = get_tracer()
     with tracer.start_as_current_span("shop.checkout") as span:
+        session_id = payload.get("session_id") or request.cookies.get("session_id", "") or str(uuid.uuid4())
+        payment_method = str(payload.get("payment_method", "credit_card") or "credit_card")
+        journey_context = purchase_context_from_request(
+            request,
+            {**payload, "session_id": session_id, "payment_method": payment_method},
+            default_action="shop.checkout.submit",
+            default_step="payment",
+            default_payment_method=payment_method,
+        )
+        journey_attrs = purchase_span_attributes(journey_context)
         apply_span_attributes(span, {
             "app.page.name": "shop",
             "app.module": "shop",
             "app.logical_endpoint": "shop.checkout",
             "db.target": cfg.database_target_label,
             "db.connection_name": cfg.oracle_dsn,
+            **journey_attrs,
         })
-        raw_session_id = payload.get("session_id") or request.cookies.get("session_id", "") or str(uuid.uuid4())
-        try:
-            session_id = normalize_storefront_session_id(raw_session_id)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        span.add_event(
+            "shop.checkout.received",
+            {
+                **journey_attrs,
+                "orders.item_count": len(payload.get("items") or []),
+            },
+        )
         try:
             checkout_idempotency_key = normalize_checkout_idempotency_key(
                 payload.get("checkout_idempotency_key")
@@ -241,62 +253,109 @@ async def checkout(payload: dict, request: Request):
                 or request.headers.get("Idempotency-Key", "")
             )
         except ValueError as exc:
+            apply_span_attributes(span, {
+                "checkout.error_type": "invalid_idempotency_key",
+                "checkout.validation_error": str(exc),
+                "http.status_code": 400,
+                "otel.status_code": "ERROR",
+            })
+            push_log(
+                "WARNING",
+                "Checkout request rejected",
+                **{
+                    "http.url.path": "/api/shop/checkout",
+                    "http.method": "POST",
+                    "http.status_code": 400,
+                    "checkout.error_type": "invalid_idempotency_key",
+                    "checkout.validation_error": str(exc),
+                    "shop.session_id": session_id,
+                    "browser.trace_id": str(payload.get("browser_trace_id") or ""),
+                    **journey_attrs,
+                    "workflow.id": "checkout",
+                    "workflow.step": "payment",
+                },
+            )
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         if checkout_idempotency_key:
             span.set_attribute(
                 "orders.checkout_idempotency_key_hash",
                 sha256(checkout_idempotency_key.encode("utf-8")).hexdigest()[:16],
             )
-        anonymous_customer_email: str | None = None
-        if not _request_has_auth_token(request):
-            try:
-                anonymous_customer_email = normalize_customer_email(payload.get("customer_email") or "")
-            except ValueError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-        crm_customer_sync = await sync_customers_from_crm(force=False, limit=200, source="shop_checkout")
+        with tracer.start_as_current_span("shop.checkout.crm.customers.sync") as customer_sync_span:
+            apply_span_attributes(customer_sync_span, journey_attrs)
+            crm_customer_sync = await sync_customers_from_crm(force=False, limit=200, source="shop_checkout")
+            customer_sync_span.set_attribute("integration.crm_customer_synced", bool(crm_customer_sync.get("synced")))
         async with get_db() as db:
-            checkout_user = await _optional_checkout_user(db, request)
+            with tracer.start_as_current_span("shop.checkout.cart.resolve") as cart_span:
+                apply_span_attributes(cart_span, {**journey_attrs, "cart.session_id": session_id})
+                items = await fetch_cart_items(db, session_id)
+                if not items and payload.get("items"):
+                    items = await resolve_direct_items(db, payload["items"])
+                cart_span.set_attribute("cart.item_count", len(items))
+            if not items:
+                business_metrics.record_checkout(success=False)
+                return {"error": "Cart is empty", "session_id": session_id}
+
+            with tracer.start_as_current_span("shop.checkout.user.resolve") as user_span:
+                apply_span_attributes(user_span, journey_attrs)
+                checkout_user = await _optional_checkout_user(db, request)
+                user_span.set_attribute("auth.present", bool(checkout_user))
             if checkout_user:
                 span.set_attribute("auth.user_id", int(checkout_user["id"]))
                 span.set_attribute("auth.username", str(checkout_user["username"]))
                 span.set_attribute("auth.role", str(checkout_user["role"]))
-            default_email = str(checkout_user["email"]) if checkout_user else ""
+            default_email = str(checkout_user["email"]) if checkout_user else "buyer@octo.local"
             default_name = str(checkout_user["username"]) if checkout_user else "OCTO Buyer"
-            try:
-                customer_email = normalize_customer_email(
-                    payload.get("customer_email") or default_email or anonymous_customer_email or "",
-                )
-            except ValueError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-            items = await fetch_cart_items(db, session_id)
-            if not items and payload.get("items"):
-                items = await resolve_direct_items(db, payload["items"])
-            if not items:
-                business_metrics.record_checkout(success=False)
-                raise HTTPException(status_code=400, detail="Cart is empty")
+            customer_email = str(payload.get("customer_email") or default_email)
             customer_name = str(payload.get("customer_name") or default_name)
-            customer = await ensure_customer(
-                db,
-                name=customer_name,
-                email=customer_email,
-                phone=payload.get("customer_phone", ""),
-                company=payload.get("company", ""),
-                industry=payload.get("industry", "Drone Operations"),
-            )
-            order_result = await place_order(
-                db,
-                customer=customer,
-                items=items,
-                shipping_address=payload.get("shipping_address", "ATP-backed fulfilment queue"),
-                payment_method=payload.get("payment_method", "credit_card"),
-                notes=payload.get("notes", ""),
-                coupon_code=payload.get("coupon_code", ""),
-                session_id=session_id,
-                source="shop_checkout",
-                trace_id=_trace_id(),
-                checkout_idempotency_key=checkout_idempotency_key,
-                user_id=int(checkout_user["id"]) if checkout_user else None,
-            )
+            with tracer.start_as_current_span("shop.checkout.customer.upsert") as customer_span:
+                apply_span_attributes(
+                    customer_span,
+                    {
+                        **journey_attrs,
+                        "customer.email_domain": customer_email.split("@")[-1] if "@" in customer_email else "unknown",
+                    },
+                )
+                customer = await ensure_customer(
+                    db,
+                    name=customer_name,
+                    email=customer_email,
+                    phone=payload.get("customer_phone", ""),
+                    company=payload.get("company", ""),
+                    industry=payload.get("industry", "Drone Operations"),
+                )
+                customer_span.set_attribute("customer.id", int(customer["id"]))
+            with tracer.start_as_current_span("shop.checkout.order.persist") as order_span:
+                apply_span_attributes(
+                    order_span,
+                    {
+                        **journey_attrs,
+                        "orders.item_count": sum(int(item["quantity"]) for item in items),
+                        "payment.method": payment_method,
+                    },
+                )
+                order_result = await place_order(
+                    db,
+                    customer=customer,
+                    items=items,
+                    shipping_address=payload.get("shipping_address", "ATP-backed fulfilment queue"),
+                    payment_method=payment_method,
+                    notes=payload.get("notes", ""),
+                    coupon_code=payload.get("coupon_code", ""),
+                    session_id=session_id,
+                    source="shop_checkout",
+                    trace_id=_trace_id(),
+                    checkout_idempotency_key=checkout_idempotency_key,
+                    user_id=int(checkout_user["id"]) if checkout_user else None,
+                )
+                apply_span_attributes(
+                    order_span,
+                    {
+                        "orders.order_id": order_result["order"]["id"],
+                        "orders.total": order_result["total"],
+                        "orders.idempotent_replay": bool(order_result.get("idempotent_replay")),
+                    },
+                )
             payment_result = {"status": "skipped", "reason": "idempotent replay"}
             order_payment_state = {
                 "payment_status": order_result["order"].get("payment_status", "pending"),
@@ -305,26 +364,56 @@ async def checkout(payload: dict, request: Request):
                 "payment_gateway_request_id": str(order_result["order"].get("payment_gateway_request_id") or ""),
             }
             if not order_result.get("idempotent_replay"):
-                payment_result = await authorize_simulated_payment(
-                    order_id=order_result["order"]["id"],
-                    total=order_result["total"],
-                    currency=cfg.payment_simulation_currency,
-                    customer_email=customer["email"],
-                    checkout_idempotency_key=checkout_idempotency_key,
-                    payment_method=payload.get("payment_method", "credit_card"),
-                    payment_details=payload.get("payment_details") if isinstance(payload.get("payment_details"), dict) else {},
-                    db=db,
-                )
+                with tracer.start_as_current_span("shop.checkout.payment.authorize") as payment_span:
+                    apply_span_attributes(
+                        payment_span,
+                        {
+                            **journey_attrs,
+                            "orders.order_id": order_result["order"]["id"],
+                            "orders.total": order_result["total"],
+                            "payment.method": payment_method,
+                        },
+                    )
+                    payment_result = await authorize_simulated_payment(
+                        order_id=order_result["order"]["id"],
+                        total=order_result["total"],
+                        currency=cfg.payment_simulation_currency,
+                        customer_email=customer["email"],
+                        checkout_idempotency_key=checkout_idempotency_key,
+                        payment_method=payment_method,
+                        payment_details=payload.get("payment_details") if isinstance(payload.get("payment_details"), dict) else {},
+                        observability_context=journey_attrs,
+                        db=db,
+                    )
+                    apply_span_attributes(
+                        payment_span,
+                        {
+                            "payment.simulation.status": payment_result.get("status", "unknown"),
+                            "payment.gateway.request_id": str((payment_result.get("payment_gateway") or {}).get("request_id") or ""),
+                            "payment.gateway.step_count": len((payment_result.get("payment_gateway") or {}).get("steps") or [])
+                            + (1 if (payment_result.get("payment_gateway") or {}).get("final_step") else 0),
+                        },
+                    )
                 if payment_result.get("status") not in {"skipped", "unreachable"}:
                     payment_gateway_request_id = str((payment_result.get("payment_gateway") or {}).get("request_id") or "")
-                    order_payment_state = await update_order_payment_state(
-                        db,
-                        order_id=order_result["order"]["id"],
-                        payment_provider=str(payment_result.get("provider") or "simulated"),
-                        payment_provider_reference=str(payment_result.get("provider_reference") or ""),
-                        payment_status=str(payment_result.get("status") or "pending"),
-                        payment_gateway_request_id=payment_gateway_request_id,
-                    )
+                    with tracer.start_as_current_span("shop.checkout.payment.state.persist") as payment_state_span:
+                        apply_span_attributes(
+                            payment_state_span,
+                            {
+                                **journey_attrs,
+                                "orders.order_id": order_result["order"]["id"],
+                                "payment.gateway.request_id": payment_gateway_request_id,
+                                "payment.simulation.status": payment_result.get("status", "unknown"),
+                            },
+                        )
+                        order_payment_state = await update_order_payment_state(
+                            db,
+                            order_id=order_result["order"]["id"],
+                            payment_provider=str(payment_result.get("provider") or "simulated"),
+                            payment_provider_reference=str(payment_result.get("provider_reference") or ""),
+                            payment_status=str(payment_result.get("status") or "pending"),
+                            payment_gateway_request_id=payment_gateway_request_id,
+                        )
 
         payment_gateway_request_id = str(
             (payment_result.get("payment_gateway") or {}).get("request_id")
@@ -332,21 +421,30 @@ async def checkout(payload: dict, request: Request):
             or order_result["order"].get("payment_gateway_request_id")
             or ""
         )
-        crm_order_sync = await sync_order_to_crm(
-            order_id=order_result["order"]["id"],
-            customer_email=customer["email"],
-            total=order_result["total"],
-            source="shop_checkout",
-            payment_status=str(order_payment_state.get("payment_status") or payment_result.get("status") or "pending"),
-            payment_required=_payment_required_flag(order_payment_state.get("payment_required")),
-            payment_method=str(payment_result.get("method") or payload.get("payment_method", "unknown")),
-            payment_provider=str(payment_result.get("provider") or ""),
-            payment_provider_reference=str(payment_result.get("provider_reference") or ""),
-            payment_gateway_request_id=payment_gateway_request_id,
-        )
+        with tracer.start_as_current_span("shop.checkout.crm.order.sync") as crm_order_span:
+            apply_span_attributes(
+                crm_order_span,
+                {
+                    **journey_attrs,
+                    "orders.order_id": order_result["order"]["id"],
+                    "orders.total": order_result["total"],
+                    "payment.gateway.request_id": payment_gateway_request_id,
+                },
+            )
+            crm_order_sync = await sync_order_to_crm(
+                order_id=order_result["order"]["id"],
+                customer_email=customer["email"],
+                total=order_result["total"],
+                source="shop_checkout",
+                payment_status=str(order_payment_state.get("payment_status") or payment_result.get("status") or "pending"),
+                payment_required=_payment_required_flag(order_payment_state.get("payment_required")),
+                payment_method=str(payment_result.get("method") or payment_method or "unknown"),
+                payment_provider=str(payment_result.get("provider") or ""),
+                payment_provider_reference=str(payment_result.get("provider_reference") or ""),
+                payment_gateway_request_id=payment_gateway_request_id,
+            )
+            crm_order_span.set_attribute("integration.crm_order_synced", bool(crm_order_sync.get("synced")))
         span.set_attribute("orders.order_id", order_result["order"]["id"])
-        span.set_attribute("orders.user_id", int(order_result["order"].get("user_id") or 0))
-        span.set_attribute("orders.customer_id", int(order_result["order"].get("customer_id") or 0))
         span.set_attribute("orders.total", order_result["total"])
         span.set_attribute("orders.item_count", order_result["item_count"])
         span.set_attribute("orders.subtotal", order_result.get("subtotal", order_result["total"]))
@@ -356,7 +454,7 @@ async def checkout(payload: dict, request: Request):
         span.set_attribute("orders.payment_required", _payment_required_flag(order_payment_state.get("payment_required")))
         span.set_attribute("orders.payment_status", str(order_payment_state.get("payment_status") or "pending"))
         span.set_attribute("orders.status", str(order_payment_state.get("order_status") or order_result["order"].get("status", "unknown")))
-        span.set_attribute("shop.payment_method", payload.get("payment_method", "unknown"))
+        span.set_attribute("shop.payment_method", payment_method or "unknown")
         span.set_attribute("browser.trace_id", str(payload.get("browser_trace_id") or ""))
         span.set_attribute("payment.simulation.status", payment_result.get("status", "unknown"))
         span.set_attribute("payment.provider", payment_result.get("provider", "unknown"))
@@ -398,6 +496,7 @@ async def checkout(payload: dict, request: Request):
                 "payment.antifraud_reasons": ",".join(payment_result.get("risk_reasons") or []),
                 "shop.session_id": session_id,
                 "browser.trace_id": str(payload.get("browser_trace_id") or ""),
+                **journey_attrs,
                 "integration.crm_order_synced": bool(crm_order_sync.get("synced")),
             },
         )

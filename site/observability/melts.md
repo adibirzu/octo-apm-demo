@@ -5,7 +5,7 @@
 | Source | Destination | What |
 |---|---|---|
 | Prometheus `/metrics` | Grafana / scraper | HTTP RED, business KPIs, runtime |
-| OCI Monitoring SDK | OCI Monitoring (`octo_drone_shop` namespace) | app.health, requests.rate, errors.rate, checkout.count, orders.count, db.latency_ms, crm.sync_age_s, inventory.low_stock_products |
+| OCI Monitoring SDK | OCI Monitoring (`octo_apm_demo` namespace) | app.health, app.requests.rate, app.errors.rate, app.checkout.count, app.orders.count, app.auth.success.count, app.auth.failure.count, app.security.events.count, app.db.latency_ms, app.crm.sync_age_s, app.inventory.low_stock_products |
 | OCI Alarms | OCI Notifications | Error rate > 5/min, DB p95 > 2s, health down, CRM sync stale, low stock |
 | OCI Health Checks | OCI Console | HTTP `/ready` every 30s |
 
@@ -59,7 +59,7 @@
 | Topology | APM → Topology → CRM ↔ Shop ↔ ATP edges |
 | RUM | APM → RUM → Session Explorer → add-to-cart, checkout events |
 | Logs | Log Analytics → search `oracleApmTraceId=<trace_id>` |
-| Metrics | Monitoring → Metric Explorer → namespace `octo_drone_shop` |
+| Metrics | Monitoring → Metric Explorer → namespace `octo_apm_demo` |
 | Alarms | Monitoring → Alarms (5 configured) |
 | DB | DB Management → Performance Hub → SQL Monitor |
 | DB Insights | OPSI → SQL Warehouse → filter by `MODULE=octo-drone-shop` |

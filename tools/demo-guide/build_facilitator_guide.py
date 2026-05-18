@@ -367,7 +367,7 @@ def build_pdf(screenshots: dict[str, Path]) -> None:
         Paragraph("Attack Alert Use Case", styles["GuideHeading"]),
         paragraph("The user receives a critical alert for possible compromise. The demoer opens the returned trace id in APM, then uses the attack id in Log Analytics saved searches. OSQuery results are exported to OCI Logging and routed to Log Analytics when the connector is available.", body),
         Paragraph("Availability Script", styles["GuideHeading"]),
-        paragraph("Upload tools/demo-guide/octo-availability-monitor.playwright.ts as a Playwright Scripted Browser monitor when you need a repeatable frontend path without OCI Console steps.", body),
+        paragraph("Use deploy/oci/ensure_availability_monitors.sh --scripted-browser to upload shop/tools/apm/octo-apm-demo-synthetic.spec.ts when you need a repeatable frontend path without OCI Console steps.", body),
     ])
     add_screenshot(story, screenshots["attack-investigation"])
     story.extend([
@@ -517,7 +517,7 @@ def build_live_pdf(screenshots: dict[str, Path]) -> None:
             "Cloud Guard and Instance Security: review Problems, detector recipes, and OSQuery results, then export completed query results into OCI Logging for the same attack id.",
             "Stack Monitoring, Database Management, and Operations Insights: pivot from the application trace to host, ATP, and SQL performance signals for the same time range.",
             "Availability Monitoring: check global readiness monitors for both domains and compare vantage point failures with LB/app logs.",
-            "Availability script creation: upload tools/demo-guide/octo-availability-monitor.playwright.ts as a Playwright Scripted Browser script and create a monitor from selected global vantage points.",
+            "Availability script creation: upload shop/tools/apm/octo-apm-demo-synthetic.spec.ts with deploy/oci/ensure_availability_monitors.sh --scripted-browser and create a monitor from selected global vantage points.",
         ], body),
         Paragraph("In-App Console Map", styles["GuideHeading"]),
     ])

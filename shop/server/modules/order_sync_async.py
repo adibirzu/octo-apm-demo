@@ -79,7 +79,7 @@ async def publish_order_for_async_sync(
             trace_id_hex = format(ctx.trace_id, "032x")
         if ctx.span_id:
             span_id_hex = format(ctx.span_id, "016x")
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     payload = {
@@ -115,5 +115,5 @@ async def publish_order_for_async_sync(
     finally:
         try:
             await publisher.aclose()
-        except Exception:
+        except Exception:  # noqa: S110
             pass

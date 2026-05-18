@@ -18,6 +18,8 @@ from server.observability.correlation import (
 from server.observability.logging_sdk import bind_request_span, push_log, reset_request_span
 from server.observability.otel_setup import get_tracer
 from server.observability.db_session_tagging import set_db_context
+from server.observability.purchase_journey import purchase_context_from_request, purchase_span_attributes
+from server.observability.workflow_context import resolve_workflow
 
 
 class TracingMiddleware(BaseHTTPMiddleware):
@@ -27,6 +29,15 @@ class TracingMiddleware(BaseHTTPMiddleware):
         client_ip = request.client.host if request.client else "unknown"
         page_name, module_name = infer_page_identity(request.url.path)
         request.state.correlation_id = build_correlation_id(request.headers.get("x-correlation-id", ""))
+        workflow = getattr(request.state, "workflow", None) or resolve_workflow(request.url.path)
+        workflow_fields = {
+            "workflow.id": getattr(workflow, "workflow_id", ""),
+            "workflow.step": getattr(workflow, "step", ""),
+        }
+        purchase_context = purchase_context_from_request(request)
+        purchase_fields = purchase_span_attributes(purchase_context)
+        request.state.purchase_context = purchase_context
+        request.state.purchase_fields = purchase_fields
 
         try:
             with tracer.start_as_current_span("middleware.entry") as span:
@@ -51,14 +62,18 @@ class TracingMiddleware(BaseHTTPMiddleware):
                         "app.module": getattr(request.state, "module_name", module_name),
                         "db.target": cfg.database_target_label,
                         "db.connection_name": cfg.oracle_dsn,
+                        **workflow_fields,
+                        **purchase_fields,
                         **runtime_snapshot(),
                     },
                 )
+                if purchase_fields:
+                    span.add_event("shop.user_action", purchase_fields)
 
                 # Tag Oracle DB sessions with request context for OPSI/DB Management correlation
                 trace_ctx_for_db = current_trace_context()
                 set_db_context(
-                    action=f"{request.method} {request.url.path}"[:64],
+                    action=(purchase_context.get("user_action") or f"{request.method} {request.url.path}")[:64],
                     client_identifier=trace_ctx_for_db["trace_id"],
                 )
 
@@ -78,6 +93,8 @@ class TracingMiddleware(BaseHTTPMiddleware):
                             "correlation.id": request.state.correlation_id,
                             "app.page.name": getattr(request.state, "page_name", page_name),
                             "app.module": getattr(request.state, "module_name", module_name),
+                            **workflow_fields,
+                            **purchase_fields,
                         },
                     )
                     raise
@@ -95,6 +112,8 @@ class TracingMiddleware(BaseHTTPMiddleware):
                         "app.module": getattr(request.state, "module_name", module_name),
                         "app.template": getattr(request.state, "template_name", ""),
                         "trace_id": trace_ctx["trace_id"],
+                        **workflow_fields,
+                        **purchase_fields,
                     },
                 )
                 response.headers["X-Correlation-Id"] = request.state.correlation_id
@@ -125,6 +144,8 @@ class TracingMiddleware(BaseHTTPMiddleware):
                         "app.page.name": getattr(request.state, "page_name", page_name),
                         "app.module": getattr(request.state, "module_name", module_name),
                         "performance.slow_request": duration_ms >= 2000,
+                        **workflow_fields,
+                        **purchase_fields,
                     },
                 )
 

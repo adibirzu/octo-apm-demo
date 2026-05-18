@@ -9,7 +9,8 @@ the real endpoints from ignored deployment files or shell variables:
 ```bash
 export OCTO_LIVE_SHOP_URL="https://shop.example.test"
 export OCTO_LIVE_ADMIN_URL="https://admin.example.test"
-set -a; . credentials/<profile>/app-secrets.env; set +a
+export OCTO_OPERATOR_ENV="<IGNORED_OPERATOR_ENV_FILE>"
+set -a; . "$OCTO_OPERATOR_ENV"; set +a
 ```
 
 Do not commit real tenancy names, live domains, public IP addresses, OCIDs,
@@ -50,8 +51,8 @@ Admin local login uses the generated deployment credentials:
 
 | Field | Value |
 | --- | --- |
-| Username | `BOOTSTRAP_ADMIN_USERNAME` from `credentials/<profile>/app-secrets.env`; default is `admin` |
-| Password | `BOOTSTRAP_ADMIN_PASSWORD` from `credentials/<profile>/app-secrets.env` |
+| Username | `BOOTSTRAP_ADMIN_USERNAME` from the ignored operator env file; default is `admin` |
+| Password | `BOOTSTRAP_ADMIN_PASSWORD` from the ignored operator env file |
 
 Never paste the password into documentation, screenshots, issues, or commits.
 
@@ -141,7 +142,7 @@ Expected telemetry:
 
 1. Open `${OCTO_LIVE_ADMIN_URL}/login`.
 2. Sign in with the generated local admin account from
-   `credentials/<profile>/app-secrets.env`.
+   the ignored operator env file.
 3. Open `${OCTO_LIVE_ADMIN_URL}/settings`.
 4. Run **Java Health** to validate the Java app-server APM path.
 5. Run **Demo Storyboard** to create a linked shop, payment, support, Java,
@@ -313,16 +314,21 @@ OCI Console -> Observability & Management -> Application Performance Monitoring 
 
 To create a scripted browser monitor for the same user path:
 
-1. Open **Scripts** in Availability Monitoring.
-2. Create a script of type **Playwright**.
-3. Upload `tools/demo-guide/octo-availability-monitor.playwright.ts`.
-4. Validate the script from a non-production test target first.
-5. Create a **Scripted Browser** monitor from that script.
-6. Select the APM domain, interval, timeout, SSL validation, and global vantage
-   points.
-7. Enable screenshots and HAR collection for troubleshooting.
-8. Add the monitor to the runbook dashboard and tag it with the deployment
-   prefix.
+1. Use `deploy/oci/ensure_availability_monitors.sh --scripted-browser`
+   to upload `shop/tools/apm/octo-apm-demo-synthetic.spec.ts` and create or
+   update the Scripted Browser monitor.
+2. Set non-secret URL parameters at deploy time:
+   `OCTO_LIVE_SHOP_URL`, `OCTO_LIVE_ADMIN_URL`, and
+   `OCTO_APM_DEMO_MODE=monitor`.
+3. Set `OCTO_ADMIN_PASSWORD` as a secret monitor parameter or provide
+   `OCTO_ADMIN_PASSWORD_SECRET_OCID` and
+   `OCTO_ADMIN_PASSWORD_SECRET_REGION` from the operator environment.
+4. Optionally set `OCTO_INTERNAL_SERVICE_KEY` as a secret parameter to make
+   the script verify `/api/observability/payment-gateway/events` rows.
+5. Keep the Scripted Browser defaults at `repeat=600`, `timeout=300`, and
+   `isFailureRetried=false` for the recurring monitor.
+6. Validate the script from a non-production target first, then add it to the
+   runbook dashboard and tag it with the deployment prefix.
 
 ## 11. Log Analytics Drilldown
 
@@ -346,7 +352,7 @@ OCI Console -> Observability & Management -> Log Analytics -> Log Explorer
    - `Payment Gateway Request ID`
    - `MITRE Technique ID`
    - `OSQuery Finding`
-   - `Original Log Content`
+   - `msg`
 4. Open an app log row and use the trace id to return to APM Trace Explorer.
 5. For the attack story, run:
    - `attack-lab-trace-timeline.sql`
@@ -406,12 +412,17 @@ Use this narrative:
 
 ## Supporting Scripts
 
-The frontend-only Playwright script for Availability Monitoring and local
-browser validation is:
+The canonical Playwright script for Availability Monitoring and local browser
+validation is:
 
 ```text
-tools/demo-guide/octo-availability-monitor.playwright.ts
+shop/tools/apm/octo-apm-demo-synthetic.spec.ts
 ```
+
+See [Synthetic monitoring](synthetic-monitoring.md) for the full safe
+parameter and deployment flow. The facilitator script
+`tools/demo-guide/octo-availability-monitor.playwright.ts` is kept as a
+lightweight compatibility path.
 
 The existing local browser runner remains useful for private traffic
 generation:

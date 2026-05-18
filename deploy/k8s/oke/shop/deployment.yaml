@@ -1,7 +1,7 @@
 # Drone Shop — production Deployment on OKE.
 #
 # Namespace:        octo-drone-shop
-# Public hostname:  shop.${DNS_DOMAIN}  (for DEFAULT/<OCI_PROFILE>: shop.example.test)
+# Public hostname:  drones.${DNS_DOMAIN}
 # Image:            ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-drone-shop:${IMAGE_TAG}
 #
 # Rendered via envsubst before apply:
@@ -17,6 +17,8 @@ metadata:
     app.kubernetes.io/part-of: octo-apm-demo
     app.kubernetes.io/component: shop
 spec:
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 300
   replicas: 2
   strategy:
     type: RollingUpdate
@@ -34,7 +36,17 @@ spec:
       annotations:
         # Force rollout when data key secret rotates
         octo.oracle.com/restartedAt: "${IMAGE_TAG}"
+        oracle.com/oci_la_log_source_name: "SOC Application Logs"
+        oracle.com/oci_la_log_set: "octo-apm-demo"
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       imagePullSecrets:
         - name: ocir-pull-secret
       containers:
@@ -44,13 +56,46 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: APP_NAME
               value: "octo-drone-shop"
             - name: OTEL_SERVICE_NAME
-              value: "octo-drone-shop"
+              value: "octo-drone-shop-oke"
             - name: APP_RUNTIME
               value: "oke"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: SERVICE_NAMESPACE
+              value: "octo"
+            - name: SERVICE_INSTANCE_ID
+              value: "$(POD_NAME)"
+            - name: DEMO_STACK_NAME
+              value: "octo-apm-demo"
+            - name: OCI_MONITORING_NAMESPACE
+              value: "octo_apm_demo"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=octo,deployment.environment=production,cloud.provider=oci,oci.demo.stack=octo-apm-demo,k8s.cluster.name=${OKE_CLUSTER_NAME},k8s.namespace.name=$(POD_NAMESPACE),k8s.pod.name=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
+            - name: OTEL_TRACES_SAMPLER
+              value: "always_on"
+            - name: OTEL_PYTHON_LOG_CORRELATION
+              value: "true"
+            - name: OTLP_LOG_EXPORT_ENABLED
+              value: "false"
             - name: ENVIRONMENT
               value: "production"
             - name: DNS_DOMAIN
@@ -58,9 +103,37 @@ spec:
             - name: SERVICE_CRM_URL
               value: "http://enterprise-crm-portal.${K8S_NAMESPACE_CRM}.svc.cluster.local:8080"
             - name: CRM_PUBLIC_URL
-              value: "https://crm.${DNS_DOMAIN}"
+              value: "https://admin.${DNS_DOMAIN}"
+            - name: JAVA_APM_ENABLED
+              value: "true"
+            - name: JAVA_APM_SERVICE_URL
+              value: "http://octo-apm-java-demo.${K8S_NAMESPACE_SHOP}.svc.cluster.local"
+            - name: JAVA_APM_SERVICE_NAME
+              value: "octo-java-app-server-oke"
+            - name: PAYMENT_PROVIDER
+              value: "simulated"
+            - name: PAYMENT_GATEWAY_SIMULATION_ENABLED
+              value: "true"
+            - name: PAYMENT_SIMULATION_MODE
+              value: "approve"
+            - name: PAYMENT_SIMULATION_CURRENCY
+              value: "usd"
+            - name: WORKFLOW_API_BASE_URL
+              value: "http://octo-workflow-gateway.${K8S_NAMESPACE_SHOP}.svc.cluster.local:8090"
+            - name: WORKFLOW_PUBLIC_API_BASE_URL
+              value: "/api/workflow-gateway"
+            - name: WORKFLOW_SERVICE_NAME
+              value: "octo-workflow-gateway-oke"
+            - name: WORKFLOW_POLL_SECONDS
+              value: "90"
+            - name: WORKFLOW_FAULTY_QUERY_ENABLED
+              value: "false"
+            - name: SELECTAI_TIMEOUT_SECONDS
+              value: "30"
             - name: OCI_AUTH_MODE
               value: "instance_principal"
+            - name: OCI_REGION
+              value: "${OCI_REGION}"
             # ── Cross-service shared secret
             - name: AUTH_TOKEN_SECRET
               valueFrom:
@@ -158,6 +231,12 @@ spec:
                   name: octo-oci-config
                   key: genai-model-id
                   optional: true
+            - name: SELECTAI_PROFILE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: octo-oci-config
+                  key: selectai-profile-name
+                  optional: true
             - name: LLMETRY_ENABLED
               value: "true"
             - name: LLMETRY_STORE_ENABLED
@@ -244,8 +323,8 @@ spec:
               cpu: "250m"
               memory: "512Mi"
             limits:
-              cpu: "2"
-              memory: "2Gi"
+              cpu: "1"
+              memory: "1536Mi"
       volumes:
         - name: wallet
           secret:
@@ -270,31 +349,22 @@ spec:
       targetPort: http
 
 ---
-# Public-facing LoadBalancer Service with OCI WAF attach annotation.
+# Edge-facing NodePort Service. The public OCI Load Balancer is managed
+# outside Kubernetes and can target this service during a controlled cutover.
 apiVersion: v1
 kind: Service
 metadata:
   name: octo-drone-shop-lb
   namespace: ${K8S_NAMESPACE_SHOP}
-  annotations:
-    service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
-    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
-    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "100"
-    service.beta.kubernetes.io/oci-load-balancer-subnet1: "${OCI_LB_SUBNET_OCID}"
-    service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode: "None"
-    # Attach the WAF policy created by deploy/terraform/modules/waf/
-    oci.oraclecloud.com/waf-policy-ocid: "${WAF_POLICY_SHOP_OCID}"
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: octo-drone-shop
   ports:
-    - name: https
-      port: 443
-      targetPort: http
-    - name: http
+    - name: edge-http
       port: 80
       targetPort: http
+      nodePort: 30080
 
 ---
 apiVersion: autoscaling/v2
@@ -308,7 +378,7 @@ spec:
     kind: Deployment
     name: octo-drone-shop
   minReplicas: 2
-  maxReplicas: 6
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:

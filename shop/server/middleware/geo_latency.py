@@ -35,7 +35,7 @@ class GeoLatencyMiddleware(BaseHTTPMiddleware):
             with tracer.start_as_current_span("geo.network_latency") as span:
                 span.set_attribute("geo.client_region", region)
                 span.set_attribute("geo.latency_ms", delay_ms)
-                actual = int(delay_ms * random.uniform(0.8, 1.2))
+                actual = int(delay_ms * random.uniform(0.8, 1.2))  # noqa: S311
                 await asyncio.sleep(actual / 1000)
 
         response = await call_next(request)

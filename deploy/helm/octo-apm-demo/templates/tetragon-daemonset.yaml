@@ -1,0 +1,43 @@
+{{- if .Values.tetragon.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tetragon
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: tetragon
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tetragon
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tetragon
+    spec:
+      hostPID: true
+      hostNetwork: true
+      containers:
+      - name: tetragon
+        image: quay.io/cilium/tetragon:v1.12.0
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: btf
+          mountPath: /var/lib/tetragon/btf
+          readOnly: true
+        - name: log-dir
+          mountPath: /var/log/tetragon
+        command:
+        - /usr/bin/tetragon
+        - --export-filename
+        - /var/log/tetragon/tetragon.log
+      volumes:
+      - name: btf
+        hostPath:
+          path: /sys/kernel/btf/vmlinux
+      - name: log-dir
+        hostPath:
+          path: /var/log/tetragon
+          type: DirectoryOrCreate
+{{- end }}

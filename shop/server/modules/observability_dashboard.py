@@ -1,3 +1,4 @@
+# ruff: noqa: S608 - bounded int parameters, not user-controllable SQL
 """360 Observability Dashboard — unified monitoring view for Drone Shop.
 
 Provides API endpoints for a single-pane-of-glass dashboard covering
@@ -204,10 +205,17 @@ async def observability_capabilities():
     return _observability_capabilities()
 
 
+@router.get("/melts")
+async def observability_melts():
+    """MELTS collection contract for end-to-end demo evidence."""
+    return _melts_capabilities()
+
+
 def _observability_capabilities() -> dict:
     return {
         "service": service_metadata(),
         "runtime": cfg.safe_runtime_summary(),
+        "melts": _melts_capabilities(),
         "signals": {
             "traces": {
                 "enabled": cfg.apm_configured,
@@ -235,6 +243,7 @@ def _observability_capabilities() -> dict:
             "metrics": {
                 "prometheus_endpoint": "/metrics",
                 "oci_monitoring_enabled": bool(cfg.oci_compartment_id),
+                "oci_monitoring_namespace": "octo_apm_demo",
                 "business_metric_families": [
                     "orders",
                     "checkout",
@@ -348,6 +357,7 @@ def _observability_capabilities() -> dict:
         "endpoints": {
             "dashboard": "/api/observability/360",
             "capabilities": "/api/observability/capabilities",
+            "melts": "/api/observability/melts",
             "payment_gateway_events": "/api/observability/payment-gateway/events",
             "metrics": "/metrics",
             "readiness": "/ready",
@@ -367,6 +377,80 @@ def _observability_capabilities() -> dict:
     }
 
 
+def _melts_capabilities() -> dict[str, Any]:
+    """Describe how a Shop demo journey proves Metrics, Events, Logs, Traces, and Synthetics."""
+    return {
+        "version": "2026.05",
+        "coverage": {
+            "metrics": {
+                "status": "enabled" if cfg.oci_compartment_id else "needs_oci_compartment_id",
+                "namespace": "octo_apm_demo",
+                "families": [
+                    "app.requests.rate",
+                    "app.errors.rate",
+                    "app.checkout.count",
+                    "app.orders.count",
+                    "shop.business.payment.authorizations",
+                    "shop.business.assistant.queries",
+                ],
+                "dimensions": ["serviceName", "environment", "runtime", "instanceId"],
+            },
+            "events": {
+                "status": "enabled",
+                "families": [
+                    "checkout.rum_action",
+                    "payment.gateway.step",
+                    "assistant.llmetry",
+                    "api_gateway.security_detection",
+                    "attack_lab.stage",
+                ],
+                "join_fields": ["Trace ID", "Order ID", "Payment Gateway Request ID", "Assistant Session ID"],
+            },
+            "logs": {
+                "status": "enabled" if cfg.logging_configured else "not_configured",
+                "sources": ["SOC Application Logs", "OCI Unified Schema Logs"],
+                "saved_searches": [
+                    "service-trace-log-coverage",
+                    "connector-live-log-coverage",
+                    "checkout-payment-correlation",
+                    "payment-gateway-security-triage",
+                    "genai-assistant-llmetry",
+                ],
+            },
+            "traces": {
+                "status": "enabled" if cfg.apm_configured else "not_configured",
+                "saved_queries": [
+                    "OCTO APM - checkout end-to-end",
+                    "OCTO APM - payment Java sidecar",
+                    "OCTO APM - assistant GenAI LLMetry",
+                    "OCTO APM - service errors",
+                ],
+                "required_components": [
+                    "octo-drone-shop",
+                    "octo-payment-gateway-emulator",
+                    "Apple Pay Gateway",
+                    "Google Pay Gateway",
+                    "VISA Payment Network",
+                    "Mastercard Payment Network",
+                    "octo-java-app-server",
+                    "oracle-atp",
+                    "enterprise-crm-portal",
+                ],
+            },
+            "synthetics": {
+                "status": "enabled" if cfg.internal_service_key else "manual_or_external",
+                "generators": ["demo_storyboard", "synthetic_users", "browser_runner", "traffic_generator"],
+                "rum_dimensions": ["synthetic_user_enabled", "synthetic_user_domain"],
+            },
+        },
+        "operator_pivots": {
+            "primary": ["Trace ID", "Order ID", "Payment Gateway Request ID"],
+            "secondary": ["Run ID", "Workflow ID", "Assistant Session ID", "Request ID"],
+            "privacy": "token_safe_no_raw_payment_or_llm_content",
+        },
+    }
+
+
 async def _payment_gateway_events(
     *,
     order_id: int,
@@ -375,6 +459,7 @@ async def _payment_gateway_events(
     limit: int,
 ) -> list[dict[str, Any]]:
     row_limit = max(1, min(int(limit or 50), 200))
+    # row_limit is a bounded int (1-200), not user-controllable text. ruff S608 false positive.
     query = text(
         f"""
         SELECT e.id, e.order_id, e.gateway_name, e.gateway_provider, e.gateway_request_id,

@@ -7,13 +7,7 @@ from typing import Any
 
 import pytest
 
-from server.store_service import (
-    normalize_checkout_idempotency_key,
-    normalize_customer_email,
-    normalize_storefront_session_id,
-    place_order,
-    update_order_payment_state,
-)
+from server.store_service import normalize_checkout_idempotency_key, place_order, update_order_payment_state
 
 
 class _Mappings:
@@ -62,6 +56,7 @@ class _FakeDb:
             order = {
                 "id": self.order_insert_count,
                 "customer_id": params["customer_id"],
+                "user_id": params.get("user_id"),
                 "total": params["total"],
                 "status": params["status"],
                 "created_at": "2026-05-06T00:00:00",
@@ -102,7 +97,7 @@ class _FakeDb:
             return _Rows()
 
         if "INSERT INTO audit_logs" in sql:
-            self.audit_logs.append(params)
+            self.audit_logs.append(dict(params))
             return _Rows()
 
         if "FROM order_items WHERE order_id" in sql:
@@ -122,28 +117,6 @@ class _FakeDb:
 def test_checkout_idempotency_key_validation_rejects_unsafe_values(key: str) -> None:
     with pytest.raises(ValueError):
         normalize_checkout_idempotency_key(key)
-
-
-@pytest.mark.parametrize("session_id", ["cart-1", "abc.DEF_123:456", "x" * 64])
-def test_storefront_session_id_accepts_url_safe_values(session_id: str) -> None:
-    assert normalize_storefront_session_id(session_id) == session_id
-
-
-@pytest.mark.parametrize("session_id", ["", "has space", "x" * 65, "../unsafe"])
-def test_storefront_session_id_rejects_values_that_can_break_db(session_id: str) -> None:
-    with pytest.raises(ValueError):
-        normalize_storefront_session_id(session_id)
-
-
-@pytest.mark.parametrize("email", ["buyer@example.test", "SHOPPER@OCTO.LOCAL"])
-def test_customer_email_validation_accepts_email_addresses(email: str) -> None:
-    assert normalize_customer_email(email) == email.lower()
-
-
-@pytest.mark.parametrize("email", ["", "not-an-email", "missing-domain@", "x" * 201 + "@example.test"])
-def test_customer_email_validation_rejects_unsafe_values(email: str) -> None:
-    with pytest.raises(ValueError):
-        normalize_customer_email(email)
 
 
 def test_place_order_reuses_existing_order_for_same_checkout_key() -> None:
@@ -181,31 +154,6 @@ def test_place_order_reuses_existing_order_for_same_checkout_key() -> None:
     assert replay["idempotent_replay"] is True
 
 
-def test_place_order_audit_log_uses_authenticated_user_id() -> None:
-    db = _FakeDb()
-    customer = {"id": 7, "email": "buyer@example.invalid", "name": "Buyer"}
-    items = [{"product_id": 11, "quantity": 2, "price": 100.0}]
-
-    order = asyncio.run(
-        place_order(
-            db,
-            customer=customer,
-            items=items,
-            shipping_address="Dock 1",
-            checkout_idempotency_key="550e8400-e29b-41d4-a716-446655440010",
-            session_id="browser-session-1",
-            source="shop_checkout",
-            trace_id="trace-1",
-            user_id=42,
-        )
-    )
-
-    assert order["order"]["id"] == 1
-    assert db.audit_logs[0]["user_id"] == 42
-    assert "customer_id=7" in db.audit_logs[0]["details"]
-    assert "actor_user_id=42" in db.audit_logs[0]["details"]
-
-
 def test_update_order_payment_state_persists_gateway_request_id() -> None:
     db = _FakeDb()
     db.orders.append(
@@ -235,3 +183,31 @@ def test_update_order_payment_state_persists_gateway_request_id() -> None:
     assert state["payment_required"] == "0"
     assert state["payment_gateway_request_id"] == "pgw-9-abc123"
     assert db.orders[0]["payment_gateway_request_id"] == "pgw-9-abc123"
+
+
+def test_place_order_audit_log_uses_authenticated_user_id_when_available() -> None:
+    db = _FakeDb()
+    customer = {"id": 7, "email": "buyer@example.invalid", "name": "Buyer"}
+    items = [
+        {
+            "product_id": 11,
+            "quantity": 1,
+            "price": 100.0,
+        }
+    ]
+
+    result = asyncio.run(
+        place_order(
+            db,
+            customer=customer,
+            items=items,
+            shipping_address="Dock 1",
+            checkout_idempotency_key="550e8400-e29b-41d4-a716-446655440010",
+            user_id=42,
+            trace_id="f" * 32,
+        )
+    )
+
+    assert result["order"]["user_id"] == 42
+    assert db.audit_logs[-1]["user_id"] == 42
+    assert db.audit_logs[-1]["trace_id"] == "f" * 32

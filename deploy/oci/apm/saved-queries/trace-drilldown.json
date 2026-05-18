@@ -1,0 +1,25 @@
+{
+  "name": "octo-apm-trace-drilldown",
+  "displayName": "OCTO APM - trace drilldown",
+  "description": "Parameterised span query for one trace id. Pair with Log Analytics trace-drilldown for the matching log rows.",
+  "queryText": "show (spans) TraceId, ServiceName as Service, OperationName as Operation, SpanDuration as Duration where TraceId = '${trace_id}'",
+  "scope": {
+    "type": "spans",
+    "defaultLookback": "l24h",
+    "services": ["octo-drone-shop", "octo-drone-shop-oke", "enterprise-crm-portal", "enterprise-crm-portal-oke", "octo-java-app-server", "octo-java-app-server-oke", "octo-workflow-gateway", "octo-workflow-gateway-oke"]
+  },
+  "parameters": [
+    {
+      "name": "trace_id",
+      "description": "32-character OCI APM/W3C trace id copied from APM, RUM, OCI Logging, or Log Analytics."
+    }
+  ],
+  "troubleshootingFields": ["TraceId", "ServiceName", "OperationName", "SpanDuration", "oracleApmTraceId", "oracleApmSpanId"],
+  "logAnalyticsPivots": [
+    {
+      "savedSearch": "trace-drilldown",
+      "field": "Trace ID",
+      "parameter": "trace_id"
+    }
+  ]
+}

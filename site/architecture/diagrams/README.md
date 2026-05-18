@@ -1,24 +1,27 @@
 # Architecture diagrams (drawio)
 
-Five diagrams describing the platform from different angles. Open any
+Four diagrams describing the platform from different angles. Open any
 of them at [app.diagrams.net](https://app.diagrams.net) → *File* →
 *Open from → Device* and select the `.drawio` file.
 
 | File | Focus |
 |---|---|
 | [`private-demo-observability-reference.drawio`](./private-demo-observability-reference.drawio) | Current private Compute reference — DNS in external DNS tenancy, preserved LB HTTPS 443, API Gateway layers for public `/api` calls and private component calls, Shop/Admin app hosts, Java app-server APM, OCI GenAI assistant, optional Langfuse LLMetry comparison, ATP, OCI Logging, Service Connector, Log Analytics, Cloud Guard OSQuery, Availability Monitoring, Stack Monitoring |
-| [`checkout-payment-flow.drawio`](./checkout-payment-flow.drawio) | Layered checkout/payment flow — Browser, Shop, gateway emulator method branches, Java verification/processor, ATP persistence, CRM sync, APM/RUM, and Log Analytics saved-search pivots. The SVG preview has animated request, payment, persistence, and telemetry movement. |
-| [`platform-overview.drawio`](./platform-overview.drawio) | Full topology — users → WAF → OKE → data + observability plane, every service + every OCI backend |
+| [`platform-overview.drawio`](./platform-overview.drawio) | Full topology - users, edge controls, private Compute reference, OKE support path, data plane, Java sidecar, and OCI observability services |
 | [`observability-flow.drawio`](./observability-flow.drawio) | MELTS signal flow — how traces / logs / metrics / events / SQL-perf reach OCI APM / Logging / Log Analytics / Stack Monitoring / Events |
 | [`deploy-topology.drawio`](./deploy-topology.drawio) | Build path + OCIR + three deploy targets (OKE, single-VM, local-stack) with per-target trade-offs |
 
-Rendered preview:
+## Platform overview preview
 
-![Private Demo OCTO APM Demo architecture](./private-demo-observability-reference.svg)
+[Download editable Platform Overview drawio source](./platform-overview.drawio)
 
-Payment flow preview:
+![Platform Overview OCTO APM Demo architecture](./platform-overview.svg?v=20260511-contrast)
 
-![Checkout payment flow](./checkout-payment-flow.svg?v=20260509-flow)
+## Private Compute preview
+
+[Download editable Private Compute drawio source](./private-demo-observability-reference.drawio)
+
+![Private Demo OCTO APM Demo architecture](./private-demo-observability-reference.svg?v=20260509-sanitized)
 
 ## Re-rendering
 
@@ -29,13 +32,9 @@ The diagrams are authored in [draw.io](https://www.drawio.com/) (now
 To re-export to SVG/PNG for embedding in mkdocs:
 
 ```bash
-# Install the drawio CLI once
-npm install -g @hediet/drawio-cli
-
-# Export to SVG
+# Export to SVG when the drawio desktop CLI is installed
 drawio --export --format svg --output platform-overview.svg platform-overview.drawio
 drawio --export --format svg --output private-demo-observability-reference.svg private-demo-observability-reference.drawio
-drawio --export --format svg --output checkout-payment-flow.svg checkout-payment-flow.drawio
 
 # Export to PNG at 2x DPI
 drawio --export --format png --scale 2 --output platform-overview.png platform-overview.drawio
@@ -44,8 +43,10 @@ drawio --export --format png --scale 2 --output platform-overview.png platform-o
 Commit both the `.drawio` source and the rendered asset — reviewers
 on the PR can then diff the image directly.
 
-Use the `skills/layered-architecture-diagrams` workflow when creating or
-changing editable diagrams with layers or animated flow overlays.
+Keep public diagram sources sanitized. Do not commit rendered variants
+that include live public IP addresses, private IP addresses, OCIDs,
+tenancy names, or operator allowlists; use local files matching the
+`*with-ips*`, `*resolved*`, or `*.local.*` ignore patterns instead.
 
 ## Conventions
 
@@ -58,6 +59,24 @@ changing editable diagrams with layers or animated flow overlays.
 
 Arrows with **solid** strokes = synchronous request path. **Dashed**
 strokes = asynchronous, event-driven, or configuration flow.
+
+## Layer authoring
+
+Each `.drawio` source is split into editable layers so presenters can turn
+sections on and off without moving individual shapes:
+
+| Diagram | Main layers |
+|---|---|
+| `platform-overview.drawio` | notes/flows, users and edge controls, application runtime, data plane, observability services, security/identity/platform, delivery/IaC |
+| `observability-flow.drawio` | notes/flows, app instrumentation and correlation, collection/routing, OCI observability destinations, MELTS legend |
+| `deploy-topology.drawio` | notes/flows, build and validation, registry/image tags, OKE target, VM/Compute targets, local regression target, Terraform/shared OCI services |
+| `private-demo-observability-reference.drawio` | notes/flows, external entry and edge, private app compute, data and AI services, code delivery, observability/security plane, operator access |
+
+Keep connector arrows on the notes/flow layer. For flow movement in a
+presentation, animate or highlight only that layer while the component layers
+remain fixed. When adding a new capability, place the node on the owning layer
+and add a short edge label instead of duplicating the same component in
+multiple layers.
 
 ## Authoring gotchas
 

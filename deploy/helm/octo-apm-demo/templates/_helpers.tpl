@@ -22,6 +22,14 @@ app: octo-drone-shop
 app: enterprise-crm-portal
 {{- end -}}
 
+{{- define "octo.javaGateway.selectorLabels" -}}
+app: octo-apm-java-demo
+{{- end -}}
+
+{{- define "octo.workflowGateway.selectorLabels" -}}
+app: octo-workflow-gateway
+{{- end -}}
+
 {{/*
 Resolve a component's OCIR image. Falls back to global defaults when the
 per-component override is empty.

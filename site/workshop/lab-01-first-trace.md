@@ -1,31 +1,79 @@
+---
+title: Lab 01 — Your first trace
+description: Generate one HTTP request, find its trace in OCI APM, and read what it contains. The foundation lab — every later lab assumes you can do this.
+---
+
 # Lab 01 — Your first trace
 
 ## Objective
 
 Generate one HTTP request, find its trace in OCI APM, and read what it
-contains.
+contains. This is the foundation lab — every later lab assumes you can
+follow a request from the browser into APM, find it, and explain what
+each span represents.
 
 ## Time budget
 
-20 minutes.
+20 minutes (first time). 5 minutes once you've done it once.
 
 ## Prerequisites
 
 - Platform deployed and reachable (see [workshop intro](index.md#prerequisites-checklist)).
+- The pre-flight `/ready` check returned `apm_configured: true` on both
+  shop and admin endpoints.
+- You know your APM Domain OCID — find it in *OCI Console → Observability
+  & Management → APM → Administration → Domain Details*.
+
+## What you'll learn
+
+- How W3C trace context (`traceparent` header) flows from any HTTP client
+  into the FastAPI server and out to downstream services.
+- How to find a specific trace in OCI APM Trace Explorer.
+- How to read a flame chart: parent/child relationships, span duration,
+  span attributes.
+- The naming convention this platform uses for span attributes
+  (`service.name`, `service.namespace`, `service.instance.id`).
 
 ## Steps
 
+!!! tip "Personalize the commands"
+    The **Configure your deployment** panel at the top of this page lets
+    you replace `example.tld`, `${DNS_DOMAIN}`, and `<COMPARTMENT_OCID>`
+    with your real values everywhere on this page. Open it once and the
+    `curl` commands below become directly copy-pasteable.
+
 ### 1. Generate a request
 
+We'll mint our own W3C `traceparent` header so we know the exact 32-hex
+trace ID to look for later. This makes the lab deterministic — no
+guessing which trace was yours among the hundreds the traffic generator
+produces.
+
 ```bash
+# Mint a fresh traceparent: version-traceId-spanId-flags
 TRACEPARENT="00-$(openssl rand -hex 16)-$(openssl rand -hex 8)-01"
 echo "traceparent we'll inject: $TRACEPARENT"
 
 curl -sS \
     -H "traceparent: $TRACEPARENT" \
     -H "X-Workflow-Id: workshop-lab-01" \
-    https://shop.example.tld/api/products | jq '.[0]'
+    https://drones.example.tld/api/products | jq '.[0]'
 ```
+
+**Expected response shape:**
+
+```json
+{
+  "id": "drone-xyz",
+  "name": "Carbon Fiber Recon",
+  "price": 1299.0,
+  "category": "tactical",
+  "in_stock": true
+}
+```
+
+If you got HTTP 200 + a JSON product object, the request succeeded and
+APM has begun ingesting your span. ✓
 
 The `traceparent` header is the W3C standard the shop's OTel SDK reads.
 By generating it ourselves, we know the exact 32-hex `trace_id` to
@@ -38,14 +86,29 @@ echo "trace_id: $TRACE_ID"
 
 ### 2. Find the trace in OCI APM (Console)
 
-1. Open OCI Console → **Observability & Management → Application
+1. Open **OCI Console → Observability & Management → Application
    Performance Monitoring → Trace Explorer**.
-2. Pick the APM Domain (`octo-apm`).
-3. In the search bar, paste:
-    ```
-    TraceId = '<your trace_id>'
-    ```
-4. Click **Run query**. The trace appears within ~30 s of the request.
+2. Pick your APM Domain (typically `<DEPLOYMENT_PREFIX>-apm-domain`).
+3. In the query bar, paste:
+   ```
+   TraceId = '<your trace_id>'
+   ```
+4. Click **Run query**. The trace appears within ~30 seconds of the
+   request (OCI APM ingestion SLA is 1–2 minutes).
+
+**What you should see** — a Trace Explorer screen similar to this (top
+nav blurred + tenancy chips redacted to keep the image publishable):
+
+![Trace Explorer with a single trace result](../assets/screenshots/oci/apm-01-trace-explorer-result.png)
+
+The single matched row should show:
+
+- **Operation**: `GET /api/products`
+- **Service**: `octo-drone-shop`
+- **Status**: HTTP 200
+- **Duration**: 20-150 ms (varies with cold-start)
+- **Span count**: 3-5 (FastAPI server span + SQLAlchemy spans + maybe a
+  cache lookup)
 
 ### 3. Find the trace in OCI APM (CLI)
 
@@ -68,16 +131,50 @@ You should see at least three spans:
 
 In the Console UI, click the trace row to open the **flame chart**.
 
-- The root span shows total wall-clock time.
-- Child spans are nested by parent-id; widths show their share of the
-  total.
-- Click any span to see its **attributes**: `service.name`, `http.method`,
-  `http.route`, `db.system`, `db.statement`.
+- The **root span** shows total wall-clock time end-to-end
+- Child spans are nested by parent ID; widths show their share of the total
+- Click any span to see its **attributes** in the right-hand panel
 
-The `service.name` should be `octo-drone-shop`. The
-`http.route` should be `/api/products`. If the trace has a `peer.service`
-attribute pointing at `enterprise-crm-portal`, you generated a request
-that crossed the cross-service boundary — useful for the next lab.
+**Key attributes on the root span:**
+
+| Attribute | Expected value | Why it matters |
+|---|---|---|
+| `service.name` | `octo-drone-shop` | Identifies which service produced the span |
+| `service.namespace` | `octo` | Logical grouping for cross-service search |
+| `service.instance.id` | pod/container/VM identifier | Lets you pivot to that instance's logs |
+| `http.method` | `GET` | HTTP verb |
+| `http.route` | `/api/products` | FastAPI route template (not the full URL) |
+| `http.status_code` | `200` | Response status |
+
+**On the database child span (SQLAlchemy):**
+
+| Attribute | Expected value |
+|---|---|
+| `db.system` | `oracle` (or `postgresql` on local stack) |
+| `db.statement` | `SELECT ... FROM products WHERE ...` |
+| `db.sql_id` | Oracle SQL_ID hash (only on ATP) |
+
+**The platform's correlation contract** says every log record emitted
+during this request will share the same `oracleApmTraceId` value as the
+trace's root `trace_id`. We'll exercise that in Lab 02.
+
+**Flame chart view:** click the matched trace and the per-trace flame
+chart opens, showing the FastAPI server span as the root and nested
+SQLAlchemy / Java sidecar spans as children:
+
+![Flame chart for one trace](../assets/screenshots/oci/apm-02-flame-chart.png)
+
+**Span attributes:** click any span in the flame chart to open the
+right-hand attributes panel. The attributes panel reveals
+`service.name`, `service.namespace`, `http.route`, `db.statement`,
+`oracleApmTraceId`, and the other fields documented in the architecture
+correlation contract:
+
+![Span attribute detail panel](../assets/screenshots/oci/apm-03-span-attributes.png)
+
+If the trace has a `peer.service` attribute pointing at
+`enterprise-crm-portal`, you generated a request that crossed the
+cross-service boundary — useful for the next lab.
 
 ## Verify
 

@@ -51,7 +51,7 @@ async def get_tickets(customer_id: int):
                 params = {f"tid_{i}": tid for i, tid in enumerate(ticket_ids)}
                 msg_result = await db.execute(
                     text(
-                        f"SELECT id, ticket_id, sender_type, content, created_at "
+                        f"SELECT id, ticket_id, sender_type, content, created_at "  # noqa: S608
                         f"FROM ticket_messages WHERE ticket_id IN ({placeholders}) ORDER BY created_at ASC"
                     ),
                     params,

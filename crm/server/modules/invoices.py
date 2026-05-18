@@ -125,7 +125,8 @@ async def generate_invoice_pdf(invoice_id: int, request: Request):
                     source_ip=client_ip, payload=template)
 
         from jinja2 import Environment
-        env = Environment()  # VULN: no sandboxing
+        # VULN: no sandboxing — deliberate SSTI demo surface. See Lab 06.
+        env = Environment()  # nosec B701 - intentional demo vuln  # noqa: S701
         try:
             rendered = env.from_string(f"Invoice #{invoice_id} - Template: {template}").render()
         except Exception as e:

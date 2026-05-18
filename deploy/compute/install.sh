@@ -87,8 +87,8 @@ CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-podman}"
 ENABLE_HOST_NGINX="${ENABLE_HOST_NGINX:-false}"
 APP_IMAGE_BUILD_ENABLED="${APP_IMAGE_BUILD_ENABLED:-false}"
 APP_IMAGE_PULL_POLICY="${APP_IMAGE_PULL_POLICY:-if-not-present}"
-APP_CONTAINER_UID="${APP_CONTAINER_UID:-1000}"
-APP_CONTAINER_GID="${APP_CONTAINER_GID:-1000}"
+APP_CONTAINER_UID="${APP_CONTAINER_UID:-10001}"
+APP_CONTAINER_GID="${APP_CONTAINER_GID:-10001}"
 JAVA_APM_ENABLED="${JAVA_APM_ENABLED:-false}"
 JAVA_APM_IMAGE_BUILD_ENABLED="${JAVA_APM_IMAGE_BUILD_ENABLED:-false}"
 JAVA_APM_IMAGE_PULL_POLICY="${JAVA_APM_IMAGE_PULL_POLICY:-if-not-present}"
@@ -131,7 +131,7 @@ container_env_vars=(
     SELECTAI_PROFILE_NAME SELECTAI_TIMEOUT_SECONDS
     OCI_GENAI_ENDPOINT OCI_GENAI_MODEL_ID
     LLMETRY_ENABLED LLMETRY_STORE_ENABLED LLMETRY_CAPTURE_CONTENT
-    LANGFUSE_ENABLED LANGFUSE_HOST LANGFUSE_PROJECT_NAME LANGFUSE_PUBLIC_KEY LANGFUSE_PUBLIC_KEY_FILE
+    LANGFUSE_ENABLED LANGFUSE_HOST LANGFUSE_PUBLIC_KEY LANGFUSE_PUBLIC_KEY_FILE
     LANGFUSE_SECRET_KEY LANGFUSE_SECRET_KEY_FILE LANGFUSE_OTEL_EXPORT_ENABLED
     LANGFUSE_TIMEOUT_SECONDS LANGFUSE_INGESTION_VERSION
     PAYMENT_PROVIDER PAYMENT_GATEWAY_SIMULATION_ENABLED
@@ -140,6 +140,7 @@ container_env_vars=(
     SYNTHETIC_USER_COUNT SYNTHETIC_USER_ORDER_COUNT
     SYNTHETIC_USER_DELETE_AFTER_DAYS SYNTHETIC_USER_JOB_TIMEOUT_SECONDS
     DATABASE_OBSERVABILITY_ENABLED OCI_AUTH_MODE OCI_COMPARTMENT_ID
+    OCI_REGION OCI_MONITORING_NAMESPACE
     OCI_APM_ENDPOINT OCI_APM_PRIVATE_DATAKEY OCI_APM_PRIVATE_DATAKEY_FILE
     OCI_APM_PUBLIC_DATAKEY OCI_APM_RUM_ENDPOINT OCI_APM_WEB_APPLICATION
     OCI_APM_RUM_PUBLIC_DATAKEY OTLP_LOG_EXPORT_ENABLED OCI_LOG_ID
@@ -261,18 +262,13 @@ install_host_prerequisites
 select_java_21
 
 install -d -m 0755 "$(dirname "${CONTAINER_ENV_FILE}")"
-install -d -m 0700 /opt/octo/secrets
+install -d -m 0750 -o "${APP_CONTAINER_UID}" -g "${APP_CONTAINER_GID}" /opt/octo/secrets
 install -d -m 0755 /opt/octo/apm-agent
 render_container_env_file
 
-if [[ -d /opt/octo/secrets ]]; then
-    chown "root:${APP_CONTAINER_GID}" /opt/octo/secrets
-    chmod 0750 /opt/octo/secrets
-    find /opt/octo/secrets -mindepth 1 -type d -exec chown "root:${APP_CONTAINER_GID}" {} \;
-    find /opt/octo/secrets -mindepth 1 -type d -exec chmod 0750 {} \;
-    find /opt/octo/secrets -type f -exec chown "${APP_CONTAINER_UID}:${APP_CONTAINER_GID}" {} \;
-    find /opt/octo/secrets -type f -exec chmod 0400 {} \;
-fi
+chown -R "${APP_CONTAINER_UID}:${APP_CONTAINER_GID}" /opt/octo/secrets
+find /opt/octo/secrets -type d -exec chmod 0750 {} \;
+find /opt/octo/secrets -type f -exec chmod 0440 {} \;
 
 if [[ ! -d "${WALLET_DIR}" ]] || ! ls "${WALLET_DIR}"/*.sso >/dev/null 2>&1; then
     red "ATP wallet not found in ${WALLET_DIR}; expected cwallet.sso/ewallet.p12/tnsnames.ora"
@@ -581,6 +577,9 @@ case "${CONTAINER_RUNTIME}" in
         install -m 0644 "${SCRIPT_DIR}/systemd/octo-compute.service" /etc/systemd/system/octo-compute.service
         ;;
 esac
+
+install -m 0644 "${SCRIPT_DIR}/systemd/octo-tetragon.service" /etc/systemd/system/octo-tetragon.service
+systemctl enable --now octo-tetragon.service
 
 systemctl daemon-reload
 systemctl enable --now octo-compute.service

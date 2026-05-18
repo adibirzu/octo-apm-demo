@@ -1,0 +1,44 @@
+{
+  "name": "octo-ebpf-tetragon",
+  "description": "Cilium Tetragon eBPF kernel security events.",
+  "type": "JSON",
+  "isEnabled": true,
+  "fieldMaps": [
+    {
+      "sourcePath": "$.time",
+      "logFieldName": "Time"
+    },
+    {
+      "sourcePath": "$.process_exec.process.binary",
+      "logFieldName": "Process Name"
+    },
+    {
+      "sourcePath": "$.process_exec.process.arguments",
+      "logFieldName": "Arguments"
+    },
+    {
+      "sourcePath": "$.process_exec.process.pod.name",
+      "logFieldName": "Pod"
+    },
+    {
+      "sourcePath": "$.process_exec.process.docker",
+      "logFieldName": "Container ID"
+    },
+    {
+      "sourcePath": "$.process_exec.parent.binary",
+      "logFieldName": "Parent Process Name"
+    },
+    {
+      "sourcePath": "$.process_exit.process.binary",
+      "logFieldName": "Process Name"
+    },
+    {
+      "sourcePath": "$.process_kprobe.function_name",
+      "logFieldName": "Function"
+    },
+    {
+      "sourcePath": "$.process_kprobe.args[0].file_arg.path",
+      "logFieldName": "File Path"
+    }
+  ]
+}

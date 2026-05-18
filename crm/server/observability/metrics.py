@@ -54,7 +54,8 @@ def init_metrics() -> metrics.Meter:
     if cfg.apm_configured:
         try:
             from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-            otlp_endpoint = f"{cfg.oci_apm_endpoint.rstrip('/')}/20200101/opentelemetry/private/v1/metrics"
+            base_url = cfg.oci_apm_endpoint.rstrip("/").split("/20200101")[0]
+            otlp_endpoint = f"{base_url}/20200101/opentelemetry/v1/metrics"
             otlp_reader = PeriodicExportingMetricReader(
                 OTLPMetricExporter(
                     endpoint=otlp_endpoint,

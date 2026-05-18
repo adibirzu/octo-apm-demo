@@ -1,0 +1,44 @@
+.git
+.github
+.DS_Store
+
+# Local credentials and secrets must never be sent to Docker/BuildKit.
+credentials/
+secrets/
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.wallet
+
+# Python and test artifacts.
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+**/.venv/
+venv/
+**/venv/
+
+# Frontend/browser tooling artifacts.
+node_modules/
+.playwright-cli/
+playwright-report/
+test-results/
+
+# Repo assets that are not copied by the service Dockerfiles.
+deploy/
+docs/
+site/
+k6/
+tests/
+tmp/
+*.log

@@ -29,6 +29,66 @@ from server.observability.otel_setup import get_tracer
 GATEWAY_NAME = "octo-payment-gateway-emulator"
 GATEWAY_PROVIDER = "cybersource-compatible-simulator"
 GATEWAY_VERSION = "2026.05"
+PAYMENT_COMPONENT_LABELS = {
+    "google-pay-gateway": "Google Pay Gateway",
+    "apple-pay-gateway": "Apple Pay Gateway",
+    "visa-payment-network": "VISA Payment Network",
+    "mastercard-payment-network": "Mastercard Payment Network",
+    "network-token-payment-network": "Network Token Payment Network",
+    "octo-java-payment-processor": "OCTO Java Payment Processor",
+    "octo-antifraud-verification-app": "OCTO Antifraud Verification App",
+    GATEWAY_NAME: "OCTO Payment Gateway Emulator",
+}
+
+_SAFE_WORKFLOW_DETAIL_KEYS = frozenset(
+    {
+        "payment.gateway.decryption_method",
+        "payment.wallet.provider",
+        "payment.wallet.tokenization_type",
+        "payment.wallet.gateway",
+        "payment.wallet.token_hash",
+        "payment.google_pay.api_version",
+        "payment.google_pay.api_version_minor",
+        "payment.google_pay.payment_method_data.type",
+        "payment.google_pay.card_network",
+        "payment.apple_pay.merchant_validation.status",
+        "payment.apple_pay.payment_data.version",
+        "payment.apple_pay.payment_method.network",
+        "payment.apple_pay.header.transaction_id_hash",
+        "payment.card.brand",
+        "payment.card.last4",
+        "payment.card.tokenized",
+        "payment.card.avs.result",
+        "payment.card.cvv.result",
+        "payment.3ds.program",
+        "payment.3ds.eci",
+        "payment.processor.decision",
+        "payment.processor.response_code",
+        "payment.processor.gateway_code",
+        "payment.status",
+        "payment.error_code",
+        "payment.decision_source",
+        "payment.risk_score",
+        "payment.gateway.final",
+        "payment.network",
+        "payment.network.route",
+        "payment.network.response_code",
+        "payment.network.gateway_code",
+        "payment.network.transaction_id",
+        "payment.acquirer.name",
+    }
+)
+
+
+def workflow_detail_fields(attributes: dict[str, Any] | None) -> dict[str, Any]:
+    """Return the token-safe subset shown in checkout/API workflow payloads."""
+    if not attributes:
+        return {}
+    return {
+        key: value
+        for key, value in attributes.items()
+        if key in _SAFE_WORKFLOW_DETAIL_KEYS and value not in ("", None)
+    }
 
 
 @dataclass(frozen=True)
@@ -43,12 +103,24 @@ class PaymentGatewayStep:
     span_id: str = ""
 
     def response_fields(self) -> dict[str, Any]:
-        return {
+        attrs = self.attributes or {}
+        payload = {
             "name": self.name,
             "phase": self.phase,
             "status": self.status,
             "latency_ms": round(float(self.latency_ms or 0), 2),
         }
+        component = attrs.get("component")
+        if component:
+            payload["component"] = component
+            payload["component_label"] = attrs.get("payment.component") or component
+        peer_service = attrs.get("peer.service")
+        if peer_service:
+            payload["peer_service"] = peer_service
+        details = workflow_detail_fields(attrs)
+        if details:
+            payload["details"] = details
+        return payload
 
 
 @dataclass(frozen=True)
@@ -86,6 +158,12 @@ def payment_gateway_capabilities() -> dict[str, Any]:
         "methods": ["credit_card", "apple_pay", "google_pay"],
         "card_networks": ["visa", "mastercard"],
         "wallets": ["apple_pay", "google_pay"],
+        "processor_contract": "cybersource-compatible-authorization",
+        "technical_reference_fields": [
+            "Google Pay PaymentData.paymentMethodData.tokenizationData",
+            "Apple Pay merchant session and payment token",
+            "card authorization, AVS, CVV, 3DS, processor response, network transaction id",
+        ],
         "steps_by_method": {
             "google_pay": _capability_step_names(_google_pay_steps()),
             "apple_pay": _capability_step_names(_apple_pay_steps()),
@@ -126,6 +204,7 @@ async def emulate_payment_gateway_authorization(
     idempotency_key_hash: str,
     context: PaymentContext,
     intent_provider_reference: str,
+    observability_context: dict[str, Any] | None = None,
     java_client: JavaAppServerClient | None = None,
 ) -> PaymentGatewayResult:
     """Run gateway processing and return the downstream Java authorization.
@@ -140,6 +219,8 @@ async def emulate_payment_gateway_authorization(
     tracer = get_tracer()
     emitted: list[PaymentGatewayStep] = []
     java = java_client or JavaAppServerClient()
+    processor_service_name = _processor_service_name(java)
+    journey_attrs = dict(observability_context or {})
 
     with tracer.start_as_current_span("payment_gateway.emulator.authorize") as span:
         apply_span_attributes(
@@ -151,6 +232,7 @@ async def emulate_payment_gateway_authorization(
                 context=context,
                 gateway_request_id=gateway_request_id,
                 network=network,
+                observability_context=journey_attrs,
             ),
         )
         for index, step in enumerate(build_gateway_steps(context), start=1):
@@ -164,6 +246,7 @@ async def emulate_payment_gateway_authorization(
                     gateway_request_id=gateway_request_id,
                     network=network,
                     step_index=index,
+                    observability_context=journey_attrs,
                 )
             )
 
@@ -186,6 +269,7 @@ async def emulate_payment_gateway_authorization(
                 gateway_request_id=gateway_request_id,
                 network=network,
                 step_index=len(emitted) + 1,
+                observability_context=journey_attrs,
             )
         )
         verification_result = await java.verify_payment(
@@ -198,6 +282,19 @@ async def emulate_payment_gateway_authorization(
             payment_network=network,
             context_risk_score=context.risk_score,
             risk_reasons=",".join(context.risk_reasons),
+            payment_gateway_request_id=gateway_request_id,
+            gateway_provider=GATEWAY_PROVIDER,
+            wallet_type=context.wallet_type,
+            wallet_provider=context.wallet_type,
+            wallet_tokenization_type="PAYMENT_GATEWAY" if context.wallet_type == "google_pay" else ("APPLE_PAY" if context.wallet_type == "apple_pay" else ""),
+            wallet_token_hash=context.wallet_token_hash,
+            card_brand=context.card_brand,
+            card_last4=context.card_last4,
+            card_fingerprint=context.card_fingerprint,
+            card_exp_month=context.card_exp_month,
+            card_exp_year=context.card_exp_year,
+            billing_postal_code=context.billing_postal_code,
+            card_cvv_present=context.card_cvv_present,
         )
         verification_data = verification_result.get("data") or {}
         verification_decision = str(verification_data.get("decision") or "")
@@ -230,6 +327,7 @@ async def emulate_payment_gateway_authorization(
                 gateway_request_id=gateway_request_id,
                 network=network,
                 step_index=len(emitted) + 1,
+                observability_context=journey_attrs,
             )
         )
 
@@ -239,7 +337,7 @@ async def emulate_payment_gateway_authorization(
                     replace(
                         processor_step,
                         attributes={
-                            "payment.processor.name": "octo-java-app-server",
+                            "payment.processor.name": processor_service_name,
                             "payment.gateway.authorization_type": "authorization",
                             "payment.idempotency_key_hash": idempotency_key_hash,
                             "payment.verification.decision": verification_decision,
@@ -252,6 +350,7 @@ async def emulate_payment_gateway_authorization(
                     gateway_request_id=gateway_request_id,
                     network=network,
                     step_index=len(emitted) + 1,
+                    observability_context=journey_attrs,
                 )
             )
         java_result = await java.authorize_payment(
@@ -260,8 +359,27 @@ async def emulate_payment_gateway_authorization(
             currency=currency,
             customer_email=customer_email,
             idempotency_key_hash=idempotency_key_hash,
+            payment_method=context.method,
+            payment_network=network,
+            payment_gateway_request_id=gateway_request_id,
+            gateway_provider=GATEWAY_PROVIDER,
+            wallet_type=context.wallet_type,
+            wallet_provider=context.wallet_type,
+            wallet_tokenization_type="PAYMENT_GATEWAY" if context.wallet_type == "google_pay" else ("APPLE_PAY" if context.wallet_type == "apple_pay" else ""),
+            wallet_token_hash=context.wallet_token_hash,
+            card_brand=context.card_brand,
+            card_last4=context.card_last4,
+            card_fingerprint=context.card_fingerprint,
+            card_exp_month=context.card_exp_month,
+            card_exp_year=context.card_exp_year,
+            billing_postal_code=context.billing_postal_code,
+            card_cvv_present=context.card_cvv_present,
+            verification_decision=verification_decision,
+            risk_reasons=",".join(context.risk_reasons),
         )
         java_data = java_result.get("data") or {}
+        network_authorization = java_data.get("network_authorization") if isinstance(java_data.get("network_authorization"), dict) else {}
+        card_flow = java_data.get("card_flow") if isinstance(java_data.get("card_flow"), dict) else {}
         processor_status = "completed" if java_result.get("status") == "ok" else str(java_result.get("status") or "error")
         emitted.append(
             _emit_step(
@@ -269,12 +387,16 @@ async def emulate_payment_gateway_authorization(
                     _processor_steps()[1],
                     status=processor_status,
                     attributes={
-                        "payment.processor.name": "octo-java-app-server",
+                        "payment.processor.name": processor_service_name,
                         "payment.processor.status": java_result.get("status", "unknown"),
                         "payment.processor.decision": java_data.get("decision", ""),
                         "payment.processor.authorization_code": java_data.get("authorization_code", ""),
                         "payment.processor.error_code": java_data.get("error_code", ""),
                         "payment.processor.latency_ms": java_result.get("latency_ms", 0),
+                        "payment.processor.response_code": network_authorization.get("response_code", ""),
+                        "payment.processor.gateway_code": network_authorization.get("gateway_code", ""),
+                        "payment.card.avs.result": card_flow.get("avs_result", ""),
+                        "payment.card.cvv.result": card_flow.get("cvv_result", ""),
                     },
                 ),
                 order_id=order_id,
@@ -284,6 +406,7 @@ async def emulate_payment_gateway_authorization(
                 gateway_request_id=gateway_request_id,
                 network=network,
                 step_index=len(emitted) + 1,
+                observability_context=journey_attrs,
             )
         )
         emitted.append(
@@ -295,6 +418,9 @@ async def emulate_payment_gateway_authorization(
                     attributes={
                         "payment.network": network,
                         "payment.network.route": f"{network or 'card'}-simulated-rail",
+                        "payment.network.response_code": network_authorization.get("response_code", ""),
+                        "payment.network.gateway_code": network_authorization.get("gateway_code", ""),
+                        "payment.network.transaction_id": network_authorization.get("network_transaction_id", ""),
                         "payment.acquirer.name": "octo-acquirer-simulator",
                     },
                 ),
@@ -305,6 +431,7 @@ async def emulate_payment_gateway_authorization(
                 gateway_request_id=gateway_request_id,
                 network=network,
                 step_index=len(emitted) + 1,
+                observability_context=journey_attrs,
             )
         )
 
@@ -318,6 +445,10 @@ async def emulate_payment_gateway_authorization(
     )
 
 
+def _processor_service_name(java: JavaAppServerClient) -> str:
+    return str(getattr(java, "service_name", "") or "octo-java-app-server")
+
+
 async def emit_final_gateway_decision(
     *,
     order_id: int,
@@ -326,8 +457,14 @@ async def emit_final_gateway_decision(
     context: PaymentContext,
     gateway_result: PaymentGatewayResult,
     decision: SimulatedPaymentDecision,
+    observability_context: dict[str, Any] | None = None,
 ) -> PaymentGatewayStep:
-    status = "completed" if decision.status == "authorized" else "declined"
+    if decision.status == "authorized":
+        status = "completed"
+    elif decision.status in {"declined", "timeout"}:
+        status = decision.status
+    else:
+        status = decision.status or "error"
     step = _emit_step(
         PaymentGatewayStep(
             name="merchant_authorization_result",
@@ -350,6 +487,7 @@ async def emit_final_gateway_decision(
         gateway_request_id=gateway_result.gateway_request_id,
         network=gateway_result.payment_network,
         step_index=len(gateway_result.steps) + 1,
+        observability_context=observability_context,
     )
     return step
 
@@ -415,6 +553,7 @@ def _emit_step(
     gateway_request_id: str,
     network: str,
     step_index: int,
+    observability_context: dict[str, Any] | None = None,
 ) -> PaymentGatewayStep:
     tracer = get_tracer()
     started = time.monotonic()
@@ -427,11 +566,13 @@ def _emit_step(
             context=context,
             gateway_request_id=gateway_request_id,
             network=network,
+            observability_context=observability_context,
         ),
         "payment.gateway.step": step.name,
         "payment.gateway.step_index": step_index,
         "payment.gateway.phase": step.phase,
         "payment.gateway.step_status": step.status,
+        **_component_attributes(step, context=context, network=network),
         **(step.attributes or {}),
     }
     with tracer.start_as_current_span(operation) as span:
@@ -463,9 +604,13 @@ def _base_attributes(
     context: PaymentContext,
     gateway_request_id: str,
     network: str,
+    observability_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
+        "component": GATEWAY_NAME,
         "peer.service": GATEWAY_NAME,
+        "net.peer.name": GATEWAY_NAME,
+        "payment.component": PAYMENT_COMPONENT_LABELS[GATEWAY_NAME],
         "payment.gateway.name": GATEWAY_NAME,
         "payment.gateway.provider": GATEWAY_PROVIDER,
         "payment.gateway.version": GATEWAY_VERSION,
@@ -482,10 +627,52 @@ def _base_attributes(
         "orders.order_id": int(order_id),
         "workflow.id": "checkout-payment",
         "workflow.step": "payment-gateway",
+        **dict(observability_context or {}),
     }
 
 
+def _component_attributes(
+    step: PaymentGatewayStep,
+    *,
+    context: PaymentContext,
+    network: str,
+) -> dict[str, Any]:
+    component = _component_name(step, context=context, network=network)
+    return {
+        "component": component,
+        "peer.service": component,
+        "net.peer.name": component,
+        "payment.component": PAYMENT_COMPONENT_LABELS.get(component, component),
+    }
+
+
+def _component_name(step: PaymentGatewayStep, *, context: PaymentContext, network: str) -> str:
+    if step.phase == "verification":
+        return "octo-antifraud-verification-app"
+    if step.phase == "processor":
+        return "octo-java-payment-processor"
+    if step.name == "network_authorization_routing" or step.phase == "network":
+        return _network_component(network)
+    if context.method == "google_pay" and step.phase in {"ingress", "wallet_token", "network_token"}:
+        return "google-pay-gateway"
+    if context.method == "apple_pay" and step.phase in {"ingress", "wallet_session", "wallet_token", "network_token"}:
+        return "apple-pay-gateway"
+    if context.method == "credit_card" and step.name == "card_network_routing":
+        return _network_component(network)
+    return GATEWAY_NAME
+
+
+def _network_component(network: str) -> str:
+    normalized = (network or "").strip().lower()
+    if normalized == "mastercard":
+        return "mastercard-payment-network"
+    if normalized == "visa":
+        return "visa-payment-network"
+    return "network-token-payment-network"
+
+
 def _step_attributes(step: PaymentGatewayStep, *, context: PaymentContext, network: str) -> dict[str, Any]:
+    network_label = _network_label(network or context.card_brand)
     common = {
         "payment.gateway.emulated": True,
         "payment.token.safe": True,
@@ -496,20 +683,32 @@ def _step_attributes(step: PaymentGatewayStep, *, context: PaymentContext, netwo
             "payment.wallet.provider": "google_pay",
             "payment.wallet.tokenization_type": "PAYMENT_GATEWAY",
             "payment.wallet.gateway": "cybersource",
+            "payment.wallet.gateway_merchant_id_hash": _stable_hash("octo-demo-google-pay-merchant"),
             "payment.wallet.cryptogram.present": bool(context.wallet_token_hash),
+            "payment.google_pay.api_version": 2,
+            "payment.google_pay.api_version_minor": 0,
+            "payment.google_pay.payment_method_data.type": "CARD",
+            "payment.google_pay.card_network": network_label,
         }
         method_specific = {
+            "gateway_payment_received": {
+                "payment.gateway.request_shape": "GooglePay.PaymentData",
+                "payment.google_pay.allowed_auth_methods": "PAN_ONLY,CRYPTOGRAM_3DS",
+            },
             "wallet_token_received": {
                 "payment.wallet.token_hash": context.wallet_token_hash,
                 "payment.wallet.encrypted_payload.present": bool(context.wallet_token_hash),
+                "payment.google_pay.tokenization_data.type": "PAYMENT_GATEWAY",
             },
             "gateway_token_decryption": {
                 "payment.gateway.decryption_method": "cybersource-compatible",
                 "payment.wallet.encrypted_payload.format": "base64-simulated",
+                "payment.google_pay.signed_message.format": "encrypted-json-simulated",
             },
             "network_token_cryptogram_validation": {
                 "payment.network.token.present": bool(context.wallet_token_hash),
                 "payment.network.cryptogram.validated": bool(context.wallet_token_hash),
+                **_three_ds_fields(network, wallet=True),
             },
         }.get(step.name, {})
         return {**common, **wallet, **method_specific}
@@ -518,15 +717,27 @@ def _step_attributes(step: PaymentGatewayStep, *, context: PaymentContext, netwo
             "payment.wallet.provider": "apple_pay",
             "payment.wallet.merchant_session.validated": True,
             "payment.wallet.cryptogram.present": bool(context.wallet_token_hash),
+            "payment.apple_pay.payment_method.network": network_label,
+            "payment.apple_pay.payment_method.type": "debit_or_credit",
         }
         method_specific = {
             "apple_pay_merchant_validation": {
                 "payment.apple_pay.validation_url": "apple-pay-gateway.apple.com",
                 "payment.apple_pay.session.emulated": True,
+                "payment.apple_pay.merchant_validation.status": "completed",
+                "payment.apple_pay.merchant_identifier_hash": _stable_hash("merchant.com.octo.demo"),
             },
             "wallet_token_received": {
                 "payment.wallet.token_hash": context.wallet_token_hash,
                 "payment.wallet.token_type": "apple_pay_payment_token",
+                "payment.apple_pay.payment_data.version": "EC_v1",
+                "payment.apple_pay.header.transaction_id_hash": _stable_hash(
+                    f"{context.wallet_token_hash}:apple-pay-transaction"
+                ),
+                "payment.apple_pay.header.ephemeral_public_key.present": bool(context.wallet_token_hash),
+                "payment.apple_pay.header.public_key_hash.present": bool(context.wallet_token_hash),
+                "payment.apple_pay.signature.present": bool(context.wallet_token_hash),
+                "payment.apple_pay.data.present": bool(context.wallet_token_hash),
             },
             "gateway_token_decryption": {
                 "payment.gateway.decryption_method": "payment-service-provider",
@@ -535,6 +746,7 @@ def _step_attributes(step: PaymentGatewayStep, *, context: PaymentContext, netwo
             "network_token_cryptogram_validation": {
                 "payment.network.token.present": bool(context.wallet_token_hash),
                 "payment.network.cryptogram.validated": bool(context.wallet_token_hash),
+                **_three_ds_fields(network, wallet=True),
             },
         }.get(step.name, {})
         return {**common, **wallet, **method_specific}
@@ -542,16 +754,63 @@ def _step_attributes(step: PaymentGatewayStep, *, context: PaymentContext, netwo
         "card_data_received": {
             "payment.card.pan_present": bool(context.card_last4),
             "payment.card.cvv_present": "not_logged",
+            "payment.card.brand": context.card_brand,
+            "payment.card.last4": context.card_last4,
+            "payment.card.entry_mode": "ecommerce",
         },
         "gateway_card_tokenization": {
             "payment.card.tokenized": bool(context.card_fingerprint),
             "payment.card.fingerprint": context.card_fingerprint,
+            "payment.card.brand": context.card_brand,
+            "payment.card.last4": context.card_last4,
+            "payment.card.avs.result": "Y" if context.billing_postal_code else "U",
+            "payment.card.cvv.result": "M" if context.card_cvv_present else "U",
         },
         "card_network_routing": {
             "payment.network.route": f"{network or 'card'}-authorization",
+            **_three_ds_fields(network),
         },
     }.get(step.name, {})
     return {**common, **method_specific}
+
+
+def _network_label(network: str) -> str:
+    normalized = (network or "").strip().lower()
+    if normalized == "mastercard":
+        return "MASTERCARD"
+    if normalized == "visa":
+        return "VISA"
+    if normalized in {"network-token", "network_token"}:
+        return "NETWORK_TOKEN"
+    return normalized.upper() if normalized else "UNKNOWN"
+
+
+def _three_ds_fields(network: str, *, wallet: bool = False) -> dict[str, Any]:
+    normalized = (network or "").lower()
+    if normalized == "mastercard":
+        return {
+            "payment.3ds.program": "Mastercard Identity Check",
+            "payment.3ds.eci": "02",
+            "payment.3ds.authentication_value.present": True,
+            "payment.3ds.flow": "wallet_cryptogram" if wallet else "frictionless",
+        }
+    if normalized == "visa":
+        return {
+            "payment.3ds.program": "Visa Secure",
+            "payment.3ds.eci": "05",
+            "payment.3ds.authentication_value.present": True,
+            "payment.3ds.flow": "wallet_cryptogram" if wallet else "frictionless",
+        }
+    return {
+        "payment.3ds.program": "network-token-authentication" if wallet else "cardholder-authentication",
+        "payment.3ds.eci": "07",
+        "payment.3ds.authentication_value.present": wallet,
+        "payment.3ds.flow": "wallet_cryptogram" if wallet else "attempted",
+    }
+
+
+def _stable_hash(value: str) -> str:
+    return sha256(value.encode("utf-8")).hexdigest()[:24]
 
 
 def _google_pay_steps() -> list[PaymentGatewayStep]:

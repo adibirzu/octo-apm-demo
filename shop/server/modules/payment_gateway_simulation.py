@@ -166,6 +166,7 @@ async def authorize_simulated_payment(
     checkout_idempotency_key: str = "",
     payment_method: str = "credit_card",
     payment_details: dict[str, Any] | None = None,
+    observability_context: dict[str, Any] | None = None,
     db=None,
 ) -> dict[str, Any]:
     if not cfg.payment_gateway_simulation_enabled:
@@ -201,6 +202,7 @@ async def authorize_simulated_payment(
         order_id=order_id,
         customer_email=customer_email,
     )
+    journey_attrs = dict(observability_context or {})
 
     tracer = get_tracer()
     with tracer.start_as_current_span("payment.simulated.authorize") as span:
@@ -215,6 +217,7 @@ async def authorize_simulated_payment(
                 "payment.amount_bucket": _amount_bucket(amount_minor_units),
                 "payment.currency": currency,
                 "orders.order_id": order_id,
+                **journey_attrs,
                 **payment_context.safe_fields(),
             },
         )
@@ -226,6 +229,7 @@ async def authorize_simulated_payment(
             idempotency_key_hash=idempotency_key_hash,
             context=payment_context,
             intent_provider_reference=intent.provider_reference,
+            observability_context=journey_attrs,
             java_client=JavaAppServerClient(),
         )
         java_result = gateway_result.java_result
@@ -240,6 +244,7 @@ async def authorize_simulated_payment(
             context=payment_context,
             gateway_result=gateway_result,
             decision=decision,
+            observability_context=journey_attrs,
         )
         fields = decision.observability_fields()
         apply_span_attributes(
@@ -252,6 +257,7 @@ async def authorize_simulated_payment(
                 "payment.gateway.request_id": gateway_result.gateway_request_id,
                 "payment.gateway.step_count": len(gateway_result.steps) + 1,
                 "payment.network": gateway_result.payment_network,
+                **journey_attrs,
             },
         )
         span.set_attribute("payment.java_app_server.status", java_result.get("status", "unknown"))
@@ -309,6 +315,7 @@ async def authorize_simulated_payment(
                 "payment.gateway.step_count": len(gateway_result.steps) + 1,
                 "payment.network": gateway_result.payment_network,
                 "orders.order_id": order_id,
+                **journey_attrs,
             },
         )
         return {
