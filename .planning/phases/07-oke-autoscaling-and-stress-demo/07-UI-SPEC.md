@@ -1,10 +1,11 @@
 ---
 phase: 7
 slug: oke-autoscaling-and-stress-demo
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-05-18
+reviewed_at: 2026-05-18
 ---
 
 # Phase 7 — UI Design Contract
