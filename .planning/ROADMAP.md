@@ -193,10 +193,31 @@ Plans:
 6. `helm rollback` to a frankfurt-pinned revision exercised in verify-work + documented in runbook.
 7. Global CLAUDE.md "Cloud-Based Docker Builds" updated + ADR captured under `docs/adr/`.
 
-**Plans:** 0 plans (run `/gsd-plan-phase 8` to break down — 8 plan stubs proposed in PHASE-8-BRIEF.md)
+**Plans:** 8 plans across 7 waves
 
 Plans:
-- [ ] TBD (run `/gsd-plan-phase 8`)
+
+**Wave 1** (parallelizable — NSG ingress + OCIR auth, no shared files)
+- [ ] 08-01: NSG + jumphost reachability (dry-run inventory script, creates `deploy/oke/jumphost-bootstrap.sh`)
+- [ ] 08-03: OCIR auth on jumphost (Auth Token via stdin, mode-0600 enforcement, creates `deploy/oke/ocir-login.sh`)
+
+**Wave 2** (extends Wave 1 bootstrap script)
+- [ ] 08-02: Jumphost tool bootstrap (docker/oci-cli/git/rsync/jq/helm via dnf, verify-before-install) — depends on 08-01
+
+**Wave 3** (TDD pilot, depends on Wave 1+2)
+- [ ] 08-04: Build pipeline pilot — `octo-traffic-generator` (RED tests → GREEN `build-push-one-image.sh` → cold-pull pilot)
+
+**Wave 4** (depends on 08-04 pilot proven)
+- [ ] 08-05: Build pipeline rollout — 4 services (`octo-drone-shop`, `octo-apm-java-demo`, `octo-workflow-gateway`, `enterprise-crm-portal`)
+
+**Wave 5** (depends on Wave 4 — all phx repos populated)
+- [ ] 08-06: Manifest + Helm repoint — atomic default flip + frankfurt-regression gate in surface tests
+
+**Wave 6** (depends on Wave 5, operator-gated cluster cutover)
+- [ ] 08-07: Rolling deploy + APM signal continuity verification (5-service canary, 30s/5min APM poll, >60s gap aborts)
+
+**Wave 7** (depends on Wave 6 verified)
+- [ ] 08-08: Documentation + ADR + helm rollback drill + BUILD-05 cold-pull benchmark (first ADR in repo at `docs/adr/0001-phoenix-region-migration.md`)
 
 ## Future Candidate Milestones (not yet scoped)
 
