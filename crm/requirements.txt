@@ -34,7 +34,7 @@ psutil>=7.2.2
 packaging>=23.0
 
 # Redis client — customer enrichment cache
-redis[hiredis]>=5.0,<6.0
+redis[hiredis]>=7.4.0,<8.0
 
 # Alembic — schema migrations against ATP / local Postgres
 alembic>=1.13,<2.0
