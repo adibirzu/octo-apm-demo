@@ -1,0 +1,21 @@
+{
+  "displayName": "OCTO — Shop HPA at maxReplicas",
+  "metricCompartmentId": "${COMPARTMENT_ID}",
+  "namespace": "octo_apm_demo",
+  "query": "shop_pod_count[1m].mean() >= 10",
+  "severity": "CRITICAL",
+  "pendingDuration": "PT5M",
+  "destinations": ["${NOTIFICATION_TOPIC_OCID}"],
+  "isEnabled": true,
+  "body": "Shop deployment has been at maxReplicas (10) for 5 minutes. Cluster may need capacity beyond Cluster Autoscaler max=4 nodes. The threshold value (10) MUST match shop.autoscaling.maxReplicas in deploy/helm/octo-apm-demo/values.yaml — keep the two in sync.",
+  "resolveBody": "Shop deployment pod count has dropped below maxReplicas.",
+  "messageFormat": "RAW",
+  "metadata": {
+    "phase": "07",
+    "plan": "08",
+    "design": "D-18 #2",
+    "metric_publisher": "shop/server/observability/oci_monitoring.py (plan 07-05)",
+    "maxReplicas": 10,
+    "cross_file_invariant": "deploy/helm/octo-apm-demo/values.yaml :: shop.autoscaling.maxReplicas"
+  }
+}

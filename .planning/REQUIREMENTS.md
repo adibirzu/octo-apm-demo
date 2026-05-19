@@ -91,25 +91,25 @@ sidecar, database, logs, traces, metrics, security, and GenAI where relevant.
 
 ### Scale and Elasticity
 
-- [ ] **SCALE-01**: HPA expansion covers shop, crm, and java-apm services with
+- [x] **SCALE-01**: HPA expansion covers shop, crm, and java-apm services with
   CPU + memory targets; the D-05 RPS metric is gated behind a nested Helm flag
   (`autoscaling.rps.enabled`) that defaults to `false`, so the legacy
   `helm template` output is bit-identical until an operator opts in. CRM HPA
   remains untouched (D-01).
-- [ ] **SCALE-02**: The OKE Cluster Autoscaler add-on is configurable through
+- [x] **SCALE-02**: The OKE Cluster Autoscaler add-on is configurable through
   an idempotent, dry-run-by-default operator script
   (`deploy/oke/configure-cluster-autoscaler.sh`); a sibling
   `prometheus-adapter` Helm values file publishes `shop_request_rate` and
   `java_request_rate` as External Metrics for the optional custom-metric HPA
   path (default off).
-- [ ] **SCALE-03**: An admin-only `/admin/stress-test` UI on
+- [x] **SCALE-03**: An admin-only `/admin/stress-test` UI on
   `admin.${DNS_DOMAIN}` exposes a FastAPI router with Pydantic-validated
   apply/clear/state endpoints, a three-channel MELTS audit (OTel span +
   Log Analytics `push_log` + OCI Monitoring `octo_apm_demo/stress_run_count`
   point) keyed by `run_id`, host-bound + OCTO scope enforcement, and a
   k6-based load-generator pod authenticated by `X-Internal-Service-Key`
   cross-service auth.
-- [ ] **SCALE-04**: APM saved queries, OCI Monitoring custom metrics in the
+- [x] **SCALE-04**: APM saved queries, OCI Monitoring custom metrics in the
   `octo_apm_demo` namespace + alarm definitions, Log Analytics OKE Monitoring
   saved searches, and a published autoscaling dashboard are captured via
   existing apply tooling. No live OCI calls run in unit tests; only offline

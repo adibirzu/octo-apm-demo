@@ -1,0 +1,47 @@
+{{- $java := .Values.javaGateway }}
+{{- $javaNamespace := default .Values.shop.namespace $java.namespace }}
+{{- if and .Values.javaGateway.enabled .Values.javaGateway.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: octo-apm-java-demo
+  namespace: {{ $javaNamespace }}
+  labels:
+    {{- include "octo.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: octo-apm-java-demo
+  minReplicas: {{ .Values.javaGateway.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.javaGateway.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.javaGateway.autoscaling.cpuTargetUtilization }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.javaGateway.autoscaling.memoryTargetUtilization }}
+{{- if .Values.javaGateway.autoscaling.rps.enabled }}
+    - type: External
+      external:
+        metric:
+          name: {{ .Values.javaGateway.autoscaling.rps.metricName | default "java_request_rate" }}
+          selector:
+            matchLabels:
+              service: octo-apm-java-demo
+        target:
+          type: AverageValue
+          averageValue: "{{ .Values.javaGateway.autoscaling.rps.targetPerPod }}"
+{{- end }}
+{{- with .Values.javaGateway.autoscaling.behavior }}
+  behavior:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- end }}

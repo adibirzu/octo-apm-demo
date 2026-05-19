@@ -15,6 +15,13 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from server.config import cfg
+from server.modules._admin_host import (
+    _ADMIN_SURFACE,
+    _LOCAL_HOSTS,
+    _configured_admin_hosts,
+    _request_host,
+    _require_admin_host,
+)
 from server.modules._authz import require_admin_user
 from server.observability.logging_sdk import push_log
 from server.observability.otel_setup import get_tracer
@@ -23,8 +30,6 @@ router = APIRouter(prefix="/api/admin/coordinator", tags=["Admin Coordinator"])
 tracer_fn = get_tracer
 
 _PROJECT_SCOPE = "octo-apm-demo"
-_ADMIN_SURFACE = "admin.octodemo.cloud"
-_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "testserver"}
 _ALLOWED_RESOURCE_HOSTS = {
     "admin.octodemo.cloud",
     "drones.octodemo.cloud",
@@ -297,31 +302,6 @@ def _scope_payload() -> dict:
     }
 
 
-def _request_host(request: Request) -> str:
-    raw_host = (
-        request.headers.get("x-forwarded-host")
-        or request.headers.get("host")
-        or request.url.hostname
-        or ""
-    )
-    raw_host = raw_host.split(",", 1)[0].strip().lower()
-    if raw_host.startswith("[") and "]" in raw_host:
-        return raw_host[1:raw_host.index("]")]
-    return raw_host.rsplit(":", 1)[0] if ":" in raw_host else raw_host
-
-
-def _configured_admin_hosts() -> set[str]:
-    hosts = {_ADMIN_SURFACE}
-    parsed = urlparse(cfg.crm_base_url or "")
-    if parsed.hostname:
-        hosts.add(parsed.hostname)
-    dns_domain = (getattr(cfg, "dns_domain", "") or "").strip()
-    if dns_domain:
-        hosts.add(f"admin.{dns_domain}")
-        hosts.add(f"crm.{dns_domain}")
-    return hosts
-
-
 def _configured_shop_hosts() -> set[str]:
     hosts: set[str] = set()
     for raw_url in (getattr(cfg, "shop_public_url", "") or "",):
@@ -349,16 +329,6 @@ def _guardrails_payload() -> dict:
         "raw_prompt_logged": False,
         "allowed_scope": _PROJECT_SCOPE,
     }
-
-
-def _require_admin_host(request: Request) -> str:
-    host = _request_host(request)
-    if host in _LOCAL_HOSTS or host in _configured_admin_hosts():
-        return host
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="OCI Coordinator is only available from admin.octodemo.cloud.",
-    )
 
 
 def _scope_allows(message: str) -> tuple[bool, str]:

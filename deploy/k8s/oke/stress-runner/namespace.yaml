@@ -1,0 +1,10 @@
+# octo-stress namespace — isolates the long-lived k6 wrapper Deployment so
+# stress runs can be scaled/paused without touching shop or CRM workloads.
+# Mirrors the tools/traffic-generator/k8s/deployment.yaml pattern.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: octo-stress
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: stress-runner

@@ -1,0 +1,7 @@
+{
+  "name": "octo-oke-autoscaling-ca-events",
+  "description": "Cluster Autoscaler events from the OKE managed cluster-autoscaler add-on: ScaleUp / ScaleDown / NotTriggerScaleUp / pod-cannot-be-scheduled. Confirms that node-pool scale-out fired during the stress demo and pins down which pods triggered it.",
+  "displayName": "OCTO OKE — Cluster Autoscaler events",
+  "queryString": "'Log Source' = 'Kubernetes Logs' and Subsystem = 'cluster-autoscaler' | stats count() by event, node, reason | sort -Time",
+  "widgetType": "TABLE"
+}

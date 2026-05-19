@@ -1,0 +1,20 @@
+{{- if .Values.stressRunner.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-stress-runner
+  namespace: {{ .Values.stressRunner.namespace }}
+  labels:
+    app: octo-stress-runner
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: stress-runner
+spec:
+  type: ClusterIP
+  selector:
+    app: octo-stress-runner
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+{{- end }}

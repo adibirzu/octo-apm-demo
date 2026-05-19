@@ -1,0 +1,30 @@
+{
+  "name": "octo-oke-error-saturation",
+  "displayName": "OCTO OKE — error / saturation top-N pods (slow + errored spans)",
+  "description": "Top-N pods by error count or slow-span count (duration > 1000ms) during the stress window. Highlights which HPA-added pod (or which baseline pod) is bottlenecked or returning span.status=ERROR. Pairs with the Phase 7 High-CPU-saturation OCI Monitoring alarm.",
+  "queryString": "service.namespace = 'octo_apm_demo' and (span.status = 'ERROR' or duration > 1000ms) | stats count() as span_count by service.name, k8s.pod.name, span.status | sort -span_count | head limit = 50",
+  "widgetType": "BAR_CHART",
+  "tags": ["phase-7", "scale-narrative", "error-saturation", "slow-spans", "octo_apm_demo"],
+  "external_drilldowns": [
+    {
+      "name": "Grafana",
+      "url": "https://grafana.octodemo.cloud/",
+      "why": "Cluster-side saturation view (node CPU, memory pressure) for the same time slice."
+    },
+    {
+      "name": "Langfuse / LLMetry",
+      "url": "https://lm.octodemo.cloud/",
+      "why": "Investigate LLM-driven span latency when GenAI is in the slow path."
+    },
+    {
+      "name": "OpenLIT",
+      "url": "https://openlit.octodemo.cloud/",
+      "why": "OTel-native LLM trace view for errored spans."
+    },
+    {
+      "name": "Phoenix",
+      "url": "https://phoenix.octodemo.cloud/",
+      "why": "AI evaluation panel for failed GenAI calls in the stress window."
+    }
+  ]
+}

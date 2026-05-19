@@ -1,0 +1,22 @@
+# Minimal RBAC for octo-stress-runner.
+#
+# IMPORTANT: This file intentionally declares only a ServiceAccount — NO
+# Role, RoleBinding, or ClusterRoleBinding. The stress-runner pod does not
+# call the Kubernetes API. It only:
+#   1. Receives HTTP POSTs from CRM on /internal/* endpoints.
+#   2. Spawns the k6 binary as a subprocess (no k8s API involvement).
+#   3. k6 sends outbound HTTPS load to the public LB.
+#
+# Granting any Role here would violate threat-model T-07-15 (elevation of
+# privilege). See .planning/phases/07-oke-autoscaling-and-stress-demo/
+# 07-RESEARCH.md §Anti-Patterns for the rationale.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: octo-stress-runner
+  namespace: octo-stress
+  labels:
+    app: octo-stress-runner
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: stress-runner
+automountServiceAccountToken: false

@@ -1,0 +1,7 @@
+{
+  "name": "octo-oke-autoscaling-hpa-events",
+  "description": "Horizontal Pod Autoscaler scale events for the OKE workloads. Surfaces the SuccessfulRescale / FailedRescale / unable-to-fetch-metrics traffic emitted by the HPA controller during a stress-demo run. Time-aligns with APM 'shop scale envelope' saved query (phase 7 plan 07) and the 'HPA at max' Monitoring alarm (phase 7 plan 08).",
+  "displayName": "OCTO OKE — HPA scale events",
+  "queryString": "'Log Source' = 'Kubernetes Logs' and Subsystem = 'hpa-controller' | stats count() by hpa_event, deployment, namespace | sort -Time",
+  "widgetType": "TABLE"
+}

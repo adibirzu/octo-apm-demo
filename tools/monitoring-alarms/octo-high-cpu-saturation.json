@@ -1,0 +1,20 @@
+{
+  "displayName": "OCTO — Shop CPU saturation high",
+  "metricCompartmentId": "${COMPARTMENT_ID}",
+  "namespace": "octo_apm_demo",
+  "query": "shop_cpu_saturation_pct[1m].mean() > 80",
+  "severity": "WARNING",
+  "pendingDuration": "PT2M",
+  "destinations": ["${NOTIFICATION_TOPIC_OCID}"],
+  "isEnabled": true,
+  "body": "Shop pod CPU saturation > 80% for 2 minutes. Expected during stress runs; investigate if firing outside a stress run window.",
+  "resolveBody": "Shop pod CPU saturation has dropped back below 80%.",
+  "messageFormat": "RAW",
+  "metadata": {
+    "phase": "07",
+    "plan": "08",
+    "design": "D-18 #1",
+    "metric_publisher": "shop/server/observability/oci_monitoring.py (plan 07-05)",
+    "purpose": "Alarm-path validation; expected to fire on every stress run."
+  }
+}

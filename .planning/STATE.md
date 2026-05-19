@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: scaling-demo
-status: "Milestone v1.0 shipped — PR #47"
-stopped_at: Phase 7 context gathered
-last_updated: "2026-05-18T12:35:23.851Z"
-last_activity: 2026-05-15 — milestone v1.0 PR
+status: verifying
+stopped_at: "Phase 7 Plan 04 completed: _admin_host extracted, regression-green"
+last_updated: "2026-05-18T19:19:11.519Z"
+last_activity: 2026-05-18
 progress:
   total_phases: 7
-  completed_phases: 6
-  total_plans: 18
-  completed_plans: 18
+  completed_phases: 7
+  total_plans: 28
+  completed_plans: 28
   percent: 100
 ---
 
@@ -23,16 +23,16 @@ See: .planning/PROJECT.md (updated 2026-05-14)
 **Core value:** Every demo user action must produce inspectable, correlated OCI
 observability evidence across browser, application, payment gateway, Java
 sidecar, database, logs, traces, metrics, security, and GenAI where relevant.
-**Current focus:** All planned phases complete; live OCI validation remains operator-gated.
+**Current focus:** Phase 7 — OKE Autoscaling and Stress Demo
 
 ## Current Position
 
-Phase: 6 of 6 (Documentation and Architecture Closure)
-Plan: 3 of 3 complete
-Status: Milestone v1.0 shipped — PR #47
-Last activity: 2026-05-15 — milestone v1.0 PR
+Phase: 7 (OKE Autoscaling and Stress Demo) — EXECUTING
+Plan: 10 of 10
+Status: Phase complete — ready for verification
+Last activity: 2026-05-18
 
-Progress: [##########] 100%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -57,6 +57,17 @@ Progress: [##########] 100%
 
 - Last 5 plans: 6 min, 6 min, 6 min, 6 min, 6 min
 - Trend: Stable targeted-plan execution
+
+| Phase 07 P01 | 7 | 4 tasks | 9 files |
+| Phase Phase 07 P02 P02 | 4 min | 3 tasks tasks | 3 files files |
+| Phase 07 P03 | 11 | 4 tasks | 15 files |
+| Phase 07 P04 | 8 min | 2 tasks | 5 files |
+| Phase 7 P07 | 25min | - tasks | - files |
+| Phase 07 P08 | 5m | 2 tasks | 5 files |
+| Phase 07-oke-autoscaling-and-stress-demo P09 | 12min | 2 tasks | 6 files |
+| Phase 07 P05 | 22 | 3 tasks | 6 files |
+| Phase 7 P6 | 35 | 3 tasks | 3 files |
+| Phase 07 P10 | ~14min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -132,6 +143,21 @@ affecting current work:
   docs include connector, ONM, trace/log, payment, and GenAI troubleshooting
   pivots.
 
+- [Phase ?]: Phase 7 Plan 01: HPA shop 2→10 + java 2→6 with gated RPS metric (D-05 default-off); OTel Java agent 2.27.0; Python OTel pins already current stable
+- [Phase ?]: Phase 7 Plan 02: Cluster Autoscaler add-on (min=2 max=4, dry-run default) + prometheus-adapter External Metrics for shop_request_rate + java_request_rate; envsubst placeholder for OKE_NODE_POOL_OCID keeps live OCIDs out of repo
+- [Phase ?]: Phase 7 Plan 03: octo-stress-runner Deployment + FastAPI control plane (4 endpoints, internal-key gated); concurrency=1 → HTTP 409; SIGTERM on clear; hard timeout duration+30s; 3 k6 scenarios with X-Octo-Stress-Target + X-Run-Id; multi-stage Dockerfile grafana/k6→python:3.12; Helm gated default-off; values.yaml untouched (07-01 single-writer).
+- [Phase 7]: Plan 04: Extracted `_require_admin_host` + `_request_host` + `_configured_admin_hosts` from coordinator.py into shared `crm/server/modules/_admin_host.py` (verbatim, refactor-scope). Coordinator imports — drift impossible by construction. Structural anti-drift test guards against future copy-paste regression. Plan 07-05 stress-test surface now imports from same source. Phase 5 admin-host contract bit-identical (regression suite 7/7 green; full crm suite 97/97 green).
+- [Phase ?]: Plan 07-07: mirrored tools/la-saved-searches/ structure for APM saved-query operator tooling; APPLY=false default + confirm-on-APPLY pattern; D-20 drilldown links embedded as external_drilldowns JSON metadata per query
+- [Phase ?]: Plan 07-08: alarm thresholds hardcoded in JSON; cross-file invariant test guards drift vs values.yaml
+- [Phase ?]: Plan 07-08: alarm upsert via list-by-display-name pattern (mirrors install-oci-kubernetes-monitoring.sh)
+- [Phase ?]: Phase 7 plan 09: D-19 LA half — 4 saved searches + dashboard JSON, auto-discovered by existing apply.sh (zero script edits)
+- [Phase ?]: Plan 07-05: increment_stress_run added to both shop AND crm oci_monitoring.py - CRM stress_test.py resolves to the CRM mirror, plan only listed shop
+- [Phase ?]: Plan 07-05: Audit-before-side-effect ordering on /apply - three-channel MELTS audit lands BEFORE cross-pod POST so runner failures still attribute attempts
+- [Phase ?]: Plan 07-06: stress_test_admin.html reuses style.css glass-dark tokens — no new CSS. Inline nonce-scoped style/script with prefers-reduced-motion guard and 2s/10s polling cadence flip.
+- [Phase ?]: Plan 07-10: Lab 11 is the last lab in the workshop arc — no Next-arrow at bottom; closes Phase 7 narrative (D-22)
+- [Phase ?]: Plan 07-10: LB-routing-rule expression uses case-insensitive header match (i 'X-Octo-Stress-Target') eq (i 'oke') per OCI LB grammar
+- [Phase ?]: Plan 07-10: Two .planning/* cross-links dropped from runbook to satisfy mkdocs --strict; semantic refs preserved in prose
+
 ### Pending Todos
 
 - None for the local source milestone.
@@ -172,6 +198,6 @@ affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-05-18T12:35:23.840Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-oke-autoscaling-and-stress-demo/07-CONTEXT.md
+Last session: 2026-05-18T19:19:04.500Z
+Stopped at: Phase 7 Plan 04 completed: _admin_host extracted, regression-green
+Resume file: None

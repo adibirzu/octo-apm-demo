@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page">
+    <header class="page-header">
+        <h1>OKE stress test</h1>
+        <p class="page-subtitle">
+            Restricted to the admin role (optional stress-operator scope).
+            Triggers a bounded k6 load run against the demo storefront.
+            Every run is audited, capped, and stoppable.
+        </p>
+    </header>
+
+    <section class="card" aria-label="Audit notice">
+        <p class="eyebrow">Admin only — every action is audited. Audit fields include trace_id, span_id, run_id, admin_user, admin_role, rps_requested, duration_requested, scenario, target_service, status, and reason.</p>
+    </section>
+
+    <section id="current-state" class="card">
+        <h2>Active stress run</h2>
+        <p class="run-meta">
+            <span id="state-badge" class="badge">idle</span>
+            <span id="state-run-id" class="code-chip"></span>
+        </p>
+        <p id="state-summary" class="run-summary">No stress run active</p>
+        <pre id="current-state-json" role="status" aria-live="polite">Loading…</pre>
+        <button type="button" id="btn-clear" class="btn btn-danger">Stop active run</button>
+    </section>
+
+    <section class="card">
+        <h2>Trigger a new run</h2>
+        <form id="apply-form" class="create-form">
+            <label>
+                Scenario
+                <select id="scenario-id" name="scenario_id" required></select>
+            </label>
+            <label>
+                Target service
+                <select name="target_service" disabled>
+                    <option value="shop" selected>shop</option>
+                </select>
+            </label>
+            <label>
+                Requests per second (1–200)
+                <input type="number" name="rps" min="1" max="200" value="25" required>
+            </label>
+            <label>
+                Duration (seconds, 10–600)
+                <input type="number" name="duration_seconds" min="10" max="600" value="60" required>
+            </label>
+            <label>
+                Run note (who / why)
+                <textarea name="note" maxlength="512" placeholder="e.g. weekly autoscaling demo for partner review"></textarea>
+            </label>
+            <button type="submit" class="btn btn-primary">Apply stress run</button>
+        </form>
+        <pre id="apply-result"></pre>
+    </section>
+
+    <section class="card">
+        <h2>Observability drilldowns</h2>
+        <p class="run-summary">
+            Pivot into APM saved queries, Monitoring alarms, and the Log Analytics
+            dashboard from the OCI Observability links in the sidebar footer.
+            All deep links are environment-scoped to <code>{{ dns_domain }}</code>.
+        </p>
+    </section>
+</div>
+
+<style nonce="{{ csp_nonce }}">
+    /* Reduced-motion guard (UI-SPEC §Reduced motion): keyframes only when
+       the operator has NOT requested reduced motion. Default = no animation. */
+    @media (prefers-reduced-motion: no-preference) {
+        @keyframes stress-pulse {
+            0%   { opacity: 1;   transform: scale(1); }
+            50%  { opacity: 0.7; transform: scale(1.04); }
+            100% { opacity: 1;   transform: scale(1); }
+        }
+        #state-badge.badge-active {
+            animation: stress-pulse 1.6s ease-in-out infinite;
+        }
+    }
+    .code-chip {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: rgba(34, 211, 238, 0.08);
+        border: 1px solid rgba(34, 211, 238, 0.35);
+        color: var(--text, inherit);
+    }
+    .run-meta { display: flex; gap: 12px; align-items: center; margin: 0 0 12px; }
+    .run-summary { margin: 0 0 12px; }
+</style>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+    const presetSelect = document.getElementById('scenario-id');
+    const currentEl = document.getElementById('current-state-json');
+    const summaryEl = document.getElementById('state-summary');
+    const badgeEl = document.getElementById('state-badge');
+    const runIdEl = document.getElementById('state-run-id');
+    const applyResult = document.getElementById('apply-result');
+    const applyForm = document.getElementById('apply-form');
+    const btnClear = document.getElementById('btn-clear');
+
+    let pollTimer = null;
+    let lastStatus = 'idle';
+    let activeRunId = '';
+
+    async function loadPresets() {
+        try {
+            const res = await fetch('/api/admin/stress/presets');
+            const data = await res.json();
+            presetSelect.innerHTML = '';
+            for (const p of (data.presets || [])) {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.id + ' — ' + (p.description || '');
+                presetSelect.appendChild(opt);
+            }
+        } catch (err) {
+            applyResult.textContent = 'Failed to load presets: ' + err;
+        }
+    }
+
+    function setBadge(status) {
+        badgeEl.className = 'badge';
+        if (status === 'running' || status === 'active') {
+            badgeEl.classList.add('badge-active');
+            badgeEl.textContent = 'running';
+        } else if (status === 'stopped' || status === 'error') {
+            badgeEl.classList.add('badge-draft');
+            badgeEl.textContent = status;
+        } else {
+            badgeEl.classList.add('badge-draft');
+            badgeEl.textContent = 'idle';
+        }
+    }
+
+    function renderSummary(data) {
+        const status = (data && data.status) || 'idle';
+        if (status === 'idle' || !data || !data.run_id) {
+            summaryEl.textContent = 'No stress run active';
+            runIdEl.textContent = '';
+            activeRunId = '';
+            return false;
+        }
+        activeRunId = data.run_id || '';
+        runIdEl.textContent = activeRunId ? 'RUN ID ' + activeRunId : '';
+        const scenario = data.scenario || '?';
+        const rps = data.rps_requested != null ? data.rps_requested : '?';
+        const duration = data.duration_requested != null ? data.duration_requested : '?';
+        const target = data.target_host || data.target_service || 'shop';
+        summaryEl.textContent =
+            scenario + ' · ' + rps + ' RPS · ' +
+            duration + 's · target ' + target;
+        return true;
+    }
+
+    async function refreshState() {
+        try {
+            const res = await fetch('/api/admin/stress/state');
+            const data = await res.json();
+            currentEl.textContent = JSON.stringify(data, null, 2);
+            const status = (data && data.status) || 'idle';
+            setBadge(status);
+            renderSummary(data);
+            if (status !== lastStatus) {
+                lastStatus = status;
+                scheduleNextPoll(status);
+            }
+        } catch (err) {
+            currentEl.textContent = 'State unavailable: ' + err;
+        }
+    }
+
+    function scheduleNextPoll(status) {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+        const isActive = status === 'running' || status === 'active';
+        const interval = isActive ? 2000 : 10000;
+        pollTimer = setInterval(refreshState, interval);
+    }
+
+    applyForm.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const data = new FormData(ev.target);
+        const body = {
+            scenario_id: data.get('scenario_id'),
+            target_service: data.get('target_service') || 'shop',
+            rps: Number(data.get('rps')),
+            duration_seconds: Number(data.get('duration_seconds')),
+            note: data.get('note') || null,
+        };
+        try {
+            const res = await fetch('/api/admin/stress/apply', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body),
+            });
+            const payload = await res.json();
+            applyResult.textContent = JSON.stringify(payload, null, 2);
+        } catch (err) {
+            applyResult.textContent = 'Apply failed: ' + err;
+        }
+        refreshState();
+    });
+
+    btnClear.addEventListener('click', async () => {
+        const msg =
+            'Stop run ' + (activeRunId || '(unknown)') +
+            '? k6 receives SIGTERM and drains in-flight requests. ' +
+            'The audit event will record status=stopped with the current operator.';
+        if (!confirm(msg)) {
+            return;
+        }
+        try {
+            const res = await fetch('/api/admin/stress/clear', {method: 'POST'});
+            const payload = await res.json();
+            applyResult.textContent = JSON.stringify(payload, null, 2);
+        } catch (err) {
+            applyResult.textContent = 'Stop failed: ' + err;
+        }
+        refreshState();
+    });
+
+    loadPresets();
+    refreshState();
+    scheduleNextPoll(lastStatus);
+})();
+</script>
+{% endblock %}

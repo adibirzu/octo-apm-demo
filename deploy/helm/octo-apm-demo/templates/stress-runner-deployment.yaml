@@ -1,0 +1,123 @@
+{{- if .Values.stressRunner.enabled }}
+{{- $sr := .Values.stressRunner }}
+{{- $region := default .Values.global.image.region $sr.image.region }}
+{{- $tenancy := default .Values.global.image.tenancy $sr.image.tenancy }}
+{{- $tag := default .Values.global.image.tag $sr.image.tag }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-stress-runner
+  namespace: {{ $sr.namespace }}
+  labels:
+    app: octo-stress-runner
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: stress-runner
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: octo-stress-runner
+  template:
+    metadata:
+      labels:
+        app: octo-stress-runner
+        app.kubernetes.io/part-of: octo-apm-demo
+        app.kubernetes.io/component: stress-runner
+      annotations:
+        oracle.com/oci_la_log_source_name: "SOC Application Logs"
+        oracle.com/oci_la_log_set: "octo-apm-demo"
+    spec:
+      serviceAccountName: octo-stress-runner
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if .Values.global.image.pullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.global.image.pullSecretName }}
+      {{- end }}
+      containers:
+        - name: runner
+          image: "{{ $region }}.ocir.io/{{ $tenancy }}/{{ $sr.image.repository }}:{{ $tag }}"
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: octo-stress-runner
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=octo-stress-runner,service.namespace={{ .Values.global.monitoringNamespace }},k8s.namespace.name={{ $sr.namespace }},k8s.pod.name=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
+            - name: APP_RUNTIME
+              value: oke
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: STRESS_TARGET_URL
+              value: "https://shop.{{ .Values.global.dnsDomain }}"
+            - name: OCTO_STRESS_RUNNER_INTERNAL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $sr.internalKeySecret }}
+                  key: value
+            - name: OCTO_STRESS_RUNNER_SCENARIOS_DIR
+              value: /app/scenarios
+            - name: OCTO_STRESS_RUNNER_K6_BINARY
+              value: /usr/local/bin/k6
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: endpoint
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: otlp-headers
+                  optional: true
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /internal/healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /internal/healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+{{- end }}

@@ -248,3 +248,79 @@ def start_monitoring() -> None:
 def stop_monitoring() -> None:
     global _running
     _running = False
+
+
+# ---------------------------------------------------------------------------
+# Plan 07-05 / D-17 — bounded stress-run counter
+# ---------------------------------------------------------------------------
+#
+# `octo_apm_demo/stress_run_count` is the one custom counter that carries the
+# `run_id` dimension end-to-end. Cardinality is bounded by the concurrency=1
+# guard in the stress-runner pod plus the operator-window duty cycle, so a
+# per-point `run_id` dimension is safe here. Do NOT propagate run_id to the
+# long-lived gauges in this module — keep it on this counter only
+# (RESEARCH §Anti-Pattern §2).
+
+def increment_stress_run(run_id: str, status: str) -> None:
+    """Increment octo_apm_demo/stress_run_count by 1, tagged with run_id+status.
+
+    Safe to call from any FastAPI handler — failures are logged at WARNING and
+    swallowed so the audit emission never blocks the admin endpoint.
+    """
+    compartment_id = cfg.oci_compartment_id
+    if not compartment_id:
+        logger.info(
+            "OCI Monitoring increment_stress_run skipped - OCI_COMPARTMENT_ID not set"
+        )
+        return
+    try:
+        import oci
+        from oci.monitoring import MonitoringClient
+        from oci.monitoring.models import (
+            Datapoint,
+            MetricDataDetails,
+            PostMetricDataDetails,
+        )
+
+        region = _resolve_monitoring_region()
+        ingestion_endpoint = f"https://telemetry-ingestion.{region}.oraclecloud.com"
+        auth_mode = cfg.oci_auth_mode.lower()
+        if auth_mode == "instance_principal":
+            signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+            client = MonitoringClient(
+                config={}, signer=signer, service_endpoint=ingestion_endpoint
+            )
+        elif auth_mode == "resource_principal":
+            signer = oci.auth.signers.get_resource_principals_signer()
+            client = MonitoringClient(
+                config={}, signer=signer, service_endpoint=ingestion_endpoint
+            )
+        else:
+            config = oci.config.from_file()
+            client = MonitoringClient(config, service_endpoint=ingestion_endpoint)
+
+        now = datetime.now(timezone.utc)
+        dimensions = {
+            "serviceName": cfg.otel_service_name,
+            "environment": cfg.app_env,
+            "run_id": str(run_id),
+            "status": str(status),
+        }
+        md = MetricDataDetails(
+            namespace=METRIC_NAMESPACE,
+            name="stress_run_count",
+            compartment_id=compartment_id,
+            dimensions=dimensions,
+            metadata={"unit": "count"},
+            datapoints=[Datapoint(timestamp=now, value=1.0)],
+        )
+        response = client.post_metric_data(
+            PostMetricDataDetails(metric_data=[md])
+        )
+        failed = getattr(response.data, "failed_metrics_count", 0) or 0
+        if failed:
+            logger.warning(
+                "OCI Monitoring increment_stress_run partial failure: 1 metric rejected"
+            )
+    except Exception as exc:
+        logger.warning("OCI Monitoring increment_stress_run failed: %s", exc)

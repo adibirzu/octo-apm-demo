@@ -1,0 +1,7 @@
+{
+  "name": "octo-oke-autoscaling-stress-audit",
+  "description": "Stress-run audit lines emitted by the shop application. Filtered to records where run_id is not null so the dashboard surfaces only stress-demo lifecycle events (scenario_start / scenario_end / threshold breaches). run_id is the cross-channel pivot key that joins this view to the Monitoring alarms (plan 08), APM saved queries (plan 07), and the stress runner (plan 05).",
+  "displayName": "OCTO OKE — stress audit (run_id timeline)",
+  "queryString": "'Log Source' = 'octo-shop-app-json' and run_id is not null | stats count() by status, scenario, run_id | sort -Time",
+  "widgetType": "TABLE"
+}

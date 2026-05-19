@@ -26,4 +26,20 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.shop.autoscaling.memoryTargetUtilization }}
+{{- if .Values.shop.autoscaling.rps.enabled }}
+    - type: External
+      external:
+        metric:
+          name: {{ .Values.shop.autoscaling.rps.metricName | default "shop_request_rate" }}
+          selector:
+            matchLabels:
+              service: octo-drone-shop
+        target:
+          type: AverageValue
+          averageValue: "{{ .Values.shop.autoscaling.rps.targetPerPod }}"
+{{- end }}
+{{- with .Values.shop.autoscaling.behavior }}
+  behavior:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
 {{- end }}

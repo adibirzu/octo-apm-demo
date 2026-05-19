@@ -1,0 +1,130 @@
+# octo-stress-runner Deployment.
+#
+# Long-lived k6 wrapper for the OKE stress demo (Phase 7, D-07). The pod
+# contains both the FastAPI wrapper (uvicorn :8080) and the k6 binary in a
+# single image (see tools/stress-runner/Dockerfile). Concurrency=1 is
+# enforced inside the wrapper via asyncio.Lock — running >1 replica or
+# >1 uvicorn worker would defeat that guard.
+#
+# Trust boundaries (D-12, threat model T-07-10..16):
+#   - X-Internal-Service-Key gate on every /internal/* endpoint, key
+#     mounted from the octo-stress-runner-key Secret.
+#   - SA has no Role bindings (see rbac.yaml).
+#   - k6 outbound load uses X-Octo-Stress-Target: oke header for D-09 LB pin.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octo-stress-runner
+  namespace: octo-stress
+  labels:
+    app: octo-stress-runner
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: stress-runner
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: octo-stress-runner
+  template:
+    metadata:
+      labels:
+        app: octo-stress-runner
+        app.kubernetes.io/part-of: octo-apm-demo
+        app.kubernetes.io/component: stress-runner
+      annotations:
+        oracle.com/oci_la_log_source_name: "SOC Application Logs"
+        oracle.com/oci_la_log_set: "octo-apm-demo"
+    spec:
+      serviceAccountName: octo-stress-runner
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: ocir-pull-secret
+      containers:
+        - name: runner
+          image: ${OCIR_REGION}.ocir.io/${OCIR_TENANCY}/octo-stress-runner:${IMAGE_TAG:-latest}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: octo-stress-runner
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=octo-stress-runner,service.namespace=octo_apm_demo,k8s.namespace.name=octo-stress,k8s.pod.name=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
+            - name: APP_RUNTIME
+              value: oke
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: STRESS_TARGET_URL
+              value: "https://shop.${DNS_DOMAIN}"
+            - name: OCTO_STRESS_RUNNER_INTERNAL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: octo-stress-runner-key
+                  key: value
+            - name: OCTO_STRESS_RUNNER_SCENARIOS_DIR
+              value: /app/scenarios
+            - name: OCTO_STRESS_RUNNER_K6_BINARY
+              value: /usr/local/bin/k6
+            # OTLP export — k6 + wrapper both push spans to the same APM
+            # endpoint so trace correlation works end-to-end (D-06).
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: endpoint
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              valueFrom:
+                secretKeyRef:
+                  name: octo-apm
+                  key: otlp-headers
+                  optional: true
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /internal/healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /internal/healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3

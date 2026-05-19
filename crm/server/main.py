@@ -219,6 +219,11 @@ from server.chaos.admin import router as chaos_admin_router, page_router as chao
 app.include_router(chaos_admin_router)
 app.include_router(chaos_admin_page_router)
 
+# Stress test surface (CRM only — admin-host-bound, Plan 07-05).
+from server.modules.stress_test import router as stress_admin_router, page_router as stress_admin_page_router
+app.include_router(stress_admin_router)
+app.include_router(stress_admin_page_router)
+
 
 # ── Prometheus /metrics endpoint ──────────────────────────────────
 try:

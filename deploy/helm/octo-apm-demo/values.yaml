@@ -120,9 +120,37 @@ shop:
   autoscaling:
     enabled: true
     minReplicas: 2
-    maxReplicas: 6
-    cpuTargetUtilization: 70
-    memoryTargetUtilization: 75
+    maxReplicas: 10
+    cpuTargetUtilization: 60
+    memoryTargetUtilization: 70
+    # External RPS metric (D-02, D-03). Gated default-OFF per D-05:
+    # `helm template` with the default values must produce no
+    # `type: External` block, preserving bit-identical output for
+    # existing consumers. Flip `enabled: true` after Plan 07-02 lands
+    # prometheus-adapter so the External metric resolves.
+    rps:
+      enabled: false
+      metricName: shop_request_rate
+      targetPerPod: 30
+    # Behavior block (Pitfall 1) — flap guard for the demo run.
+    behavior:
+      scaleUp:
+        stabilizationWindowSeconds: 30
+        policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 30
+          - type: Pods
+            value: 2
+            periodSeconds: 30
+        selectPolicy: Max
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 60
+        selectPolicy: Min
   pdb:
     enabled: true
     minAvailable: 1
@@ -150,6 +178,36 @@ javaGateway:
     limits:
       cpu: 500m
       memory: 768Mi
+  # Java APM HPA (D-01) — own scaling profile, max 6 replicas (D-03).
+  # RPS metric is gated default-off mirroring the shop block (D-05).
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    cpuTargetUtilization: 65
+    memoryTargetUtilization: 75
+    rps:
+      enabled: false
+      metricName: java_request_rate
+      targetPerPod: 20
+    behavior:
+      scaleUp:
+        stabilizationWindowSeconds: 30
+        policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 30
+          - type: Pods
+            value: 2
+            periodSeconds: 30
+        selectPolicy: Max
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 60
+        selectPolicy: Min
   pdb:
     enabled: true
     minAvailable: 1
@@ -238,3 +296,18 @@ namespaces:
 # telemetry directly into /var/log/tetragon for the Oracle Cloud Agent to pick up.
 tetragon:
   enabled: true
+
+# ── Stress runner (Phase 7) ─────────────────────────────────────────────
+# In-cluster k6 wrapper Deployment used by the /admin/stress-test page.
+# Default OFF (D-05 spirit). Plan 07-03 ships templates that gate on
+# `.Values.stressRunner.enabled` — Plan 07-01 (this file) is the SOLE
+# writer of this block so 07-03 does not re-edit values.yaml.
+stressRunner:
+  enabled: false
+  namespace: octo-stress
+  image:
+    repository: octo-stress-runner
+    region: ""
+    tenancy: ""
+    tag: ""
+  internalKeySecret: octo-stress-runner-key

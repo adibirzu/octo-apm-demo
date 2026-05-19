@@ -17,7 +17,7 @@ from server.db_compat import DB_VERSION_SQL, DB_ACTIVE_CONNECTIONS_SQL
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Panel"])
 tracer_fn = get_tracer
-_ALLOWED_ROLES = {"admin", "manager", "viewer", "user", "chaos-operator"}
+_ALLOWED_ROLES = {"admin", "manager", "viewer", "user", "chaos-operator", "stress-operator"}
 logger = logging.getLogger(__name__)
 
 _RETENTION_ORDERED_DELETES = (

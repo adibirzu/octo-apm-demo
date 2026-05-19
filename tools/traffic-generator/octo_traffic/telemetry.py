@@ -42,6 +42,11 @@ def _otlp_trace_endpoint(endpoint: str) -> str:
         return endpoint
     if "/20200101" in endpoint:
         return f"{endpoint.split('/20200101', 1)[0]}/20200101/opentelemetry/private/v1/traces"
+    # OCI APM domains (apm-agt.<region>.oci.oraclecloud.com) require the
+    # private OTLP path, not the upstream /v1/traces default — the agent
+    # returns 404 otherwise and traces stay "ServiceName: omitted".
+    if ".apm-agt." in endpoint and ".oci.oraclecloud.com" in endpoint:
+        return f"{endpoint}/20200101/opentelemetry/private/v1/traces"
     return f"{endpoint}/v1/traces"
 
 

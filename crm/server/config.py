@@ -210,6 +210,20 @@ class Config:
         default_factory=lambda: _env_secret("DRONE_SHOP_INTERNAL_KEY") or _env_secret("INTERNAL_SERVICE_KEY")
     )
 
+    # OKE stress-runner pod (Plan 07-05) — internal cross-pod gate. Mirrors
+    # the X-Internal-Service-Key pattern used for the drone shop. The CRM
+    # admin stress-test surface (/api/admin/stress/*) calls the runner pod's
+    # /internal/* endpoints with this key.
+    octo_stress_runner_internal_key: str = field(
+        default_factory=lambda: _env_secret("OCTO_STRESS_RUNNER_INTERNAL_KEY")
+    )
+    octo_stress_runner_base_url: str = field(
+        default_factory=lambda: _env(
+            "OCTO_STRESS_RUNNER_BASE_URL",
+            "http://octo-stress-runner.octo-stress.svc.cluster.local:8080",
+        )
+    )
+
     # IDCS / OCI Identity Domain SSO
     idcs_domain_url: str = field(default_factory=lambda: _env("IDCS_DOMAIN_URL"))
     idcs_client_id: str = field(default_factory=lambda: _env("IDCS_CLIENT_ID"))

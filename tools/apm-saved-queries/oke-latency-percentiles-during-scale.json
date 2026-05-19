@@ -1,0 +1,20 @@
+{
+  "name": "octo-oke-latency-percentiles",
+  "displayName": "OCTO OKE — latency p50/p95/p99 during scale (checkout + java)",
+  "description": "Latency distribution (p50/p95/p99) for the shop checkout path and the Java payment gateway, bucketed at 30s. Used during Phase 7 stress runs to show the latency hump pre-scale-out and the recovery after HPA adds pods. Bucket is intentionally tight (30s) to stay visually responsive within a 3–5 minute stress window.",
+  "queryString": "service.namespace = 'octo_apm_demo' and (operationName = '/api/shop/checkout' or service.name = 'octo-apm-java-demo') | stats percentile(duration, 50) as p50, percentile(duration, 95) as p95, percentile(duration, 99) as p99 by service.name, bucket(30s) | sort +bucket",
+  "widgetType": "LINE_CHART",
+  "tags": ["phase-7", "scale-narrative", "latency", "octo_apm_demo"],
+  "external_drilldowns": [
+    {
+      "name": "Langfuse / LLMetry",
+      "url": "https://lm.octodemo.cloud/",
+      "why": "Drill into per-LLM call latency when checkout p95 spikes due to GenAI."
+    },
+    {
+      "name": "Grafana",
+      "url": "https://grafana.octodemo.cloud/",
+      "why": "Compare APM-side latency with cluster / RUM dashboards."
+    }
+  ]
+}

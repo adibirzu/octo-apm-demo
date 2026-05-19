@@ -378,20 +378,57 @@ spec:
     kind: Deployment
     name: octo-drone-shop
   minReplicas: 2
-  maxReplicas: 4
+  maxReplicas: 10
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70
+          averageUtilization: 60
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: 75
+          averageUtilization: 70
+    # External RPS metric (D-02, D-03). Published to the
+    # `octo_apm_demo` OCI Monitoring namespace and exposed to HPA via the
+    # prometheus-adapter / kube-metrics-adapter that lands in Plan 07-02.
+    # Until the adapter is deployed the controller will skip this metric
+    # silently — keeps the manifest valid offline (D-05 backward compat).
+    - type: External
+      external:
+        metric:
+          name: shop_request_rate
+          selector:
+            matchLabels:
+              service: octo-drone-shop
+        target:
+          type: AverageValue
+          averageValue: "30"
+  # Behavior block: bound flap during demo runs (Pitfall 1 from
+  # RESEARCH §Pattern 1). Aggressive scale-up (visible in 30s windows),
+  # conservative scale-down (5-min stabilization) so attendees see the
+  # downscale happen at a humane pace.
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 60
+      selectPolicy: Min
 
 ---
 apiVersion: policy/v1

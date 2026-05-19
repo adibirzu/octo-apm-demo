@@ -1,0 +1,30 @@
+{
+  "name": "octo-oke-pod-count",
+  "displayName": "OCTO OKE — pod count over time (shop + java-apm)",
+  "description": "Distinct-pod-count per service over time, bucketed at 1min. Visualises HPA scale-out (pods added) and scale-in (pods retired) for the octo-drone-shop and octo-apm-java-demo workloads during a Phase 7 stress run. Pairs with the 'OKE Autoscaling Timeline' Log Analytics dashboard.",
+  "queryString": "service.namespace = 'octo_apm_demo' and (service.name = 'octo-drone-shop' or service.name = 'octo-apm-java-demo') | stats count_distinct(k8s.pod.name) as pod_count by service.name, bucket(1min) | sort +bucket",
+  "widgetType": "LINE_CHART",
+  "tags": ["phase-7", "scale-narrative", "hpa", "octo_apm_demo"],
+  "external_drilldowns": [
+    {
+      "name": "Langfuse / LLMetry",
+      "url": "https://lm.octodemo.cloud/",
+      "why": "Correlate LLM trace cost/latency observed during scale-out window."
+    },
+    {
+      "name": "Arize Phoenix",
+      "url": "https://phoenix.octodemo.cloud/",
+      "why": "Inspect AI evaluation runs that ran inside the stress window."
+    },
+    {
+      "name": "OpenLIT",
+      "url": "https://openlit.octodemo.cloud/",
+      "why": "OTel-native LLM telemetry view for the same time slice."
+    },
+    {
+      "name": "Grafana",
+      "url": "https://grafana.octodemo.cloud/",
+      "why": "Cross-source dashboard view (cluster + LLM + app)."
+    }
+  ]
+}

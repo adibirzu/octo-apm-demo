@@ -43,6 +43,16 @@ _CHECKOUT_PATH = "/api/orders"
 _READY_PATH = "/ready"
 _WHOAMI_PATH = "/api/auth/whoami"
 
+_CRM_BROWSE_PATHS: tuple[str, ...] = (
+    "/",
+    "/login",
+    "/admin",
+    "/admin/orders",
+    "/admin/customers",
+    "/api/observability/apm/services",
+    "/api/health",
+)
+
 
 class SessionOutcome(str, enum.Enum):
     """Terminal state of a session — emitted as a trace attribute."""
@@ -92,6 +102,12 @@ class Session:
     async def _behaviour(self) -> SessionOutcome:
         await self._browse()
 
+        # ~40% of sessions also exercise CRM public surface so the
+        # enterprise-crm-portal{,-oke} services report in APM. Real users
+        # visit admin/CRM less than shop, so the lower probability matches.
+        if dist.bernoulli(0.4):
+            await self._browse_crm()
+
         if not dist.bernoulli(self.cfg.p_add_to_cart):
             return SessionOutcome.BROWSED_ONLY
 
@@ -102,6 +118,23 @@ class Session:
             return SessionOutcome.ABANDONED_CART
 
         return await self._checkout()
+
+    async def _browse_crm(self) -> None:
+        crm_base = self.cfg.crm_base_url.rstrip("/")
+        for _ in range(random.randint(1, 3)):  # noqa: S311 — non-crypto
+            path = random.choice(_CRM_BROWSE_PATHS)  # noqa: S311
+            try:
+                await self.client.get(
+                    f"{crm_base}{path}",
+                    headers={
+                        "User-Agent": self.user_agent,
+                        "X-Session-Id": self.session_id,
+                    },
+                )
+            except httpx.HTTPError:
+                # CRM probes are best-effort — don't fail the session
+                return
+            await asyncio.sleep(random.uniform(0.05, 0.25))  # noqa: S311
 
     async def _browse(self) -> None:
         pages = dist.pageviews_per_session(

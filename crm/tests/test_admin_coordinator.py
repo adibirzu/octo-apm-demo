@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-from server.modules import coordinator
+from server.modules import _admin_host, coordinator
 
 
 def _client(user: dict | None = None) -> TestClient:
@@ -49,16 +49,18 @@ def test_query_rejects_non_admin_host() -> None:
 
 def test_query_allows_configured_admin_host(monkeypatch) -> None:
     client = _client({"user_id": 1, "username": "admin", "role": "admin"})
-    monkeypatch.setattr(
-        coordinator,
-        "cfg",
-        SimpleNamespace(
-            dns_domain="example.test",
-            crm_base_url="https://admin.example.test",
-            shop_public_url="https://shop.example.test",
-            oci_auth_mode="instance_principal",
-        ),
+    fake_cfg = SimpleNamespace(
+        dns_domain="example.test",
+        crm_base_url="https://admin.example.test",
+        shop_public_url="https://shop.example.test",
+        oci_auth_mode="instance_principal",
     )
+    # After Phase 7 Plan 04, `_configured_admin_hosts` lives in
+    # `server.modules._admin_host` and reads its own bound `cfg`. Patch both
+    # module references so the test exercises the same logical config the
+    # process sees at runtime (single underlying singleton in production).
+    monkeypatch.setattr(coordinator, "cfg", fake_cfg)
+    monkeypatch.setattr(_admin_host, "cfg", fake_cfg)
 
     response = client.post(
         "/api/admin/coordinator/query",

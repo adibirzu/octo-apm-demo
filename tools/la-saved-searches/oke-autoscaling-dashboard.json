@@ -1,0 +1,40 @@
+{
+  "name": "octo-oke-autoscaling-timeline",
+  "displayName": "OKE Autoscaling Timeline",
+  "description": "Phase 7 / D-19. Time-aligned view of an OKE autoscaling stress run: HPA pod-scale events, Cluster Autoscaler node-scale events, kubelet pressure symptoms, and the run_id-stamped stress audit log. Linked from the Lab 11 walkthrough alongside the APM saved queries (plan 07) and Monitoring alarms (plan 08).",
+  "type": "LOG_ANALYTICS_DASHBOARD",
+  "parameters": [
+    {
+      "name": "time_range",
+      "displayName": "Time range",
+      "type": "TIME_RANGE",
+      "defaultValue": "PT1H"
+    }
+  ],
+  "tiles": [
+    {
+      "displayName": "HPA scale events",
+      "savedSearchName": "oke-autoscaling-hpa-events",
+      "widgetType": "TABLE",
+      "position": {"row": 0, "column": 0, "width": 6, "height": 4}
+    },
+    {
+      "displayName": "Cluster Autoscaler events",
+      "savedSearchName": "oke-autoscaling-ca-events",
+      "widgetType": "TABLE",
+      "position": {"row": 0, "column": 6, "width": 6, "height": 4}
+    },
+    {
+      "displayName": "Kubelet pressure",
+      "savedSearchName": "oke-autoscaling-kubelet-pressure",
+      "widgetType": "BAR_CHART",
+      "position": {"row": 4, "column": 0, "width": 6, "height": 4}
+    },
+    {
+      "displayName": "Stress run audit (run_id)",
+      "savedSearchName": "oke-autoscaling-stress-audit",
+      "widgetType": "TABLE",
+      "position": {"row": 4, "column": 6, "width": 6, "height": 4}
+    }
+  ]
+}

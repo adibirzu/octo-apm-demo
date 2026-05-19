@@ -35,6 +35,27 @@ secrets/
 credentials/
 config/local/
 
+# Internal tenancy details — never commit real values, use <PLACEHOLDER> tokens
+# Documented in .planning/SECURITY.md and ~/.claude/CLAUDE.md "OCI Tenancy Boundaries".
+# These paths are common destinations for files that accidentally collect OCIDs/IPs/datakeys:
+.planning/STATUS-*.md
+.planning/tmp/
+.planning/intel/
+.planning/graphs/
+graphify-out/
+deploy/oke/bootstrap-emdemo-secrets.sh
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+outputs.json
+**/outputs.json
+**/instance-ips-output.json
+**/jumphost.json
+**/.ocir-token
+**/auth-token.txt
+**/oci_api_key_*.pem
+
 # Logs + test output
 *.log
 .playwright-cli/

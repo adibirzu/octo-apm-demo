@@ -1,0 +1,25 @@
+{
+  "addonName": "ClusterAutoscaler",
+  "configurations": [
+    {
+      "key": "nodes",
+      "value": "2:4:${OKE_NODE_POOL_OCID}"
+    },
+    {
+      "key": "scaleDownDelayAfterAdd",
+      "value": "10m"
+    },
+    {
+      "key": "scaleDownUnneededTime",
+      "value": "10m"
+    },
+    {
+      "key": "maxNodeProvisionTime",
+      "value": "15m"
+    },
+    {
+      "key": "balanceSimilarNodeGroups",
+      "value": "true"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import os
 import subprocess
 import zipfile
 from pathlib import Path
@@ -706,3 +707,35 @@ def test_two_instance_compute_surface_is_offline_validated_and_observable() -> N
     assert "systemctl restart octo-compute.service" in deploy_apps
     assert "bootstrap_admin_password" not in deploy_apps.lower()
     assert "OCI_APM_PRIVATE_DATAKEY" not in deploy_apps
+
+
+# ── Phase 7 plan 07-10: stress-runner manifest + Cluster Autoscaler script ──
+#
+# Extend the canonical unified-deploy-surface coverage so that drift in the
+# Phase 7 stress-runner manifest or the operator-gated CA script is caught at
+# offline test time — same shape as test_unified_deploy_wrapper_exists above.
+
+
+def test_stress_runner_manifest_in_unified_surface() -> None:
+    manifest = ROOT / "deploy/k8s/oke/stress-runner/deployment.yaml"
+    assert manifest.exists(), (
+        "deploy/k8s/oke/stress-runner/deployment.yaml must exist (Phase 7 plan 07-03)"
+    )
+    body = manifest.read_text(encoding="utf-8")
+    assert "octo-stress-runner" in body, (
+        "stress-runner deployment.yaml must declare the octo-stress-runner workload"
+    )
+
+
+def test_configure_cluster_autoscaler_in_unified_surface() -> None:
+    script = ROOT / "deploy/oke/configure-cluster-autoscaler.sh"
+    assert script.exists(), (
+        "deploy/oke/configure-cluster-autoscaler.sh must exist (Phase 7 plan 07-02, D-04)"
+    )
+    assert os.access(script, os.X_OK), (
+        "configure-cluster-autoscaler.sh must be executable (operator runbook entry point)"
+    )
+    body = script.read_text(encoding="utf-8")
+    assert "install-addon" in body, (
+        "CA script must call `oci ce cluster install-addon` (D-04)"
+    )

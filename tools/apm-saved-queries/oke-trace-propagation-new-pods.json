@@ -1,0 +1,28 @@
+{
+  "name": "octo-oke-trace-to-new-pods",
+  "displayName": "OCTO OKE — trace propagation into newly-added pods",
+  "description": "Top-N traces touching k8s.pod.name values that are NOT in the operator-supplied baseline_pod_set parameter. Confirms that HPA-added pods are actually serving traffic + emitting correlated APM spans (vs. sitting idle behind the LB). Operator fills baseline_pod_set with the pre-scale pod names at apply time; see README for first_appear logic guidance.",
+  "queryString": "service.namespace = 'octo_apm_demo' and k8s.pod.name not in ({baseline_pod_set}) | stats count() as span_count, min(timestamp) as first_appear by traceId, k8s.pod.name, service.name | sort -span_count | head limit = 50",
+  "widgetType": "TABLE",
+  "parameters": [
+    {
+      "name": "baseline_pod_set",
+      "description": "Comma-separated list of pod names that existed BEFORE the stress run (pre-scale baseline). Operator fills at apply time, e.g. \"octo-drone-shop-abc,octo-drone-shop-def\".",
+      "type": "STRING_LIST",
+      "default": ""
+    }
+  ],
+  "tags": ["phase-7", "scale-narrative", "trace-propagation", "new_pod", "octo_apm_demo"],
+  "external_drilldowns": [
+    {
+      "name": "Phoenix",
+      "url": "https://phoenix.octodemo.cloud/",
+      "why": "Trace-level evaluation view for runs hitting newly-scheduled pods."
+    },
+    {
+      "name": "OpenLIT",
+      "url": "https://openlit.octodemo.cloud/",
+      "why": "OTel-native trace view filtered by the same pod set."
+    }
+  ]
+}

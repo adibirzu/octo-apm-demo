@@ -1,0 +1,7 @@
+{
+  "name": "octo-oke-autoscaling-kubelet-pressure",
+  "description": "Kubelet pressure symptoms during the stress run: NodeNotReady, ImagePullBackOff, OOMKilled. Identifies which nodes hit memory / disk / image-fetch pressure while HPA + Cluster Autoscaler were converging.",
+  "displayName": "OCTO OKE — kubelet pressure (NodeNotReady / ImagePullBackOff / OOMKilled)",
+  "queryString": "'Log Source' = 'Kubernetes Logs' and (Message like '%NodeNotReady%' or Message like '%ImagePullBackOff%' or Message like '%OOMKilled%') | stats count() by node, reason | sort -count",
+  "widgetType": "BAR_CHART"
+}

@@ -1,0 +1,21 @@
+# ClusterIP service for octo-stress-runner. Only the CRM admin route calls
+# this surface (cross-namespace internal HTTP gated by X-Internal-Service-Key).
+# Intentionally NO Ingress — the wrapper is private control-plane only.
+apiVersion: v1
+kind: Service
+metadata:
+  name: octo-stress-runner
+  namespace: octo-stress
+  labels:
+    app: octo-stress-runner
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: stress-runner
+spec:
+  type: ClusterIP
+  selector:
+    app: octo-stress-runner
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP

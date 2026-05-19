@@ -1,0 +1,15 @@
+# LLMetry instrumentation pin — D-21 (Phase 7).
+#
+# LLMetry is the in-repo GenAI/LLM observability adapter at
+# shop/server/observability/llmetry.py — it emits Langfuse-shaped events
+# plus OCI APM resource attributes for assistant/RAG calls.
+#
+# This file tracks the contract version we ship against so future phase
+# bumps (e.g. oci-coordinator-oke integration) can detect drift without
+# importing the module. The line below is the canonical pin format
+# (`<package>==<version>`); the contract version is reviewed at each
+# Phase 7+ checkpoint.
+#
+# Bump rule: only bump after running the OBS-01..05 field-shape regression
+# suite locally and confirming no field renames slipped in.
+llmetry==0.5.0

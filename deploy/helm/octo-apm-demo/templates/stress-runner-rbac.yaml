@@ -1,0 +1,22 @@
+{{- if .Values.stressRunner.enabled }}
+# Minimal SA — no Role/RoleBinding (T-07-15 mitigation). See
+# deploy/k8s/oke/stress-runner/rbac.yaml for the rationale.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.stressRunner.namespace }}
+  labels:
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: stress-runner
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: octo-stress-runner
+  namespace: {{ .Values.stressRunner.namespace }}
+  labels:
+    app: octo-stress-runner
+    app.kubernetes.io/part-of: octo-apm-demo
+    app.kubernetes.io/component: stress-runner
+automountServiceAccountToken: false
+{{- end }}

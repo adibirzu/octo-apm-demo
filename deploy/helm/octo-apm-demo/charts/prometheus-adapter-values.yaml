@@ -1,0 +1,86 @@
+# prometheus-community/prometheus-adapter values for octo-apm-demo Phase 7.
+#
+# Purpose
+#   Publish two External Metrics that the shop + java-apm HPAs consume:
+#     - shop_request_rate  (per-pod RPS for octo-drone-shop)
+#     - java_request_rate  (per-pod RPS for octo-apm-java-demo)
+#
+# Consumed by
+#   helm install prometheus-adapter prometheus-community/prometheus-adapter \
+#     -n octo-autoscaling -f deploy/helm/octo-apm-demo/charts/prometheus-adapter-values.yaml
+#
+# Operator window (per .planning/phases/07-oke-autoscaling-and-stress-demo/07-CONTEXT.md
+# <deferred>): live `helm install` is gated to the same operator window that
+# applies `deploy/oke/configure-cluster-autoscaler.sh --apply`. This file ships
+# the values; the cluster apply happens during a reviewed change window.
+#
+# Phase 7 contract references
+#   - D-02: HPA metrics = CPU + memory + RPS via External Metrics adapter
+#   - D-05: HPA RPS metric gated default-OFF in chart; this adapter resolves
+#     the metric source when the gate flips on.
+#   - SEC-04 / KB-456: no live OCIDs, IPs, or tenancy labels in this file.
+#
+# Namespace pin (octo_apm_demo) appears on every Prometheus query so we never
+# accidentally publish metrics scraped from a foreign workload label space.
+
+prometheus:
+  # Placeholder Prometheus service address — confirmed at apply time. The
+  # operator points this at whichever Prometheus the cluster uses (kube-prom-
+  # stack, prom-community, or the existing oci-onm prometheus-server). The
+  # FQDN below assumes a sibling release `prom` in namespace `octo-autoscaling`;
+  # change at apply time if the cluster uses different naming.
+  url: http://prom-prometheus-server.octo-autoscaling.svc.cluster.local
+  port: 80
+
+# Run the adapter in the dedicated octo-autoscaling namespace alongside
+# Cluster Autoscaler so the HPA External Metrics path is colocated.
+namespaceOverride: octo-autoscaling
+
+# Resource floor for the adapter — bumped from the chart default because HPA
+# queries every 15s for each external rule.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+rules:
+  # Default rule families disabled — we only publish the two External Metrics
+  # the octo-apm-demo HPAs need. Re-enable per-cluster if the operator wants
+  # broader custom-metrics coverage.
+  default: false
+  custom: []
+  resource: {}
+
+  external:
+    # shop_request_rate: per-pod requests/sec for octo-drone-shop. Consumed by
+    # the shop HPA `type: External` block in deploy/k8s/oke/shop/deployment.yaml
+    # (gated via .Values.shop.autoscaling.rps.enabled in the Helm chart).
+    - seriesQuery: 'http_server_requests_seconds_count{namespace="octo_apm_demo",service="octo-drone-shop"}'
+      resources:
+        template: "<<.Resource>>"
+        overrides:
+          namespace:
+            resource: namespace
+      name:
+        matches: "^(.*)_count$"
+        as: "shop_request_rate"
+      metricsQuery: |
+        sum(rate(http_server_requests_seconds_count{service="octo-drone-shop",namespace="octo_apm_demo"}[1m])) by (pod)
+
+    # java_request_rate: per-pod requests/sec for octo-apm-java-demo. Consumed
+    # by the java-gateway HPA in deploy/k8s/oke/apm-java-demo/deployment.yaml
+    # (gated via .Values.javaGateway.autoscaling.rps.enabled in the Helm chart).
+    - seriesQuery: 'http_server_requests_seconds_count{namespace="octo_apm_demo",service="octo-apm-java-demo"}'
+      resources:
+        template: "<<.Resource>>"
+        overrides:
+          namespace:
+            resource: namespace
+      name:
+        matches: "^(.*)_count$"
+        as: "java_request_rate"
+      metricsQuery: |
+        sum(rate(http_server_requests_seconds_count{service="octo-apm-java-demo",namespace="octo_apm_demo"}[1m])) by (pod)

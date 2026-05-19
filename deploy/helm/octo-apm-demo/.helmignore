@@ -6,3 +6,10 @@
 *.tar.gz
 .idea/
 .vscode/
+
+# Loose values files under charts/ are not packaged subcharts. The
+# prometheus-adapter-values.yaml file authored by Plan 07-02 is consumed
+# directly by `helm install prometheus-community/prometheus-adapter -f ...`
+# at operator-window apply time — it is NOT a bundled subchart of this
+# umbrella chart, so helm template must skip it.
+charts/*.yaml
