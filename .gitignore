@@ -101,3 +101,6 @@ deploy/terraform/.terraform.tfstate.lock.info
 deploy/compute/terraform/*.tfvars
 !deploy/compute/terraform/terraform.tfvars.example
 deploy/compute/build/
+
+# Personal Claude Code session state
+.claude/
