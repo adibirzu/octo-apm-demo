@@ -10,31 +10,29 @@
       
       
       
-        <link rel="canonical" href="https://adibirzu.github.io/octo-apm-demo/drone-shop/">
+        <link rel="canonical" href="https://adibirzu.github.io/octo-apm-demo/workshop/lab-11-oke-autoscaling/">
       
       
-        <link rel="prev" href="../architecture/diagrams/">
+        <link rel="prev" href="../lab-10-failed-checkout/">
       
-      
-        <link rel="next" href="modules/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>OCTO Drone Shop - OCTO APM Demo — Unified Platform</title>
+        <title>Lab 11 — OKE Autoscaling - OCTO APM Demo — Unified Platform</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/css/placeholder-config.css">
+      <link rel="stylesheet" href="../../assets/css/placeholder-config.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#octo-drone-shop" class="md-skip">
+        <a href="#lab-11-oke-autoscaling-and-stress-demo" class="md-skip">
           Skip to content
         </a>
       
@@ -94,7 +92,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="OCTO APM Demo — Unified Platform" class="md-header__button md-logo" aria-label="OCTO APM Demo — Unified Platform" data-md-component="logo">
+    <a href="../.." title="OCTO APM Demo — Unified Platform" class="md-header__button md-logo" aria-label="OCTO APM Demo — Unified Platform" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -114,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              OCTO Drone Shop
+              Lab 11 — OKE Autoscaling
             
           </span>
         </div>
@@ -227,7 +225,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -246,7 +244,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../introduction/" class="md-tabs__link">
+      <a href="../../introduction/" class="md-tabs__link">
         
   
   
@@ -267,7 +265,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../getting-started/" class="md-tabs__link">
+        <a href="../../getting-started/" class="md-tabs__link">
           
   
   
@@ -289,7 +287,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../architecture/" class="md-tabs__link">
+        <a href="../../architecture/" class="md-tabs__link">
           
   
   
@@ -307,13 +305,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../drone-shop/" class="md-tabs__link">
           
   
   
@@ -335,7 +331,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../crm/" class="md-tabs__link">
+        <a href="../../crm/" class="md-tabs__link">
           
   
   
@@ -357,7 +353,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../observability/" class="md-tabs__link">
+        <a href="../../observability/" class="md-tabs__link">
           
   
   
@@ -379,7 +375,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../observability-v2/" class="md-tabs__link">
+        <a href="../../observability-v2/" class="md-tabs__link">
           
   
   
@@ -401,7 +397,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../integrations/" class="md-tabs__link">
+        <a href="../../integrations/" class="md-tabs__link">
           
   
   
@@ -423,7 +419,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../testing/" class="md-tabs__link">
+        <a href="../../testing/" class="md-tabs__link">
           
   
   
@@ -445,7 +441,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../operations/" class="md-tabs__link">
+        <a href="../../operations/" class="md-tabs__link">
           
   
   
@@ -463,11 +459,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../workshop/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -503,7 +501,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="OCTO APM Demo — Unified Platform" class="md-nav__button md-logo" aria-label="OCTO APM Demo — Unified Platform" data-md-component="logo">
+    <a href="../.." title="OCTO APM Demo — Unified Platform" class="md-nav__button md-logo" aria-label="OCTO APM Demo — Unified Platform" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -533,7 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -560,7 +558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../introduction/" class="md-nav__link">
+      <a href="../../introduction/" class="md-nav__link">
         
   
   
@@ -624,7 +622,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../getting-started/" class="md-nav__link ">
+            <a href="../../getting-started/" class="md-nav__link ">
               
   
   
@@ -668,7 +666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/prerequisites/" class="md-nav__link">
+      <a href="../../getting-started/prerequisites/" class="md-nav__link">
         
   
   
@@ -696,7 +694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/quickstart/" class="md-nav__link">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
         
   
   
@@ -724,7 +722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/deployment-options/" class="md-nav__link">
+      <a href="../../getting-started/deployment-options/" class="md-nav__link">
         
   
   
@@ -752,7 +750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/oke-deployment/" class="md-nav__link">
+      <a href="../../getting-started/oke-deployment/" class="md-nav__link">
         
   
   
@@ -780,7 +778,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/compute-deployment/" class="md-nav__link">
+      <a href="../../getting-started/compute-deployment/" class="md-nav__link">
         
   
   
@@ -808,7 +806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/new-tenancy/" class="md-nav__link">
+      <a href="../../getting-started/new-tenancy/" class="md-nav__link">
         
   
   
@@ -836,7 +834,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/bill-of-materials/" class="md-nav__link">
+      <a href="../../getting-started/bill-of-materials/" class="md-nav__link">
         
   
   
@@ -910,7 +908,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../architecture/" class="md-nav__link ">
+            <a href="../../architecture/" class="md-nav__link ">
               
   
   
@@ -954,7 +952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/platform-overview/" class="md-nav__link">
+      <a href="../../architecture/platform-overview/" class="md-nav__link">
         
   
   
@@ -982,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/system-design/" class="md-nav__link">
+      <a href="../../architecture/system-design/" class="md-nav__link">
         
   
   
@@ -1010,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/correlation-contract/" class="md-nav__link">
+      <a href="../../architecture/correlation-contract/" class="md-nav__link">
         
   
   
@@ -1038,7 +1036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/service-inventory/" class="md-nav__link">
+      <a href="../../architecture/service-inventory/" class="md-nav__link">
         
   
   
@@ -1066,7 +1064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/data-model/" class="md-nav__link">
+      <a href="../../architecture/data-model/" class="md-nav__link">
         
   
   
@@ -1094,7 +1092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/database-integration/" class="md-nav__link">
+      <a href="../../architecture/database-integration/" class="md-nav__link">
         
   
   
@@ -1122,7 +1120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/framework/" class="md-nav__link">
+      <a href="../../architecture/framework/" class="md-nav__link">
         
   
   
@@ -1150,7 +1148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/diagrams/" class="md-nav__link">
+      <a href="../../architecture/diagrams/" class="md-nav__link">
         
   
   
@@ -1182,8 +1180,6 @@
       
   
   
-    
-  
   
   
     
@@ -1203,23 +1199,20 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../drone-shop/" class="md-nav__link ">
               
   
   
@@ -1237,13 +1230,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_5" id="__nav_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1263,7 +1256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="modules/" class="md-nav__link">
+      <a href="../../drone-shop/modules/" class="md-nav__link">
         
   
   
@@ -1291,7 +1284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="checkout/" class="md-nav__link">
+      <a href="../../drone-shop/checkout/" class="md-nav__link">
         
   
   
@@ -1319,7 +1312,7 @@
   
   
     <li class="md-nav__item">
-      <a href="assistant/" class="md-nav__link">
+      <a href="../../drone-shop/assistant/" class="md-nav__link">
         
   
   
@@ -1391,7 +1384,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../crm/" class="md-nav__link ">
+            <a href="../../crm/" class="md-nav__link ">
               
   
   
@@ -1435,7 +1428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/modules/" class="md-nav__link">
+      <a href="../../crm/modules/" class="md-nav__link">
         
   
   
@@ -1463,7 +1456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/architecture/" class="md-nav__link">
+      <a href="../../crm/architecture/" class="md-nav__link">
         
   
   
@@ -1491,7 +1484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/order-sync/" class="md-nav__link">
+      <a href="../../crm/order-sync/" class="md-nav__link">
         
   
   
@@ -1519,7 +1512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/security-vulns/" class="md-nav__link">
+      <a href="../../crm/security-vulns/" class="md-nav__link">
         
   
   
@@ -1547,7 +1540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/simulation/" class="md-nav__link">
+      <a href="../../crm/simulation/" class="md-nav__link">
         
   
   
@@ -1606,7 +1599,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../crm/observability-v2/" class="md-nav__link ">
+            <a href="../../crm/observability-v2/" class="md-nav__link ">
               
   
   
@@ -1650,7 +1643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/observability-v2/workflows/" class="md-nav__link">
+      <a href="../../crm/observability-v2/workflows/" class="md-nav__link">
         
   
   
@@ -1678,7 +1671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/observability-v2/chaos-playbook/" class="md-nav__link">
+      <a href="../../crm/observability-v2/chaos-playbook/" class="md-nav__link">
         
   
   
@@ -1706,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/observability-v2/security/" class="md-nav__link">
+      <a href="../../crm/observability-v2/security/" class="md-nav__link">
         
   
   
@@ -1734,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/observability-v2/waf-observability/" class="md-nav__link">
+      <a href="../../crm/observability-v2/waf-observability/" class="md-nav__link">
         
   
   
@@ -1826,7 +1819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/operations/chaos-admin/" class="md-nav__link">
+      <a href="../../crm/operations/chaos-admin/" class="md-nav__link">
         
   
   
@@ -1916,7 +1909,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../observability/" class="md-nav__link ">
+            <a href="../../observability/" class="md-nav__link ">
               
   
   
@@ -1960,7 +1953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/addons/" class="md-nav__link">
+      <a href="../../observability/addons/" class="md-nav__link">
         
   
   
@@ -1988,7 +1981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/melts/" class="md-nav__link">
+      <a href="../../observability/melts/" class="md-nav__link">
         
   
   
@@ -2016,7 +2009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/traces/" class="md-nav__link">
+      <a href="../../observability/traces/" class="md-nav__link">
         
   
   
@@ -2044,7 +2037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/metrics/" class="md-nav__link">
+      <a href="../../observability/metrics/" class="md-nav__link">
         
   
   
@@ -2072,7 +2065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/logs/" class="md-nav__link">
+      <a href="../../observability/logs/" class="md-nav__link">
         
   
   
@@ -2100,7 +2093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/security/" class="md-nav__link">
+      <a href="../../observability/security/" class="md-nav__link">
         
   
   
@@ -2128,7 +2121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/rum/" class="md-nav__link">
+      <a href="../../observability/rum/" class="md-nav__link">
         
   
   
@@ -2156,7 +2149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/distributed-traces/" class="md-nav__link">
+      <a href="../../observability/distributed-traces/" class="md-nav__link">
         
   
   
@@ -2184,7 +2177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/enhancement-plan/" class="md-nav__link">
+      <a href="../../observability/enhancement-plan/" class="md-nav__link">
         
   
   
@@ -2212,7 +2205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/oci-360-development-plan/" class="md-nav__link">
+      <a href="../../observability/oci-360-development-plan/" class="md-nav__link">
         
   
   
@@ -2240,7 +2233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/wire-up/" class="md-nav__link">
+      <a href="../../observability/wire-up/" class="md-nav__link">
         
   
   
@@ -2268,7 +2261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/demo-drilldown/" class="md-nav__link">
+      <a href="../../observability/demo-drilldown/" class="md-nav__link">
         
   
   
@@ -2350,7 +2343,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../observability-v2/" class="md-nav__link ">
+            <a href="../../observability-v2/" class="md-nav__link ">
               
   
   
@@ -2394,7 +2387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/workflows/" class="md-nav__link">
+      <a href="../../observability-v2/workflows/" class="md-nav__link">
         
   
   
@@ -2422,7 +2415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/event-generation-guide/" class="md-nav__link">
+      <a href="../../observability-v2/event-generation-guide/" class="md-nav__link">
         
   
   
@@ -2450,7 +2443,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/chaos-playbook/" class="md-nav__link">
+      <a href="../../observability-v2/chaos-playbook/" class="md-nav__link">
         
   
   
@@ -2478,7 +2471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/log-analytics-dashboards/" class="md-nav__link">
+      <a href="../../observability-v2/log-analytics-dashboards/" class="md-nav__link">
         
   
   
@@ -2506,7 +2499,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/apm-drilldown/" class="md-nav__link">
+      <a href="../../observability-v2/apm-drilldown/" class="md-nav__link">
         
   
   
@@ -2534,7 +2527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/synthetic-monitoring/" class="md-nav__link">
+      <a href="../../observability-v2/synthetic-monitoring/" class="md-nav__link">
         
   
   
@@ -2562,7 +2555,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/demo-storyboard-attack-lab/" class="md-nav__link">
+      <a href="../../observability-v2/demo-storyboard-attack-lab/" class="md-nav__link">
         
   
   
@@ -2590,7 +2583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/stack-monitoring/" class="md-nav__link">
+      <a href="../../observability-v2/stack-monitoring/" class="md-nav__link">
         
   
   
@@ -2618,7 +2611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/waf-observability/" class="md-nav__link">
+      <a href="../../observability-v2/waf-observability/" class="md-nav__link">
         
   
   
@@ -2646,7 +2639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/autoremediation-flow/" class="md-nav__link">
+      <a href="../../observability-v2/autoremediation-flow/" class="md-nav__link">
         
   
   
@@ -2674,7 +2667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/code-knowledge-map/" class="md-nav__link">
+      <a href="../../observability-v2/code-knowledge-map/" class="md-nav__link">
         
   
   
@@ -2702,7 +2695,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability-v2/demo-script/" class="md-nav__link">
+      <a href="../../observability-v2/demo-script/" class="md-nav__link">
         
   
   
@@ -2770,7 +2763,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../integrations/" class="md-nav__link ">
+            <a href="../../integrations/" class="md-nav__link ">
               
   
   
@@ -2814,7 +2807,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crm/integrations/cross-service-contract/" class="md-nav__link">
+      <a href="../../crm/integrations/cross-service-contract/" class="md-nav__link">
         
   
   
@@ -2842,7 +2835,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/crm/" class="md-nav__link">
+      <a href="../../integrations/crm/" class="md-nav__link">
         
   
   
@@ -2870,7 +2863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/oci-services/" class="md-nav__link">
+      <a href="../../integrations/oci-services/" class="md-nav__link">
         
   
   
@@ -2898,7 +2891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/coordinator/" class="md-nav__link">
+      <a href="../../integrations/coordinator/" class="md-nav__link">
         
   
   
@@ -2926,7 +2919,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/circuit-breaker/" class="md-nav__link">
+      <a href="../../integrations/circuit-breaker/" class="md-nav__link">
         
   
   
@@ -2990,7 +2983,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../testing/" class="md-nav__link ">
+            <a href="../../testing/" class="md-nav__link ">
               
   
   
@@ -3034,7 +3027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing/e2e/" class="md-nav__link">
+      <a href="../../testing/e2e/" class="md-nav__link">
         
   
   
@@ -3062,7 +3055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing/load-tests/" class="md-nav__link">
+      <a href="../../testing/load-tests/" class="md-nav__link">
         
   
   
@@ -3090,7 +3083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing/local-stack/" class="md-nav__link">
+      <a href="../../testing/local-stack/" class="md-nav__link">
         
   
   
@@ -3162,7 +3155,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../operations/" class="md-nav__link ">
+            <a href="../../operations/" class="md-nav__link ">
               
   
   
@@ -3206,7 +3199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operations/deployment/" class="md-nav__link">
+      <a href="../../operations/deployment/" class="md-nav__link">
         
   
   
@@ -3234,7 +3227,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operations/guided-demo-rollout/" class="md-nav__link">
+      <a href="../../operations/guided-demo-rollout/" class="md-nav__link">
         
   
   
@@ -3262,7 +3255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operations/current-status/" class="md-nav__link">
+      <a href="../../operations/current-status/" class="md-nav__link">
         
   
   
@@ -3290,7 +3283,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operations/deploy-readiness/" class="md-nav__link">
+      <a href="../../operations/deploy-readiness/" class="md-nav__link">
         
   
   
@@ -3318,7 +3311,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operations/chaos/" class="md-nav__link">
+      <a href="../../operations/chaos/" class="md-nav__link">
         
   
   
@@ -3346,7 +3339,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operations/alarms/" class="md-nav__link">
+      <a href="../../operations/alarms/" class="md-nav__link">
         
   
   
@@ -3374,7 +3367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operations/stress-demo-lb-routing/" class="md-nav__link">
+      <a href="../../operations/stress-demo-lb-routing/" class="md-nav__link">
         
   
   
@@ -3406,6 +3399,8 @@
       
   
   
+    
+  
   
   
     
@@ -3441,20 +3436,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../workshop/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -3472,13 +3470,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3498,7 +3496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-01-first-trace/" class="md-nav__link">
+      <a href="../lab-01-first-trace/" class="md-nav__link">
         
   
   
@@ -3526,7 +3524,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-02-trace-log-correlation/" class="md-nav__link">
+      <a href="../lab-02-trace-log-correlation/" class="md-nav__link">
         
   
   
@@ -3554,7 +3552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-03-slow-sql-drill-down/" class="md-nav__link">
+      <a href="../lab-03-slow-sql-drill-down/" class="md-nav__link">
         
   
   
@@ -3582,7 +3580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-04-rum-outage-detection/" class="md-nav__link">
+      <a href="../lab-04-rum-outage-detection/" class="md-nav__link">
         
   
   
@@ -3610,7 +3608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-05-metric-and-alarm/" class="md-nav__link">
+      <a href="../lab-05-metric-and-alarm/" class="md-nav__link">
         
   
   
@@ -3638,7 +3636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-06-waf-event-investigation/" class="md-nav__link">
+      <a href="../lab-06-waf-event-investigation/" class="md-nav__link">
         
   
   
@@ -3666,7 +3664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-07-saved-search/" class="md-nav__link">
+      <a href="../lab-07-saved-search/" class="md-nav__link">
         
   
   
@@ -3694,7 +3692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-08-stack-monitoring-atp/" class="md-nav__link">
+      <a href="../lab-08-stack-monitoring-atp/" class="md-nav__link">
         
   
   
@@ -3722,7 +3720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-09-chaos-drill/" class="md-nav__link">
+      <a href="../lab-09-chaos-drill/" class="md-nav__link">
         
   
   
@@ -3750,7 +3748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../workshop/lab-10-failed-checkout/" class="md-nav__link">
+      <a href="../lab-10-failed-checkout/" class="md-nav__link">
         
   
   
@@ -3775,10 +3773,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../workshop/lab-11-oke-autoscaling/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lab 11 — OKE Autoscaling
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -3794,6 +3819,197 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#objective" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objective
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time budget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-verify-baseline-60s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Verify baseline (60s)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-trigger-the-medium-preset-3-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Trigger the Medium preset (3 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-watch-hpa-add-pods-12-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Watch HPA add pods (1–2 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-watch-cluster-autoscaler-add-a-node-alarm-fire-13-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Watch Cluster Autoscaler add a node + alarm fire (1–3 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-drill-into-apm-2-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Drill into APM (2 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-drill-into-log-analytics-2-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Drill into Log Analytics (2 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-cool-down-5-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Cool-down (5 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-drilldown-surfaces-d-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External drilldown surfaces (D-20)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#read-more" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read more
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3833,10 +4049,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#key-features" class="md-nav__link">
+  <a href="#objective" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Key Features
+        Objective
       
     </span>
   </a>
@@ -3844,10 +4060,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#live-instance" class="md-nav__link">
+  <a href="#time-budget" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Live Instance
+        Time budget
       
     </span>
   </a>
@@ -3855,10 +4071,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#current-boundary" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Current Boundary
+        Prerequisites
       
     </span>
   </a>
@@ -3866,10 +4082,137 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#sections" class="md-nav__link">
+  <a href="#steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Sections
+        Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-verify-baseline-60s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Verify baseline (60s)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-trigger-the-medium-preset-3-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Trigger the Medium preset (3 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-watch-hpa-add-pods-12-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Watch HPA add pods (1–2 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-watch-cluster-autoscaler-add-a-node-alarm-fire-13-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Watch Cluster Autoscaler add a node + alarm fire (1–3 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-drill-into-apm-2-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Drill into APM (2 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-drill-into-log-analytics-2-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Drill into Log Analytics (2 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-cool-down-5-min" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Cool-down (5 min)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-drilldown-surfaces-d-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External drilldown surfaces (D-20)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#read-more" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read more
       
     </span>
   </a>
@@ -3896,50 +4239,314 @@
   
 
 
-<h1 id="octo-drone-shop">OCTO Drone Shop<a class="headerlink" href="#octo-drone-shop" title="Permanent link">&para;</a></h1>
-<p><a class="md-button" href="https://github.com/adibirzu/octo-drone-shop"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"/></svg></span> Source</a></p>
-<p><strong>ATP-backed drone commerce platform</strong> with 98 API routes across 13 modules, full MELTS observability (Metrics, Events, Logs, Traces, SQL), IDCS SSO, and cross-service CRM integration.</p>
-<h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>E-commerce</strong> — Customer-facing product catalog, shopping cart, checkout with shipment tracking</li>
-<li><strong>AI Assistant</strong> — OCI GenAI-powered drone advisor with ATP conversation history</li>
-<li><strong>Workflow Gateway</strong> — Go service for Select AI queries, query lab, scheduled ATP sweeps</li>
-<li><strong>RUM</strong> — Custom browser events: add-to-cart, checkout funnel, search, page load</li>
-<li><strong>Security</strong> — 19 MITRE ATT&amp;CK security span types, WAF protection rules, Cloud Guard, Vault</li>
-<li><strong>Resilience</strong> — Circuit breakers on CRM calls, chaos engineering controls, 5 OCI alarms</li>
-<li><strong>CRM-Controlled Catalog</strong> — Shop consumes products and storefront metadata managed from the CRM control plane</li>
-</ul>
-<h2 id="live-instance">Live Instance<a class="headerlink" href="#live-instance" title="Permanent link">&para;</a></h2>
+<h1 id="lab-11-oke-autoscaling-and-stress-demo">Lab 11 — OKE Autoscaling and Stress Demo<a class="headerlink" href="#lab-11-oke-autoscaling-and-stress-demo" title="Permanent link">&para;</a></h1>
+<p>Walk the full Phase 7 elasticity demo end-to-end: baseline → trigger →
+HPA → Cluster Autoscaler → alarm → APM / Log Analytics drilldown →
+cool-down. One workshop attendee can reproduce solo in ~15 minutes.</p>
+<h2 id="objective">Objective<a class="headerlink" href="#objective" title="Permanent link">&para;</a></h2>
+<p>This lab is the closing chapter of the OCTO APM workshop. You will
+drive a controlled stress run against <code>shop.${DNS_DOMAIN}</code> from the
+admin-only <code>/admin/stress-test</code> page, watch OKE's HPA add shop pods,
+watch the managed Cluster Autoscaler add a worker node, watch the
+saturation alarm fire and clear, and drill into the resulting signals
+across <strong>three observability channels — APM, Monitoring,
+Log Analytics — all keyed by the same <code>run_id</code></strong>. The same <code>run_id</code>
+pivot you used in <a href="../lab-09-chaos-drill/">Lab 09</a> for chaos
+correlation is reused here for stress correlation; the contract is
+identical (Phase 5 audit-event shape; OBS-02 parser).</p>
+<p>You will also visit the four external operator-owned drilldown
+surfaces (D-20): <code>lm.octodemo.cloud</code>, <code>phoenix.octodemo.cloud</code>,
+<code>openlit.octodemo.cloud</code>, <code>grafana.octodemo.cloud</code>.</p>
+<h2 id="time-budget">Time budget<a class="headerlink" href="#time-budget" title="Permanent link">&para;</a></h2>
+<p>~15 minutes.</p>
+<div class="admonition warning">
+<p class="admonition-title">Live demo prerequisite</p>
+<p>Steps 2 → 7 below mutate live OKE state — they trigger real load
+against <code>shop.${DNS_DOMAIN}</code> and rely on operator-applied
+prerequisites. <strong>If you are reading this in workshop preview
+mode</strong> (no operator window applied), treat steps 2 → 7 as a
+read-only walkthrough. The operator-gated prerequisites are
+flagged in the next section.</p>
+</div>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>URL</th>
-<th>Status</th>
+<th>Prerequisite</th>
+<th>Where it lives</th>
+<th>Operator-gated?</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="https://shop.example.test">shop.example.test</a></td>
-<td>Production (OKE)</td>
+<td><a href="../lab-01-first-trace/">Lab 01 — First trace</a> completed</td>
+<td>workshop</td>
+<td>no</td>
 </tr>
 <tr>
-<td><a href="https://shop.example.test/api/observability/360">shop.example.test/api/observability/360</a></td>
-<td>360 Dashboard</td>
+<td><a href="../lab-05-metric-and-alarm/">Lab 05 — Metric + alarm</a> completed</td>
+<td>workshop</td>
+<td>no</td>
+</tr>
+<tr>
+<td><a href="../lab-09-chaos-drill/">Lab 09 — Chaos drill</a> completed</td>
+<td>workshop</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Cluster Autoscaler add-on applied</td>
+<td><code>deploy/oke/configure-cluster-autoscaler.sh</code> (plan 07-02)</td>
+<td><strong>yes — operator window</strong></td>
+</tr>
+<tr>
+<td><code>prometheus-adapter</code> Helm release installed</td>
+<td><code>deploy/helm/prometheus-adapter/</code> (plan 07-02)</td>
+<td><strong>yes — operator window</strong></td>
+</tr>
+<tr>
+<td>LB header-routing rule for <code>X-Octo-Stress-Target: oke</code></td>
+<td><a href="../../operations/stress-demo-lb-routing/">stress-demo-lb-routing.md</a></td>
+<td><strong>yes — operator window</strong></td>
+</tr>
+<tr>
+<td><code>stress-runner</code> Helm release with <code>stressRunner.enabled=true</code></td>
+<td>Helm values (plan 07-03)</td>
+<td><strong>yes — operator window</strong></td>
+</tr>
+<tr>
+<td>Admin role: <code>stress-operator</code> on your workshop user</td>
+<td>CRM admin module (plan 07-05)</td>
+<td>yes (admin grant)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="current-boundary">Current Boundary<a class="headerlink" href="#current-boundary" title="Permanent link">&para;</a></h2>
+<p>If any of the four operator-gated rows is missing, the live run will
+either return HTTP 409 (concurrency=1 enforcement before the
+operator window opens) or the alarm path / drilldown queries will
+return empty. Ask your workshop lead to confirm operator window
+status before continuing.</p>
+<h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
+<h3 id="1-verify-baseline-60s">1. Verify baseline (60s)<a class="headerlink" href="#1-verify-baseline-60s" title="Permanent link">&para;</a></h3>
+<p>Confirm the cluster is at rest before you start:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">kubectl<span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>get<span class="w"> </span>deploy<span class="w"> </span>octo-drone-shop<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-2"><span class="w">    </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.replicas} replicas / {.status.readyReplicas} ready&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span>
+</span><span id="__span-0-4">kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>--selector<span class="o">=</span><span class="s1">&#39;node.kubernetes.io/instance-type&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-5"><span class="w">    </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{range .items[*]}{.metadata.name}{&quot;\n&quot;}{end}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+</span></code></pre></div>
+<p>Expected: <code>2 replicas / 2 ready</code>, and <code>2</code> worker nodes. Cross-check in
+the OCI Console → Developer Services → Kubernetes Clusters →
+<code>octo-apm-demo-oke</code> → Workloads → Pods.</p>
+<h3 id="2-trigger-the-medium-preset-3-min">2. Trigger the Medium preset (3 min)<a class="headerlink" href="#2-trigger-the-medium-preset-3-min" title="Permanent link">&para;</a></h3>
+<p>Open the admin stress-test page on the admin host:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1">https://admin.${DNS_DOMAIN}/admin/stress-test
+</span></code></pre></div>
+<p>You will see the audit banner (<code>Stress runs are audited end-to-end
+via run_id</code>), a preset selector, the duration / RPS fields, the
+scenario dropdown, and the <code>Apply stress run</code> button. The current
+state panel shows <code>idle</code>.</p>
+<p>Pick <strong>Medium (50 RPS / 3 min, <code>checkout_journey</code>)</strong>, leave the
+target as <code>shop</code>, click <strong>Apply stress run</strong>. The page returns:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><span class="p">{</span>
+</span><span id="__span-2-2"><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;started&quot;</span><span class="p">,</span>
+</span><span id="__span-2-3"><span class="w">  </span><span class="nt">&quot;run_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1f2e8a90-...&quot;</span><span class="p">,</span>
+</span><span id="__span-2-4"><span class="w">  </span><span class="nt">&quot;rps_requested&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
+</span><span id="__span-2-5"><span class="w">  </span><span class="nt">&quot;duration_requested&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">180</span><span class="p">,</span>
+</span><span id="__span-2-6"><span class="w">  </span><span class="nt">&quot;scenario&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;checkout_journey&quot;</span><span class="p">,</span>
+</span><span id="__span-2-7"><span class="w">  </span><span class="nt">&quot;target_service&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;shop&quot;</span>
+</span><span id="__span-2-8"><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>Save the <code>run_id</code></strong> — it's the cross-channel pivot for steps 4–6.</p>
+<h3 id="3-watch-hpa-add-pods-12-min">3. Watch HPA add pods (1–2 min)<a class="headerlink" href="#3-watch-hpa-add-pods-12-min" title="Permanent link">&para;</a></h3>
+<p>The Phase 7 HPA on <code>octo-drone-shop</code> targets CPU 60 / memory 70 /
+RPS 30 per pod with <code>maxReplicas: 10</code> (plan 07-01). The Medium preset
+is calibrated to drive shop to ~6 replicas — leaving 10 as headroom
+for the Heavy (120 RPS) preset.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1">kubectl<span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>get<span class="w"> </span>hpa<span class="w"> </span>octo-drone-shop<span class="w"> </span>-w
+</span></code></pre></div>
+<p>In parallel, run the APM saved query <code>octo-oke-pod-count</code>:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1">attributes.&quot;run_id&quot; = &#39;&lt;your_run_id&gt;&#39;
+</span><span id="__span-4-2">| stats distinct_count(attributes.&quot;k8s.pod.name&quot;) by bin(time, 60s)
+</span></code></pre></div>
+<p>Expected: 2 → ~6 pods within 60s. The OCI Console pod list updates
+in real time.</p>
+<h3 id="4-watch-cluster-autoscaler-add-a-node-alarm-fire-13-min">4. Watch Cluster Autoscaler add a node + alarm fire (1–3 min)<a class="headerlink" href="#4-watch-cluster-autoscaler-add-a-node-alarm-fire-13-min" title="Permanent link">&para;</a></h3>
+<p>While shop scales up, the new pods exceed the two-node CPU budget.
+The OKE managed Cluster Autoscaler add-on (D-04, <code>min=2 max=4</code> per
+plan 07-02) adds a worker node:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1">kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>-w
+</span></code></pre></div>
+<p>The OCI Monitoring alarm <strong><code>OCTO — Shop CPU saturation high</code></strong>
+(plan 07-08, <code>shop_cpu_saturation_pct &gt; 80 for 2m</code>) will fire. This
+is <strong>expected</strong> — the alarm doubles as alarm-path validation
+(D-18, identical to the Lab 05 alarm pattern). You should also see
+<strong><code>OCTO — HPA at max replicas</code></strong> stay <code>OK</code> (we are calibrated below
+the ceiling).</p>
+<h3 id="5-drill-into-apm-2-min">5. Drill into APM (2 min)<a class="headerlink" href="#5-drill-into-apm-2-min" title="Permanent link">&para;</a></h3>
+<p>Open APM Trace Explorer (and link out to
+<a href="https://phoenix.octodemo.cloud"><code>phoenix.octodemo.cloud</code></a> for the
+external trace-store view, if your tenancy has it configured).</p>
+<p>Run the four Phase 7 APM saved queries (plan 07-07), all scoped to
+your <code>run_id</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Saved query</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>octo-oke-pod-count</code></td>
+<td>shop replica count over time, bucketed 60s</td>
+</tr>
+<tr>
+<td><code>octo-oke-latency-percentiles</code></td>
+<td><code>/api/shop/checkout</code> p50/p95/p99 across the stress window</td>
+</tr>
+<tr>
+<td><code>octo-oke-trace-to-new-pods</code></td>
+<td>traces whose <code>k8s.pod.name</code> first appears inside the window — proof HPA pods serve real traffic</td>
+</tr>
+<tr>
+<td><code>octo-oke-error-saturation</code></td>
+<td>top-N pods by <code>5xx</code> / <code>span.status=ERROR</code> + slow-span histogram (stress vs baseline)</td>
+</tr>
+</tbody>
+</table>
+<p>The "trace to new pods" query is the one workshop attendees
+remember: it visually proves that the autoscaled-in pods accept
+production traffic mid-run.</p>
+<h3 id="6-drill-into-log-analytics-2-min">6. Drill into Log Analytics (2 min)<a class="headerlink" href="#6-drill-into-log-analytics-2-min" title="Permanent link">&para;</a></h3>
+<p>Open Log Analytics → Dashboards → <strong>OKE Autoscaling Timeline</strong>
+(plan 07-09). The four saved searches are time-aligned with the
+APM window:</p>
+<ol>
+<li><strong>HPA scale events</strong> — <code>Source = 'Kubernetes Logs' and
+   Subsystem = 'hpa-controller'</code></li>
+<li><strong>Cluster Autoscaler events</strong> — managed add-on logs + cluster-
+   autoscaler events</li>
+<li><strong>Kubelet pressure</strong> — <code>NodeNotReady</code>, <code>ImagePullBackOff</code>,
+   <code>OOMKilled</code> (should be empty under Medium preset; non-empty under
+   Heavy)</li>
+<li><strong>Stress run audit log</strong> — <code>Source = 'octo-stress-audit'</code> filtered
+   to your <code>run_id</code> — exactly the same shape as the chaos audit log
+   you used in Lab 09</li>
+</ol>
+<p>Filter the whole dashboard by <code>run_id = &lt;your_run_id&gt;</code> and the four
+panels align on the same minute boundary.</p>
+<h3 id="7-cool-down-5-min">7. Cool-down (5 min)<a class="headerlink" href="#7-cool-down-5-min" title="Permanent link">&para;</a></h3>
+<p>The Medium preset auto-expires after 3 minutes (server-side hard
+timeout = <code>duration + 30s</code> per D-14). If you need to stop sooner,
+click <strong>Stop stress run</strong> on the admin page — it idempotently sends
+SIGTERM to the in-pod <code>k6</code> process and emits a <code>stopped</code> audit
+event.</p>
+<p>Watch the scale-down:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1">kubectl<span class="w"> </span>-n<span class="w"> </span>octo-drone-shop<span class="w"> </span>get<span class="w"> </span>hpa<span class="w"> </span>octo-drone-shop<span class="w"> </span>-w
+</span><span id="__span-6-2">kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>-w
+</span></code></pre></div>
+<p>The HPA scale-down <code>stabilizationWindowSeconds</code> is 300 (5 min, plan
+07-01) — that is intentional, so attendees see a steady, non-flappy
+descent. Within 5 minutes you should be back at 2 shop pods and
+2 nodes. The CPU-saturation alarm clears automatically.</p>
+<h2 id="external-drilldown-surfaces-d-20">External drilldown surfaces (D-20)<a class="headerlink" href="#external-drilldown-surfaces-d-20" title="Permanent link">&para;</a></h2>
+<p>While the live run is in flight, the same <code>run_id</code> is propagated to
+four operator-owned external surfaces:</p>
 <ul>
-<li>The shop is intentionally <strong>not</strong> the place for catalog or storefront administration.</li>
-<li>Operators manage products, stock, and shop metadata in the CRM.</li>
-<li>The shop renders the synchronized catalog as a customer-facing read model and remains focused on browse, cart, checkout, and shipping flows.</li>
+<li><strong><a href="https://lm.octodemo.cloud">lm.octodemo.cloud</a></strong> — Langfuse /
+  LLMetry external view. Use when you want to see LLM/agent-side
+  traces correlated with the stress window (the shop's AI assistant
+  emits LLMetry spans).</li>
+<li><strong><a href="https://phoenix.octodemo.cloud">phoenix.octodemo.cloud</a></strong> —
+  Arize Phoenix external trace store. Use when you want a second
+  perspective on traces alongside APM Trace Explorer — Phoenix
+  bucketing is different.</li>
+<li><strong><a href="https://openlit.octodemo.cloud">openlit.octodemo.cloud</a></strong> —
+  OpenLIT external dashboard. Use when you want to inspect token /
+  cost / model-side metrics for LLM calls inside the stress run.</li>
+<li><strong><a href="https://grafana.octodemo.cloud">grafana.octodemo.cloud</a></strong> —
+  Grafana external dashboards. Use when you want to overlay the
+  Phase 7 RPS / pod-count metrics on top of standard
+  cluster-autoscaler Grafana panels (<code>cluster-autoscaler</code>
+  dashboard, panel <code>nodes-added-removed</code>).</li>
 </ul>
-<h2 id="sections">Sections<a class="headerlink" href="#sections" title="Permanent link">&para;</a></h2>
+<p>These hosts are external operator surfaces. Phase 7 only emits the
+contextual <code>run_id</code> and saved-query / dashboard tile links; it does
+not bundle the surfaces themselves.</p>
+<h2 id="verify">Verify<a class="headerlink" href="#verify" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1">./tools/workshop/verify-11.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$RUN_ID</span><span class="s2">&quot;</span>
+</span></code></pre></div>
+<p>Expected:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1">✓ stress run &#39;checkout_journey&#39; was applied (audit log row exists)
+</span><span id="__span-8-2">✓ APM has ≥ 5 traces tagged with run_id during the window
+</span><span id="__span-8-3">✓ HPA scaled shop above 2 replicas during the window
+</span><span id="__span-8-4">✓ CPU-saturation alarm transitioned OK→FIRING→OK during the window
+</span><span id="__span-8-5">✓ Cluster Autoscaler add-event observed during the window
+</span><span id="__span-8-6">✓ stress run cleared / expired within (duration + 30s)
+</span><span id="__span-8-7">PASS — Lab 11 complete
+</span></code></pre></div>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/admin/stress-test</code> returns HTTP 403</td>
+<td>Missing <code>stress-operator</code> role on your user</td>
+<td>Ask workshop lead to grant the role (Phase 5 admin module)</td>
+</tr>
+<tr>
+<td><code>Apply stress run</code> returns HTTP 409</td>
+<td>Another stress run is already active (concurrency=1, D-14)</td>
+<td>Wait for it to expire, or click <strong>Stop stress run</strong> first</td>
+</tr>
+<tr>
+<td>HPA never scales beyond 2</td>
+<td><code>prometheus-adapter</code> not installed → External <code>shop_request_rate</code> metric is unavailable</td>
+<td>Confirm operator window applied the adapter (plan 07-02)</td>
+</tr>
+<tr>
+<td>Cluster Autoscaler does not add a node</td>
+<td>Add-on not enabled, or node pool already at <code>max=4</code></td>
+<td>Re-run <code>configure-cluster-autoscaler.sh --dry-run</code> to confirm config</td>
+</tr>
+<tr>
+<td>Saturation alarm does not fire</td>
+<td>OCI Monitoring custom-metrics emitter not publishing</td>
+<td>Check <code>shop/server/observability/oci_monitoring.py</code> is wired (Phase 7 plan 07-08)</td>
+</tr>
+<tr>
+<td>Stop button does nothing</td>
+<td><code>stress-runner</code> pod was rescheduled mid-run; the lock is gone</td>
+<td>Re-issue <strong>Stop stress run</strong> — it is idempotent (D-14)</td>
+</tr>
+<tr>
+<td>Pods stuck in <code>ImagePullBackOff</code> after scale-up</td>
+<td>OCIR pull secret missing on the new namespace</td>
+<td>Re-run <code>deploy/oke/bootstrap-emdemo-secrets.sh</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="read-more">Read more<a class="headerlink" href="#read-more" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="modules/">Modules</a> — All 13 modules and their endpoints</li>
-<li><a href="checkout/">Checkout Flow</a> — Order lifecycle from cart to shipment</li>
-<li><a href="assistant/">AI Assistant</a> — GenAI drone advisor with grounding documents</li>
+<li><a href="../lab-01-first-trace/">Lab 01 — First trace</a> — the trace primitive
+  that every step here builds on.</li>
+<li><a href="../lab-05-metric-and-alarm/">Lab 05 — Custom metric + alarm</a> — the
+  alarm pattern reused in step 4.</li>
+<li><a href="../lab-09-chaos-drill/">Lab 09 — Chaos drill</a> — the <code>run_id</code> pivot
+  pattern (chaos → stress, identical contract).</li>
+<li><a href="../../operations/stress-demo-lb-routing/">Operations → Stress demo LB routing</a>
+  — the operator runbook for the D-09 header-routing rule.</li>
+<li><a href="../../observability/melts/">Observability → MELTS overview</a></li>
+<li><a href="../../operations/alarms/">Operations → Alarms &amp; Health</a></li>
 </ul>
+<hr />
+<p><a href="../lab-10-failed-checkout/">← Lab 10</a></p>
 
 
 
@@ -3977,7 +4584,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../architecture/diagrams/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Diagrams (drawio)">
+          <a href="../lab-10-failed-checkout/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Lab 10 — Failed checkout debug">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3987,27 +4594,11 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Diagrams (drawio)
+                Lab 10 — Failed checkout debug
               </div>
             </div>
           </a>
         
-        
-          
-          <a href="modules/" class="md-footer__link md-footer__link--next" aria-label="Next: Modules">
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              <div class="md-ellipsis">
-                Modules
-              </div>
-            </div>
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
-            </div>
-          </a>
         
       </nav>
     
@@ -4053,12 +4644,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tabs.link", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="../assets/js/placeholder-config.js"></script>
+        <script src="../../assets/js/placeholder-config.js"></script>
       
     
   </body>
