@@ -14,6 +14,7 @@
 
 - **v1.3 — infra-hardening (Phase 9 candidate):** Boot volume resize 36→100GB, daily `crictl` GC cron, OKE Stack Monitoring `oci-onm-mgmt-agent` clean-reinstall to surface CPU/memory metrics.
 - **v1.4 — application-metric-exposition (Phase 10 candidate):** Per-service Prometheus exposition + mgmt-agent scrape config so Stack Monitoring populates business + per-service metrics.
+- **v1.5 — rum-synthetic-monitor (Phase 11 candidate):** Playwright+Chromium browser sessions in `octo-traffic-generator` (or OCI APM Synthetic Monitoring scripted monitors) to fire the in-page `apmrum.min.js` agent and populate RUM dashboards. Current httpx-only generator confirms RUM is fully wired in HTML+CSP+env, but never executes JS — root cause documented 2026-05-19.
 
 ## What This Is
 
