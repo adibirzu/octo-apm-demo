@@ -38,7 +38,7 @@ packaging>=23.0
 redis[hiredis]>=7.4.0,<8.0
 
 # Alembic — schema migrations against ATP / local Postgres
-alembic>=1.13,<2.0
+alembic>=1.18.4,<2.0
 
 # Local editable packages (octo-cache, octo-async-worker) — install via
 # requirements-dev.txt or Dockerfile COPY + pip install -e. Not pinned here
