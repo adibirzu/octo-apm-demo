@@ -160,49 +160,13 @@ Plans:
 | 4. Deployment Parity and Release Gates | 3/3 | Complete | 2026-05-14 |
 | 5. Admin AI and Secure Operations | 3/3 | Complete | 2026-05-14 |
 | 6. Documentation and Architecture Closure | 3/3 | Complete | 2026-05-14 |
+| 7. OKE Autoscaling and Stress Demo | 10/10 | Complete | 2026-05-19 |
 
-### Phase 7: OKE Autoscaling and Stress Demo
+## Shipped Milestones
 
-**Goal:** Demonstrate OCI-native cluster elasticity end-to-end. Wire up
-Horizontal Pod Autoscaler (HPA) and Cluster Autoscaler so the OKE
-deployment scales pods + nodes up under load and back down when traffic
-returns to normal. Add a controlled stress-test entry point on the
-admin surface (admin.${DNS_DOMAIN}) that ramps load against shop + CRM,
-then showcase the scaling story through three OCI Observability
-surfaces in parallel:
+- **v1.1** (shipped 2026-05-19) — scaling-demo: Phase 7 OKE Autoscaling and Stress Demo. SCALE-01..04 satisfied. See [`milestones/v1.1-ROADMAP.md`](milestones/v1.1-ROADMAP.md) and [`milestones/v1.1-REQUIREMENTS.md`](milestones/v1.1-REQUIREMENTS.md). Audit: [`v1.1-MILESTONE-AUDIT.md`](v1.1-MILESTONE-AUDIT.md) — PASS.
+- **v1.0** (shipped 2026-05-14) — initial observability platform: Phases 1–6 (signal contract → payment journeys → LA detection → deployment parity → admin AI → docs). 18 plans completed. Full archive deferred; current snapshot at [`milestones/v1.0-and-v1.1-REQUIREMENTS-FULL-SNAPSHOT.md`](milestones/v1.0-and-v1.1-REQUIREMENTS-FULL-SNAPSHOT.md).
 
-  - **OCI APM** — service throughput, latency percentiles, slow-span
-    distribution as pods scale; cross-service trace propagation while
-    new pods come online.
-  - **OCI Monitoring** — custom metric `octo_apm_demo` namespace
-    (pod count, request rate, CPU/memory saturation, autoscaler
-    decisions); alarms that fire on the scaling thresholds.
-  - **OCI Logging Analytics — OKE Monitoring** — node + pod + container
-    log streams, autoscaler events, HPA decisions, kubelet pressure
-    events, with saved searches that surface the scaling timeline.
+## Next milestone
 
-The phase ships:
-  1. HPA manifests (or Helm values) for shop, crm, java-apm with
-     sensible CPU + memory + RPS targets.
-  2. OKE Cluster Autoscaler configured against the worker node pool.
-  3. An admin-only `/admin/stress-test` page that triggers
-     parameterized load (RPS, duration, target service) via a
-     synchronized load-generator pod, with safe-stop and audit logging.
-  4. APM saved queries + Monitoring alarms + Log Analytics dashboards
-     that capture the scale-up / scale-down narrative.
-  5. Workshop Lab 11 walking through the full demo: trigger load,
-     watch HPA scale shop pods, observe Cluster Autoscaler add a node,
-     drill into APM + Logan + Monitoring evidence, then watch
-     downscale.
-
-**Requirements**: SCALE-01..04 (HPA, Cluster Autoscaler, stress-test
-admin UI, observability dashboards). To be enumerated during
-`/gsd-discuss-phase 7`.
-
-**Depends on:** Phase 5 (admin surface boundary), Phase 4 (OKE Helm
-deployment parity).
-
-**Plans:** 9/10 plans executed
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 7 to break down)
+Next milestone scope is empty. Run `/gsd-new-milestone` to define v1.2.

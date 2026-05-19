@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: scaling-demo
-status: verifying
-stopped_at: "Phase 7 Plan 04 completed: _admin_host extracted, regression-green"
-last_updated: "2026-05-18T19:19:11.519Z"
-last_activity: 2026-05-18
+status: shipped — v1.1 archived 2026-05-19
+stopped_at: "v1.1 archived; ready for /gsd-new-milestone"
+last_updated: "2026-05-19T10:00:00.000Z"
+last_activity: 2026-05-19 — v1.1 milestone archived + git tag v1.1 pushed to public repo
 progress:
   total_phases: 7
   completed_phases: 7
