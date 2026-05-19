@@ -167,6 +167,38 @@ Plans:
 - **v1.1** (shipped 2026-05-19) — scaling-demo: Phase 7 OKE Autoscaling and Stress Demo. SCALE-01..04 satisfied. See [`milestones/v1.1-ROADMAP.md`](milestones/v1.1-ROADMAP.md) and [`milestones/v1.1-REQUIREMENTS.md`](milestones/v1.1-REQUIREMENTS.md). Audit: [`v1.1-MILESTONE-AUDIT.md`](v1.1-MILESTONE-AUDIT.md) — PASS.
 - **v1.0** (shipped 2026-05-14) — initial observability platform: Phases 1–6 (signal contract → payment journeys → LA detection → deployment parity → admin AI → docs). 18 plans completed. Full archive deferred; current snapshot at [`milestones/v1.0-and-v1.1-REQUIREMENTS-FULL-SNAPSHOT.md`](milestones/v1.0-and-v1.1-REQUIREMENTS-FULL-SNAPSHOT.md).
 
-## Next milestone
+## Current Milestone: v1.2 — phoenix-build-migration
 
-Next milestone scope is empty. Run `/gsd-new-milestone` to define v1.2.
+**Goal:** Cut cold-pull latency on `octo-apm-demo-oke` (us-phoenix-1) by building + serving container images from the same OCI region as the OKE cluster. Eliminate cross-region OCIR transfer without disrupting demo continuity.
+
+**Requirements:** BUILD-01..07 (see [`REQUIREMENTS.md`](REQUIREMENTS.md))
+
+**Phases:** 1 phase (Phase 8)
+
+### Phase 8: Phoenix-Native Build + Registry Migration
+
+**Goal:** Build all 5 octo-apm-demo images on `octo-emdemo-jumphost-v5` (Phoenix, x86_64), push to `phx.ocir.io/${OCIR_TENANCY}/*`, and repoint all deploy manifests + Helm values to the phx OCIR endpoint. Keep frankfurt as rollback fallback for ≥ 7 days.
+
+**Depends on:** Phase 7 (clean baseline of services on octo-apm-demo-oke + traffic-generator pattern).
+**Requirements:** BUILD-01, BUILD-02, BUILD-03, BUILD-04, BUILD-05, BUILD-06, BUILD-07
+
+**Seed brief:** [`PHASE-8-BRIEF.md`](PHASE-8-BRIEF.md) — locked decisions, jumphost identity, NSG path, image set, risk surface.
+
+**Success Criteria:**
+1. All 5 phx OCIR repos populated with the latest image set; frankfurt repos retain tags as fallback for ≥ 7 days.
+2. Reproducible build pipeline runs on jumphost (Auth Token via stdin, idempotent, runbook in repo).
+3. Deploy manifests + Helm default to phx; pre-deploy `grep -c eu-frankfurt-1.ocir.io` returns 0 for octo-apm-demo namespaces.
+4. Rolling deploy keeps APM Service Monitoring tile visible for every service throughout cutover (canary order: traffic-gen → java-demo → workflow-gateway → drone-shop → crm-portal).
+5. Cold-pull benchmark: phx pull < 25% of frankfurt pull wall-clock.
+6. `helm rollback` to a frankfurt-pinned revision exercised in verify-work + documented in runbook.
+7. Global CLAUDE.md "Cloud-Based Docker Builds" updated + ADR captured under `docs/adr/`.
+
+**Plans:** 0 plans (run `/gsd-plan-phase 8` to break down — 8 plan stubs proposed in PHASE-8-BRIEF.md)
+
+Plans:
+- [ ] TBD (run `/gsd-plan-phase 8`)
+
+## Future Candidate Milestones (not yet scoped)
+
+- **v1.3 — infra-hardening (Phase 9 candidate):** Boot volume resize 36→100GB on `octo-apm-demo-oke` workers, daily `crictl` GC cron via privileged DaemonSet, `oci-onm-mgmt-agent` clean-reinstall to surface CPU/memory metrics in OCI Stack Monitoring.
+- **v1.4 — application-metric-exposition (Phase 10 candidate):** Per-service Prometheus exposition (Python `prometheus_client`, Java Micrometer + Actuator, Go `prometheus/client_golang`) + mgmt-agent `prometheus-scrape-config.json` populated with kubernetes-sd `role: pod` annotation-based scrape job. Adds `http_requests_total`, `http_request_duration_seconds`, `db_query_duration_seconds`, `payment_workflow_duration_seconds`, `business_orders_total` to Stack Monitoring.

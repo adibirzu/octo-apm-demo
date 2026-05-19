@@ -2,20 +2,18 @@
 
 ## Current State
 
+**In flight:** v1.2 (phoenix-build-migration) — scoped 2026-05-19. Phase 8: Phoenix-native build + registry migration. Requirements BUILD-01..07 defined; seed brief at `.planning/PHASE-8-BRIEF.md`. Next: `/gsd-plan-phase 8`.
+
 **Shipped:** v1.1 (scaling-demo) — 2026-05-19. Phase 7 (OKE Autoscaling + Stress Demo) delivered HPA + Cluster Autoscaler + admin stress-test UI + APM/Monitoring/LA evidence chain + Workshop Lab 11. All 4 SCALE-* requirements satisfied. Audit PASS. See `.planning/milestones/v1.1-ROADMAP.md`.
 
 **Previously shipped:** v1.0 — initial observability platform (Phases 1–6, May 2026). 18 plans, baseline signal contract → payment journeys → LA detection → deployment parity → admin AI → docs closure.
 
 **Site:** https://adibirzu.github.io/octo-apm-demo/ (mkdocs, published from `gh-pages` branch)
 
-## Next Milestone Goals
+## Future Milestone Candidates
 
-v1.2 scope is undefined. Candidate phases captured during v1.1:
-- **Phase 8 candidate** — Phoenix-native build + registry migration. Cuts cross-region OCIR pull latency. Seed brief: `.planning/PHASE-8-BRIEF.md`.
-- **Phase 9 candidate** — Cluster ops hardening: boot volume resize 36→100GB, daily `crictl` GC cron, OKE Stack Monitoring `oci-onm-mgmt-agent` clean-reinstall to surface CPU/memory metrics.
-- **Application metric exposition** — Prometheus endpoints per service + mgmt-agent scrape config so Stack Monitoring populates non-node metrics.
-
-Run `/gsd-new-milestone` to scope + define requirements for v1.2.
+- **v1.3 — infra-hardening (Phase 9 candidate):** Boot volume resize 36→100GB, daily `crictl` GC cron, OKE Stack Monitoring `oci-onm-mgmt-agent` clean-reinstall to surface CPU/memory metrics.
+- **v1.4 — application-metric-exposition (Phase 10 candidate):** Per-service Prometheus exposition + mgmt-agent scrape config so Stack Monitoring populates business + per-service metrics.
 
 ## What This Is
 

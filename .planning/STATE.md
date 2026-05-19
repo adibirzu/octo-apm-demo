@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: scaling-demo
-status: shipped — v1.1 archived 2026-05-19
-stopped_at: "v1.1 archived; ready for /gsd-new-milestone"
-last_updated: "2026-05-19T10:00:00.000Z"
-last_activity: 2026-05-19 — v1.1 milestone archived + git tag v1.1 pushed to public repo
+milestone: v1.2
+milestone_name: phoenix-build-migration
+status: scoped — ready for /gsd-plan-phase 8
+stopped_at: "v1.2 scoped: BUILD-01..07 requirements + Phase 8 seed in PHASE-8-BRIEF.md"
+last_updated: "2026-05-19T12:55:00.000Z"
+last_activity: 2026-05-19 — v1.2 milestone opened, Phase 8 requirements defined
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 7
   total_plans: 28
   completed_plans: 28
-  percent: 100
+  percent: 0  # v1.2 progress; v1.1 archived at 100%
 ---
 
 # Project State
